@@ -1,0 +1,58 @@
+# Web framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+python-multipart==0.0.9
+
+# Database
+sqlalchemy==2.0.35
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+alembic==1.13.2
+
+# Validation
+pydantic==2.8.2
+pydantic-settings==2.4.0
+
+# Task queue
+celery==5.4.0
+
+# HTTP client
+httpx==0.27.2
+aiohttp==3.10.5
+
+# NLP — entity extraction
+spacy==3.7.6
+# en_core_web_sm installed via: python -m spacy download en_core_web_sm
+
+# NLP — embeddings (LaBSE)
+sentence-transformers==3.1.1
+
+# NLP — language detection
+langdetect==1.0.9
+
+# Translation
+deep-translator==1.11.4
+
+# HTML extraction
+trafilatura==1.12.0
+
+# RSS/HTML parsing
+feedparser==6.0.11
+beautifulsoup4==4.12.3
+lxml==5.3.0
+
+# Groq
+groq==0.11.0
+
+# Supabase auth
+supabase==2.7.4
+
+# Data processing
+python-dateutil==2.9.0
+
+# PDF export (collections)
+reportlab==4.2.2
+
+# Utilities
+python-dotenv==1.0.1
+python-jose[cryptography]==3.3.0

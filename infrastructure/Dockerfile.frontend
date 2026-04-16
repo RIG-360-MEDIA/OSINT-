@@ -1,0 +1,17 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files first (layer cache)
+COPY frontend/package.json ./
+COPY frontend/package-lock.json* ./
+
+# Install dependencies
+RUN npm install
+
+# Copy application code
+COPY frontend/ .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]

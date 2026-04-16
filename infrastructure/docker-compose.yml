@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+  rig-postgres:
+    image: ankane/pgvector:latest
+    container_name: rig-postgres
+    environment:
+      POSTGRES_DB: rig
+      POSTGRES_USER: rig
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - rig-postgres-data:/var/lib/postgresql/data
+      - ../scripts/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5433:5432"
+    networks:
+      - rig-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rig -d rig"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  rig-backend:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile.backend
+    container_name: rig-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
+      DATABASE_URL_SYNC: postgresql://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
+      GROQ_API_KEYS: ${GROQ_API_KEYS:-}
+      NEWSDATA_API_KEY: ${NEWSDATA_API_KEY:-}
+      FRESHRSS_URL: ${FRESHRSS_URL:-}
+      FRESHRSS_USERNAME: ${FRESHRSS_USERNAME:-admin}
+      FRESHRSS_PASSWORD: ${FRESHRSS_PASSWORD:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      NLP_BATCH_SIZE: ${NLP_BATCH_SIZE:-25}
+      BRIEF_ARTICLE_LIMIT: ${BRIEF_ARTICLE_LIMIT:-30}
+    volumes:
+      - ../backend:/app/backend
+      - ../scripts:/app/scripts
+    ports:
+      - "8000:8000"
+    networks:
+      - rig-network
+    depends_on:
+      rig-postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  rig-frontend:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile.frontend
+    container_name: rig-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+    ports:
+      - "3001:3000"
+    networks:
+      - rig-network
+    depends_on:
+      - rig-backend
+    restart: unless-stopped
+
+networks:
+  rig-network:
+    driver: bridge
+
+volumes:
+  rig-postgres-data:
+    name: rig-postgres-data

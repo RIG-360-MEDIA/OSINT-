@@ -22,10 +22,13 @@ import re
 
 import psycopg2
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://rig:rigpassword@localhost:5433/rig",
+# Prefer DATABASE_URL_SYNC (plain postgresql://) so psycopg2 works correctly
+# inside the container where DATABASE_URL carries the +asyncpg scheme.
+_raw_url = os.getenv(
+    "DATABASE_URL_SYNC",
+    os.getenv("DATABASE_URL", "postgresql://rig:rigpassword@localhost:5433/rig"),
 )
+DATABASE_URL = _raw_url.replace("postgresql+asyncpg", "postgresql")
 
 CSV_PATH = os.path.join(os.path.dirname(__file__), "sources_backup.csv")
 

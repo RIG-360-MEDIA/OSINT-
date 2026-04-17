@@ -20,7 +20,14 @@ DATABASE_URL_SYNC: str = os.environ.get(
 _broker_url = DATABASE_URL_SYNC.replace("postgresql", "sqla+postgresql", 1)
 _result_url = DATABASE_URL_SYNC.replace("postgresql", "db+postgresql", 1)
 
-app = Celery("rig_surveillance", include=["backend.tasks"])
+app = Celery(
+    "rig_surveillance",
+    include=[
+        "backend.tasks",
+        "backend.tasks.nlp_processor",
+        "backend.tasks.relevance_task",
+    ],
+)
 
 app.config_from_object(
     {

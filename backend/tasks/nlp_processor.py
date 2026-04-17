@@ -119,12 +119,27 @@ async def _process_batch() -> dict:
                 skipped_count += 1
 
         if processed_ids:
+            from backend.celery_app import app as celery_app
+            celery_app.send_task(
+                "tasks.score_relevance_batch",
+                args=[processed_ids],
+                queue="relevance",
+            )
             logger.info(
-                "Relevance scoring pending for %d articles — P07 builds this",
+                "Relevance scoring queued for %d articles",
                 len(processed_ids),
             )
 
         return {"processed": processed_count, "skipped": skipped_count}
+
+
+def _is_valid_text(text: str) -> bool:
+    """Return False if text is binary garbage rather than readable prose."""
+    if not text or len(text) < 20:
+        return False
+    sample = text[:200]
+    printable = sum(1 for c in sample if c.isprintable() or c in "\n\r\t")
+    return (printable / len(sample)) > 0.85
 
 
 async def _process_single(article, db, nlp_model) -> None:
@@ -139,6 +154,11 @@ async def _process_single(article, db, nlp_model) -> None:
 
     title = article.title or ""
     lead_original = article.lead_text_original
+
+    # Discard binary/corrupted content — fall through to title-only path
+    if lead_original and not _is_valid_text(lead_original):
+        logger.info("Binary content detected for article %s — title-only path", article.id)
+        lead_original = None
 
     has_good_text = lead_original is not None and len(lead_original) > 100
 

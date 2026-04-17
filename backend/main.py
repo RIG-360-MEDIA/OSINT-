@@ -25,6 +25,8 @@ async def health_check() -> dict:
     db_version = None
     entity_count = None
     source_count = None
+    article_count = None
+    articles_today = None
 
     try:
         # DATABASE_URL_SYNC is plain postgresql:// — asyncpg accepts this format
@@ -42,6 +44,14 @@ async def health_check() -> dict:
         source_row = await conn.fetchrow("SELECT COUNT(*) FROM sources")
         source_count = source_row[0]
 
+        article_row = await conn.fetchrow("SELECT COUNT(*) FROM articles")
+        article_count = article_row[0]
+
+        articles_today_row = await conn.fetchrow(
+            "SELECT COUNT(*) FROM articles WHERE collected_at > NOW() - INTERVAL '24 hours'"
+        )
+        articles_today = articles_today_row[0]
+
         await conn.close()
         db_connected = True
     except Exception as e:
@@ -54,5 +64,7 @@ async def health_check() -> dict:
         "db_version": db_version,
         "entity_count": entity_count,
         "source_count": source_count,
+        "article_count": article_count,
+        "articles_today": articles_today,
         "environment": os.getenv("ENVIRONMENT", "development"),
     }

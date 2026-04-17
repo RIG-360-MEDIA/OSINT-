@@ -23,6 +23,28 @@ services:
       retries: 10
       start_period: 10s
 
+  rig-freshrss:
+    image: lscr.io/linuxserver/freshrss:latest
+    container_name: rig-freshrss
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Asia/Kolkata
+      CRON_MIN: "*/15"
+    volumes:
+      - rig-freshrss-data:/config
+    ports:
+      - "8081:80"
+    networks:
+      - rig-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   rig-backend:
     build:
       context: ..
@@ -33,7 +55,7 @@ services:
       DATABASE_URL_SYNC: postgresql://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
       GROQ_API_KEYS: ${GROQ_API_KEYS:-}
       NEWSDATA_API_KEY: ${NEWSDATA_API_KEY:-}
-      FRESHRSS_URL: ${FRESHRSS_URL:-}
+      FRESHRSS_URL: ${FRESHRSS_URL:-http://rig-freshrss:80}
       FRESHRSS_USERNAME: ${FRESHRSS_USERNAME:-admin}
       FRESHRSS_PASSWORD: ${FRESHRSS_PASSWORD:-}
       SUPABASE_URL: ${SUPABASE_URL:-}
@@ -50,6 +72,8 @@ services:
       - rig-network
     depends_on:
       rig-postgres:
+        condition: service_healthy
+      rig-freshrss:
         condition: service_healthy
     restart: unless-stopped
 
@@ -77,3 +101,5 @@ networks:
 volumes:
   rig-postgres-data:
     name: rig-postgres-data
+  rig-freshrss-data:
+    name: rig-freshrss-data

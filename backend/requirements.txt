@@ -13,8 +13,8 @@ alembic==1.13.2
 pydantic==2.8.2
 pydantic-settings==2.4.0
 
-# Task queue
-celery==5.4.0
+# Task queue (sqlalchemy extra required for sqla+postgresql broker)
+celery[sqlalchemy]==5.4.0
 
 # HTTP client
 httpx==0.27.2

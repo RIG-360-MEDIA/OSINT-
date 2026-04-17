@@ -10,8 +10,8 @@ psycopg2-binary==2.9.9
 alembic==1.13.2
 
 # Validation
-pydantic==2.8.2
-pydantic-settings==2.4.0
+pydantic>=2.10
+pydantic-settings>=2.6
 
 # Task queue (sqlalchemy extra required for sqla+postgresql broker)
 celery[sqlalchemy]==5.4.0
@@ -52,6 +52,10 @@ python-dateutil==2.9.0
 
 # PDF export (collections)
 reportlab==4.2.2
+
+# Tiered scraping
+crawl4ai==0.4.248
+playwright>=1.47.0
 
 # Utilities
 python-dotenv==1.0.1

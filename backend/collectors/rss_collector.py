@@ -21,6 +21,8 @@ import httpx
 import trafilatura
 from bs4 import BeautifulSoup
 
+from backend.collectors.tiered_fetcher import TieredFetcher
+
 logger = logging.getLogger(__name__)
 
 FRESHRSS_URL: str = os.environ.get("FRESHRSS_URL", "http://rig-freshrss:80").rstrip("/")
@@ -166,41 +168,44 @@ class RSSCollector:
             # Accumulate per-source outcomes for batch health update at end
             source_outcomes: dict[str, dict[str, Any]] = {}
 
-            for sub in subscriptions:
-                feed_url = (sub.get("url") or "").strip()
-                source = by_rss_url.get(feed_url)
-                if source is None:
-                    source = by_host.get(_host_from_url(feed_url))
+            # One shared TieredFetcher (and one shared Crawl4AI browser) for
+            # the entire collection run — never create a browser per article.
+            async with TieredFetcher() as fetcher:
+                for sub in subscriptions:
+                    feed_url = (sub.get("url") or "").strip()
+                    source = by_rss_url.get(feed_url)
+                    if source is None:
+                        source = by_host.get(_host_from_url(feed_url))
 
-                source_id: str | None = str(source["id"]) if source else None
-                source_tier: int = int(source["source_tier"]) if source else 2
+                    source_id: str | None = str(source["id"]) if source else None
+                    source_tier: int = int(source["source_tier"]) if source else 2
 
-                items = await greader.get_stream_items(sub["id"])
-                stats["sources_checked"] += 1
-                stats["articles_found"] += len(items)
+                    items = await greader.get_stream_items(sub["id"])
+                    stats["sources_checked"] += 1
+                    stats["articles_found"] += len(items)
 
-                inserted_count = 0
-                had_error = False
+                    inserted_count = 0
+                    had_error = False
 
-                for item in items:
-                    outcome = await self._process_item(
-                        conn, item, source_id, source_tier, by_host
-                    )
-                    if outcome == "inserted":
-                        inserted_count += 1
-                        stats["articles_inserted"] += 1
-                    elif outcome == "duplicate":
-                        stats["articles_skipped_duplicate"] += 1
-                    elif outcome == "error":
-                        had_error = True
+                    for item in items:
+                        outcome = await self._process_item(
+                            conn, item, source_id, source_tier, by_host, fetcher
+                        )
+                        if outcome == "inserted":
+                            inserted_count += 1
+                            stats["articles_inserted"] += 1
+                        elif outcome == "duplicate":
+                            stats["articles_skipped_duplicate"] += 1
+                        elif outcome == "error":
+                            had_error = True
 
-                if source_id:
-                    prior = source_outcomes.get(source_id, {"inserted": 0, "error": False})
-                    source_outcomes[source_id] = {
-                        "inserted": prior["inserted"] + inserted_count,
-                        "error": prior["error"] or (had_error and inserted_count == 0),
-                        "name": source["name"] if source else source_id,
-                    }
+                    if source_id:
+                        prior = source_outcomes.get(source_id, {"inserted": 0, "error": False})
+                        source_outcomes[source_id] = {
+                            "inserted": prior["inserted"] + inserted_count,
+                            "error": prior["error"] or (had_error and inserted_count == 0),
+                            "name": source["name"] if source else source_id,
+                        }
 
             await self._flush_health_updates(conn, source_outcomes)
 
@@ -253,6 +258,7 @@ class RSSCollector:
         source_id: str | None,
         source_tier: int,
         by_host: dict[str, Any],
+        fetcher: TieredFetcher,
     ) -> str:
         canonical = item.get("canonical") or []
         alternate = item.get("alternate") or []
@@ -277,8 +283,20 @@ class RSSCollector:
             logger.debug("No source match for URL: %s", url)
             return "skip"
 
-        # Fetch + extract
-        full_text, lead_text, thumbnail, author = await self._fetch_and_extract(url)
+        # RSS summary used as last-resort fallback inside the tiered fetcher.
+        # GReader API returns summary as {"content": "...", "direction": "ltr"} — extract string.
+        _summary_raw = item.get("summary") or item.get("description") or ""
+        if isinstance(_summary_raw, dict):
+            _summary_raw = _summary_raw.get("content", "")
+        rss_summary = (_summary_raw or "").strip()
+
+        # Fetch + extract using tiered fetcher
+        full_text, lead_text, thumbnail, author = await self._fetch_and_extract(
+            url,
+            fetcher=fetcher,
+            domain=_host_from_url(url),
+            rss_summary=rss_summary,
+        )
 
         # Parse published timestamp
         published_at: datetime | None = None
@@ -327,16 +345,26 @@ class RSSCollector:
     # ------------------------------------------------------------------
 
     async def _fetch_and_extract(
-        self, url: str
+        self,
+        url: str,
+        fetcher: TieredFetcher | None = None,
+        domain: str = "",
+        rss_summary: str = "",
     ) -> tuple[str | None, str | None, str | None, str | None]:
         """
         Returns (full_text, lead_text, thumbnail_url, author_name).
-        Trafilatura settings are FIXED — do not change them.
+
+        Does a best-effort quick GET for thumbnail/author metadata, then
+        delegates text extraction to the TieredFetcher. The quick GET uses
+        a short timeout so JS-rendered sites don't stall the pipeline.
+        Trafilatura precision settings are FIXED — do not change them.
         """
+        # Quick best-effort fetch for thumbnail + author metadata only.
+        # 10s timeout — JS sites return skeleton HTML fast enough for meta tags.
         html: str | None = None
         try:
             async with httpx.AsyncClient(
-                timeout=30,
+                timeout=10,
                 follow_redirects=True,
                 headers={"User-Agent": "Mozilla/5.0 (compatible; RIGBot/1.0)"},
             ) as client:
@@ -344,30 +372,36 @@ class RSSCollector:
                 if resp.status_code == 200:
                     html = resp.text
         except Exception as exc:
-            logger.debug("HTTP fetch failed for %s: %s", url, exc)
-            return None, None, None, None
+            logger.debug("Metadata fetch failed for %s: %s", url, exc)
 
-        if not html:
-            return None, None, None, None
+        thumbnail = _extract_thumbnail(html) if html else None
+        author = _extract_author(html) if html else None
 
-        thumbnail = _extract_thumbnail(html)
-        author = _extract_author(html)
+        # Text extraction via tiered fetcher
+        if fetcher is not None:
+            text, tier_used = await fetcher.fetch(
+                url=url, domain=domain, rss_summary=rss_summary
+            )
+            if tier_used > 1:
+                logger.info("Tier %d used for %s: %.80s", tier_used, domain, url)
+        else:
+            # Fallback path (no fetcher — should not occur in normal operation)
+            text = None
+            if html:
+                text = trafilatura.extract(
+                    html,
+                    favor_precision=True,
+                    include_tables=False,
+                    include_comments=False,
+                    include_links=False,
+                    no_fallback=True,
+                )
 
-        full_text = trafilatura.extract(
-            html,
-            favor_precision=True,
-            include_tables=False,
-            include_comments=False,
-            include_links=False,
-            no_fallback=True,
-        )
+        if not text or len(text) < MIN_FULL_TEXT_CHARS:
+            text = None
 
-        if not full_text or len(full_text) < MIN_FULL_TEXT_CHARS:
-            logger.info("Short/empty extraction for %s — may be paywalled", url)
-            full_text = None
-
-        lead_text = full_text[:LEAD_TEXT_MAX_CHARS] if full_text else None
-        return full_text, lead_text, thumbnail, author
+        lead_text = text[:LEAD_TEXT_MAX_CHARS] if text else None
+        return text, lead_text, thumbnail, author
 
     # ------------------------------------------------------------------
     # Batch health update (one UPDATE per source — no N+1)

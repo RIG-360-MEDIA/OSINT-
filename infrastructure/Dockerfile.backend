@@ -2,18 +2,37 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (including Playwright/Chromium browser deps)
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     libpq-dev \
     curl \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libpango-1.0-0 \
+    libatk1.0-0 \
+    libcups2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy and install Python dependencies first
 # (separate layer — only rebuilds when requirements.txt changes)
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Crawl4AI browser + JS snippets.
+# crawl4ai-setup installs Playwright Chromium and populates
+# the js_snippet directory that crawl4ai requires at runtime.
+RUN crawl4ai-setup
 
 # Download SpaCy model
 RUN python -m spacy download en_core_web_sm

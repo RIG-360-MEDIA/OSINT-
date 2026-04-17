@@ -19,6 +19,13 @@ app.add_middleware(
 )
 
 
+@app.get("/debug/groq-status")
+async def groq_status() -> dict:
+    """Shows Groq key pool health. Used by debug dashboard in P08."""
+    from backend.nlp.groq_client import groq_manager
+    return {"groq_status": groq_manager.status}
+
+
 @app.get("/health")
 async def health_check() -> dict:
     db_connected = False

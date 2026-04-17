@@ -2,6 +2,7 @@
 Celery task definitions.
 
 P03: collector tasks only.
+P04: Groq key reset task added.
 NLP tasks added in P06.
 Brief tasks added in P10.
 """
@@ -13,6 +14,7 @@ import logging
 from backend.celery_app import app
 from backend.collectors.html_collector import HTMLCollector
 from backend.collectors.rss_collector import RSSCollector
+from backend.nlp.groq_client import groq_manager
 
 logger = logging.getLogger(__name__)
 
@@ -77,3 +79,17 @@ def generate_all_briefs(self):  # type: ignore[no-untyped-def]
     """Daily brief generation — implemented in P10."""
     logger.debug("generate_all_briefs called (not yet implemented)")
     return {"status": "not_implemented", "prompt": "P10"}
+
+
+@app.task(name="tasks.reset_groq_keys")
+def reset_groq_keys() -> dict:  # type: ignore[no-untyped-def]
+    """
+    Reset exhausted Groq API keys.
+    Runs daily at 00:05 UTC via Celery Beat.
+    Restores all rate-limited keys to available so the next day's
+    pipeline starts with a full key pool.
+    """
+    groq_manager.reset_exhausted()
+    status = groq_manager.status
+    logger.info("Groq key pool reset complete: %s", status)
+    return status

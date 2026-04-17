@@ -59,6 +59,11 @@ app.config_from_object(
                 "schedule": crontab(hour=0, minute=30),
                 "options": {"queue": "brief"},
             },
+            "reset-groq-keys-daily": {
+                "task": "tasks.reset_groq_keys",
+                "schedule": crontab(hour=0, minute=5),
+                "options": {"queue": "default"},
+            },
         },
     }
 )

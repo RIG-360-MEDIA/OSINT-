@@ -4,11 +4,15 @@ import asyncpg
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.routers.debug_router import debug_router
+
 app = FastAPI(
     title="RIG SURVEILLANCE",
     version="1.0.0",
     description="Personal Intelligence Platform",
 )
+
+app.include_router(debug_router)
 
 app.add_middleware(
     CORSMiddleware,

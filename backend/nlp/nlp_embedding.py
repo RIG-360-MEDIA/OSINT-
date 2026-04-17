@@ -1,0 +1,88 @@
+"""
+LaBSE semantic embedding and deduplication.
+
+Model loaded once at module level and reused across all calls in the worker process.
+Title-only articles (< 100 chars) must NOT be passed to generate_embedding.
+"""
+from __future__ import annotations
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Module-level singleton — loaded once per worker process, never reloaded.
+_LABSE_MODEL = None
+
+
+def get_labse_model():
+    """Return the cached LaBSE SentenceTransformer, loading it on first call."""
+    global _LABSE_MODEL
+    if _LABSE_MODEL is None:
+        from sentence_transformers import SentenceTransformer
+        logger.info("Loading LaBSE model (768-dim, ~1.8 GB)...")
+        _LABSE_MODEL = SentenceTransformer("LaBSE")
+        logger.info("LaBSE model loaded. 768-dim embeddings ready.")
+    return _LABSE_MODEL
+
+
+def generate_embedding(text: str) -> list[float] | None:
+    """
+    Generate a 768-dim LaBSE embedding for the given text.
+
+    Returns None if text is too short (< 50 chars) or on error.
+    Only call for articles with substantial text (> 100 chars).
+    """
+    if not text or len(text) < 50:
+        return None
+    try:
+        model = get_labse_model()
+        embedding = model.encode([text[:512]])
+        return embedding[0].tolist()
+    except Exception as exc:
+        logger.error("LaBSE embedding failed: %s", exc)
+        return None
+
+
+async def check_semantic_duplicate(
+    embedding: list[float],
+    article_id: str,
+    db_conn,
+) -> str | None:
+    """
+    Query pgvector HNSW index for a near-duplicate article.
+
+    Returns the id of the older matching article if cosine distance < 0.08
+    (similarity > 0.92), else None.
+
+    The newer article is the duplicate; the older one is kept.
+    Search is limited to articles published in the past 7 days to bound
+    the comparison set and keep the index warm.
+    """
+    if not embedding:
+        return None
+    try:
+        from sqlalchemy import text
+
+        result = await db_conn.execute(
+            text(
+                """
+                SELECT id FROM articles
+                WHERE labse_embedding IS NOT NULL
+                  AND id != :article_id
+                  AND nlp_processed = TRUE
+                  AND published_at > NOW() - INTERVAL '7 days'
+                  AND labse_embedding <=> CAST(:embedding AS vector) < 0.08
+                ORDER BY labse_embedding <=> CAST(:embedding AS vector)
+                LIMIT 1
+                """
+            ),
+            {
+                "article_id": article_id,
+                "embedding": str(embedding),
+            },
+        )
+        row = result.fetchone()
+        return str(row.id) if row else None
+    except Exception as exc:
+        logger.warning("Semantic dedup check failed: %s", exc)
+        return None

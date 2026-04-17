@@ -60,11 +60,9 @@ def collect_html(self):  # type: ignore[no-untyped-def]
 # Placeholder tasks — implemented in later prompts
 # ---------------------------------------------------------------------------
 
-@app.task(name="tasks.process_nlp_batch", bind=True)
-def process_nlp_batch(self):  # type: ignore[no-untyped-def]
-    """NLP entity extraction batch — implemented in P06."""
-    logger.debug("process_nlp_batch called (not yet implemented)")
-    return {"status": "not_implemented", "prompt": "P06"}
+# Re-export the real implementation from backend.tasks.nlp_processor so that
+# Celery Beat can find it under the registered name 'tasks.process_nlp_batch'.
+from backend.tasks.nlp_processor import process_nlp_batch  # noqa: F401, E402
 
 
 @app.task(name="tasks.score_relevance_batch", bind=True)

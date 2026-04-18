@@ -22,6 +22,10 @@ _COMMON_WORDS: frozenset[str] = frozenset({
     "india", "indian", "new", "united",
     "national", "state", "party", "press",
     "times", "news", "world", "global",
+    # Short common words exposed by lowering the 3-char minimum
+    "the", "and", "for", "act", "law",
+    "web", "net", "gov", "per", "via",
+    "day", "age", "era", "end", "set",
 })
 
 
@@ -216,7 +220,7 @@ def extract_entities(
     # Direct title scan — catches entities SpaCy missed (e.g. Kaleshwaram → NORP)
     title_lower = (title or "").lower()
     for key, entry in _ENTITY_DICT.items():
-        if not key or key == "none" or len(key) < 5:
+        if not key or key == "none" or len(key) < 3:
             continue
         if key.lower() in _COMMON_WORDS:
             continue

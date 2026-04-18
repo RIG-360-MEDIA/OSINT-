@@ -34,6 +34,7 @@ debug_router = APIRouter(
 @debug_router.get("/pipeline-health")
 async def pipeline_health() -> dict:
     async with get_db() as db:
+        await db.execute(text("SET LOCAL statement_timeout = '8000'"))
         row = (await db.execute(text("""
             SELECT
               COUNT(*) AS total_articles,
@@ -94,6 +95,7 @@ async def pipeline_health() -> dict:
 @debug_router.get("/recent-articles")
 async def recent_articles() -> dict:
     async with get_db() as db:
+        await db.execute(text("SET LOCAL statement_timeout = '8000'"))
         rows = (await db.execute(text("""
             SELECT
               a.id,
@@ -328,6 +330,7 @@ async def queue_status() -> dict:
         worker_status = f"error: {exc}"
 
     async with get_db() as db:
+        await db.execute(text("SET LOCAL statement_timeout = '8000'"))
         stats = (await db.execute(text("""
             SELECT
               COUNT(*) FILTER (WHERE nlp_processed = FALSE) AS nlp_queue_depth,
@@ -369,6 +372,7 @@ async def queue_status() -> dict:
 @debug_router.get("/intelligence-status")
 async def intelligence_status() -> dict:
     async with get_db() as db:
+        await db.execute(text("SET LOCAL statement_timeout = '8000'"))
         user_row = (await db.execute(text("""
             SELECT
               COUNT(DISTINCT up.user_id) AS total_users,

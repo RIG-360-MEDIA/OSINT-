@@ -273,12 +273,16 @@ async def call_groq(
 
 async def classify(system: str, user: str) -> str:
     """Fast classification call using FAST_MODEL."""
-    return await call_groq(
+    result = await call_groq(
         system=system,
         user=user,
         task_type="classification",
         model=FAST_MODEL,
     )
+    # Strip label prefix the model sometimes adds, e.g. "CLASSIFICATION: POLITICS" → "POLITICS"
+    if ":" in result:
+        result = result.split(":")[-1]
+    return result.strip().upper()
 
 
 async def translate(text: str, target_language: str = "English") -> str:

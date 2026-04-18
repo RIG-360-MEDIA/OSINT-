@@ -59,14 +59,21 @@ def compute_topic_gate(
     article_title: str,
     user_entity_names: set,
 ) -> float:
-    """SPORTS → 0.1 unless a watched entity appears in the title."""
-    if topic_category != "SPORTS":
-        return 1.0
-    title_lower = (article_title or "").lower()
-    for name in user_entity_names:
-        if name.lower() in title_lower:
-            return 1.0
-    return 0.1
+    """
+    SPORTS → 0.1 unless a watched entity appears in the title.
+    INTERNATIONAL → 0.3 to reduce foreign-news noise in the scored pool.
+    """
+    if topic_category == "SPORTS":
+        title_lower = (article_title or "").lower()
+        for name in user_entity_names:
+            if name.lower() in title_lower:
+                return 1.0
+        return 0.1
+
+    if topic_category == "INTERNATIONAL":
+        return 0.3
+
+    return 1.0
 
 
 def compute_geo_score(

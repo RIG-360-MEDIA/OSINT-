@@ -4,6 +4,7 @@ import asyncpg
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.routers.brief_router import brief_router
 from backend.routers.debug_router import debug_router
 from backend.routers.onboarding_router import onboarding_router
 
@@ -15,6 +16,7 @@ app = FastAPI(
 
 app.include_router(debug_router)
 app.include_router(onboarding_router)
+app.include_router(brief_router)
 
 app.add_middleware(
     CORSMiddleware,

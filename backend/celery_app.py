@@ -24,8 +24,11 @@ app = Celery(
     "rig_surveillance",
     include=[
         "backend.tasks",
+        "backend.tasks.collector_tasks",
         "backend.tasks.nlp_processor",
         "backend.tasks.relevance_task",
+        "backend.tasks.backfill_task",
+        "backend.tasks.dict_reload_task",
     ],
 )
 
@@ -43,6 +46,7 @@ app.config_from_object(
             "tasks.collect_html": {"queue": "collectors"},
             "tasks.process_nlp_batch": {"queue": "nlp"},
             "tasks.score_relevance_batch": {"queue": "relevance"},
+            "tasks.score_unscored_articles": {"queue": "relevance"},
             "tasks.generate_all_briefs": {"queue": "brief"},
         },
         "beat_schedule": {
@@ -70,6 +74,16 @@ app.config_from_object(
                 "task": "tasks.reset_groq_keys",
                 "schedule": crontab(hour=0, minute=5),
                 "options": {"queue": "default"},
+            },
+            "score-unscored-every-30-min": {
+                "task": "tasks.score_unscored_articles",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "relevance"},
+            },
+            "check-entity-dict-every-5-min": {
+                "task": "tasks.check_entity_dict_version",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
             },
         },
     }

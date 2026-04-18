@@ -1,9 +1,27 @@
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load infrastructure/.env when running locally.
+# override=True ensures .env always wins over stale Windows env vars.
+_env_path = Path(__file__).resolve().parent.parent / "infrastructure" / ".env"
+load_dotenv(_env_path, override=True)
+
+# Fail fast — catch missing required vars before any request is served
+_REQUIRED = ["SUPABASE_URL", "SUPABASE_SERVICE_KEY", "GROQ_API_KEYS"]
+_missing = [v for v in _REQUIRED if not os.getenv(v)]
+if _missing:
+    raise RuntimeError(
+        f"Missing required env vars: {_missing}. "
+        f"Check infrastructure/.env exists at {_env_path}"
+    )
 
 import asyncpg
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.routers.admin_router import admin_router
 from backend.routers.brief_router import brief_router
 from backend.routers.debug_router import debug_router
 from backend.routers.onboarding_router import onboarding_router
@@ -14,6 +32,7 @@ app = FastAPI(
     description="Personal Intelligence Platform",
 )
 
+app.include_router(admin_router)
 app.include_router(debug_router)
 app.include_router(onboarding_router)
 app.include_router(brief_router)

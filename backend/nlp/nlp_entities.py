@@ -15,6 +15,14 @@ logger = logging.getLogger(__name__)
 
 _ENTITY_DICT: dict[str, dict] = {}
 _DICT_LOADED: bool = False
+_LOADED_VERSION: int = 0
+_LAST_VERSION_CHECK: float = 0.0
+
+_COMMON_WORDS: frozenset[str] = frozenset({
+    "india", "indian", "new", "united",
+    "national", "state", "party", "press",
+    "times", "news", "world", "global",
+})
 
 
 async def load_entity_dictionary(db_conn) -> int:
@@ -60,7 +68,72 @@ async def load_entity_dictionary(db_conn) -> int:
         len(rows),
         len(_ENTITY_DICT),
     )
+
+    # Capture current version so the reload task can detect future changes
+    try:
+        version_row = await db_conn.execute(
+            text("SELECT version FROM entity_dict_meta WHERE id = 1")
+        )
+        vr = version_row.fetchone()
+        if vr:
+            global _LOADED_VERSION
+            _LOADED_VERSION = vr.version
+    except Exception:
+        pass  # version tracking is advisory; never block NLP startup
+
     return len(_ENTITY_DICT)
+
+
+async def check_and_reload_if_stale(db_conn) -> bool:
+    """
+    Check DB version against the version loaded into memory.
+    Reloads _ENTITY_DICT if the DB version is newer.
+    Called every 5 minutes by Celery Beat — never on every article.
+    Returns True if reloaded, False if already current.
+    """
+    import time
+    global _LOADED_VERSION, _DICT_LOADED, _ENTITY_DICT, _LAST_VERSION_CHECK
+
+    now = time.time()
+    # Rate-limit: skip if checked within the last 60 s (guards against burst calls)
+    if now - _LAST_VERSION_CHECK < 60:
+        return False
+    _LAST_VERSION_CHECK = now
+
+    try:
+        from sqlalchemy import text as _text
+        result = await db_conn.execute(
+            _text("SELECT version, entry_count FROM entity_dict_meta WHERE id = 1")
+        )
+        row = result.fetchone()
+        if not row:
+            return False
+
+        db_version = row.version
+        if db_version <= _LOADED_VERSION:
+            logger.debug("Entity dict current (v%d)", _LOADED_VERSION)
+            return False
+
+        logger.info(
+            "Entity dict version changed %d → %d. Reloading %d entries...",
+            _LOADED_VERSION,
+            db_version,
+            row.entry_count,
+        )
+
+        _ENTITY_DICT.clear()
+        _DICT_LOADED = False
+        count = await load_entity_dictionary(db_conn)
+        # _LOADED_VERSION is updated inside load_entity_dictionary via the try block
+        if _LOADED_VERSION != db_version:
+            _LOADED_VERSION = db_version  # fallback if meta table read failed inside
+
+        logger.info("Entity dict reloaded: %d lookup keys, version %d", count, db_version)
+        return True
+
+    except Exception as exc:
+        logger.warning("Entity dict version check failed: %s", exc)
+        return False
 
 
 def compute_prominence(entity_name: str, title: str, text: str) -> float:
@@ -121,8 +194,10 @@ def extract_entities(
         logger.warning("SpaCy NER failed: %s", exc)
 
     # Layer 2 — dictionary resolution of SpaCy spans
-    for span_text, spacy_label in spacy_spans:
+    for span_text, spacy_label in spacy_spans:  # noqa: B007 (spacy_label unused after fix2)
         key = span_text.lower().strip()
+        if not key or key == "none" or len(key) < 2:
+            continue
         if key not in _ENTITY_DICT:
             continue
         entry = _ENTITY_DICT[key]
@@ -133,7 +208,7 @@ def extract_entities(
         entities.append({
             "name": canonical,
             "type": entry["entity_type"],
-            "label": spacy_label,
+            "label": entry["entity_type"],
             "confidence": 0.9,
             "prominence": round(compute_prominence(canonical, title, text), 3),
         })
@@ -141,7 +216,9 @@ def extract_entities(
     # Direct title scan — catches entities SpaCy missed (e.g. Kaleshwaram → NORP)
     title_lower = (title or "").lower()
     for key, entry in _ENTITY_DICT.items():
-        if len(key) <= 3:
+        if not key or key == "none" or len(key) < 5:
+            continue
+        if key.lower() in _COMMON_WORDS:
             continue
         if key not in title_lower:
             continue

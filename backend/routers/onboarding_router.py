@@ -243,7 +243,7 @@ async def confirm_profile(
                     geo_secondary, signal_priorities, role_context, updated_at
                 ) VALUES (
                     :user_id, :raw_description, :role_type, :geo_primary,
-                    :geo_secondary, :signal_priorities::jsonb, :role_context, NOW()
+                    :geo_secondary, CAST(:signal_priorities AS jsonb), :role_context, NOW()
                 )
                 ON CONFLICT (user_id) DO UPDATE SET
                     role_type         = EXCLUDED.role_type,
@@ -275,9 +275,35 @@ async def confirm_profile(
             if entity_type not in VALID_ENTITY_TYPES:
                 entity_type = "topic"
 
-            name = (entity.get("name") or "").strip()
-            if not name:
+            raw_name = (entity.get("name") or "").strip()
+            if not raw_name:
                 continue
+
+            # Resolve alias/shorthand to canonical dictionary name
+            try:
+                canon_result = await db.execute(
+                    text("""
+                        SELECT canonical_name
+                        FROM entity_dictionary
+                        WHERE canonical_name ILIKE :name
+                           OR :name ILIKE ANY(aliases::text[])
+                        LIMIT 1
+                    """),
+                    {"name": raw_name},
+                )
+                canon_row = canon_result.fetchone()
+                if canon_row and canon_row.canonical_name != raw_name:
+                    resolved_name = canon_row.canonical_name
+                    logger.info(
+                        "Onboarding entity resolved: '%s' → '%s'",
+                        raw_name,
+                        resolved_name,
+                    )
+                else:
+                    resolved_name = raw_name  # exact match or not in dict — store as-is
+            except Exception as exc:
+                logger.warning("Canonical lookup failed for '%s': %s", raw_name, exc)
+                resolved_name = raw_name  # never block onboarding
 
             await db.execute(
                 text("""
@@ -290,7 +316,7 @@ async def confirm_profile(
                 """),
                 {
                     "user_id": user["id"],
-                    "name": name,
+                    "name": resolved_name,
                     "type": entity_type,
                     "why": entity.get("why", ""),
                     "priority": max(1, 10 - min(i, 9)),
@@ -299,34 +325,39 @@ async def confirm_profile(
 
         await db.commit()
 
-    # Trigger relevance scoring (non-fatal)
+    # Trigger full relevance backfill (non-fatal, batched)
     try:
         from backend.celery_app import app as celery_app
 
         async with get_db() as score_db:
-            result = await score_db.execute(
+            backfill_result = await score_db.execute(
                 text("""
-                    SELECT id FROM articles
+                    SELECT id::text FROM articles
                     WHERE nlp_processed = TRUE
-                    AND nlp_confidence != 'error'
-                    LIMIT 500
+                      AND nlp_confidence != 'error'
+                    ORDER BY collected_at DESC
                 """)
             )
-            article_ids = [str(r.id) for r in result.fetchall()]
+            all_ids = [r[0] for r in backfill_result.fetchall()]
 
-        if article_ids:
+        BATCH = 100
+        batches = 0
+        for i in range(0, len(all_ids), BATCH):
             celery_app.send_task(
                 "tasks.score_relevance_batch",
-                args=[article_ids],
+                args=[all_ids[i : i + BATCH]],
                 queue="relevance",
             )
-            logger.info(
-                "Triggered relevance scoring for new user %s: %d articles",
-                user["id"],
-                len(article_ids),
-            )
+            batches += 1
+
+        logger.info(
+            "Post-onboarding backfill: %d articles in %d batches for user %s",
+            len(all_ids),
+            batches,
+            user["id"],
+        )
     except Exception as e:
-        logger.warning("Could not trigger relevance scoring: %s", e)
+        logger.warning("Could not trigger relevance backfill: %s", e)
 
     return {
         "success": True,

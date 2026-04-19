@@ -1,12 +1,12 @@
 """
-NLP batch processor — Celery task that runs every 60 seconds.
+NLP batch processor — Celery task that runs every 30 seconds.
 
-Processes up to 25 articles through the 4-step pipeline:
+Processes up to 100 articles through the 4-step pipeline:
   Step 1: Language detection + translation
   Step 2: Entity extraction with prominence scoring
   Step 3: Topic classification
   Step 4: Geographic tagging
-  + LaBSE embedding (full-text articles only)
+  + LaBSE embedding (full-text articles only, batch-encoded in one model call)
   + Semantic deduplication (full-text articles only)
 
 Processing order: collected_at DESC (newest first — mandatory for demo quality).
@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 )
 def process_nlp_batch(self):  # type: ignore[no-untyped-def]
     """
-    Process up to 25 articles through the 4-step NLP pipeline.
-    Runs every 60 seconds via Celery Beat.
+    Process up to 100 articles through the 4-step NLP pipeline.
+    Runs every 30 seconds via Celery Beat.
     """
     try:
         result = asyncio.run(_process_batch())
@@ -47,7 +47,7 @@ def process_nlp_batch(self):  # type: ignore[no-untyped-def]
 
 
 async def _process_batch() -> dict:
-    """Fetch one batch of 25 articles and run them through the pipeline."""
+    """Fetch one batch of 100 articles and run them through the pipeline."""
     import spacy
     from sqlalchemy import text
 
@@ -58,8 +58,8 @@ async def _process_batch() -> dict:
     # Load SpaCy model once per batch — fast (already on disk)
     nlp_model = spacy.load("en_core_web_sm")
 
-    # Pre-warm LaBSE so the first article doesn't pay the load cost
-    get_labse_model()
+    # Load LaBSE once — used for pre-batch encoding below
+    labse_model = get_labse_model()
 
     async with get_db() as db:
         # Load entity dictionary once per batch (cached after first load)
@@ -74,7 +74,7 @@ async def _process_batch() -> dict:
                 FROM articles
                 WHERE nlp_processed = FALSE
                 ORDER BY collected_at DESC
-                LIMIT 25
+                LIMIT 100
                 """
             )
         )
@@ -83,13 +83,39 @@ async def _process_batch() -> dict:
         if not articles:
             return {"processed": 0, "skipped": 0, "message": "No pending articles"}
 
+        # Lever 2: batch-encode all article texts in one LaBSE call instead of
+        # calling model.encode() once per article inside _process_single.
+        # LaBSE is multilingual — using lead_text_original is correct here.
+        _embed_texts: list[str] = []
+        _embed_ids: list[str] = []
+        for art in articles:
+            lead = art.lead_text_original
+            if lead and not _is_valid_text(lead):
+                lead = None
+            if lead and len(lead) > 100:
+                _embed_texts.append((art.lead_text_translated or lead)[:512])
+                _embed_ids.append(str(art.id))
+
+        precomputed_embeddings: dict[str, list[float]] = {}
+        if _embed_texts:
+            batch_vecs = labse_model.encode(_embed_texts)
+            precomputed_embeddings = {
+                aid: vec.tolist()
+                for aid, vec in zip(_embed_ids, batch_vecs)
+            }
+
         processed_ids: list[str] = []
         processed_count = 0
         skipped_count = 0
 
         for article in articles:
             try:
-                await _process_single(article=article, db=db, nlp_model=nlp_model)
+                await _process_single(
+                    article=article,
+                    db=db,
+                    nlp_model=nlp_model,
+                    precomputed_embedding=precomputed_embeddings.get(str(article.id)),
+                )
                 await db.commit()  # Commit each article independently
                 processed_ids.append(str(article.id))
                 processed_count += 1
@@ -142,7 +168,7 @@ def _is_valid_text(text: str) -> bool:
     return (printable / len(sample)) > 0.85
 
 
-async def _process_single(article, db, nlp_model) -> None:
+async def _process_single(article, db, nlp_model, precomputed_embedding: list[float] | None = None) -> None:
     """Run a single article through all 4 NLP steps and persist results."""
     from sqlalchemy import text
 
@@ -192,7 +218,7 @@ async def _process_single(article, db, nlp_model) -> None:
     duplicate_of: str | None = None
 
     if has_good_text:
-        embedding = generate_embedding(working_text)
+        embedding = precomputed_embedding or generate_embedding(working_text)
         if embedding:
             dup_id = await check_semantic_duplicate(
                 embedding=embedding,

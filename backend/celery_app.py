@@ -60,9 +60,9 @@ app.config_from_object(
                 "schedule": timedelta(hours=6),
                 "options": {"queue": "collectors"},
             },
-            "process-nlp-every-60-seconds": {
+            "process-nlp-every-30-seconds": {
                 "task": "tasks.process_nlp_batch",
-                "schedule": timedelta(seconds=60),
+                "schedule": timedelta(seconds=30),
                 "options": {"queue": "nlp"},
             },
             "generate-briefs-daily": {

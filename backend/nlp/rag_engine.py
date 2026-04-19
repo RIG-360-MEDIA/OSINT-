@@ -14,6 +14,30 @@ from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
+# ── Mode-specific retrieval config ────────────────────────────────────────────
+
+MODE_TOP_K: dict[str, int] = {
+    "SITUATION":  20,
+    "OPPOSITION": 15,
+    "RISK":       20,
+    "POLICY":     12,
+    "PATTERN":    25,
+    "BRIEF":      20,
+}
+
+MODE_POOL_SIZES: dict[str, tuple[int, int]] = {
+    # (semantic_k, recency_k)
+    "SITUATION":  (12, 8),
+    "OPPOSITION": (12, 5),
+    "RISK":       (14, 8),
+    "POLICY":     (10, 4),
+    "PATTERN":    (15, 10),
+    "BRIEF":      (12, 8),
+}
+
+DEFAULT_TOP_K = 15
+DEFAULT_POOL: tuple[int, int] = (10, 5)
+
 # ── Mode prompts ──────────────────────────────────────────────────────────────
 
 MODE_PROMPTS: dict[str, str] = {
@@ -418,25 +442,78 @@ def check_entity_in_corpus(
     return is_relevant, found, missing
 
 
+async def _recency_pool(
+    user_id: str,
+    db,
+    limit: int,
+    hours: int = 48,
+) -> list:
+    """
+    Fetch most recent T1/T2 articles from the last N hours.
+
+    Guarantees fresh intelligence is always included in context regardless
+    of semantic distance to the query. Only T1/T2 — T3 articles are
+    background noise and should not consume recency slots.
+    """
+    result = await db.execute(
+        text("""
+        SELECT
+          a.id::text AS article_id,
+          a.title,
+          a.url,
+          a.lead_text_translated,
+          a.lead_text_original,
+          a.topic_category,
+          a.geo_primary,
+          a.geo_secondary,
+          a.published_at,
+          a.collected_at,
+          s.name AS source_name,
+          s.domain AS source_domain,
+          uar.score_final,
+          uar.relevance_tier,
+          uar.relevance_explanation,
+          uar.matched_entity_names,
+          0.45 AS distance
+        FROM user_article_relevance uar
+        JOIN articles a ON a.id = uar.article_id
+        JOIN sources s ON a.source_id = s.id
+        WHERE uar.user_id = :user_id
+          AND uar.relevance_tier IN (1, 2)
+          AND a.collected_at > NOW() - ((:hours)::int * INTERVAL '1 hour')
+          AND a.nlp_confidence != 'error'
+          AND a.lead_text_translated IS NOT NULL
+        ORDER BY
+          uar.relevance_tier ASC,
+          uar.score_final DESC,
+          a.collected_at DESC
+        LIMIT :limit
+        """),
+        {"user_id": user_id, "hours": hours, "limit": limit},
+    )
+    return result.fetchall()
+
+
 async def retrieve_relevant_articles(
     query: str,
     user_id: str,
     db,
-    top_k: int = 10,
+    top_k: int = DEFAULT_TOP_K,
     distance_threshold: float = 0.7,
     geo_filter: list[str] | None = None,
+    mode: str = "SITUATION",
 ) -> tuple[list[dict], str, int]:
     """
-    Retrieve articles relevant to the query via LaBSE semantic search.
-
-    Strategy:
-    1. Embed query with LaBSE
-    2. HNSW cosine search on labse_embedding, distance < threshold
-    3. Filter to user's scored articles (user_article_relevance)
-    4. Fallback to full-text search if < 3 semantic results
-    5. Return (articles, retrieval_method, elapsed_ms)
+    Retrieve articles via dual-pool strategy:
+      Pool A — semantic HNSW search (relevance)
+      Pool B — recency pool, T1/T2 last 48h (freshness guarantee)
+    Merged by deduplication, capped at MODE_TOP_K[mode].
     """
     start = time.time()
+
+    # Derive pool sizes and top_k from mode
+    semantic_k, recency_k = MODE_POOL_SIZES.get(mode, DEFAULT_POOL)
+    top_k = MODE_TOP_K.get(mode, DEFAULT_TOP_K)
 
     expanded_query = await expand_query(query=query, user_id=user_id, db=db)
     if expanded_query != query:
@@ -500,12 +577,11 @@ async def retrieve_relevant_articles(
         "embedding": embedding_str,
         "user_id": user_id,
         "threshold": distance_threshold,
-        "top_k": top_k,
+        "top_k": semantic_k,
     }
-    # geo_clause is inlined — no extra param binding needed
 
-    # Dynamic threshold — expand until ≥5 results
-    rows = []
+    # ── Pool A: Semantic search — dynamic threshold ────────────────────────────
+    semantic_rows: list = []
     retrieval_method = "semantic"
     thresholds = [
         distance_threshold,
@@ -518,12 +594,13 @@ async def retrieve_relevant_articles(
             text(_sem_sql.format(geo_clause=geo_clause, date_clause="")),
             _sem_params,
         )
-        rows = sem_result.fetchall()
-        if len(rows) >= 5:
+        semantic_rows = sem_result.fetchall()
+        if len(semantic_rows) >= 5:
             break
-        logger.info(f"Threshold {threshold}: {len(rows)} results, expanding")
+        logger.info(f"Threshold {threshold}: {len(semantic_rows)} results, expanding")
 
-    if len(rows) < 3:
+    # Fulltext fallback if semantic returns too few results
+    if len(semantic_rows) < 3:
         retrieval_method = "fulltext"
         ft_result = await db.execute(text("""
             SELECT
@@ -562,12 +639,52 @@ async def retrieve_relevant_articles(
             "user_id": user_id,
             "query": query,
             "like_q": f"%{query}%",
-            "top_k": top_k,
+            "top_k": semantic_k,
         })
-        rows = ft_result.fetchall()
+        semantic_rows = ft_result.fetchall()
 
-    # Third fallback: top scored T1/T2 articles — never return empty
-    if len(rows) < 3:
+    # ── Pool B: Recency pool — T1/T2 last 48h ─────────────────────────────────
+    recency_rows = await _recency_pool(
+        user_id=user_id,
+        db=db,
+        limit=recency_k,
+        hours=48,
+    )
+
+    # ── Merge: semantic first, then recency not already seen ───────────────────
+    seen_ids: set[str] = set()
+    merged_rows: list = []
+
+    for row in semantic_rows:
+        aid = str(row.article_id)
+        if aid not in seen_ids:
+            seen_ids.add(aid)
+            merged_rows.append(row)
+
+    recency_added = 0
+    for row in recency_rows:
+        aid = str(row.article_id)
+        if aid not in seen_ids:
+            seen_ids.add(aid)
+            merged_rows.append(row)
+            recency_added += 1
+
+    if recency_added == 0 and not recency_rows:
+        logger.info(
+            "Recency pool empty — no T1/T2 articles in last 48h. "
+            "Using semantic pool only."
+        )
+
+    merged_rows = merged_rows[:top_k]
+
+    logger.info(
+        f"Dual-pool retrieval: {len(semantic_rows)} semantic + "
+        f"{recency_added} recency fresh = {len(merged_rows)} total "
+        f"(mode={mode}, top_k={top_k})"
+    )
+
+    # Third fallback: top scored T1/T2 — never return empty
+    if len(merged_rows) < 3:
         retrieval_method = "recency"
         recency_result = await db.execute(text("""
             SELECT
@@ -595,18 +712,27 @@ async def retrieve_relevant_articles(
             ORDER BY uar.score_final DESC, a.collected_at DESC
             LIMIT :top_k
         """), {"user_id": user_id, "top_k": top_k})
-        rows = recency_result.fetchall()
+        merged_rows = recency_result.fetchall()
 
     elapsed_ms = int((time.time() - start) * 1000)
 
     articles = []
-    for r in rows:
+    for r in merged_rows:
         raw_text = (
             r.lead_text_translated
             or r.lead_text_original
             or r.title
             or ""
         )
+        # Tiered snippet length: T1 = primary evidence (full), T2 = supporting, T3 = brief
+        tier = r.relevance_tier
+        if tier == 1:
+            snippet_len = 1500
+        elif tier == 2:
+            snippet_len = 800
+        else:
+            snippet_len = 400
+
         articles.append({
             "article_id": r.article_id,
             "title": r.title,
@@ -619,7 +745,7 @@ async def retrieve_relevant_articles(
             "collected_at": r.collected_at.isoformat() if r.collected_at else None,
             "score_final": float(r.score_final),
             "relevance_tier": r.relevance_tier,
-            "text_snippet": raw_text[:600],
+            "text_snippet": raw_text[:snippet_len],
             "distance": float(r.distance),
         })
 
@@ -648,11 +774,19 @@ def build_context(
             except Exception:
                 pass
 
+        tier = int(a.get("relevance_tier", 3))
+        tier_label = {
+            1: "PRIMARY INTELLIGENCE",
+            2: "SUPPORTING INTELLIGENCE",
+            3: "BACKGROUND",
+        }.get(tier, "BACKGROUND")
+
         article_items.append(
             f"[{i}] {a['title']}\n"
             f"Source: {a['source_name']} | Date: {date_str}"
             f" | Topic: {a.get('topic_category', '')}"
             f" | Geo: {a.get('geo_primary', '')}"
+            f" | {tier_label}"
             f" | Relevance: {a['score_final']:.2f}\n"
             f"{a['text_snippet']}\n"
         )
@@ -725,12 +859,15 @@ def compute_confidence(
     articles: list[dict],
     retrieval_method: str,
     query: str = "",
+    mode: str = "SITUATION",
 ) -> tuple[str, int]:
     """
     Compute confidence from actual retrieval quality, not just article count.
 
     Key insight: 10 unrelated articles at distance 0.85 = LOW confidence.
     Distance and entity match gate the score; volume and tier are secondary.
+    Volume thresholds are relative to MODE_TOP_K so PATTERN (25) and
+    POLICY (12) are judged against their own expected corpus size.
 
     Returns (label, percentage).
     """
@@ -808,12 +945,13 @@ def compute_confidence(
 
     recency_score = sum(recency_scores) / len(recency_scores) if recency_scores else 0.4
 
-    # ── Volume score ───────────────────────────────────────────────────────────
-    if total >= 8:
+    # ── Volume score — relative to expected article count for this mode ────────
+    expected_k = MODE_TOP_K.get(mode, DEFAULT_TOP_K)
+    if total >= expected_k * 0.8:
         volume_score = 1.0
-    elif total >= 5:
+    elif total >= expected_k * 0.5:
         volume_score = 0.75
-    elif total >= 3:
+    elif total >= expected_k * 0.3:
         volume_score = 0.5
     elif total >= 1:
         volume_score = 0.3

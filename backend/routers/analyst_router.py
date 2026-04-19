@@ -200,8 +200,8 @@ async def analyst_query(
             query=req.question,
             user_id=user["id"],
             db=db,
-            top_k=10,
             geo_filter=geo_filter or None,
+            mode=mode,
         )
 
         if not articles:
@@ -242,7 +242,7 @@ async def analyst_query(
         )
 
         confidence, confidence_pct = compute_confidence(
-            articles, retrieval_method, query=req.question,
+            articles, retrieval_method, query=req.question, mode=mode,
         )
         followups = await generate_followups(
             question=req.question,

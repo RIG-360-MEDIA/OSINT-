@@ -288,12 +288,18 @@ async def retrieve_relevant_articles(
     embedding_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
 
     # Build geo clause — restrict to user's monitored geos OR geo_multiplier > 1
+    # asyncpg cannot bind Python lists via text() — inline as SQL array literal.
+    # Values originate from user_profiles (server-controlled), safe to interpolate
+    # with standard SQL single-quote escaping.
     geo_clause = ""
-    geo_secondary_arr: str | None = None
     if geo_filter:
-        escaped = [g.replace("\\", "\\\\").replace('"', '\\"') for g in geo_filter]
-        geo_secondary_arr = "{" + ",".join(f'"{g}"' for g in escaped) + "}"
-        geo_clause = "AND (a.geo_primary = ANY(:geo_filter) OR a.geo_secondary && :geo_secondary_arr::text[] OR uar.geo_multiplier_applied > 1.0)"
+        sq_escaped = [g.replace("'", "''") for g in geo_filter]
+        arr_sql = "ARRAY[" + ",".join(f"'{g}'" for g in sq_escaped) + "]"
+        geo_clause = (
+            f"AND (a.geo_primary = ANY({arr_sql})"
+            f" OR a.geo_secondary && {arr_sql}"
+            f" OR uar.geo_multiplier_applied > 1.0)"
+        )
 
     _sem_sql = """
         SELECT
@@ -338,10 +344,7 @@ async def retrieve_relevant_articles(
         "threshold": distance_threshold,
         "top_k": top_k,
     }
-    if geo_filter:
-        _sem_params["geo_filter"] = geo_filter
-    if geo_secondary_arr is not None:
-        _sem_params["geo_secondary_arr"] = geo_secondary_arr
+    # geo_clause is inlined — no extra param binding needed
 
     # Dynamic threshold — expand until ≥5 results
     rows = []

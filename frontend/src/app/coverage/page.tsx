@@ -924,7 +924,18 @@ function FilterSidebar(props: FilterSidebarProps) {
 
 export default function CoveragePage() {
   const router = useRouter()
-  const tokenRef = useRef<string | null>(null)
+
+  // Always get a fresh token — Supabase auto-refreshes expired sessions.
+  // Never store stale token in a ref; call this before every API request.
+  const getToken = useCallback(async (): Promise<string | null> => {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      router.push('/login')
+      return null
+    }
+    return session.access_token
+  }, [router])
 
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -974,7 +985,8 @@ export default function CoveragePage() {
 
   const fetchFeed = useCallback(
     async (cursor: string = '', append = false) => {
-      if (!tokenRef.current) return
+      const token = await getToken()
+      if (!token) return
       if (append) {
         setLoadingMore(true)
       } else {
@@ -984,7 +996,7 @@ export default function CoveragePage() {
 
       try {
         const res = await fetch(buildFeedUrl(cursor), {
-          headers: { Authorization: `Bearer ${tokenRef.current}` },
+          headers: { Authorization: `Bearer ${token}` },
         })
         if (!res.ok) {
           setErrorMsg(`Feed request failed (${res.status})`)
@@ -1006,23 +1018,14 @@ export default function CoveragePage() {
         setLoadingMore(false)
       }
     },
-    [buildFeedUrl]
+    [buildFeedUrl, getToken]
   )
 
-  // Auth + initial fetch
+  // Auth check + initial fetch
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        router.push('/login')
-        return
-      }
-      tokenRef.current = data.session.access_token
-      void fetchFeed('', false)
-    })
-    // fetchFeed intentionally omitted — only run on initial mount
+    void fetchFeed('', false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router])
+  }, [])
 
   // Re-fetch when filters change (but not on initial mount)
   const filtersKey = `${selectedTier}|${selectedTopics.join(',')}|${selectedDays}|${selectedSentiment}|${sortBy}`
@@ -1032,7 +1035,6 @@ export default function CoveragePage() {
       didMountRef.current = true
       return
     }
-    if (!tokenRef.current) return
     void fetchFeed('', false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtersKey])
@@ -1043,7 +1045,9 @@ export default function CoveragePage() {
   }
 
   const handleSearchEnter = async () => {
-    if (!tokenRef.current || searchQuery.trim().length < 2) return
+    if (searchQuery.trim().length < 2) return
+    const token = await getToken()
+    if (!token) return
     setIsSearching(true)
     try {
       const params = new URLSearchParams()
@@ -1052,7 +1056,7 @@ export default function CoveragePage() {
       params.set('tier', tierParam)
       const res = await fetch(
         `${API_BASE}/api/coverage/search?${params.toString()}`,
-        { headers: { Authorization: `Bearer ${tokenRef.current}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       )
       if (res.ok) {
         const data: SearchResponse = await res.json()
@@ -1097,9 +1101,11 @@ export default function CoveragePage() {
   }
 
   const handleGenerateSummary = async () => {
-    if (!selectedArticle || !tokenRef.current) return
+    if (!selectedArticle) return
     const id = selectedArticle.article_id
     if (summariesById[id]) return
+    const token = await getToken()
+    if (!token) return
     setSummaryLoading(true)
     setSummaryError(null)
     try {
@@ -1107,7 +1113,7 @@ export default function CoveragePage() {
         `${API_BASE}/api/coverage/summary/${id}`,
         {
           method: 'POST',
-          headers: { Authorization: `Bearer ${tokenRef.current}` },
+          headers: { Authorization: `Bearer ${token}` },
         }
       )
       if (!res.ok) {

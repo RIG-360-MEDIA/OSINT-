@@ -12,6 +12,7 @@ from sqlalchemy import text
 
 from backend.auth.auth_middleware import get_current_user
 from backend.database import get_db
+from backend.nlp.groq_client import FAST_MODEL, call_groq
 
 logger = logging.getLogger(__name__)
 
@@ -363,8 +364,6 @@ async def generate_summary(
                 ),
                 "cached": False,
             }
-
-        from backend.nlp.groq_client import FAST_MODEL, call_groq
 
         try:
             summary = await call_groq(

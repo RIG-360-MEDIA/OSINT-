@@ -1123,7 +1123,7 @@ export default function CoveragePage() {
       const data: { summary: string } = await res.json()
       setSummariesById((prev) => ({ ...prev, [id]: data.summary }))
     } catch {
-      setSummaryError('Network error generating summary')
+      setSummaryError('Network error — check connection')
     } finally {
       setSummaryLoading(false)
     }

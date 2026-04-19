@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 from datetime import datetime
 
@@ -41,10 +42,10 @@ CONFIDENCE: HIGH / MEDIUM / LOW
 One sentence explaining the basis.
 
 Rules you must follow:
-— Every factual claim tied to a specific article in context
+— Every corpus-sourced factual claim tied to a specific article in context
 — Never say 'based on the documents' — you are the analyst
 — Give a clear read then qualify
-— If coverage is thin, say so directly and name what is missing
+— If coverage is thin on a topic, say so directly and name what is missing
 — Frame everything through the lens of what matters to THIS official specifically given their role""",
 
 
@@ -191,6 +192,107 @@ EVIDENCE
 
 }
 
+
+# ── Knowledge hierarchy block ─────────────────────────────────────────────────
+# Prepended to every MODE_PROMPT before the Groq call.
+# Fixes Blockers 1 & 2: CM identity refusal and opposition mode inversion.
+
+KNOWLEDGE_HIERARCHY_BLOCK = """
+\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+ANALYST KNOWLEDGE FRAMEWORK
+\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+You are a senior intelligence analyst with deep expertise in Telangana
+and Indian politics. You operate with two types of knowledge simultaneously.
+Use both. Label both precisely.
+
+\u2501\u2501\u2501 TYPE 1: FOUNDATIONAL KNOWLEDGE \u2501\u2501\u2501
+
+Facts that are established public record \u2014 stable, verifiable, not dependent
+on recent reporting.
+
+YOU MUST USE THESE FREELY.
+DO NOT refuse to state them.
+DO NOT wait for a corpus article to confirm what is already established.
+
+Label foundational facts like this:
+  [Established: Revanth Reddy (INC) has been Chief Minister of Telangana
+   since 7 December 2023]
+
+Current foundational facts you must know and apply:
+  \u2014 A. Revanth Reddy (Indian National Congress) is Chief Minister of
+    Telangana since December 2023
+  \u2014 K. Chandrashekar Rao (KCR) is the founder and president of BRS
+    (formerly TRS), currently IN OPPOSITION since December 2023
+  \u2014 K.T. Rama Rao (KTR) is KCR's son and BRS working president,
+    currently in opposition
+  \u2014 Bhatti Vikramarka is Deputy CM under Revanth Reddy (INC)
+  \u2014 GHMC governs Greater Hyderabad
+  \u2014 Telangana was formed in June 2014, carved from Andhra Pradesh
+  \u2014 The Kaleshwaram project is a major irrigation scheme facing cost
+    overrun and CBI scrutiny
+  \u2014 BRS/TRS lost power in December 2023 after 9 years in government
+
+Foundational knowledge can and should be used to correct corpus gaps.
+If the corpus does not mention who governs Telangana, you still know.
+State it. Label it. Move on.
+
+\u2501\u2501\u2501 TYPE 2: CORPUS KNOWLEDGE \u2501\u2501\u2501
+
+Facts from the retrieved intelligence articles \u2014 time-sensitive, specific,
+recent. Statements made, orders passed, numbers reported, events occurred
+in recent days or weeks.
+
+YOU MUST CITE THESE WITH \u2460 \u2461 \u2462
+
+Use numbered citations tied to the specific article that contains the
+specific claim you are making.
+
+If an article does not directly support a claim \u2014 do NOT cite it for that
+claim. Find an article that does, or say the information is not in the
+current corpus.
+
+\u2501\u2501\u2501 FORBIDDEN BEHAVIOUR \u2501\u2501\u2501
+
+\u2460 Never cite an article as evidence for a claim that article does not
+  actually contain. If you retrieved a railway article and your question
+  is about Kaleshwaram \u2014 the railway article cannot be cited for a
+  Kaleshwaram claim.
+
+\u2461 Never present a foundational fact as if it came from the corpus.
+  Do not say [\u2460] next to something you knew before reading the articles.
+
+\u2462 Never refuse to answer a factual question about established political
+  reality because "the corpus does not cover it." The corpus covers recent
+  events. Your foundational knowledge covers established facts. Use both.
+
+\u2463 Never describe BRS/TRS/KCR as the current ruling party or government
+  of Telangana. They have been in opposition since December 2023.
+  Congress under Revanth Reddy governs.
+
+\u2464 Never invent specific numbers, dates, quotes, or allocations that
+  are not in a retrieved article.
+
+\u2501\u2501\u2501 WHEN CORPUS AND KNOWLEDGE CONFLICT \u2501\u2501\u2501
+
+If a retrieved article appears to contradict established fact:
+  1. Trust the corpus for recent events
+  2. Trust your knowledge for stable facts
+  3. Flag the discrepancy explicitly
+
+Example: If an article says "CM KCR announced..." \u2014 note it:
+"[Note: This article references KCR as CM. He left office in December 2023.
+This may be archival content or an error in the source.]"
+
+\u2501\u2501\u2501 THE GOLDEN RULE \u2501\u2501\u2501
+
+Your output should be indistinguishable from what the best human senior
+analyst \u2014 who has read every article AND has 20 years of Telangana political
+experience \u2014 would produce. That analyst uses both their knowledge and the
+documents. So do you.
+\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+"""
+
 MODE_CLASSIFIER_PROMPT = """Classify this question into exactly one analyst mode. Reply with the mode name only — nothing else.
 
 SITUATION — questions about what is happening, current status, what is going on with X
@@ -258,6 +360,62 @@ async def expand_query(query: str, user_id: str, db) -> str:
 
     expanded = f"{query} {' '.join(context_parts)}"
     return expanded[:200]
+
+
+# ── Entity-in-corpus detection ────────────────────────────────────────────────
+
+def extract_query_keywords(query: str) -> list[str]:
+    """
+    Extract substantive entity/topic words from a user query.
+    Removes question words so only meaningful terms remain.
+    """
+    stopwords = {
+        "what", "who", "when", "where", "why", "how", "is", "are", "was",
+        "were", "has", "have", "had", "the", "a", "an", "and", "or", "but",
+        "in", "on", "at", "to", "for", "of", "with", "about", "tell", "me",
+        "give", "show", "happening", "doing", "status", "current", "latest",
+        "recent", "situation", "update", "news", "any", "do", "can", "will",
+        "would", "should", "could", "please", "into", "from", "by", "this",
+        "that", "which", "there", "their", "they", "them", "its",
+    }
+    words = re.findall(r"\b\w+\b", query.lower())
+    keywords = [w for w in words if w not in stopwords and len(w) > 3]
+    return keywords[:5]
+
+
+def check_entity_in_corpus(
+    query: str,
+    articles: list[dict],
+) -> tuple[bool, list[str], list[str]]:
+    """
+    Check if the query's key topics appear in the retrieved articles.
+
+    Returns (is_relevant, found_keywords, missing_keywords).
+    Relevant when at least half of keywords appear in article text or title.
+    """
+    keywords = extract_query_keywords(query)
+
+    if not keywords or not articles:
+        return False, [], keywords
+
+    found: list[str] = []
+    missing: list[str] = []
+
+    for keyword in keywords:
+        keyword_found = False
+        for article in articles:
+            title = (article.get("title") or "").lower()
+            snippet = (article.get("text_snippet") or "").lower()
+            if keyword in title or keyword in snippet:
+                keyword_found = True
+                break
+        if keyword_found:
+            found.append(keyword)
+        else:
+            missing.append(keyword)
+
+    is_relevant = len(found) >= max(1, len(keywords) // 2)
+    return is_relevant, found, missing
 
 
 async def retrieve_relevant_articles(
@@ -474,6 +632,7 @@ def build_context(
     articles: list[dict],
     user_profile: dict,
     session_history: list[dict],
+    query: str = "",
 ) -> str:
     """Build the structured context string sent to Groq with the system prompt."""
     role = user_profile.get("role_context", "Senior government official")
@@ -506,16 +665,42 @@ def build_context(
             + "\n".join(f"Q: {t['question']}" for t in recent)
         )
 
+    # Corpus gap detection — inject warning when query topics are absent
+    corpus_warning = ""
+    if query and articles:
+        is_relevant, found, missing = check_entity_in_corpus(query, articles)
+
+        if not is_relevant and missing:
+            missing_str = ", ".join(missing[:3])
+            corpus_warning = (
+                f"\n*** CORPUS GAP DETECTED — CRITICAL INSTRUCTIONS ***\n"
+                f"The query topics [{missing_str}] are NOT present in any retrieved article.\n"
+                f"YOU MUST follow ALL of these rules for your entire response:\n"
+                f"  1. Begin your response with the exact text: CORPUS GAP DETECTED\n"
+                f"  2. OMIT the EVIDENCE section entirely — do not write any ① ② ③ citations anywhere\n"
+                f"  3. State what the corpus DOES contain (the retrieved articles' topics)\n"
+                f"  4. Use [Established:] labels for any foundational knowledge you apply\n"
+                f"  5. End with CONFIDENCE: LOW\n"
+                f"  6. Do NOT use ① ② ③ anywhere in this response — not even for context\n"
+                f"VIOLATION: Using ① ② ③ when the corpus does not contain the queried topic\n"
+                f"is citation laundering. It is strictly forbidden.\n"
+                f"*** END CORPUS GAP INSTRUCTIONS ***\n\n"
+            )
+        elif found and missing:
+            missing_str = ", ".join(missing[:2])
+            found_str = ", ".join(found[:2])
+            corpus_warning = (
+                f"\n[PARTIAL CORPUS COVERAGE: Found coverage for: {found_str}. "
+                f"Limited/no coverage for: {missing_str}. "
+                f"Clearly distinguish corpus-sourced facts from foundational knowledge.]\n\n"
+            )
+
     return (
-        f"OFFICIAL PROFILE:\n"
+        corpus_warning
+        + f"OFFICIAL PROFILE:\n"
         f"Role: {role}\n"
         f"Focus Geography: {geo}\n"
         f"{session_context}\n\n"
-        f"CRITICAL RULE: You may ONLY reference events, actors, and facts that appear "
-        f"in the INTELLIGENCE CORPUS below. Do NOT introduce external knowledge, "
-        f"global events, or speculation about topics not present in these articles. "
-        f"If the corpus is thin on a topic, say so explicitly rather than filling gaps "
-        f"with outside knowledge.\n\n"
         f"INTELLIGENCE CORPUS ({len(articles)} articles):\n\n"
         + "\n---\n".join(article_items)
     )
@@ -536,117 +721,222 @@ async def detect_mode(question: str) -> str:
 
 # ── Confidence scoring ────────────────────────────────────────────────────────
 
-def compute_confidence(articles: list[dict], retrieval_method: str) -> tuple[str, int]:
+def compute_confidence(
+    articles: list[dict],
+    retrieval_method: str,
+    query: str = "",
+) -> tuple[str, int]:
     """
-    Compute confidence label and percentage from actual article quality.
+    Compute confidence from actual retrieval quality, not just article count.
 
-    Weighted: tier(0.35) + recency(0.25) + volume(0.25) + method(0.15).
-    Returns (label, percentage) e.g. ("HIGH", 87).
+    Key insight: 10 unrelated articles at distance 0.85 = LOW confidence.
+    Distance and entity match gate the score; volume and tier are secondary.
+
+    Returns (label, percentage).
     """
     from datetime import datetime, timezone
 
     if not articles:
-        return "LOW", 15
+        return "LOW", 12
 
     total = len(articles)
 
-    tier_weights = {1: 1.0, 2: 0.7, 3: 0.3}
-    tier_avg = sum(tier_weights.get(a.get("relevance_tier", 3), 0.3) for a in articles) / total
+    # ── Semantic distance score ────────────────────────────────────────────────
+    distances = [float(a.get("distance", 0.5)) for a in articles]
+    avg_distance = sum(distances) / len(distances)
 
+    if avg_distance <= 0.3:
+        distance_score = 1.0
+    elif avg_distance <= 0.5:
+        distance_score = 0.8
+    elif avg_distance <= 0.65:
+        distance_score = 0.6
+    elif avg_distance <= 0.75:
+        distance_score = 0.35
+    elif avg_distance <= 0.85:
+        distance_score = 0.15
+    else:
+        distance_score = 0.05
+
+    # ── Entity match score ─────────────────────────────────────────────────────
+    entity_match_score = 0.5
+    if query:
+        is_relevant, found, _ = check_entity_in_corpus(query, articles)
+        if is_relevant:
+            entity_match_score = 1.0
+        elif found:
+            entity_match_score = 0.5
+        else:
+            entity_match_score = 0.1
+
+    # ── Tier score ─────────────────────────────────────────────────────────────
+    tier_weights = {1: 1.0, 2: 0.7, 3: 0.3}
+    tier_sum = sum(
+        tier_weights.get(int(a.get("relevance_tier", 3)), 0.3)
+        for a in articles
+    )
+    tier_score = tier_sum / total
+
+    # ── Recency score ──────────────────────────────────────────────────────────
     now = datetime.now(timezone.utc)
     recency_scores: list[float] = []
     for a in articles:
         collected = a.get("collected_at")
-        score = 0.5
         if collected:
             try:
-                dt = datetime.fromisoformat(str(collected).replace("Z", "+00:00")) if isinstance(collected, str) else collected
+                if isinstance(collected, str):
+                    dt = datetime.fromisoformat(collected.replace("Z", "+00:00"))
+                else:
+                    dt = collected
                 if dt.tzinfo is None:
                     dt = dt.replace(tzinfo=timezone.utc)
                 age_days = (now - dt).total_seconds() / 86400
-                score = 1.0 if age_days < 1 else (0.8 if age_days < 7 else (0.5 if age_days < 30 else 0.2))
+                if age_days < 1:
+                    recency_scores.append(1.0)
+                elif age_days < 3:
+                    recency_scores.append(0.85)
+                elif age_days < 7:
+                    recency_scores.append(0.7)
+                elif age_days < 30:
+                    recency_scores.append(0.4)
+                else:
+                    recency_scores.append(0.15)
             except Exception:
-                pass
-        recency_scores.append(score)
-    recency_avg = sum(recency_scores) / len(recency_scores)
+                recency_scores.append(0.4)
+        else:
+            recency_scores.append(0.4)
 
-    volume_score = 1.0 if total >= 8 else (0.75 if total >= 5 else (0.5 if total >= 3 else 0.25))
+    recency_score = sum(recency_scores) / len(recency_scores) if recency_scores else 0.4
 
-    method_score = {"semantic": 1.0, "fulltext": 0.7, "recency": 0.4}.get(retrieval_method, 0.7)
+    # ── Volume score ───────────────────────────────────────────────────────────
+    if total >= 8:
+        volume_score = 1.0
+    elif total >= 5:
+        volume_score = 0.75
+    elif total >= 3:
+        volume_score = 0.5
+    elif total >= 1:
+        volume_score = 0.3
+    else:
+        volume_score = 0.0
 
-    raw = tier_avg * 0.35 + recency_avg * 0.25 + volume_score * 0.25 + method_score * 0.15
-    pct = max(15, min(95, int(raw * 100)))
-    label = "HIGH" if pct >= 75 else ("MEDIUM" if pct >= 50 else "LOW")
+    # ── Method score — applied as ceiling multiplier ───────────────────────────
+    method_scores = {"semantic": 1.0, "fulltext": 0.65, "recency": 0.3}
+    method_score = method_scores.get(retrieval_method, 0.65)
+
+    # Distance and entity match are the most important factors (65% combined)
+    raw_score = (
+        distance_score * 0.35
+        + entity_match_score * 0.30
+        + tier_score * 0.15
+        + recency_score * 0.12
+        + volume_score * 0.08
+    )
+    raw_score = raw_score * (0.5 + method_score * 0.5)
+
+    pct = int(raw_score * 100)
+    pct = max(8, min(94, pct))
+
+    if pct >= 72:
+        label = "HIGH"
+    elif pct >= 45:
+        label = "MEDIUM"
+    else:
+        label = "LOW"
 
     return label, pct
 
 
 # ── Follow-up generator ───────────────────────────────────────────────────────
 
-_FALLBACK_FOLLOWUPS: dict[str, list[str]] = {
-    "SITUATION": [
-        "What are the warning signs to watch in the next 14 days?",
-        "How is the opposition responding to this situation?",
-        "What should the administration prepare for?",
-    ],
-    "OPPOSITION": [
-        "What is their likely next move?",
-        "What are their key vulnerabilities right now?",
-        "How has their strategy shifted over the last month?",
-    ],
-    "RISK": [
-        "What would trigger escalation to a crisis?",
-        "What precedents exist for this pattern?",
-        "What would resolution look like and how likely is it?",
-    ],
-    "POLICY": [
-        "Which departments face the most implementation pressure?",
-        "What is the likely legal challenge to this decision?",
-        "What does this mean for the next budget cycle?",
-    ],
-    "PATTERN": [
-        "What is the buried signal most worth pursuing?",
-        "Which silent actor's position matters most here?",
-        "What single data point would most change this analysis?",
-    ],
-    "BRIEF": [
-        "What are the risk indicators I should monitor daily?",
-        "What intelligence gaps are most urgent to fill?",
-        "When should I request the next update?",
-    ],
-}
-
-
 async def generate_followups(
     question: str,
     mode: str,
     articles: list[dict],
+    user_profile: dict | None = None,
 ) -> list[str]:
-    """Generate 3 contextual follow-up questions using FAST_MODEL."""
+    """Generate 3 contextual follow-up questions specific to Telangana entities and the user's geo."""
     from backend.nlp.groq_client import call_groq, FAST_MODEL
+
+    if user_profile is None:
+        user_profile = {}
+
+    geo = user_profile.get("geo_primary", "Telangana")
+
+    entity_names: list[str] = []
+    for a in articles[:5]:
+        matched = a.get("matched_entity_names", [])
+        if isinstance(matched, list):
+            entity_names.extend(matched[:2])
+
+    entity_context = (
+        ", ".join(set(entity_names[:4])) if entity_names else geo
+    )
 
     article_titles = "\n".join(f"- {a['title']}" for a in articles[:5])
 
     try:
         result = await call_groq(
             system=(
-                "Generate exactly 3 follow-up investigation questions based on "
-                "this analysis. Each question should go deeper or explore a "
-                "different angle. Output as a JSON array of 3 strings only. "
-                "No other text."
+                f"You are an intelligence analyst generating follow-up investigation "
+                f"questions for a senior {geo} government official.\n\n"
+                f"Generate exactly 3 follow-up questions. Requirements:\n"
+                f"1. Each question must name a specific entity, scheme, person, "
+                f"or location from the context\n"
+                f"2. Each question must go deeper or explore a different direction\n"
+                f"3. Questions must be relevant to {geo} governance specifically\n"
+                f"4. Do NOT use generic phrases like 'tell me more' or 'what else'\n"
+                f"5. Reference real Telangana actors: Revanth Reddy, KCR, BRS, "
+                f"Congress, specific districts, or named schemes where possible\n\n"
+                f"Output ONLY a JSON array of 3 strings. No other text."
             ),
             user=(
-                f"Mode: {mode}\nQuestion: {question}\n"
-                f"Key articles:\n{article_titles}"
+                f"Mode: {mode}\n"
+                f"Question asked: {question}\n"
+                f"Key entities: {entity_context}\n"
+                f"Articles in corpus:\n{article_titles}"
             ),
             task_type="profile_extraction",
             model=FAST_MODEL,
             json_response=True,
         )
         parsed = json.loads(result) if isinstance(result, str) else result
-        if isinstance(parsed, list) and parsed:
+        if isinstance(parsed, list) and len(parsed) >= 2:
             return [str(q) for q in parsed[:3]]
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Follow-up generation failed: {e}")
 
-    return _FALLBACK_FOLLOWUPS.get(mode, _FALLBACK_FOLLOWUPS["SITUATION"])
+    geo_str = geo
+    fallbacks: dict[str, list[str]] = {
+        "SITUATION": [
+            f"What is the BRS opposition's response to this situation in {geo_str}?",
+            f"Which districts in {geo_str} are most directly affected?",
+            f"What should the Revanth Reddy government be preparing for?",
+        ],
+        "OPPOSITION": [
+            f"What pressure points is BRS exploiting in {geo_str} right now?",
+            f"How has KCR's messaging shifted in the last two weeks?",
+            f"Which {geo_str} constituencies are being most actively targeted by BRS?",
+        ],
+        "RISK": [
+            f"What would a full escalation look like in {geo_str}?",
+            f"Which {geo_str} districts carry the highest immediate risk?",
+            f"What is the Revanth government's contingency position on this?",
+        ],
+        "POLICY": [
+            f"Which {geo_str} departments face the most implementation pressure?",
+            f"How will BRS use this policy change politically in {geo_str}?",
+            f"What is the 90-day implementation risk in {geo_str}?",
+        ],
+        "PATTERN": [
+            f"What does the frequency of this coverage suggest about priorities in {geo_str}?",
+            f"Which actor is conspicuously silent on this issue in {geo_str}?",
+            f"What buried story in this corpus deserves closer attention?",
+        ],
+        "BRIEF": [
+            f"What are the top 3 risks in this brief for {geo_str} governance?",
+            f"Which developments need the Chief Minister's direct attention?",
+            f"What is missing from this assessment that would change the picture?",
+        ],
+    }
+    return fallbacks.get(mode, fallbacks["SITUATION"])

@@ -22,6 +22,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.routers.admin_router import admin_router
+from backend.routers.analyst_router import analyst_router
 from backend.routers.brief_router import brief_router
 from backend.routers.coverage_router import coverage_router
 from backend.routers.debug_router import debug_router
@@ -34,6 +35,7 @@ app = FastAPI(
 )
 
 app.include_router(admin_router)
+app.include_router(analyst_router)
 app.include_router(debug_router)
 app.include_router(onboarding_router)
 app.include_router(brief_router)
@@ -46,6 +48,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def warmup_labse() -> None:
+    """Pre-load LaBSE at boot to eliminate 29-second cold start on first analyst query."""
+    import logging as _logging
+    _logger = _logging.getLogger(__name__)
+    try:
+        from backend.nlp.nlp_embedding import get_labse_model
+        model = get_labse_model()
+        model.encode(["Telangana intelligence warmup"], show_progress_bar=False)
+        _logger.info("LaBSE model warmed at startup — first query will be fast")
+    except Exception as exc:
+        _logger.warning(f"LaBSE warmup failed: {exc} — first query may be slow")
 
 
 @app.get("/debug/groq-status")

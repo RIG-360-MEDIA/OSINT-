@@ -116,6 +116,7 @@ async def analyst_query(
         generate_followups,
         MODE_PROMPTS,
         VALID_MODES,
+        KNOWLEDGE_HIERARCHY_BLOCK,
     )
     from backend.nlp.groq_client import generate
 
@@ -230,19 +231,24 @@ async def analyst_query(
             articles=articles,
             user_profile=user_profile,
             session_history=session_history,
+            query=req.question,
         )
 
+        system_prompt = KNOWLEDGE_HIERARCHY_BLOCK + "\n\n" + MODE_PROMPTS[mode]
         answer = await generate(
-            system=MODE_PROMPTS[mode],
+            system=system_prompt,
             user=f"QUESTION: {req.question}\n\n{context}",
             task_type="rag_response",
         )
 
-        confidence, confidence_pct = compute_confidence(articles, retrieval_method)
+        confidence, confidence_pct = compute_confidence(
+            articles, retrieval_method, query=req.question,
+        )
         followups = await generate_followups(
             question=req.question,
             mode=mode,
             articles=articles,
+            user_profile=user_profile,
         )
 
         # Persist turn
@@ -322,3 +328,96 @@ async def get_context_suggestions(
                 suggestions.append(f"What should I know about: {title_short}?")
 
         return {"suggestions": suggestions[:3]}
+
+
+# ── Session history endpoints ─────────────────────────────────────────────────
+
+@analyst_router.get("/sessions")
+async def list_sessions(
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """List all investigation sessions for this user with summary info."""
+    async with get_db() as db:
+        result = await db.execute(text("""
+            SELECT
+              s.id::text AS session_id,
+              s.created_at,
+              s.updated_at,
+              COUNT(t.id) AS turn_count,
+              MIN(t.question) AS first_question,
+              MAX(t.created_at) AS last_activity
+            FROM analyst_sessions s
+            LEFT JOIN analyst_turns t ON t.session_id = s.id
+            WHERE s.user_id = :user_id
+            GROUP BY s.id, s.created_at, s.updated_at
+            HAVING COUNT(t.id) > 0
+            ORDER BY s.updated_at DESC
+            LIMIT 20
+        """), {"user_id": user["id"]})
+        sessions = result.fetchall()
+
+        return {
+            "sessions": [
+                {
+                    "session_id": s.session_id,
+                    "created_at": s.created_at.isoformat(),
+                    "updated_at": s.updated_at.isoformat(),
+                    "turn_count": s.turn_count,
+                    "first_question": s.first_question,
+                    "last_activity": (
+                        s.last_activity.isoformat()
+                        if s.last_activity else None
+                    ),
+                }
+                for s in sessions
+            ],
+            "total": len(sessions),
+        }
+
+
+@analyst_router.get("/sessions/{session_id}")
+async def get_session_detail(
+    session_id: str,
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """Get all turns for a past session. Verifies user ownership."""
+    async with get_db() as db:
+        ownership = await db.execute(text("""
+            SELECT id FROM analyst_sessions
+            WHERE id = :sid::uuid
+              AND user_id = :user_id
+        """), {"sid": session_id, "user_id": user["id"]})
+        if not ownership.fetchone():
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        turns_result = await db.execute(text("""
+            SELECT
+              id::text,
+              question,
+              answer,
+              evidence_count,
+              confidence,
+              retrieval_ms,
+              created_at
+            FROM analyst_turns
+            WHERE session_id = :sid::uuid
+            ORDER BY created_at ASC
+        """), {"sid": session_id})
+        turns = turns_result.fetchall()
+
+        return {
+            "session_id": session_id,
+            "turns": [
+                {
+                    "id": t.id,
+                    "question": t.question,
+                    "answer": t.answer,
+                    "evidence_count": t.evidence_count,
+                    "confidence": t.confidence,
+                    "retrieval_ms": t.retrieval_ms,
+                    "created_at": t.created_at.isoformat(),
+                }
+                for t in turns
+            ],
+            "turn_count": len(turns),
+        }

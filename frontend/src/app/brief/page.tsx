@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import Navigation from '@/components/Navigation'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type PageState = 'loading_check' | 'no_brief' | 'generating' | 'showing_brief' | 'error'
+type PageState = 'loading_check' | 'no_brief' | 'generating' | 'showing_brief' | 'error' | 'too_early'
 
 interface BriefMeta {
   briefDate: string
@@ -58,7 +59,7 @@ function parseBrief(content: string, meta: BriefMeta): ParsedBrief {
   const parts = content.split(/\n---\n/)
 
   for (const part of parts) {
-    const m = part.match(/^## ([A-Z ]+)\n\n([\s\S]*)/)
+    const m = part.trim().match(/^## ([A-Z ]+)\n\n([\s\S]*)/)
     if (m) {
       const name = m[1].trim()
       if (SECTION_NAMES.includes(name as SectionName)) {
@@ -550,9 +551,9 @@ function LoadingState() {
   )
 }
 
-// ── Left sidebar ──────────────────────────────────────────────────────────────
+// ── Previous briefs strip (inline, above brief content) ──────────────────────
 
-function LeftSidebar({
+function HistoryStrip({
   history,
   onSelectDate,
   selectedDate,
@@ -561,6 +562,8 @@ function LeftSidebar({
   onSelectDate: (date: string) => void
   selectedDate: string | null
 }) {
+  if (history.length === 0) return null
+
   const formatDate = (iso: string) => {
     try {
       return new Date(iso + 'T00:00:00').toLocaleDateString('en-IN', {
@@ -573,102 +576,48 @@ function LeftSidebar({
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '200px',
-      height: '100vh',
-      backgroundColor: '#EFEBE4',
-      borderRight: '1px solid #DDD8D0',
-      display: 'flex',
-      flexDirection: 'column',
-      zIndex: 10,
-      overflowY: 'auto',
-    }}>
-      {/* Wordmark */}
-      <div style={{ padding: '24px 20px', borderBottom: '1px solid #DDD8D0', flexShrink: 0 }}>
-        <p style={{
-          fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: '14px',
-          color: '#8B1A1A',
-          lineHeight: '1.4',
-          letterSpacing: '0.02em',
-        }}>
-          RIG<br />SURVEILLANCE
-        </p>
-      </div>
-
-      {/* Nav */}
-      <nav style={{ padding: '12px 0', flexShrink: 0 }}>
-        <div style={{ padding: '10px 20px', borderLeft: '2px solid #8B1A1A' }}>
-          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '14px', color: '#8B1A1A' }}>
-            Daily Brief
-          </p>
-        </div>
-
-        <div style={{ padding: '10px 20px', borderLeft: '2px solid transparent' }}>
-          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '14px', color: '#9C928A' }}>
-            Coverage Room
-          </p>
-          <p style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '10px', color: '#9C928A', marginTop: '2px' }}>
-            coming soon
-          </p>
-        </div>
-
-        <div style={{ padding: '10px 20px', borderLeft: '2px solid transparent' }}>
-          <p style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '14px', color: '#9C928A' }}>
-            Analyst
-          </p>
-          <p style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '10px', color: '#9C928A', marginTop: '2px' }}>
-            coming soon
-          </p>
-        </div>
-      </nav>
-
-      {/* Previous briefs */}
-      {history.length > 0 && (
-        <div style={{ marginTop: 'auto', borderTop: '1px solid #DDD8D0', padding: '16px 0' }}>
-          <p style={{
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-            fontSize: '11px',
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: '#9C928A',
-            padding: '0 20px',
-            marginBottom: '8px',
-          }}>
-            Previous Briefs
-          </p>
-          {history.map(item => (
+    <div style={{ marginBottom: '32px' }}>
+      <p style={{
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontSize: '11px',
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+        color: '#9C928A',
+        marginBottom: '10px',
+      }}>
+        Previous Briefs
+      </p>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        {history.map(item => {
+          const isSelected = selectedDate === item.date
+          return (
             <button
               key={item.date}
               onClick={() => onSelectDate(item.date)}
               style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: '8px 20px',
-                background: 'none',
-                border: 'none',
+                padding: '6px 10px',
+                background: isSelected ? '#FDF0EF' : 'transparent',
+                border: `1px solid ${isSelected ? '#8B1A1A' : '#DDD8D0'}`,
+                borderRadius: '2px',
                 cursor: 'pointer',
-                borderLeft: selectedDate === item.date ? '2px solid #8B1A1A' : '2px solid transparent',
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+                fontSize: '12px',
+                color: isSelected ? '#8B1A1A' : '#5C5249',
               }}
             >
-              <p style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '13px',
-                color: selectedDate === item.date ? '#8B1A1A' : '#5C5249',
+              {formatDate(item.date)}
+              <span style={{
+                marginLeft: '6px',
+                fontFamily: "'DM Mono', ui-monospace, monospace",
+                fontSize: '10px',
+                color: '#9C928A',
               }}>
-                {formatDate(item.date)}
-              </p>
-              <p style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '10px', color: '#9C928A' }}>
-                {item.articles_used} articles
-              </p>
+                {item.articles_used}
+              </span>
             </button>
-          ))}
-        </div>
-      )}
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -714,11 +663,12 @@ export default function BriefPage() {
       } else if (res.status === 404) {
         setPageState('no_brief')
       } else {
-        setErrorMsg('Failed to check for today\'s brief')
+        const err = await res.json().catch(() => ({ detail: 'Failed to check for today\'s brief' }))
+        setErrorMsg(`[${res.status}] ${(err as { detail?: string }).detail ?? 'Failed to check for today\'s brief'}`)
         setPageState('error')
       }
-    } catch {
-      setErrorMsg('Network error. Is the server running?')
+    } catch (e) {
+      setErrorMsg(`Network error: ${e instanceof Error ? e.message : 'Is the server running?'}`)
       setPageState('error')
     }
   }
@@ -748,6 +698,16 @@ export default function BriefPage() {
           'Content-Type': 'application/json',
         },
       })
+
+      if (res.status === 425) {
+        const err = await res.json().catch(() => ({ detail: 'Feed is still being prepared' }))
+        setErrorMsg((err as { detail?: string }).detail ?? 'Feed is still being prepared')
+        setPageState('too_early')
+        setTimeout(() => {
+          setPageState('no_brief')
+        }, 60000)
+        return
+      }
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: 'Generation failed' }))
@@ -842,6 +802,38 @@ export default function BriefPage() {
       case 'generating':
         return <LoadingState />
 
+      case 'too_early':
+        return (
+          <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+            <p style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: '24px',
+              fontWeight: 700,
+              color: '#1A1614',
+              marginBottom: '16px',
+            }}>
+              Preparing your intelligence feed
+            </p>
+            <p style={{
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+              fontSize: '15px',
+              color: '#5C5249',
+              maxWidth: '400px',
+              margin: '0 auto 24px',
+              lineHeight: '1.6',
+            }}>
+              {errorMsg}
+            </p>
+            <p style={{
+              fontFamily: "'DM Mono', ui-monospace, monospace",
+              fontSize: '12px',
+              color: '#9C928A',
+            }}>
+              Retrying automatically...
+            </p>
+          </div>
+        )
+
       case 'showing_brief':
         return brief ? <BriefContent brief={brief} onRegenerate={handleGenerate} /> : null
 
@@ -884,16 +876,17 @@ export default function BriefPage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F7F4EF' }}>
-      <LeftSidebar
-        history={history}
-        onSelectDate={handleSelectDate}
-        selectedDate={selectedDate}
-      />
+      <Navigation />
       <main style={{
         marginLeft: '200px',
         padding: '48px 48px 80px',
       }}>
         <div style={{ maxWidth: '720px' }}>
+          <HistoryStrip
+            history={history}
+            onSelectDate={handleSelectDate}
+            selectedDate={selectedDate}
+          />
           {renderMain()}
         </div>
       </main>

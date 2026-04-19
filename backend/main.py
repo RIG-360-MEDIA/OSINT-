@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.routers.admin_router import admin_router
 from backend.routers.brief_router import brief_router
+from backend.routers.coverage_router import coverage_router
 from backend.routers.debug_router import debug_router
 from backend.routers.onboarding_router import onboarding_router
 
@@ -36,6 +37,7 @@ app.include_router(admin_router)
 app.include_router(debug_router)
 app.include_router(onboarding_router)
 app.include_router(brief_router)
+app.include_router(coverage_router)
 
 app.add_middleware(
     CORSMiddleware,

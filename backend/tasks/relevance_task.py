@@ -156,13 +156,11 @@ async def _score_batch(article_ids: list[str]) -> dict:
                     source_geo_states=source_geo,
                 )
 
-                if stage1_score < 0.10:
-                    continue
-
                 tier = (
                     1 if stage1_score >= 0.50
                     else 2 if stage1_score >= 0.25
-                    else 3
+                    else 3 if stage1_score >= 0.10
+                    else 0
                 )
 
                 # Matched entity names: intersection of article entities and watched
@@ -212,7 +210,7 @@ async def _score_batch(article_ids: list[str]) -> dict:
                 )
                 total_scored += 1
 
-                if stage1_score >= 0.25:
+                if stage1_score >= 0.25 and tier > 0:
                     stage2_queue.append(
                         {
                             "article": article_dict,

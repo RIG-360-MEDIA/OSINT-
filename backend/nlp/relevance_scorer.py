@@ -170,6 +170,24 @@ def compute_source_geo_bonus(
     return 0.0
 
 
+def _max_matched_entity_priority(
+    entities_extracted: list,
+    user_entities: list,
+) -> int:
+    """Return the highest watch-list priority among entities that appear in the article."""
+    if not entities_extracted or not user_entities:
+        return 0
+    article_names = {
+        e["name"].lower()
+        for e in entities_extracted
+        if e.get("name") and e["name"] != "None"
+    }
+    return max(
+        (ue.get("priority", 0) for ue in user_entities if ue["canonical_name"].lower() in article_names),
+        default=0,
+    )
+
+
 def compute_stage1_score(
     article: dict,
     user_profile: dict,
@@ -179,6 +197,13 @@ def compute_stage1_score(
     """
     Compute Stage 1 algorithmic relevance score.
     Returns (score, debug_info).
+
+    Key design:
+    - Entity component is NOT geo-penalised: a story about a watched person is
+      relevant regardless of whether "Telangana" appears in the extracted text.
+    - Non-entity components (topic, geo, source) ARE geo-weighted.
+    - POLITICS articles with no entity match and no geo anchor are treated like
+      INTERNATIONAL to prevent international politics flooding the scored pool.
     """
     title = article.get("title", "")
     text = (
@@ -202,37 +227,52 @@ def compute_stage1_score(
     )
 
     entity_score = compute_entity_score(entities, user_entities)
+    max_matched_priority = _max_matched_entity_priority(entities, user_entities)
+
     topic_score = compute_topic_score(topic, signal_priorities)
     topic_gate = compute_topic_gate(topic, title, user_entity_names)
-    geo_score = compute_geo_score(
-        geo_primary, user_geo_primary, user_geo_secondary
-    )
+    geo_score = compute_geo_score(geo_primary, user_geo_primary, user_geo_secondary)
     source_score = compute_source_score(source_tier)
-    geo_multiplier = compute_geo_multiplier(
-        title, text, user_geo_primary, user_geo_secondary
-    )
+    geo_multiplier = compute_geo_multiplier(title, text, user_geo_primary, user_geo_secondary)
     source_bonus = compute_source_geo_bonus(source_geo_states, user_geo_primary)
 
-    base = (
-        0.40 * entity_score
-        + 0.25 * topic_score
-        + 0.20 * geo_score
-        + 0.15 * source_score
-    ) * topic_gate
+    # INTERNATIONAL bypass: high-priority entity in a foreign-tagged article is still relevant
+    effective_gate = topic_gate
+    if topic == "INTERNATIONAL" and max_matched_priority >= 5:
+        effective_gate = 1.0
 
-    final = (base * geo_multiplier) + source_bonus
+    # POLITICS with no entity anchor and no geo anchor → treat like INTERNATIONAL noise
+    if (
+        topic == "POLITICS"
+        and entity_score == 0.0
+        and geo_score == 0.0
+        and geo_multiplier == 0.4
+    ):
+        effective_gate = min(effective_gate, 0.4)
+
+    # Entity component is geo-independent: a watched-entity story is relevant
+    # even when the article text doesn't mention the user's state explicitly.
+    entity_component = 0.40 * entity_score * effective_gate
+    non_entity_component = (
+        0.25 * topic_score + 0.20 * geo_score + 0.15 * source_score
+    ) * effective_gate
+
+    final = entity_component + (non_entity_component * geo_multiplier) + source_bonus
     final = final * confidence_weight
     final = min(final, 1.0)
 
     debug = {
         "entity_score": round(entity_score, 3),
+        "max_matched_priority": max_matched_priority,
         "topic_score": round(topic_score, 3),
         "geo_score": round(geo_score, 3),
         "source_score": round(source_score, 3),
         "topic_gate": topic_gate,
+        "effective_gate": effective_gate,
         "geo_multiplier": geo_multiplier,
         "source_bonus": source_bonus,
-        "base": round(base, 3),
+        "entity_component": round(entity_component, 3),
+        "non_entity_component": round(non_entity_component, 3),
         "final": round(final, 3),
         "confidence_weight": confidence_weight,
     }

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 )
 def process_nlp_batch(self):  # type: ignore[no-untyped-def]
     """
-    Process up to 100 articles through the 4-step NLP pipeline.
+    Process up to 50 articles through the 4-step NLP pipeline.
     Runs every 30 seconds via Celery Beat.
     """
     try:
@@ -47,7 +47,7 @@ def process_nlp_batch(self):  # type: ignore[no-untyped-def]
 
 
 async def _process_batch() -> dict:
-    """Fetch one batch of 100 articles and run them through the pipeline."""
+    """Fetch one batch of 50 articles and run them through the pipeline."""
     import spacy
     from sqlalchemy import text
 
@@ -74,7 +74,7 @@ async def _process_batch() -> dict:
                 FROM articles
                 WHERE nlp_processed = FALSE
                 ORDER BY collected_at DESC
-                LIMIT 100
+                LIMIT 50
                 """
             )
         )
@@ -109,6 +109,22 @@ async def _process_batch() -> dict:
         skipped_count = 0
 
         for article in articles:
+            if _is_junk_article(article.title):
+                logger.info("Junk article skipped: %s", repr(article.title)[:80])
+                try:
+                    await db.execute(
+                        text(
+                            "UPDATE articles SET nlp_processed = TRUE, "
+                            "nlp_confidence = 'error' WHERE id = :id"
+                        ),
+                        {"id": article.id},
+                    )
+                    await db.commit()
+                except Exception:
+                    await db.rollback()
+                skipped_count += 1
+                continue
+
             try:
                 await _process_single(
                     article=article,
@@ -166,6 +182,30 @@ def _is_valid_text(text: str) -> bool:
     sample = text[:200]
     printable = sum(1 for c in sample if c.isprintable() or c in "\n\r\t")
     return (printable / len(sample)) > 0.85
+
+
+_JUNK_TITLE_PATTERNS = (
+    ".pdf", ".xlsx", ".doc", ".docx", ".ppt", ".pptx",
+)
+
+def _is_junk_article(title: str | None) -> bool:
+    """
+    True when the article title is clearly a scraped document or page fragment
+    rather than a news article. These waste NLP tokens and pollute relevance.
+
+    Catches: PDF filenames, bare numbers ("221"), very short strings ("tenders").
+    """
+    if not title:
+        return True
+    t = title.strip()
+    if len(t) < 8:
+        return True
+    if t.isdigit():
+        return True
+    tl = t.lower()
+    if any(tl.endswith(ext) for ext in _JUNK_TITLE_PATTERNS):
+        return True
+    return False
 
 
 async def _process_single(article, db, nlp_model, precomputed_embedding: list[float] | None = None) -> None:

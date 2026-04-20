@@ -469,6 +469,9 @@ export default function AnalystPage() {
   const [viewingSession, setViewingSession] = useState<Session | null>(null)
 
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  // Ref to latest handleSubmit — used by the URL-param auto-submit effect
+  // to avoid stale closure issues with setTimeout.
+  const handleSubmitRef = useRef<((q?: string) => Promise<void>) | null>(null)
 
   const fetchAllSessions = async (token: string) => {
     setLoadingSessions(true)
@@ -540,8 +543,8 @@ export default function AnalystPage() {
     sections.forEach((_, i) => setTimeout(() => setVisibleCount(i + 1), i * 400))
   }, [sections])
 
-  const handleSubmit = async () => {
-    const q = question.trim()
+  const handleSubmit = async (overrideQ?: string) => {
+    const q = (overrideQ ?? question).trim()
     if (!q || loading) return
     const token = await getToken()
     if (!token) return
@@ -573,6 +576,24 @@ export default function AnalystPage() {
       setErrorMsg(e instanceof Error ? e.message : 'Network error')
     } finally { setLoading(false) }
   }
+
+  // Keep ref pointing to latest handleSubmit every render
+  handleSubmitRef.current = handleSubmit
+
+  // Pre-load question + session from URL params (from Story Threads → Investigate)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const questionParam = params.get('question')
+    const sessionParam  = params.get('session')
+    if (!questionParam) return
+    const decoded = decodeURIComponent(questionParam)
+    setQuestion(decoded)
+    if (sessionParam) setSessionId(sessionParam)
+    const timer = setTimeout(() => {
+      handleSubmitRef.current?.(decoded)
+    }, 700)
+    return () => clearTimeout(timer)
+  }, []) // intentionally runs once on mount
 
   const handleNewInvestigation = async () => {
     const token = await getToken()

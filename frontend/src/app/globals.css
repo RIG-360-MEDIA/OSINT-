@@ -1,107 +1,300 @@
-/* ── Font declarations ─────────────── */
+/* ── Font declarations ─────────────────────────────────────────────────────── */
 @font-face {
   font-family: 'Playfair Display';
   src: url('/fonts/PlayfairDisplay-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+  font-weight: 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'Playfair Display';
   src: url('/fonts/PlayfairDisplay-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
+  font-weight: 700; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'Playfair Display';
   src: url('/fonts/PlayfairDisplay-Italic.woff2') format('woff2');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
+  font-weight: 400; font-style: italic; font-display: swap;
 }
 @font-face {
   font-family: 'DM Sans';
   src: url('/fonts/DMSans-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+  font-weight: 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'DM Sans';
   src: url('/fonts/DMSans-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
+  font-weight: 500; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'DM Sans';
   src: url('/fonts/DMSans-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
+  font-weight: 600; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: 'DM Mono';
   src: url('/fonts/DMMono-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+  font-weight: 400; font-style: normal; font-display: swap;
 }
 
 @import "tailwindcss";
 
-/* ── Design tokens ─────────────────── */
+/* ── Design tokens ─────────────────────────────────────────────────────────── */
 @theme {
-  --color-bg-primary:     #F7F4EF;
-  --color-bg-surface:     #EFEBE4;
-  --color-bg-surface-2:   #E8E3DA;
-  --color-text-primary:   #1A1614;
-  --color-text-secondary: #5C5249;
-  --color-text-tertiary:  #9C928A;
-  --color-accent:         #8B1A1A;
-  --color-accent-hover:   #6B1414;
-  --color-accent-pale:    #FDF0EF;
-  --color-data:           #1B3A6B;
-  --color-data-pale:      #EEF3FA;
-  --color-border:         #DDD8D0;
+  /* Zinc scale (no color bias — pure professional dark) */
+  --color-navy:           #18181B;
+  --color-navy-800:       #27272A;
+  --color-navy-700:       #3F3F46;
+  --color-navy-600:       #52525B;
 
-  --font-serif: 'Playfair Display', Georgia, serif;
-  --font-sans:  'DM Sans', system-ui, sans-serif;
-  --font-mono:  'DM Mono', ui-monospace, monospace;
+  /* Amber (primary accent — Brief, alerts, CTA) */
+  --color-amber:          #F59E0B;
+  --color-amber-hover:    #D97706;
+  --color-amber-pale:     #FFFBEB;
+  --color-amber-soft:     #FEF3C7;
+  --color-amber-border:   rgba(245,158,11,0.3);
+
+  /* Cobalt (data, Coverage, Tier 1) */
+  --color-cobalt:         #3B82F6;
+  --color-cobalt-hover:   #2563EB;
+  --color-cobalt-pale:    #EFF6FF;
+  --color-cobalt-soft:    #DBEAFE;
+  --color-cobalt-border:  rgba(59,130,246,0.3);
+
+  /* Emerald (signals, positive, Tier 2) */
+  --color-emerald:        #10B981;
+  --color-emerald-hover:  #059669;
+  --color-emerald-pale:   #ECFDF5;
+  --color-emerald-soft:   #D1FAE5;
+
+  /* Rose (warnings, against-user) */
+  --color-rose:           #F43F5E;
+  --color-rose-hover:     #E11D48;
+  --color-rose-pale:      #FFF1F2;
+  --color-rose-soft:      #FFE4E6;
+
+  /* Violet (Analyst mode) */
+  --color-violet:         #8B5CF6;
+  --color-violet-pale:    #EDE9FE;
+  --color-violet-soft:    #DDD6FE;
+
+  /* Surface */
+  --color-bg:             #F1F5F9;
+  --color-surface:        #FFFFFF;
+  --color-surface-2:      #F8FAFC;
+  --color-border:         #E2E8F0;
+  --color-border-strong:  #CBD5E1;
+
+  /* Text */
+  --color-text:           #18181B;
+  --color-text-secondary: #52525B;
+  --color-text-muted:     #A1A1AA;
+
+  /* Typography */
+  --font-sans:   'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-serif:  'Playfair Display', Georgia, serif;
+  --font-mono:   'DM Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  /* Radius */
+  --radius-xs:   3px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   20px;
+  --radius-full: 9999px;
+
+  /* Elevation */
+  --shadow-xs:  0 1px 2px rgba(15,23,42,0.04);
+  --shadow-sm:  0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow-md:  0 4px 8px rgba(15,23,42,0.07), 0 2px 4px rgba(15,23,42,0.04);
+  --shadow-lg:  0 12px 24px rgba(15,23,42,0.09), 0 4px 8px rgba(15,23,42,0.05);
+  --shadow-xl:  0 24px 48px rgba(15,23,42,0.14), 0 8px 16px rgba(15,23,42,0.07);
+
+  --topbar-h:    56px;
 }
 
-/* ── Base styles ───────────────────── */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html {
-  background: #F7F4EF;
-}
+html { background: #0F172A; }
 
 body {
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Typography utilities ──────────── */
+/* ── Typography helpers ────────────────────────────────────────────────────── */
 .font-serif { font-family: var(--font-serif); }
 .font-mono  { font-family: var(--font-mono); }
 
-/* ── Focus styles ──────────────────── */
+/* ── Focus ─────────────────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-amber);
   outline-offset: 2px;
+  border-radius: var(--radius-xs);
 }
 
-/* ── Scrollbar ─────────────────────── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--color-bg-primary); }
-::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
+/* ── Keyframes ─────────────────────────────────────────────────────────────── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(28px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+@keyframes pulse-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.5); }
+  50%       { box-shadow: 0 0 0 7px rgba(245,158,11,0); }
+}
+
+@keyframes pulse-cobalt {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(59,130,246,0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes progress-grow {
+  0%   { width: 5%; }
+  50%  { width: 72%; }
+  100% { width: 88%; }
+}
+
+@keyframes float-up {
+  0%   { opacity: 0.06; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-120px); }
+}
+
+/* ── Utility animation classes ─────────────────────────────────────────────── */
+.anim-fade-up     { animation: fade-up 0.38s cubic-bezier(0.16,1,0.3,1) both; }
+.anim-fade-in     { animation: fade-in 0.25s ease both; }
+.anim-slide-right { animation: slide-in-right 0.32s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* Stagger delays */
+.delay-0   { animation-delay: 0ms; }
+.delay-80  { animation-delay: 80ms; }
+.delay-160 { animation-delay: 160ms; }
+.delay-240 { animation-delay: 240ms; }
+.delay-320 { animation-delay: 320ms; }
+.delay-400 { animation-delay: 400ms; }
+
+/* ── Card hover lift ────────────────────────────────────────────────────────── */
+.card-lift {
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Shimmer skeleton ───────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #E2E8F0 0%,
+    #F1F5F9 50%,
+    #E2E8F0 100%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Badge pulse classes ───────────────────────────────────────────────────── */
+.pulse-amber { animation: pulse-amber 2.2s ease-in-out infinite; }
+.pulse-cobalt { animation: pulse-cobalt 2.2s ease-in-out infinite; }
+
+/* ── Thread escalating node pulse ─────────────────────────────────────────── */
+@keyframes pulse-escalating {
+  0%, 100% { stroke-opacity: 1; }
+  50%       { stroke-opacity: 0.3; }
+}
+.node-escalating { animation: pulse-escalating 2s ease-in-out infinite; }
+
+/* ── Base input ────────────────────────────────────────────────────────────── */
+.rig-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.rig-input:focus {
+  border-color: var(--color-amber);
+  box-shadow: 0 0 0 3px rgba(245,158,11,0.14);
+}
+.rig-input::placeholder { color: var(--color-text-muted); }
+
+/* ── Primary button ────────────────────────────────────────────────────────── */
+.btn-amber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 22px;
+  background: var(--color-amber);
+  color: var(--color-navy);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+.btn-amber:hover  { background: var(--color-amber-hover); box-shadow: 0 4px 12px rgba(245,158,11,0.35); }
+.btn-amber:active { transform: scale(0.975); }
+.btn-amber:disabled { background: var(--color-border); color: var(--color-text-muted); cursor: not-allowed; box-shadow: none; }
+
+/* ── Ghost button ──────────────────────────────────────────────────────────── */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.btn-ghost:hover { border-color: var(--color-border-strong); color: var(--color-text); background: var(--color-surface); }
+
+/* ── Tier badge ────────────────────────────────────────────────────────────── */
+.tier-1 { background: var(--color-cobalt); color: #fff; }
+.tier-2 { background: var(--color-emerald); color: #fff; }
+.tier-3 { background: var(--color-navy-600); color: #fff; }

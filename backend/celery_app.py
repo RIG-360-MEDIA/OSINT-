@@ -29,6 +29,7 @@ app = Celery(
         "backend.tasks.relevance_task",
         "backend.tasks.backfill_task",
         "backend.tasks.dict_reload_task",
+        "backend.tasks.thread_task",
     ],
 )
 
@@ -83,6 +84,16 @@ app.config_from_object(
             "check-entity-dict-every-5-min": {
                 "task": "tasks.check_entity_dict_version",
                 "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
+            },
+            "assign-threads-every-5-min": {
+                "task": "tasks.assign_new_article_threads",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
+            },
+            "nightly-thread-recluster": {
+                "task": "tasks.nightly_thread_recluster",
+                "schedule": crontab(hour=2, minute=0),
                 "options": {"queue": "nlp"},
             },
         },

@@ -10,6 +10,7 @@ interface NavCounts {
   thread_count: number
   escalating_count: number
   clip_count: number
+  doc_count: number
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -21,13 +22,14 @@ const NAV_LINKS = [
   { path: '/clips',    label: 'Clip Room' },
   { path: '/cuttings', label: 'Cutting Room' },
   { path: '/signals',  label: 'Signal Room' },
+  { path: '/documents', label: 'Document Room' },
   { path: '/analyst',  label: 'Analyst' },
 ]
 
 export default function Navigation() {
   const pathname = usePathname()
   const router   = useRouter()
-  const [counts, setCounts] = useState<NavCounts>({ brief_ready: false, article_count: 0, thread_count: 0, escalating_count: 0, clip_count: 0 })
+  const [counts, setCounts] = useState<NavCounts>({ brief_ready: false, article_count: 0, thread_count: 0, escalating_count: 0, clip_count: 0, doc_count: 0 })
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -38,11 +40,12 @@ export default function Navigation() {
         if (!session) return
         const token = session.access_token
 
-        const [briefRes, feedRes, threadsRes, clipsRes] = await Promise.all([
+        const [briefRes, feedRes, threadsRes, clipsRes, docsRes] = await Promise.all([
           fetch(`${API_BASE}/api/brief/today`, { headers: { Authorization: `Bearer ${token}` } }),
           fetch(`${API_BASE}/api/coverage/feed?limit=1`, { headers: { Authorization: `Bearer ${token}` } }),
           fetch(`${API_BASE}/api/threads?limit=50`, { headers: { Authorization: `Bearer ${token}` } }),
           fetch(`${API_BASE}/api/clips/feed?limit=1`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_BASE}/api/documents/feed?limit=1`, { headers: { Authorization: `Bearer ${token}` } }),
         ])
 
         let articleCount = 0
@@ -65,12 +68,19 @@ export default function Navigation() {
           clipCount = cData?.total ?? 0
         }
 
+        let docCount = 0
+        if (docsRes.ok) {
+          const dData = await docsRes.json()
+          docCount = dData?.total ?? 0
+        }
+
         setCounts({
           brief_ready: briefRes.status === 200,
           article_count: articleCount,
           thread_count: threadCount,
           escalating_count: escalatingCount,
           clip_count: clipCount,
+          doc_count: docCount,
         })
       } catch {
         // non-critical
@@ -176,6 +186,36 @@ export default function Navigation() {
         gap:        '10px',
         flexShrink: 0,
       }}>
+        {/* Document count chip */}
+        {counts.doc_count > 0 && (
+          <div style={{
+            display:         'flex',
+            alignItems:      'center',
+            gap:             '5px',
+            padding:         '4px 10px',
+            borderRadius:    '9999px',
+            border:          '1px solid rgba(148,163,184,0.3)',
+            backgroundColor: 'rgba(148,163,184,0.12)',
+          }}>
+            <span style={{
+              width:           '5px',
+              height:          '5px',
+              borderRadius:    '50%',
+              backgroundColor: '#94A3B8',
+              flexShrink:      0,
+            }} />
+            <span style={{
+              fontFamily:    "'DM Mono', ui-monospace, monospace",
+              fontSize:      '11px',
+              color:         '#CBD5E1',
+              fontWeight:    500,
+              letterSpacing: '0.02em',
+            }}>
+              {counts.doc_count} docs
+            </span>
+          </div>
+        )}
+
         {/* Clip count chip */}
         {counts.clip_count > 0 && (
           <div style={{

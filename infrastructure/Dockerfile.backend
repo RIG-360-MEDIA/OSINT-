@@ -2,12 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies (including Playwright/Chromium browser deps)
+# Install system dependencies.
+# Includes:
+#   - Playwright/Chromium browser deps
+#   - default-jre-headless for opendataloader-pdf (P16 newspaper pipeline)
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     libpq-dev \
     curl \
+    default-jre-headless \
     libnss3 \
     libatk-bridge2.0-0 \
     libdrm2 \
@@ -29,6 +33,12 @@ RUN apt-get update && apt-get install -y \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# P15 — government document PDF pipeline.
+# OpenDataLoader (Apache 2.0) is the primary extractor; PyMuPDF is the
+# fallback for simple digital PDFs. Installed in a dedicated layer so the
+# heavier requirements.txt install above stays cached.
+RUN pip install --no-cache-dir opendataloader-pdf pymupdf
+
 # Install Crawl4AI browser + JS snippets.
 # crawl4ai-setup installs Playwright Chromium and populates
 # the js_snippet directory that crawl4ai requires at runtime.
@@ -37,12 +47,19 @@ RUN crawl4ai-setup
 # Download SpaCy model
 RUN python -m spacy download en_core_web_sm
 
+# Download LaBSE model into the image cache so the worker never needs internet
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('LaBSE')"
+
 # Copy application code
 COPY backend/ ./backend/
 COPY scripts/ ./scripts/
 
 # Set Python path
 ENV PYTHONPATH=/app
+
+# Force HuggingFace to use only the local cache — no network checks at runtime
+ENV TRANSFORMERS_OFFLINE=1
+ENV HF_HUB_OFFLINE=1
 
 # Copy and prepare startup script
 COPY backend/start.sh /start.sh

@@ -19,6 +19,8 @@ const NAV_LINKS = [
   { path: '/coverage', label: 'Coverage Room' },
   { path: '/threads',  label: 'Story Threads' },
   { path: '/clips',    label: 'Clip Room' },
+  { path: '/cuttings', label: 'Cutting Room' },
+  { path: '/signals',  label: 'Signal Room' },
   { path: '/analyst',  label: 'Analyst' },
 ]
 

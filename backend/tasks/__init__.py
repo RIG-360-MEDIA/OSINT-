@@ -13,3 +13,4 @@ from backend.tasks.thread_task import (  # noqa: F401
     assign_new_article_threads,
     nightly_thread_recluster,
 )
+from backend.tasks.youtube_task import collect_youtube as collect_youtube  # noqa: F401

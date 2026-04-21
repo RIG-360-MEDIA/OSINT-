@@ -754,11 +754,84 @@ async def retrieve_relevant_articles(
 
 # ── Context builder ───────────────────────────────────────────────────────────
 
+async def retrieve_relevant_clips(
+    query: str,
+    user_id: str,
+    db,
+    top_k: int = 3,
+) -> list[dict]:
+    """
+    Find YouTube clips relevant to the query via LaBSE cosine similarity.
+    Returns up to top_k clips to include as VIDEO EVIDENCE in RAG context.
+    """
+    from sqlalchemy import text
+
+    try:
+        entities_result = await db.execute(
+            text("SELECT canonical_name FROM user_entities WHERE user_id = :uid"),
+            {"uid": user_id},
+        )
+        user_entities = [r.canonical_name for r in entities_result.fetchall()]
+
+        if not user_entities:
+            return []
+
+        query_emb = embed_query(query)
+        emb_str = "[" + ",".join(str(x) for x in query_emb) + "]"
+
+        result = await db.execute(
+            text("""
+                SELECT
+                    video_id,
+                    video_title,
+                    channel_name,
+                    clip_start_seconds,
+                    embed_url,
+                    transcript_segment,
+                    transcript_translated,
+                    matched_entity,
+                    video_published_at,
+                    (labse_embedding <=> :emb::vector) AS distance
+                FROM youtube_clips
+                WHERE labse_embedding IS NOT NULL
+                  AND processed = TRUE
+                  AND matched_entity = ANY(:entities)
+                  AND (labse_embedding <=> :emb::vector) < 0.6
+                ORDER BY distance ASC
+                LIMIT :top_k
+            """),
+            {"emb": emb_str, "entities": user_entities, "top_k": top_k},
+        )
+        clips = result.fetchall()
+
+        return [
+            {
+                "type":           "youtube_clip",
+                "video_id":       c.video_id,
+                "title":          c.video_title,
+                "channel":        c.channel_name,
+                "start_seconds":  c.clip_start_seconds,
+                "embed_url":      c.embed_url,
+                "text_snippet":   c.transcript_translated or c.transcript_segment,
+                "matched_entity": c.matched_entity,
+                "published_at":   (
+                    c.video_published_at.isoformat() if c.video_published_at else None
+                ),
+                "distance": float(c.distance),
+            }
+            for c in clips
+        ]
+    except Exception:
+        logger.warning("Clip retrieval failed", exc_info=True)
+        return []
+
+
 def build_context(
     articles: list[dict],
     user_profile: dict,
     session_history: list[dict],
     query: str = "",
+    clips: list[dict] | None = None,
 ) -> str:
     """Build the structured context string sent to Groq with the system prompt."""
     role = user_profile.get("role_context", "Senior government official")
@@ -829,6 +902,25 @@ def build_context(
                 f"Clearly distinguish corpus-sourced facts from foundational knowledge.]\n\n"
             )
 
+    clip_context_str = ""
+    if clips:
+        clip_items: list[str] = []
+        for i, clip in enumerate(clips, 1):
+            mins = clip["start_seconds"] // 60
+            secs = clip["start_seconds"] % 60
+            timestamp = f"{mins}:{secs:02d}"
+            snippet = (clip.get("text_snippet") or "")[:400]
+            clip_items.append(
+                f"[VIDEO {i}] {clip['title']}\n"
+                f"Channel: {clip['channel']} | At: {timestamp}"
+                f" | Entity: {clip['matched_entity']}\n"
+                f"Spoken: {snippet}\n"
+            )
+        clip_context_str = (
+            f"\n\nVIDEO EVIDENCE ({len(clip_items)} clips):\n\n"
+            + "\n---\n".join(clip_items)
+        )
+
     return (
         corpus_warning
         + f"OFFICIAL PROFILE:\n"
@@ -837,6 +929,7 @@ def build_context(
         f"{session_context}\n\n"
         f"INTELLIGENCE CORPUS ({len(articles)} articles):\n\n"
         + "\n---\n".join(article_items)
+        + clip_context_str
     )
 
 

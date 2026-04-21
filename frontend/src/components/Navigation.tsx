@@ -9,6 +9,7 @@ interface NavCounts {
   article_count: number
   thread_count: number
   escalating_count: number
+  clip_count: number
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -17,13 +18,14 @@ const NAV_LINKS = [
   { path: '/brief',    label: 'Daily Brief' },
   { path: '/coverage', label: 'Coverage Room' },
   { path: '/threads',  label: 'Story Threads' },
+  { path: '/clips',    label: 'Clip Room' },
   { path: '/analyst',  label: 'Analyst' },
 ]
 
 export default function Navigation() {
   const pathname = usePathname()
   const router   = useRouter()
-  const [counts, setCounts] = useState<NavCounts>({ brief_ready: false, article_count: 0, thread_count: 0, escalating_count: 0 })
+  const [counts, setCounts] = useState<NavCounts>({ brief_ready: false, article_count: 0, thread_count: 0, escalating_count: 0, clip_count: 0 })
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -34,10 +36,11 @@ export default function Navigation() {
         if (!session) return
         const token = session.access_token
 
-        const [briefRes, feedRes, threadsRes] = await Promise.all([
+        const [briefRes, feedRes, threadsRes, clipsRes] = await Promise.all([
           fetch(`${API_BASE}/api/brief/today`, { headers: { Authorization: `Bearer ${token}` } }),
           fetch(`${API_BASE}/api/coverage/feed?limit=1`, { headers: { Authorization: `Bearer ${token}` } }),
           fetch(`${API_BASE}/api/threads?limit=50`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_BASE}/api/clips/feed?limit=1`, { headers: { Authorization: `Bearer ${token}` } }),
         ])
 
         let articleCount = 0
@@ -54,11 +57,18 @@ export default function Navigation() {
           escalatingCount = tData?.escalating_count ?? 0
         }
 
+        let clipCount = 0
+        if (clipsRes.ok) {
+          const cData = await clipsRes.json()
+          clipCount = cData?.total ?? 0
+        }
+
         setCounts({
           brief_ready: briefRes.status === 200,
           article_count: articleCount,
           thread_count: threadCount,
           escalating_count: escalatingCount,
+          clip_count: clipCount,
         })
       } catch {
         // non-critical
@@ -164,6 +174,36 @@ export default function Navigation() {
         gap:        '10px',
         flexShrink: 0,
       }}>
+        {/* Clip count chip */}
+        {counts.clip_count > 0 && (
+          <div style={{
+            display:         'flex',
+            alignItems:      'center',
+            gap:             '5px',
+            padding:         '4px 10px',
+            borderRadius:    '9999px',
+            border:          '1px solid rgba(220,38,38,0.25)',
+            backgroundColor: 'rgba(220,38,38,0.1)',
+          }}>
+            <span style={{
+              width:           '5px',
+              height:          '5px',
+              borderRadius:    '50%',
+              backgroundColor: '#DC2626',
+              flexShrink:      0,
+            }} />
+            <span style={{
+              fontFamily:    "'DM Mono', ui-monospace, monospace",
+              fontSize:      '11px',
+              color:         '#FCA5A5',
+              fontWeight:    500,
+              letterSpacing: '0.02em',
+            }}>
+              {counts.clip_count} clips
+            </span>
+          </div>
+        )}
+
         {/* Article count chip */}
         {counts.article_count > 0 && (
           <div style={{

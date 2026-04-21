@@ -110,6 +110,7 @@ async def analyst_query(
     """
     from backend.nlp.rag_engine import (
         retrieve_relevant_articles,
+        retrieve_relevant_clips,
         build_context,
         detect_mode,
         compute_confidence,
@@ -226,12 +227,21 @@ async def analyst_query(
                 "article_count": 0,
             }
 
+        # Retrieve relevant YouTube clips (parallel intelligence source)
+        clips = await retrieve_relevant_clips(
+            query=req.question,
+            user_id=user["id"],
+            db=db,
+            top_k=3,
+        )
+
         # Build context and call Groq
         context = build_context(
             articles=articles,
             user_profile=user_profile,
             session_history=session_history,
             query=req.question,
+            clips=clips if clips else None,
         )
 
         system_prompt = KNOWLEDGE_HIERARCHY_BLOCK + "\n\n" + MODE_PROMPTS[mode]

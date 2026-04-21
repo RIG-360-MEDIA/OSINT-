@@ -30,6 +30,7 @@ app = Celery(
         "backend.tasks.backfill_task",
         "backend.tasks.dict_reload_task",
         "backend.tasks.thread_task",
+        "backend.tasks.youtube_task",
     ],
 )
 
@@ -45,6 +46,7 @@ app.config_from_object(
         "task_routes": {
             "tasks.collect_rss": {"queue": "collectors"},
             "tasks.collect_html": {"queue": "collectors"},
+            "tasks.collect_youtube": {"queue": "collectors"},
             "tasks.process_nlp_batch": {"queue": "nlp"},
             "tasks.score_relevance_batch": {"queue": "relevance"},
             "tasks.score_unscored_articles": {"queue": "relevance"},
@@ -95,6 +97,11 @@ app.config_from_object(
                 "task": "tasks.nightly_thread_recluster",
                 "schedule": crontab(hour=2, minute=0),
                 "options": {"queue": "nlp"},
+            },
+            "collect-youtube-every-6h": {
+                "task": "tasks.collect_youtube",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "collectors"},
             },
         },
     }

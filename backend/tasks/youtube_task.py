@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @app.task(
     name="tasks.collect_youtube",
-    queue="collectors",
+    queue="youtube",
     max_retries=2,
 )
 def collect_youtube() -> None:

@@ -46,7 +46,7 @@ app.config_from_object(
         "task_routes": {
             "tasks.collect_rss": {"queue": "collectors"},
             "tasks.collect_html": {"queue": "collectors"},
-            "tasks.collect_youtube": {"queue": "collectors"},
+            "tasks.collect_youtube": {"queue": "youtube"},
             "tasks.process_nlp_batch": {"queue": "nlp"},
             "tasks.score_relevance_batch": {"queue": "relevance"},
             "tasks.score_unscored_articles": {"queue": "relevance"},
@@ -101,7 +101,7 @@ app.config_from_object(
             "collect-youtube-every-6h": {
                 "task": "tasks.collect_youtube",
                 "schedule": timedelta(hours=6),
-                "options": {"queue": "collectors"},
+                "options": {"queue": "youtube"},
             },
         },
     }

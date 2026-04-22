@@ -3,6 +3,7 @@ Analyst router — RAG-powered intelligence analyst endpoints.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -111,6 +112,7 @@ async def analyst_query(
     from backend.nlp.rag_engine import (
         retrieve_relevant_articles,
         retrieve_relevant_clips,
+        retrieve_relevant_govt_docs,
         build_context,
         detect_mode,
         compute_confidence,
@@ -196,35 +198,59 @@ async def analyst_query(
             except Exception:
                 geo_filter.append(str(raw_geo).strip())
 
-        # Retrieve relevant articles
-        articles, retrieval_method, elapsed_ms = await retrieve_relevant_articles(
+        # Retrieve relevant articles AND govt documents concurrently.
+        # Articles call returns (list, method, elapsed_ms); govt call returns list[dict].
+        articles_task = retrieve_relevant_articles(
             query=req.question,
             user_id=user["id"],
             db=db,
             geo_filter=geo_filter or None,
             mode=mode,
         )
+        govt_task = retrieve_relevant_govt_docs(
+            query=req.question,
+            user_id=user["id"],
+            db=db,
+            geo_filter=geo_filter or None,
+            mode=mode,
+        )
+        articles_result, govt_docs_result = await asyncio.gather(
+            articles_task, govt_task, return_exceptions=True,
+        )
 
-        if not articles:
+        if isinstance(articles_result, Exception):
+            logger.error("Article retrieval failed: %s", articles_result)
+            raise articles_result
+        articles, retrieval_method, elapsed_ms = articles_result
+
+        if isinstance(govt_docs_result, Exception):
+            logger.warning("Govt-doc retrieval failed: %s", govt_docs_result)
+            govt_docs: list[dict] = []
+        else:
+            govt_docs = govt_docs_result or []
+
+        if not articles and not govt_docs:
             return {
                 "mode": mode,
                 "auto_detected": bool(auto_mode),
                 "answer": (
                     "## INSUFFICIENT COVERAGE\n\n"
-                    "No relevant articles were found in your intelligence feed "
-                    "for this question.\n\n"
+                    "No relevant articles or government documents were found in "
+                    "your intelligence feed for this question.\n\n"
                     "**Possible reasons:**\n"
                     "- The topic may not have been covered by your monitored sources\n"
                     "- The pipeline may still be processing recent articles\n\n"
                     "Try searching the Coverage Room directly or broaden your question."
                 ),
                 "articles": [],
+                "govt_docs": [],
                 "confidence": "LOW",
                 "followups": [],
                 "session_id": session_id,
                 "retrieval_ms": elapsed_ms,
                 "retrieval_method": retrieval_method,
                 "article_count": 0,
+                "govt_doc_count": 0,
             }
 
         # Retrieve relevant YouTube clips (parallel intelligence source)
@@ -243,6 +269,35 @@ async def analyst_query(
             query=req.question,
             clips=clips if clips else None,
         )
+
+        # Append govt-document block (additive — articles tagged [Article] above,
+        # docs tagged [Document] here so the LLM can cite each kind distinctly).
+        if govt_docs:
+            doc_items: list[str] = []
+            for i, d in enumerate(govt_docs, 1):
+                intel = d.get("intel_json") or {}
+                what = (intel.get("what_it_does") or "").strip()
+                nature = intel.get("document_nature") or d.get("document_type") or ""
+                section = d.get("section_heading") or ""
+                pub = d.get("published_at") or d.get("collected_at") or ""
+                pub_short = pub[:10] if pub else ""
+                section_str = f" | Section: {section}" if section else ""
+                what_str = f"\nWhat it does: {what}" if what else ""
+                doc_items.append(
+                    f"[Document {i}] {d.get('title','(untitled)')}\n"
+                    f"Source: {d.get('source_name','')} | Type: {nature}"
+                    f" | Geo: {d.get('source_geography','')}"
+                    f" | Date: {pub_short}{section_str}"
+                    f" | Relevance: {d.get('score_final',0.0):.2f}"
+                    f"{what_str}\n"
+                    f"{(d.get('snippet') or '')}\n"
+                )
+            context += (
+                f"\n\nGOVT DOCUMENT EVIDENCE ({len(doc_items)} documents):\n"
+                "When citing a document, use the form: "
+                "(Doc: <title>, p.<page_number> if available).\n\n"
+                + "\n---\n".join(doc_items)
+            )
 
         system_prompt = KNOWLEDGE_HIERARCHY_BLOCK + "\n\n" + MODE_PROMPTS[mode]
         answer = await generate(
@@ -292,6 +347,7 @@ async def analyst_query(
             "auto_detected": bool(auto_mode),
             "answer": answer,
             "articles": articles,
+            "govt_docs": govt_docs,
             "confidence": confidence,
             "confidence_pct": confidence_pct,
             "followups": followups,
@@ -299,6 +355,7 @@ async def analyst_query(
             "retrieval_ms": elapsed_ms,
             "retrieval_method": retrieval_method,
             "article_count": len(articles),
+            "govt_doc_count": len(govt_docs),
         }
 
 

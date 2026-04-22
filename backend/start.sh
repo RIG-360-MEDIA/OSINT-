@@ -18,6 +18,14 @@ celery -A backend.celery_app worker \
   --hostname=worker-youtube@%h \
   --loglevel=info &
 
+# Dedicated documents worker — govt PDF extraction (Java JVM is heavy; isolate from RSS)
+celery -A backend.celery_app worker \
+  --queues=documents \
+  --concurrency=2 \
+  --prefetch-multiplier=1 \
+  --hostname=worker-documents@%h \
+  --loglevel=info &
+
 # Dedicated NLP worker — 4 parallel batches
 celery -A backend.celery_app worker \
   --queues=nlp \

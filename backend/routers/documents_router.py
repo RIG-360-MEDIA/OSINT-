@@ -50,7 +50,11 @@ async def get_documents_feed(
     """Ranked government document feed."""
     async with get_db() as db:
         conditions = ["d.nlp_processed = TRUE"]
-        params: dict = {"limit": limit + 1, "days": days}
+        params: dict = {
+            "limit": limit + 1,
+            "days": days,
+            "user_id": str(user["id"]),
+        }
 
         conditions.append(
             "d.collected_at > NOW() - (:days * INTERVAL '1 day')"
@@ -97,11 +101,25 @@ async def get_documents_feed(
                     )                         AS summary_preview,
                     d.summary,
                     d.page_count,
+                    d.intrinsic_importance,
                     d.published_at,
-                    d.collected_at
+                    d.collected_at,
+                    r.score_final             AS r_score_final,
+                    r.relevance_tier          AS r_relevance_tier,
+                    r.urgency                 AS r_urgency,
+                    r.why_it_matters          AS r_why_it_matters,
+                    r.suggested_action        AS r_suggested_action,
+                    r.matched_entity_names    AS r_matched_entity_names
                 FROM govt_documents d
+                LEFT JOIN user_govt_doc_relevance r
+                       ON r.doc_id = d.id
+                      AND r.user_id = CAST(:user_id AS uuid)
                 WHERE {where}
-                ORDER BY d.collected_at DESC
+                ORDER BY
+                    (r.score_final IS NULL) ASC,
+                    r.score_final DESC NULLS LAST,
+                    d.intrinsic_importance DESC NULLS LAST,
+                    d.collected_at DESC
                 LIMIT :limit
                 """
             ),
@@ -117,6 +135,24 @@ async def get_documents_feed(
             if has_more and rows
             else None
         )
+
+        # Lazy fan-out: any doc returned without a cached score gets
+        # queued for scoring. Fire-and-forget; next page load picks up results.
+        unscored_doc_ids = [
+            d.doc_id for d in rows if d.r_score_final is None
+        ]
+        if unscored_doc_ids:
+            try:
+                from backend.tasks.govt_relevance_task import (
+                    score_govt_doc_for_all_users,
+                )
+
+                for did in unscored_doc_ids:
+                    score_govt_doc_for_all_users.apply_async(args=[did])
+            except Exception as exc:  # noqa: BLE001 - best-effort
+                logger.warning(
+                    "Failed to queue govt-doc relevance scoring: %s", exc
+                )
 
         # Geography counts (last 30 days) — used for filter chips
         count_result = await db.execute(
@@ -157,6 +193,14 @@ async def get_documents_feed(
                         if d.published_at else None
                     ),
                     "collected_at": d.collected_at.isoformat(),
+                    "score_final": (
+                        float(d.r_score_final)
+                        if d.r_score_final is not None else None
+                    ),
+                    "relevance_tier": d.r_relevance_tier,
+                    "urgency": d.r_urgency,
+                    "why_it_matters": d.r_why_it_matters,
+                    "suggested_action": d.r_suggested_action,
                 }
                 for d in rows
             ],

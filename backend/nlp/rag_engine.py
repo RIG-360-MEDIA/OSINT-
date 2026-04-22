@@ -1171,3 +1171,290 @@ async def generate_followups(
         ],
     }
     return fallbacks.get(mode, fallbacks["SITUATION"])
+
+
+# ── Govt-document retrieval (additive — mirrors retrieve_relevant_articles) ───
+#
+# Pool A: semantic vector search over govt_documents.labse_embedding UNION
+#         govt_document_chunks.labse_embedding (best-of-doc-or-chunk per doc).
+# Pool B: recency — docs in last 30 days where user_govt_doc_relevance.tier IN (1,2).
+# Returns dicts tagged source_kind="govt_doc" so analyst_router can merge with articles.
+
+GOVT_MODE_TOP_K: dict[str, int] = {
+    "SITUATION":  6,
+    "OPPOSITION": 4,
+    "RISK":       6,
+    "POLICY":     8,   # POLICY mode leans heavily on docs
+    "PATTERN":    6,
+    "BRIEF":      6,
+}
+
+GOVT_MODE_POOL_SIZES: dict[str, tuple[int, int]] = {
+    # (semantic_k, recency_k)
+    "SITUATION":  (8, 4),
+    "OPPOSITION": (6, 3),
+    "RISK":       (8, 4),
+    "POLICY":     (10, 5),
+    "PATTERN":    (8, 5),
+    "BRIEF":      (8, 4),
+}
+
+GOVT_DEFAULT_TOP_K = 6
+GOVT_DEFAULT_POOL: tuple[int, int] = (8, 4)
+GOVT_RECENCY_DAYS = 30
+
+
+async def _govt_recency_pool(
+    user_id: str,
+    db,
+    limit: int,
+    days: int = GOVT_RECENCY_DAYS,
+) -> list:
+    """Recent T1/T2 govt docs for this user (freshness pool)."""
+    result = await db.execute(
+        text("""
+            SELECT
+              d.id::text          AS doc_id,
+              d.title,
+              d.source_name,
+              d.source_geography,
+              d.document_type,
+              d.summary,
+              d.intel_json,
+              d.published_at,
+              d.collected_at,
+              ugr.score_final,
+              ugr.relevance_tier,
+              ugr.urgency,
+              NULL::text          AS section_heading,
+              NULL::int           AS chunk_index,
+              0.5::float          AS distance
+            FROM user_govt_doc_relevance ugr
+            JOIN govt_documents d ON d.id = ugr.doc_id
+            WHERE ugr.user_id = :user_id
+              AND ugr.relevance_tier IN (1, 2)
+              AND d.collected_at > NOW() - make_interval(days => :days)
+            ORDER BY ugr.score_final DESC, d.collected_at DESC
+            LIMIT :limit
+        """),
+        {"user_id": user_id, "limit": limit, "days": int(days)},
+    )
+    return result.fetchall()
+
+
+async def retrieve_relevant_govt_docs(
+    query: str,
+    user_id: str,
+    db,
+    geo_filter: list[str] | None = None,
+    mode: str = "SITUATION",
+    k: int | None = None,
+    distance_threshold: float = 0.7,
+) -> list[dict]:
+    """Dual-pool retrieval over govt documents.
+
+    Returns a list of dicts (NOT a tuple — analyst_router consumes the list
+    directly and uses elapsed time only for articles). Each item:
+      doc_id, title, source_name, source_geography, document_type, summary,
+      intel_json, score_final, relevance_tier, urgency, section_heading,
+      chunk_index, snippet, distance, source_kind="govt_doc".
+    """
+    start = time.time()
+
+    semantic_k, recency_k = GOVT_MODE_POOL_SIZES.get(mode, GOVT_DEFAULT_POOL)
+    top_k = k if k is not None else GOVT_MODE_TOP_K.get(mode, GOVT_DEFAULT_TOP_K)
+
+    expanded_query = await expand_query(query=query, user_id=user_id, db=db)
+    query_embedding = embed_query(expanded_query)
+    embedding_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
+
+    # Geo clause — restrict to docs whose source_geography matches user's monitored geos.
+    geo_clause_doc = ""
+    if geo_filter:
+        sq_escaped = [g.replace("'", "''") for g in geo_filter]
+        arr_sql = "ARRAY[" + ",".join(f"'{g}'" for g in sq_escaped) + "]"
+        # Allow user-monitored geos OR national/INDIA-wide docs.
+        geo_clause_doc = (
+            f"AND (d.source_geography = ANY({arr_sql}) "
+            f"OR d.source_geography IN ('INDIA','NATIONAL'))"
+        )
+
+    # ── Pool A: best chunk-level OR doc-level cosine per doc ──────────────────
+    sem_sql = f"""
+        WITH chunk_hits AS (
+          SELECT
+            d.id                    AS doc_id,
+            c.section_heading       AS section_heading,
+            c.chunk_index           AS chunk_index,
+            c.page_number           AS page_number,
+            c.chunk_text            AS snippet,
+            (c.labse_embedding <=> CAST(:embedding AS vector)) AS distance
+          FROM govt_document_chunks c
+          JOIN govt_documents d ON d.id = c.document_id
+          JOIN user_govt_doc_relevance ugr
+            ON ugr.doc_id = d.id
+            AND ugr.user_id = :user_id
+          WHERE c.labse_embedding IS NOT NULL
+            AND (c.labse_embedding <=> CAST(:embedding AS vector)) < :threshold
+            {geo_clause_doc}
+        ),
+        doc_hits AS (
+          SELECT
+            d.id                    AS doc_id,
+            NULL::text              AS section_heading,
+            NULL::int               AS chunk_index,
+            NULL::int               AS page_number,
+            COALESCE(d.summary, LEFT(d.full_text_translated, 1000),
+                     LEFT(d.full_text, 1000)) AS snippet,
+            (d.labse_embedding <=> CAST(:embedding AS vector)) AS distance
+          FROM govt_documents d
+          JOIN user_govt_doc_relevance ugr
+            ON ugr.doc_id = d.id
+            AND ugr.user_id = :user_id
+          WHERE d.labse_embedding IS NOT NULL
+            AND (d.labse_embedding <=> CAST(:embedding AS vector)) < :threshold
+            {geo_clause_doc}
+        ),
+        unioned AS (
+          SELECT * FROM chunk_hits
+          UNION ALL
+          SELECT * FROM doc_hits
+        ),
+        ranked AS (
+          SELECT
+            doc_id, section_heading, chunk_index, page_number, snippet, distance,
+            ROW_NUMBER() OVER (PARTITION BY doc_id ORDER BY distance ASC) AS rn
+          FROM unioned
+        )
+        SELECT
+          d.id::text                AS doc_id,
+          d.title,
+          d.source_name,
+          d.source_geography,
+          d.document_type,
+          d.summary,
+          d.intel_json,
+          d.published_at,
+          d.collected_at,
+          ugr.score_final,
+          ugr.relevance_tier,
+          ugr.urgency,
+          r.section_heading,
+          r.chunk_index,
+          r.page_number,
+          r.snippet,
+          r.distance
+        FROM ranked r
+        JOIN govt_documents d ON d.id = r.doc_id
+        JOIN user_govt_doc_relevance ugr
+          ON ugr.doc_id = d.id
+          AND ugr.user_id = :user_id
+        WHERE r.rn = 1
+        ORDER BY r.distance ASC
+        LIMIT :top_k
+    """
+
+    semantic_rows: list = []
+    thresholds = [
+        distance_threshold,
+        min(distance_threshold + 0.1, 0.8),
+        min(distance_threshold + 0.2, 0.9),
+    ]
+    for threshold in thresholds:
+        try:
+            sem_result = await db.execute(
+                text(sem_sql),
+                {
+                    "embedding": embedding_str,
+                    "user_id": user_id,
+                    "threshold": threshold,
+                    "top_k": semantic_k,
+                },
+            )
+            semantic_rows = sem_result.fetchall()
+        except Exception as exc:
+            logger.warning(f"Govt semantic retrieval failed at threshold {threshold}: {exc}")
+            semantic_rows = []
+        if len(semantic_rows) >= 3:
+            break
+
+    # ── Pool B: recency T1/T2 last 30 days ────────────────────────────────────
+    try:
+        recency_rows = await _govt_recency_pool(
+            user_id=user_id, db=db, limit=recency_k,
+        )
+    except Exception as exc:
+        logger.warning(f"Govt recency pool failed: {exc}")
+        recency_rows = []
+
+    # ── Merge ─────────────────────────────────────────────────────────────────
+    seen: set[str] = set()
+    merged: list = []
+    for row in semantic_rows:
+        did = str(row.doc_id)
+        if did not in seen:
+            seen.add(did)
+            merged.append(row)
+    for row in recency_rows:
+        did = str(row.doc_id)
+        if did not in seen:
+            seen.add(did)
+            merged.append(row)
+    merged = merged[:top_k]
+
+    elapsed_ms = int((time.time() - start) * 1000)
+    logger.info(
+        f"Govt dual-pool retrieval: {len(semantic_rows)} semantic + "
+        f"{len(recency_rows)} recency = {len(merged)} total "
+        f"(mode={mode}, top_k={top_k}, elapsed={elapsed_ms}ms)"
+    )
+
+    docs: list[dict] = []
+    for r in merged:
+        # Parse intel_json defensively — it's JSONB but driver may return str or dict
+        intel_raw = getattr(r, "intel_json", None)
+        if isinstance(intel_raw, str):
+            try:
+                intel_obj = json.loads(intel_raw) if intel_raw else {}
+            except json.JSONDecodeError:
+                intel_obj = {}
+        elif isinstance(intel_raw, dict):
+            intel_obj = intel_raw
+        else:
+            intel_obj = {}
+
+        snippet_raw = (r.snippet or r.summary or r.title or "")
+        tier = int(r.relevance_tier) if r.relevance_tier is not None else 3
+        snippet_len = 1500 if tier == 1 else 800 if tier == 2 else 500
+
+        docs.append({
+            "doc_id":           r.doc_id,
+            "title":            r.title,
+            "source_name":      r.source_name,
+            "source_geography": r.source_geography,
+            "document_type":    r.document_type,
+            "summary":          r.summary,
+            "intel_json":       intel_obj,
+            "score_final": (
+                float(r.score_final) if r.score_final is not None else 0.0
+            ),
+            "relevance_tier":   tier,
+            "urgency":          getattr(r, "urgency", None),
+            "section_heading":  getattr(r, "section_heading", None),
+            "chunk_index":      getattr(r, "chunk_index", None),
+            "page_number":      getattr(r, "page_number", None),
+            "snippet":          snippet_raw[:snippet_len],
+            "distance":         float(r.distance) if r.distance is not None else 0.5,
+            "published_at": (
+                r.published_at.isoformat()
+                if getattr(r, "published_at", None) else None
+            ),
+            "collected_at": (
+                r.collected_at.isoformat()
+                if getattr(r, "collected_at", None) else None
+            ),
+            "source_kind":      "govt_doc",
+        })
+
+    return docs
+

@@ -15,3 +15,8 @@ from backend.tasks.thread_task import (  # noqa: F401
 )
 from backend.tasks.youtube_task import collect_youtube as collect_youtube  # noqa: F401
 from backend.tasks.govt_task import collect_govt_documents as collect_govt_documents  # noqa: F401
+from backend.tasks.govt_relevance_task import (  # noqa: F401
+    score_govt_doc_for_all_users,
+    score_govt_doc_relevance,
+)
+from backend.tasks.govt_doctor_task import govt_collection_doctor as govt_collection_doctor  # noqa: F401

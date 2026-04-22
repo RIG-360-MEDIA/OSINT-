@@ -32,6 +32,8 @@ app = Celery(
         "backend.tasks.thread_task",
         "backend.tasks.youtube_task",
         "backend.tasks.govt_task",
+        "backend.tasks.govt_relevance_task",
+        "backend.tasks.govt_doctor_task",
     ],
 )
 
@@ -48,7 +50,10 @@ app.config_from_object(
             "tasks.collect_rss": {"queue": "collectors"},
             "tasks.collect_html": {"queue": "collectors"},
             "tasks.collect_youtube": {"queue": "youtube"},
-            "tasks.collect_govt_documents": {"queue": "collectors"},
+            "tasks.collect_govt_documents": {"queue": "documents"},
+            "tasks.govt_collection_doctor": {"queue": "documents"},
+            "tasks.score_govt_doc_relevance": {"queue": "relevance"},
+            "tasks.score_govt_doc_for_all_users": {"queue": "relevance"},
             "tasks.process_nlp_batch": {"queue": "nlp"},
             "tasks.score_relevance_batch": {"queue": "relevance"},
             "tasks.score_unscored_articles": {"queue": "relevance"},
@@ -108,7 +113,12 @@ app.config_from_object(
             "collect-govt-docs-daily": {
                 "task": "tasks.collect_govt_documents",
                 "schedule": crontab(hour=6, minute=30),
-                "options": {"queue": "collectors"},
+                "options": {"queue": "documents"},
+            },
+            "govt-doctor-daily": {
+                "task": "tasks.govt_collection_doctor",
+                "schedule": crontab(hour=7, minute=0),
+                "options": {"queue": "documents"},
             },
         },
     }

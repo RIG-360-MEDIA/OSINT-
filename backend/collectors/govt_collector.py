@@ -128,8 +128,28 @@ async def fetch_document_urls(
     """
     Scrape a government portal for new document URLs.
 
+    Resolution order:
+      1. Phase-3 source-adapter registry (per-portal scrapers in
+         backend/collectors/sources/*.py with @register_source decorators)
+      2. Built-in PIB scraper
+      3. Built-in Telangana GO.Ms / TS High Court scraper
+      4. Generic PDF-link scraper (any portal)
+
     Returns list of dicts: {url, title, published_at, type}.
     """
+    from backend.collectors.sources.registry import lookup
+
+    adapter = lookup(portal_url)
+    if adapter is not None:
+        try:
+            return await adapter(portal_url, document_type, since_days)
+        except Exception as exc:
+            logger.warning(
+                "Source adapter for %s failed: %s — falling back to built-ins",
+                portal_url,
+                exc,
+            )
+
     if "pib.gov.in" in portal_url:
         return await _scrape_pib(since_days)
 

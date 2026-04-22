@@ -21,6 +21,23 @@ interface DocumentItem {
   page_count: number | null
   published_at: string | null
   collected_at: string
+  score_final: number | null
+  relevance_tier: number | null
+  urgency: 'HIGH' | 'MEDIUM' | 'LOW' | null
+  why_it_matters: string | null
+  suggested_action: string | null
+}
+
+const URGENCY_BADGE: Record<string, { bg: string; text: string }> = {
+  HIGH:   { bg: '#FEE2E2', text: '#DC2626' },
+  MEDIUM: { bg: '#FEF3C7', text: '#D97706' },
+  LOW:    { bg: '#F1F5F9', text: '#64748B' },
+}
+
+const TIER_LEFT_BORDER: Record<number, string> = {
+  1: '#3B82F6',
+  2: '#10B981',
+  3: '#94A3B8',
 }
 
 interface GeoCount {
@@ -340,6 +357,23 @@ export default function DocumentsPage() {
 
           {!loading && documents.length > 0 && (
             <>
+              {total > 0 && (
+                <div style={{ display: 'flex', marginBottom: '12px' }}>
+                  <span
+                    style={{
+                      fontFamily:      "'DM Mono', monospace",
+                      fontSize:        '11px',
+                      color:           '#94A3B8',
+                      padding:         '4px 10px',
+                      backgroundColor: '#F1F5F9',
+                      border:          '1px solid #E2E8F0',
+                      borderRadius:    '9999px',
+                    }}
+                  >
+                    Sorted by: Relevance ↓
+                  </span>
+                </div>
+              )}
               <div
                 style={{
                   display:             'grid',
@@ -472,6 +506,8 @@ function DocumentCard({
   onOpen: () => void
 }) {
   const geo = GEO_BADGE[doc.source_geography] ?? GEO_BADGE.CENTRAL
+  const tierLeft = doc.relevance_tier != null ? TIER_LEFT_BORDER[doc.relevance_tier] : undefined
+  const urgency = doc.urgency ? URGENCY_BADGE[doc.urgency] : null
 
   return (
     <div
@@ -481,6 +517,7 @@ function DocumentCard({
         backgroundColor: '#FFFFFF',
         borderRadius:    '10px',
         border:          '1px solid #E2E8F0',
+        borderLeft:      tierLeft ? `3px solid ${tierLeft}` : '1px solid #E2E8F0',
         boxShadow:       '0 1px 3px rgba(15,23,42,0.05)',
         cursor:          'pointer',
         overflow:        'hidden',
@@ -491,38 +528,65 @@ function DocumentCard({
       }}
     >
       {/* Top badges */}
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-        <span
-          style={{
-            padding:         '2px 8px',
-            borderRadius:    '9999px',
-            backgroundColor: geo.bg,
-            border:          `1px solid ${geo.border}`,
-            fontFamily:      "'DM Sans', system-ui",
-            fontSize:        '10px',
-            fontWeight:      700,
-            color:           geo.text,
-            letterSpacing:   '0.08em',
-          }}
-        >
-          {doc.source_geography}
-        </span>
-        <span
-          style={{
-            padding:         '2px 8px',
-            borderRadius:    '9999px',
-            backgroundColor: '#F8FAFC',
-            border:          '1px solid #E2E8F0',
-            fontFamily:      "'DM Sans', system-ui",
-            fontSize:        '10px',
-            fontWeight:      600,
-            color:           '#475569',
-            letterSpacing:   '0.06em',
-            textTransform:   'uppercase',
-          }}
-        >
-          {doc.document_type.replace(/_/g, ' ')}
-        </span>
+      <div
+        style={{
+          display:        'flex',
+          gap:            '6px',
+          flexWrap:       'wrap',
+          alignItems:     'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          <span
+            style={{
+              padding:         '2px 8px',
+              borderRadius:    '9999px',
+              backgroundColor: geo.bg,
+              border:          `1px solid ${geo.border}`,
+              fontFamily:      "'DM Sans', system-ui",
+              fontSize:        '10px',
+              fontWeight:      700,
+              color:           geo.text,
+              letterSpacing:   '0.08em',
+            }}
+          >
+            {doc.source_geography}
+          </span>
+          <span
+            style={{
+              padding:         '2px 8px',
+              borderRadius:    '9999px',
+              backgroundColor: '#F8FAFC',
+              border:          '1px solid #E2E8F0',
+              fontFamily:      "'DM Sans', system-ui",
+              fontSize:        '10px',
+              fontWeight:      600,
+              color:           '#475569',
+              letterSpacing:   '0.06em',
+              textTransform:   'uppercase',
+            }}
+          >
+            {doc.document_type.replace(/_/g, ' ')}
+          </span>
+        </div>
+        {urgency && (
+          <span
+            style={{
+              padding:         '2px 8px',
+              borderRadius:    '9999px',
+              backgroundColor: urgency.bg,
+              border:          `1px solid ${urgency.text}`,
+              fontFamily:      "'DM Sans', system-ui",
+              fontSize:        '10px',
+              fontWeight:      700,
+              color:           urgency.text,
+              letterSpacing:   '0.08em',
+            }}
+          >
+            {doc.urgency}
+          </span>
+        )}
       </div>
 
       {/* Title */}
@@ -540,6 +604,24 @@ function DocumentCard({
         {doc.title}
       </h3>
 
+      {/* Why it matters (if present) */}
+      {doc.why_it_matters && (
+        <div
+          style={{
+            fontFamily:    "'DM Sans', system-ui",
+            fontSize:      '12px',
+            fontStyle:     'italic',
+            color:         '#B45309',
+            lineHeight:    1.4,
+            whiteSpace:    'nowrap',
+            overflow:      'hidden',
+            textOverflow:  'ellipsis',
+          }}
+        >
+          {doc.why_it_matters}
+        </div>
+      )}
+
       {/* Source */}
       <div
         style={{
@@ -553,22 +635,24 @@ function DocumentCard({
 
       <div style={{ height: '1px', backgroundColor: '#F1F5F9' }} />
 
-      {/* Preview */}
-      <p
-        style={{
-          fontFamily: "'DM Sans', system-ui",
-          fontSize:   '13px',
-          color:      '#475569',
-          lineHeight: 1.55,
-          margin:     0,
-          display:    '-webkit-box',
-          WebkitLineClamp: 4,
-          WebkitBoxOrient: 'vertical',
-          overflow:   'hidden',
-        }}
-      >
-        {doc.summary || doc.summary_preview || 'No preview available.'}
-      </p>
+      {/* Preview (only if no why_it_matters) */}
+      {!doc.why_it_matters && (
+        <p
+          style={{
+            fontFamily: "'DM Sans', system-ui",
+            fontSize:   '13px',
+            color:      '#475569',
+            lineHeight: 1.55,
+            margin:     0,
+            display:    '-webkit-box',
+            WebkitLineClamp: 4,
+            WebkitBoxOrient: 'vertical',
+            overflow:   'hidden',
+          }}
+        >
+          {doc.summary || doc.summary_preview || 'No preview available.'}
+        </p>
+      )}
 
       {/* Footer chips */}
       <div
@@ -585,15 +669,28 @@ function DocumentCard({
           {doc.topic_category && <FooterChip>{doc.topic_category}</FooterChip>}
           {doc.geo_primary && <FooterChip>{doc.geo_primary}</FooterChip>}
         </div>
-        <span
-          style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize:   '11px',
-            color:      '#94A3B8',
-          }}
-        >
-          {formatShortDate(doc.collected_at)}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {doc.score_final != null && (
+            <span
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                fontSize:   '11px',
+                color:      '#3B82F6',
+              }}
+            >
+              {doc.score_final.toFixed(2)}
+            </span>
+          )}
+          <span
+            style={{
+              fontFamily: "'DM Mono', monospace",
+              fontSize:   '11px',
+              color:      '#94A3B8',
+            }}
+          >
+            {formatShortDate(doc.collected_at)}
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -789,6 +886,88 @@ function DocumentDialog({
               {formatShortDate(doc.collected_at)}
             </span>
           </div>
+
+          {/* Why This Matters To You */}
+          {doc.why_it_matters && (
+            <div
+              style={{
+                marginBottom:    '14px',
+                padding:         '14px 16px',
+                borderRadius:    '8px',
+                backgroundColor: '#FFFBEB',
+                borderLeft:      '3px solid #F59E0B',
+              }}
+            >
+              <div
+                style={{
+                  display:        'flex',
+                  alignItems:     'center',
+                  justifyContent: 'space-between',
+                  gap:            '8px',
+                  marginBottom:   '8px',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily:    "'DM Sans', system-ui",
+                    fontSize:      '10px',
+                    fontWeight:    700,
+                    color:         '#B45309',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                  }}
+                >
+                  Why This Matters To You
+                </div>
+                {doc.urgency && (() => {
+                  const u = URGENCY_BADGE[doc.urgency]
+                  return (
+                    <span
+                      style={{
+                        padding:         '2px 8px',
+                        borderRadius:    '9999px',
+                        backgroundColor: u.bg,
+                        border:          `1px solid ${u.text}`,
+                        fontFamily:      "'DM Sans', system-ui",
+                        fontSize:        '10px',
+                        fontWeight:      700,
+                        color:           u.text,
+                        letterSpacing:   '0.08em',
+                      }}
+                    >
+                      {doc.urgency}
+                    </span>
+                  )
+                })()}
+              </div>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', system-ui",
+                  fontSize:   '14px',
+                  lineHeight: 1.6,
+                  color:      '#78350F',
+                  margin:     0,
+                }}
+              >
+                {doc.why_it_matters}
+              </p>
+            </div>
+          )}
+
+          {/* Suggested action */}
+          {doc.suggested_action && (
+            <div
+              style={{
+                fontFamily:   "'DM Sans', system-ui",
+                fontSize:     '13px',
+                fontStyle:    'italic',
+                color:        '#475569',
+                marginBottom: '20px',
+              }}
+            >
+              Suggested action: {doc.suggested_action}
+            </div>
+          )}
 
           {/* Summary section */}
           {!summary && !summaryLoading && !summaryError && (

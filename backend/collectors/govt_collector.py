@@ -218,16 +218,12 @@ async def extract_text_from_pdf(
     if opendataloader_pdf is not None:
         try:
             output_dir = tempfile.mkdtemp()
-            kwargs = {
-                "input_path": [pdf_path],
-                "output_dir": output_dir,
-                "format": "markdown",
-            }
-            if is_scanned:
-                kwargs["hybrid"] = "docling-fast"
-
-            opendataloader_pdf.convert(**kwargs)
-
+            opendataloader_pdf.run(
+                input_path=pdf_path,
+                output_folder=output_dir,
+                generate_markdown=True,
+                debug=False,
+            )
             for fname in os.listdir(output_dir):
                 if fname.endswith(".md"):
                     with open(os.path.join(output_dir, fname)) as mf:

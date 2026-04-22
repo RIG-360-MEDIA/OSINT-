@@ -14,3 +14,4 @@ from backend.tasks.thread_task import (  # noqa: F401
     nightly_thread_recluster,
 )
 from backend.tasks.youtube_task import collect_youtube as collect_youtube  # noqa: F401
+from backend.tasks.govt_task import collect_govt_documents as collect_govt_documents  # noqa: F401

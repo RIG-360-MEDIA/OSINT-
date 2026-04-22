@@ -20,7 +20,11 @@ logger = logging.getLogger(__name__)
 
 
 _HTTP_HEADERS = {
-    "User-Agent": "RIGSurveillance/1.0 (+https://rig-surveillance.local)"
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
 }
 
 
@@ -63,20 +67,23 @@ async def _scrape_pib(since_days: int) -> list[dict]:
                 href = link.get("href", "")
                 if "prid=" in href or ".pdf" in href.lower():
                     title = link.get_text(strip=True)
-                    if title and len(title) > 10:
-                        full_url = (
-                            href
-                            if href.startswith("http")
-                            else urljoin("https://pib.gov.in/", href)
-                        )
-                        docs.append(
-                            {
-                                "url": full_url,
-                                "title": title,
-                                "published_at": None,
-                                "type": "press_release",
-                            }
-                        )
+                    full_url = (
+                        href
+                        if href.startswith("http")
+                        else urljoin("https://pib.gov.in/", href)
+                    )
+                    # Fall back to URL basename when anchor text is short —
+                    # many PIB PDF links are icon-only or single-word anchors.
+                    if not title or len(title) < 10:
+                        title = full_url.rstrip("/").rsplit("/", 1)[-1] or full_url
+                    docs.append(
+                        {
+                            "url": full_url,
+                            "title": title[:500],
+                            "published_at": None,
+                            "type": "press_release",
+                        }
+                    )
     except Exception as exc:
         logger.warning("PIB scrape failed: %s", exc)
 

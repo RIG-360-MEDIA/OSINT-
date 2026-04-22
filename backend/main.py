@@ -28,6 +28,7 @@ from backend.routers.coverage_router import coverage_router
 from backend.routers.debug_router import debug_router
 from backend.routers.onboarding_router import onboarding_router
 from backend.routers.clips_router import clips_router
+from backend.routers.documents_router import documents_router
 from backend.routers.thread_router import thread_router
 
 app = FastAPI(
@@ -43,6 +44,7 @@ app.include_router(onboarding_router)
 app.include_router(brief_router)
 app.include_router(coverage_router)
 app.include_router(clips_router)
+app.include_router(documents_router)
 app.include_router(thread_router)
 
 app.add_middleware(

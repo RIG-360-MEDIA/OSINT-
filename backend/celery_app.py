@@ -31,6 +31,7 @@ app = Celery(
         "backend.tasks.dict_reload_task",
         "backend.tasks.thread_task",
         "backend.tasks.youtube_task",
+        "backend.tasks.govt_task",
     ],
 )
 
@@ -47,6 +48,7 @@ app.config_from_object(
             "tasks.collect_rss": {"queue": "collectors"},
             "tasks.collect_html": {"queue": "collectors"},
             "tasks.collect_youtube": {"queue": "youtube"},
+            "tasks.collect_govt_documents": {"queue": "collectors"},
             "tasks.process_nlp_batch": {"queue": "nlp"},
             "tasks.score_relevance_batch": {"queue": "relevance"},
             "tasks.score_unscored_articles": {"queue": "relevance"},
@@ -102,6 +104,11 @@ app.config_from_object(
                 "task": "tasks.collect_youtube",
                 "schedule": timedelta(hours=6),
                 "options": {"queue": "youtube"},
+            },
+            "collect-govt-docs-daily": {
+                "task": "tasks.collect_govt_documents",
+                "schedule": crontab(hour=6, minute=30),
+                "options": {"queue": "collectors"},
             },
         },
     }

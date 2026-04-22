@@ -128,6 +128,9 @@ async def scrape_worldbank_india(
                 # Stay within worldbank.org domain
                 if "worldbank.org" not in urlparse(full_url).netloc:
                     continue
+                # F1 — PDF-only: drop /publication/ category landing pages.
+                if ".pdf" not in full_url.lower():
+                    continue
                 _append_doc(docs, full_url, text, document_type)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
@@ -171,6 +174,9 @@ async def scrape_adb_india(
                     continue
                 full_url = _absolutize(href, portal_url)
                 if "adb.org" not in urlparse(full_url).netloc:
+                    continue
+                # F1 — PDF-only: drop /publications/<slug> landing pages.
+                if ".pdf" not in full_url.lower():
                     continue
                 _append_doc(docs, full_url, text, document_type)
                 if len(docs) >= _MAX_CANDIDATES:
@@ -216,6 +222,9 @@ async def scrape_imf_india(
                     continue
                 full_url = _absolutize(href, portal_url)
                 if "imf.org" not in urlparse(full_url).netloc:
+                    continue
+                # F1 — PDF-only: drop /Issues/ HTML detail pages.
+                if ".pdf" not in full_url.lower():
                     continue
                 _append_doc(docs, full_url, text, document_type)
                 if len(docs) >= _MAX_CANDIDATES:
@@ -264,6 +273,9 @@ async def scrape_un_india(
                     continue
                 full_url = _absolutize(href, portal_url)
                 if "un.org" not in urlparse(full_url).netloc:
+                    continue
+                # F1 — PDF-only: drop /es/portugues, /accessibility-A and other nav.
+                if ".pdf" not in full_url.lower():
                     continue
                 _append_doc(docs, full_url, text, document_type)
                 if len(docs) >= _MAX_CANDIDATES:
@@ -314,6 +326,9 @@ async def scrape_ilo_india(
                 full_url = _absolutize(href, portal_url)
                 if "ilo.org" not in urlparse(full_url).netloc:
                     continue
+                # F1 — PDF-only: drop /publications/ category landing pages.
+                if ".pdf" not in full_url.lower():
+                    continue
                 _append_doc(docs, full_url, text, document_type)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
@@ -334,6 +349,8 @@ async def scrape_wto_india(
     The portal_url points at a single .docx download (India's WTO/AG/N notif).
     Single-doc adapters return one row.
     """
+    # F1 EXCEPTION: single-doc adapter — portal_url IS the document (.docx),
+    # not a listing page. Strict .pdf filter would drop a legitimate doc.
     docs: list[dict] = []
     try:
         # Derive a sensible title from the URL filename
@@ -365,6 +382,7 @@ async def scrape_bis(
     The portal_url is the canonical /publ/arpdf/ar<year>e.pdf. We return a
     single candidate; the doc-intel pipeline will fetch & parse the PDF.
     """
+    # F1 EXCEPTION: single-doc adapter — portal_url IS the .pdf already.
     docs: list[dict] = []
     try:
         path = urlparse(portal_url).path

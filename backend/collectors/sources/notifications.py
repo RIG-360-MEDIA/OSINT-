@@ -116,6 +116,10 @@ def _harvest_links(
         ):
             continue
         full_url = _absolutize(href, portal_url)
+        # F1 — PDF-only: drop MoF/MEA/MoD/MHA/GeM detail-page permalinks and
+        # category navigation that match keywords but aren't actual PDFs.
+        if ".pdf" not in full_url.lower():
+            continue
         _append_doc(docs, full_url, text, document_type)
         if len(docs) >= _MAX_CANDIDATES:
             break

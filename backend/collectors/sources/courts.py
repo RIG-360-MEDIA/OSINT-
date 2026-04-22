@@ -113,6 +113,8 @@ async def scrape_sci_judgments(
     typically a case number like "WP(C) 1234/2024" which the heuristic might
     drop).
     """
+    # F1 EXCEPTION: detail-page redirect, not direct PDF — but adapter already
+    # restricts to ``.pdf in href.lower()`` so behaviour is correct as-is.
     docs: list[dict] = []
     try:
         async with httpx.AsyncClient(

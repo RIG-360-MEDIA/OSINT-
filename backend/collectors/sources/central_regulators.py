@@ -138,6 +138,10 @@ def _collect_links(
             dropped_junk += 1
             continue
 
+        # F1 — PDF-only: drop navigation/category links that aren't actual PDFs.
+        if ".pdf" not in full_url.lower():
+            continue
+
         docs.append(
             {
                 "url": full_url,
@@ -181,6 +185,10 @@ def _parse_rss_items(
         raw_title = title_el.get_text(strip=True) if title_el is not None else ""
         title = _normalise_title(raw_title, full_url)
         if _is_junk_title(title, full_url):
+            continue
+
+        # F1 — PDF-only: RBI RSS items are detail pages; only direct PDFs survive.
+        if ".pdf" not in full_url.lower():
             continue
 
         docs.append(

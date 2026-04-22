@@ -108,6 +108,10 @@ def _harvest_pdf_links(
         if not (is_pdf or has_kw):
             continue
         full_url = _absolutize(href, portal_url)
+        # F1 — PDF-only: drop FSSAI /standards/, MCA category, CDSCO sub-folder
+        # navigation links that match keywords but aren't actual PDFs.
+        if ".pdf" not in full_url.lower():
+            continue
         _append_doc(docs, full_url, text, document_type)
         if len(docs) >= _MAX_CANDIDATES:
             break

@@ -226,6 +226,9 @@ async def scrape_ts_ipass(
                 if not (is_pdf or has_kw):
                     continue
                 full_url = _absolutize(href, portal_url)
+                # F1 — PDF-only: drop navigation/category links that aren't actual PDFs.
+                if ".pdf" not in full_url.lower():
+                    continue
                 _append_doc(docs, full_url, text, document_type)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
@@ -320,6 +323,9 @@ async def scrape_ghmc_tenders(
                 if href.startswith("#") or href.lower().startswith("javascript"):
                     continue
                 full_url = _absolutize(href, portal_url)
+                # F1 — PDF-only: drop navigation/category links that aren't actual PDFs.
+                if ".pdf" not in full_url.lower():
+                    continue
                 _append_doc(docs, full_url, text or "GHMC Tender", document_type)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
@@ -399,6 +405,9 @@ async def scrape_eproc_ts(
                 if href.startswith("#") or href.lower().startswith("javascript"):
                     continue
                 full_url = _absolutize(href, portal_url)
+                # F1 — PDF-only: drop navigation/category links that aren't actual PDFs.
+                if ".pdf" not in full_url.lower():
+                    continue
                 _append_doc(docs, full_url, text or "eProc Tender", document_type)
                 if len(docs) >= _MAX_CANDIDATES:
                     break

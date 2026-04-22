@@ -111,6 +111,11 @@ def _harvest_pdf_anchors(
         if not (is_pdf or has_kw):
             continue
         full_url = _absolutize(href, base)
+        # F1 — PDF-only: drop navigation/category links that aren't actual PDFs.
+        # sansad.in SPA shells expose accessibility/lang nav links matching keywords;
+        # legacy NIC fallbacks are real .pdf directories.
+        if ".pdf" not in full_url.lower():
+            continue
         _append_doc(docs, full_url, text, document_type)
         if len(docs) >= _MAX_CANDIDATES:
             break
@@ -318,6 +323,9 @@ async def scrape_prs_bills(
                 if not (is_pdf or is_billtrack or has_kw):
                     continue
                 full_url = _absolutize(href, portal_url)
+                # F1 — PDF-only: drop /billtrack/<slug> detail pages and category links.
+                if ".pdf" not in full_url.lower():
+                    continue
                 _append_doc(docs, full_url, text or "PRS Bill", document_type)
                 if len(docs) >= _MAX_CANDIDATES:
                     break

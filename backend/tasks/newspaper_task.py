@@ -13,7 +13,6 @@ import os
 import tempfile
 from datetime import date
 
-import httpx
 from sqlalchemy import text
 
 from backend.celery_app import app
@@ -34,6 +33,7 @@ def collect_newspapers() -> None:
 async def _collect_newspapers() -> None:
     from backend.database import get_db
     from backend.collectors.newspaper_collector import (
+        download_pdf_from_url,
         extract_articles_from_pdf,
         get_pdf_url_from_careerswave,
         is_relevant_to_user,
@@ -80,11 +80,11 @@ async def _collect_newspapers() -> None:
                     """
                     SELECT COUNT(*) AS cnt
                     FROM newspaper_clippings
-                    WHERE newspaper_id = :pid::uuid
+                    WHERE newspaper_id = CAST(:pid AS uuid)
                       AND edition_date = :today
                     """
                 ),
-                {"pid": str(paper.id), "today": today.isoformat()},
+                {"pid": str(paper.id), "today": today},
             )
             if existing.fetchone().cnt > 5:
                 logger.info(f"{paper.name} already processed today")
@@ -96,28 +96,21 @@ async def _collect_newspapers() -> None:
                 continue
 
             with tempfile.TemporaryDirectory() as tmpdir:
-                pdf_path = os.path.join(tmpdir, f"{paper.name}.pdf")
-                try:
-                    async with httpx.AsyncClient(
-                        timeout=120,
-                        follow_redirects=True,
-                    ) as client:
-                        r = await client.get(
-                            pdf_url,
-                            headers={"User-Agent": "Mozilla/5.0"},
-                        )
-                        if r.status_code != 200:
-                            logger.warning(
-                                f"PDF download failed: {r.status_code}"
-                            )
-                            continue
-                        with open(pdf_path, "wb") as f:
-                            f.write(r.content)
-                except Exception as e:
+                safe_name = paper.name.replace(" ", "_").replace("/", "_")
+                pdf_path = os.path.join(tmpdir, f"{safe_name}.pdf")
+                ok = await download_pdf_from_url(pdf_url, pdf_path)
+                if not ok or not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 1024:
                     logger.warning(
-                        f"PDF download error for {paper.name}: {e}"
+                        "PDF download failed or too small for %s (%s)",
+                        paper.name,
+                        pdf_url,
                     )
                     continue
+                logger.info(
+                    "Downloaded %s: %d bytes",
+                    paper.name,
+                    os.path.getsize(pdf_path),
+                )
 
                 articles = await extract_articles_from_pdf(
                     pdf_path, paper.language
@@ -193,7 +186,7 @@ async def _collect_newspapers() -> None:
                                     relevance_explanation,
                                     labse_embedding
                                 ) VALUES (
-                                    :nid::uuid,
+                                    CAST(:nid AS uuid),
                                     :name,
                                     :lang,
                                     :edition_date,
@@ -209,7 +202,7 @@ async def _collect_newspapers() -> None:
                                     :clipping,
                                     :score,
                                     :reason,
-                                    :emb::vector
+                                    CAST(:emb AS vector)
                                 )
                                 ON CONFLICT (
                                     newspaper_id, edition_date, headline
@@ -220,7 +213,7 @@ async def _collect_newspapers() -> None:
                                 "nid": str(paper.id),
                                 "name": paper.name,
                                 "lang": paper.language,
-                                "edition_date": today.isoformat(),
+                                "edition_date": today,
                                 "page_num": article.get("page_number"),
                                 "headline": headline[:500],
                                 "headline_tr": headline_translated,
@@ -245,7 +238,7 @@ async def _collect_newspapers() -> None:
                     """
                     UPDATE newspaper_sources
                     SET last_scraped_at = NOW()
-                    WHERE id = :pid::uuid
+                    WHERE id = CAST(:pid AS uuid)
                     """
                 ),
                 {"pid": str(paper.id)},

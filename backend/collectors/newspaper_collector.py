@@ -97,63 +97,81 @@ async def extract_articles_from_pdf(
     """
     articles: list[dict] = []
 
+    # ── Tier 1: OpenDataLoader PDF (v0.0.16 API — run(), not convert()) ──
+    # Matches pattern from backend/collectors/govt_collector.py.
+    # If odl produces JSON files with bbox data we consume them; otherwise
+    # we fall through to PyMuPDF which always gives us block-level bboxes.
     try:
-        import opendataloader_pdf
-
-        output_dir = tempfile.mkdtemp()
-
-        opendataloader_pdf.convert(
-            input_path=[pdf_path],
-            output_dir=output_dir,
-            format="json",
-            hybrid="docling-fast" if language != "en" else None,
-        )
-
-        for fname in os.listdir(output_dir):
-            if not fname.endswith(".json"):
-                continue
-            with open(os.path.join(output_dir, fname)) as f:
-                data = json.load(f)
-
-            current: dict | None = None
-
-            for element in data:
-                elem_type = element.get("type", "")
-                content = element.get("content", "")
-                bbox = element.get("bounding box", [])
-                page = element.get("page number", 1)
-
-                if elem_type == "heading" and len(content) > 10:
-                    if current:
-                        articles.append(current)
-                    current = {
-                        "headline": content,
-                        "text": "",
-                        "bounding_box": bbox,
-                        "page_number": page,
-                    }
-                elif current and elem_type in ("paragraph", "text"):
-                    current["text"] += " " + content
-                    if bbox and current["bounding_box"]:
-                        cb = current["bounding_box"]
-                        current["bounding_box"] = [
-                            min(cb[0], bbox[0]),
-                            min(cb[1], bbox[1]),
-                            max(cb[2], bbox[2]),
-                            max(cb[3], bbox[3]),
-                        ]
-
-            if current:
-                articles.append(current)
-
+        import opendataloader_pdf  # type: ignore[import-not-found]
     except ImportError:
-        logger.info(
-            "OpenDataLoader not available — using PyMuPDF fallback"
-        )
-        articles = _extract_with_pymupdf(pdf_path)
+        opendataloader_pdf = None  # type: ignore[assignment]
 
-    except Exception as e:
-        logger.warning(f"PDF article extraction failed: {e}")
+    if opendataloader_pdf is not None:
+        try:
+            output_dir = tempfile.mkdtemp()
+            opendataloader_pdf.run(
+                input_path=pdf_path,
+                output_folder=output_dir,
+                generate_markdown=False,
+                debug=False,
+            )
+
+            for fname in os.listdir(output_dir):
+                if not fname.endswith(".json"):
+                    continue
+                with open(os.path.join(output_dir, fname)) as f:
+                    data = json.load(f)
+
+                # odl JSON may be either a flat list of elements or a
+                # nested doc structure. Handle the flat-list shape we
+                # expect; fall back silently otherwise.
+                if not isinstance(data, list):
+                    continue
+
+                current: dict | None = None
+                for element in data:
+                    if not isinstance(element, dict):
+                        continue
+                    elem_type = element.get("type", "")
+                    content = element.get("content", "")
+                    bbox = element.get("bounding box") or element.get("bbox") or []
+                    page = element.get("page number") or element.get("page", 1)
+
+                    if elem_type == "heading" and len(content) > 10:
+                        if current:
+                            articles.append(current)
+                        current = {
+                            "headline": content,
+                            "text": "",
+                            "bounding_box": bbox,
+                            "page_number": page,
+                        }
+                    elif current and elem_type in ("paragraph", "text"):
+                        current["text"] += " " + content
+                        if bbox and current["bounding_box"]:
+                            cb = current["bounding_box"]
+                            current["bounding_box"] = [
+                                min(cb[0], bbox[0]),
+                                min(cb[1], bbox[1]),
+                                max(cb[2], bbox[2]),
+                                max(cb[3], bbox[3]),
+                            ]
+
+                if current:
+                    articles.append(current)
+
+        except Exception as exc:
+            logger.warning(
+                "OpenDataLoader extraction failed (%s) — falling back to PyMuPDF",
+                exc,
+            )
+
+    # ── Tier 2: PyMuPDF fallback ─────────────────────────────────────────
+    # Always runs when odl produced zero articles (missing, failed, or
+    # returned an unexpected JSON shape). PyMuPDF gives us text blocks
+    # with bounding boxes which is what the clipping renderer needs.
+    if not articles:
+        articles = _extract_with_pymupdf(pdf_path)
 
     return articles
 

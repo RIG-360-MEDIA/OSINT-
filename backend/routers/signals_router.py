@@ -31,9 +31,16 @@ async def get_signals_feed(
     """
     Unified social signal feed.
 
-    Shows posts that either (a) mention a user-tracked entity, or
-    (b) have high engagement (upvotes > 100). Ordered by collection time,
-    paginated via an ISO-timestamp cursor on `collected_at`.
+    A post surfaces when either:
+      (a) it came from an explicitly-monitored source (monitor_id set) —
+          the user's decision to monitor that subreddit / account /
+          channel is itself the relevance signal, OR
+      (b) for any un-monitored post (future keyword-search firehose),
+          it matches a user-tracked entity OR has high engagement
+          (upvotes > 100).
+
+    Ordered by collection time; paginated via ISO-timestamp cursor on
+    `collected_at`.
     """
     async with get_db() as db:
         ent_rows = (
@@ -53,9 +60,14 @@ async def get_signals_feed(
         params: dict[str, Any] = {"days": days, "limit": limit + 1}
 
         if user_entities:
+            # Show everything from monitored sources OR anything
+            # un-monitored that matches an entity / high engagement.
             conditions.append(
-                "(sp.matched_entities && CAST(:entities AS text[]) "
-                "OR sp.upvotes > 100)"
+                "("
+                "sp.monitor_id IS NOT NULL "
+                "OR sp.matched_entities && CAST(:entities AS text[]) "
+                "OR sp.upvotes > 100"
+                ")"
             )
             params["entities"] = user_entities
 

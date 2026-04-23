@@ -286,38 +286,40 @@ async def scrape_sebi(
     document_type: str,
     since_days: int = 2,
 ) -> list[dict]:
-    """Scrape SEBI listing pages (HomeAction.do?doListing=yes…)."""
-    try:
-        async with httpx.AsyncClient(
-            timeout=_HTTP_TIMEOUT,
-            follow_redirects=True,
-            headers=_HTTP_HEADERS,
-            verify=False,  # SEBI ships an incomplete cert chain.
-        ) as client:
-            html = await _fetch(client, portal_url)
-            if not html:
-                return []
+    """Scrape SEBI listing pages via Playwright (SPA / JS-rendered)."""
+    from backend.collectors.playwright_helper import render_html
 
-            docs, dropped = _collect_links(
-                html,
-                portal_url,
-                document_type,
-                href_filter=lambda h: (
-                    h.lower().endswith(".pdf")
-                    or ".pdf?" in h.lower()
-                    or "AttachLive" in h
-                    or "AttachDoc" in h
-                    or "showAttachmentDoc" in h
-                    or "/sebi_data/" in h.lower()
-                    or "/cms/sebi_data/" in h.lower()
-                    or "yyyy=" in h.lower()
-                    or "intmid=" in h.lower()
-                ),
-            )
-            logger.info(
-                "SEBI: %d candidates, dropped %d junk", len(docs), dropped
-            )
+    docs: list[dict] = []
+    try:
+        html = await render_html(
+            portal_url,
+            wait_for_selector="a[href*='.pdf']",
+            timeout_ms=30000,
+        )
+        if not html:
             return docs
+        docs, dropped = _collect_links(
+            html,
+            portal_url,
+            document_type,
+            href_filter=lambda h: (
+                h.lower().endswith(".pdf")
+                or ".pdf?" in h.lower()
+                or "AttachLive" in h
+                or "AttachDoc" in h
+                or "showAttachmentDoc" in h
+                or "/sebi_data/" in h.lower()
+                or "/cms/sebi_data/" in h.lower()
+                or "yyyy=" in h.lower()
+                or "intmid=" in h.lower()
+            ),
+        )
+        logger.info(
+            "SEBI (playwright): %d candidates, dropped %d junk",
+            len(docs),
+            dropped,
+        )
+        return docs
     except Exception as exc:  # noqa: BLE001
         logger.warning("SEBI scrape failed for %s: %s", portal_url, exc)
         return []
@@ -451,32 +453,34 @@ async def scrape_cerc(
     document_type: str,
     since_days: int = 2,
 ) -> list[dict]:
-    """Scrape Central Electricity Regulatory Commission current orders page."""
-    try:
-        async with httpx.AsyncClient(
-            timeout=_HTTP_TIMEOUT,
-            follow_redirects=True,
-            headers=_HTTP_HEADERS,
-            verify=False,  # cercind.gov.in TLS chain is unreliable.
-        ) as client:
-            html = await _fetch(client, portal_url)
-            if not html:
-                return []
+    """Scrape Central Electricity Regulatory Commission current orders page (Playwright)."""
+    from backend.collectors.playwright_helper import render_html
 
-            docs, dropped = _collect_links(
-                html,
-                portal_url,
-                document_type,
-                href_filter=lambda h: (
-                    h.lower().endswith(".pdf")
-                    or "/orders/" in h.lower()
-                    or "ord_" in h.lower()
-                ),
-            )
-            logger.info(
-                "CERC: %d candidates, dropped %d junk", len(docs), dropped
-            )
+    docs: list[dict] = []
+    try:
+        html = await render_html(
+            portal_url,
+            wait_for_selector="a[href*='.pdf']",
+            timeout_ms=30000,
+        )
+        if not html:
             return docs
+        docs, dropped = _collect_links(
+            html,
+            portal_url,
+            document_type,
+            href_filter=lambda h: (
+                h.lower().endswith(".pdf")
+                or "/orders/" in h.lower()
+                or "ord_" in h.lower()
+            ),
+        )
+        logger.info(
+            "CERC (playwright): %d candidates, dropped %d junk",
+            len(docs),
+            dropped,
+        )
+        return docs
     except Exception as exc:  # noqa: BLE001
         logger.warning("CERC scrape failed for %s: %s", portal_url, exc)
         return []
@@ -491,34 +495,36 @@ async def scrape_pngrb(
     document_type: str,
     since_days: int = 2,
 ) -> list[dict]:
-    """Scrape Petroleum & Natural Gas Regulatory Board regulations page."""
-    try:
-        async with httpx.AsyncClient(
-            timeout=_HTTP_TIMEOUT,
-            follow_redirects=True,
-            headers=_HTTP_HEADERS,
-            verify=False,  # PNGRB has historically had cert issues; tolerate.
-        ) as client:
-            html = await _fetch(client, portal_url)
-            if not html:
-                return []
+    """Scrape Petroleum & Natural Gas Regulatory Board regulations page (Playwright)."""
+    from backend.collectors.playwright_helper import render_html
 
-            docs, dropped = _collect_links(
-                html,
-                portal_url,
-                document_type,
-                href_filter=lambda h: (
-                    h.lower().endswith(".pdf")
-                    or "/writereaddata" in h.lower()
-                    or "/eng/" in h.lower()
-                    or "regulation" in h.lower()
-                    or "notification" in h.lower()
-                ),
-            )
-            logger.info(
-                "PNGRB: %d candidates, dropped %d junk", len(docs), dropped
-            )
+    docs: list[dict] = []
+    try:
+        html = await render_html(
+            portal_url,
+            wait_for_selector="a[href*='.pdf']",
+            timeout_ms=30000,
+        )
+        if not html:
             return docs
+        docs, dropped = _collect_links(
+            html,
+            portal_url,
+            document_type,
+            href_filter=lambda h: (
+                h.lower().endswith(".pdf")
+                or "/writereaddata" in h.lower()
+                or "/eng/" in h.lower()
+                or "regulation" in h.lower()
+                or "notification" in h.lower()
+            ),
+        )
+        logger.info(
+            "PNGRB (playwright): %d candidates, dropped %d junk",
+            len(docs),
+            dropped,
+        )
+        return docs
     except Exception as exc:  # noqa: BLE001
         logger.warning("PNGRB scrape failed for %s: %s", portal_url, exc)
         return []

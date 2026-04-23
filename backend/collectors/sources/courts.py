@@ -106,41 +106,33 @@ async def scrape_sci_judgments(
     document_type: str,
     since_days: int = 2,
 ) -> list[dict]:
-    """Supreme Court of India — daily judgments page.
+    """Supreme Court of India — daily judgments page (Playwright; table loads via JS)."""
+    from backend.collectors.playwright_helper import render_html
 
-    The /judgments listing renders a table of dated judgments with PDF links.
-    We harvest every .pdf anchor and bypass the junk filter (anchor text is
-    typically a case number like "WP(C) 1234/2024" which the heuristic might
-    drop).
-    """
-    # F1 EXCEPTION: detail-page redirect, not direct PDF — but adapter already
-    # restricts to ``.pdf in href.lower()`` so behaviour is correct as-is.
     docs: list[dict] = []
     try:
-        async with httpx.AsyncClient(
-            timeout=_REQUEST_TIMEOUT,
-            follow_redirects=True,
-            headers=_HTTP_HEADERS,
-            verify=False,  # SCI cert chain is sometimes incomplete
-        ) as client:
-            html = await _fetch_html(client, portal_url)
-            if not html:
-                return docs
-            soup = BeautifulSoup(html, "html.parser")
-            for a in soup.find_all("a", href=True):
-                href = a["href"]
-                if _is_skip_href(href):
-                    continue
-                if ".pdf" not in href.lower():
-                    continue
-                full_url = _absolutize(href, portal_url)
-                title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
-                _append_doc(docs, full_url, title, document_type, bypass_junk=True)
-                if len(docs) >= _MAX_CANDIDATES:
-                    break
+        html = await render_html(
+            portal_url,
+            wait_for_selector="table a[href]",
+            timeout_ms=30000,
+        )
+        if not html:
+            return docs
+        soup = BeautifulSoup(html, "html.parser")
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            if _is_skip_href(href):
+                continue
+            if ".pdf" not in href.lower():
+                continue
+            full_url = _absolutize(href, portal_url)
+            title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
+            _append_doc(docs, full_url, title, document_type, bypass_junk=True)
+            if len(docs) >= _MAX_CANDIDATES:
+                break
     except Exception as exc:  # noqa: BLE001
         logger.warning("SCI judgments scrape failed: %s", exc)
-    logger.info("SCI judgments: discovered %d candidates", len(docs))
+    logger.info("SCI judgments (playwright): discovered %d candidates", len(docs))
     return docs[:_MAX_CANDIDATES]
 
 
@@ -284,38 +276,33 @@ async def scrape_ngt(
     document_type: str,
     since_days: int = 2,
 ) -> list[dict]:
-    """National Green Tribunal — orders & judgements.
+    """National Green Tribunal — orders & judgements (Playwright)."""
+    from backend.collectors.playwright_helper import render_html
 
-    High-priority for water/forest/pollution intel. The orders page lists
-    recent decisions with PDF attachments. Bypass junk filter — case numbers
-    and short titles dominate.
-    """
     docs: list[dict] = []
     try:
-        async with httpx.AsyncClient(
-            timeout=_REQUEST_TIMEOUT,
-            follow_redirects=True,
-            headers=_HTTP_HEADERS,
-            verify=False,
-        ) as client:
-            html = await _fetch_html(client, portal_url)
-            if not html:
-                return docs
-            soup = BeautifulSoup(html, "html.parser")
-            for a in soup.find_all("a", href=True):
-                href = a["href"]
-                if _is_skip_href(href):
-                    continue
-                if ".pdf" not in href.lower():
-                    continue
-                full_url = _absolutize(href, portal_url)
-                title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
-                _append_doc(docs, full_url, title, document_type, bypass_junk=True)
-                if len(docs) >= _MAX_CANDIDATES:
-                    break
+        html = await render_html(
+            portal_url,
+            wait_for_selector="a[href*='.pdf']",
+            timeout_ms=30000,
+        )
+        if not html:
+            return docs
+        soup = BeautifulSoup(html, "html.parser")
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            if _is_skip_href(href):
+                continue
+            if ".pdf" not in href.lower():
+                continue
+            full_url = _absolutize(href, portal_url)
+            title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
+            _append_doc(docs, full_url, title, document_type, bypass_junk=True)
+            if len(docs) >= _MAX_CANDIDATES:
+                break
     except Exception as exc:  # noqa: BLE001
         logger.warning("NGT scrape failed: %s", exc)
-    logger.info("NGT: discovered %d candidates", len(docs))
+    logger.info("NGT (playwright): discovered %d candidates", len(docs))
     return docs[:_MAX_CANDIDATES]
 
 

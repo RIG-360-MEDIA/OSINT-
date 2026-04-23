@@ -146,44 +146,40 @@ async def scrape_adb_india(
     document_type: str,
     since_days: int = 2,
 ) -> list[dict]:
-    """Asian Development Bank India publications.
+    """Asian Development Bank India publications (Playwright; bot-blocked otherwise)."""
+    from backend.collectors.playwright_helper import render_html
 
-    ADB publication index lists each title as an anchor to a /publications/<slug>
-    landing page; many also expose direct .pdf hrefs in the side panel.
-    """
     docs: list[dict] = []
     try:
-        async with httpx.AsyncClient(
-            timeout=_REQUEST_TIMEOUT,
-            follow_redirects=True,
-            headers=_HTTP_HEADERS,
-        ) as client:
-            html = await _fetch_html(client, portal_url)
-            if not html:
-                return docs
-            soup = BeautifulSoup(html, "html.parser")
-            for a in soup.find_all("a", href=True):
-                href = a["href"]
-                lower_href = href.lower()
-                text = a.get_text(strip=True)
-                if href.startswith("#") or lower_href.startswith("javascript"):
-                    continue
-                is_pdf = _is_pdf_or_doc_href(lower_href)
-                is_pub = "/publications/" in lower_href
-                if not (is_pdf or is_pub):
-                    continue
-                full_url = _absolutize(href, portal_url)
-                if "adb.org" not in urlparse(full_url).netloc:
-                    continue
-                # F1 — PDF-only: drop /publications/<slug> landing pages.
-                if ".pdf" not in full_url.lower():
-                    continue
-                _append_doc(docs, full_url, text, document_type)
-                if len(docs) >= _MAX_CANDIDATES:
-                    break
+        html = await render_html(
+            portal_url,
+            wait_for_selector="a.list__item__title, a[href*='.pdf']",
+            timeout_ms=30000,
+        )
+        if not html:
+            return docs
+        soup = BeautifulSoup(html, "html.parser")
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            lower_href = href.lower()
+            text = a.get_text(strip=True)
+            if href.startswith("#") or lower_href.startswith("javascript"):
+                continue
+            is_pdf = _is_pdf_or_doc_href(lower_href)
+            is_pub = "/publications/" in lower_href
+            if not (is_pdf or is_pub):
+                continue
+            full_url = _absolutize(href, portal_url)
+            if "adb.org" not in urlparse(full_url).netloc:
+                continue
+            if ".pdf" not in full_url.lower():
+                continue
+            _append_doc(docs, full_url, text, document_type)
+            if len(docs) >= _MAX_CANDIDATES:
+                break
     except Exception as exc:  # noqa: BLE001
         logger.warning("ADB India scrape failed: %s", exc)
-    logger.info("ADB India: discovered %d candidates", len(docs))
+    logger.info("ADB India (playwright): discovered %d candidates", len(docs))
     return docs[:_MAX_CANDIDATES]
 
 
@@ -193,45 +189,40 @@ async def scrape_imf_india(
     document_type: str,
     since_days: int = 2,
 ) -> list[dict]:
-    """IMF India country reports (Article IV, etc.).
+    """IMF India country reports (Playwright; bot-blocked / JS-rendered)."""
+    from backend.collectors.playwright_helper import render_html
 
-    The /Publications/CR/<year>/india page lists each report with links to a
-    detail page and a direct PDF. We grab both.
-    """
     docs: list[dict] = []
     try:
-        async with httpx.AsyncClient(
-            timeout=_REQUEST_TIMEOUT,
-            follow_redirects=True,
-            headers=_HTTP_HEADERS,
-        ) as client:
-            html = await _fetch_html(client, portal_url)
-            if not html:
-                return docs
-            soup = BeautifulSoup(html, "html.parser")
-            for a in soup.find_all("a", href=True):
-                href = a["href"]
-                lower_href = href.lower()
-                text = a.get_text(strip=True)
-                if href.startswith("#") or lower_href.startswith("javascript"):
-                    continue
-                is_pdf = _is_pdf_or_doc_href(lower_href)
-                # IMF report detail pages live under /en/Publications/CR/Issues/
-                is_issue = "/publications/cr/issues/" in lower_href or "/issues/" in lower_href
-                if not (is_pdf or is_issue):
-                    continue
-                full_url = _absolutize(href, portal_url)
-                if "imf.org" not in urlparse(full_url).netloc:
-                    continue
-                # F1 — PDF-only: drop /Issues/ HTML detail pages.
-                if ".pdf" not in full_url.lower():
-                    continue
-                _append_doc(docs, full_url, text, document_type)
-                if len(docs) >= _MAX_CANDIDATES:
-                    break
+        html = await render_html(
+            portal_url,
+            wait_for_selector="a[href*='.pdf']",
+            timeout_ms=30000,
+        )
+        if not html:
+            return docs
+        soup = BeautifulSoup(html, "html.parser")
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            lower_href = href.lower()
+            text = a.get_text(strip=True)
+            if href.startswith("#") or lower_href.startswith("javascript"):
+                continue
+            is_pdf = _is_pdf_or_doc_href(lower_href)
+            is_issue = "/publications/cr/issues/" in lower_href or "/issues/" in lower_href
+            if not (is_pdf or is_issue):
+                continue
+            full_url = _absolutize(href, portal_url)
+            if "imf.org" not in urlparse(full_url).netloc:
+                continue
+            if ".pdf" not in full_url.lower():
+                continue
+            _append_doc(docs, full_url, text, document_type)
+            if len(docs) >= _MAX_CANDIDATES:
+                break
     except Exception as exc:  # noqa: BLE001
         logger.warning("IMF India scrape failed: %s", exc)
-    logger.info("IMF India: discovered %d candidates", len(docs))
+    logger.info("IMF India (playwright): discovered %d candidates", len(docs))
     return docs[:_MAX_CANDIDATES]
 
 
@@ -241,48 +232,44 @@ async def scrape_un_india(
     document_type: str,
     since_days: int = 2,
 ) -> list[dict]:
-    """UN India office publications.
+    """UN India office publications (Playwright; Drupal cards hydrate via JS)."""
+    from backend.collectors.playwright_helper import render_html
 
-    The Drupal-style site lists each publication card with a link to a detail
-    page (/en/<id>-<slug>) and often a direct PDF in /sites/default/files/.
-    """
     docs: list[dict] = []
     try:
-        async with httpx.AsyncClient(
-            timeout=_REQUEST_TIMEOUT,
-            follow_redirects=True,
-            headers=_HTTP_HEADERS,
-        ) as client:
-            html = await _fetch_html(client, portal_url)
-            if not html:
-                return docs
-            soup = BeautifulSoup(html, "html.parser")
-            for a in soup.find_all("a", href=True):
-                href = a["href"]
-                lower_href = href.lower()
-                text = a.get_text(strip=True)
-                if href.startswith("#") or lower_href.startswith("javascript"):
-                    continue
-                is_pdf = _is_pdf_or_doc_href(lower_href)
-                is_pub = (
-                    "/sites/default/files/" in lower_href
-                    or "/publications/" in lower_href
-                    or "/resources/" in lower_href
-                )
-                if not (is_pdf or is_pub):
-                    continue
-                full_url = _absolutize(href, portal_url)
-                if "un.org" not in urlparse(full_url).netloc:
-                    continue
-                # F1 — PDF-only: drop /es/portugues, /accessibility-A and other nav.
-                if ".pdf" not in full_url.lower():
-                    continue
-                _append_doc(docs, full_url, text, document_type)
-                if len(docs) >= _MAX_CANDIDATES:
-                    break
+        html = await render_html(
+            portal_url,
+            wait_for_selector="a[href*='.pdf']",
+            timeout_ms=30000,
+        )
+        if not html:
+            return docs
+        soup = BeautifulSoup(html, "html.parser")
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            lower_href = href.lower()
+            text = a.get_text(strip=True)
+            if href.startswith("#") or lower_href.startswith("javascript"):
+                continue
+            is_pdf = _is_pdf_or_doc_href(lower_href)
+            is_pub = (
+                "/sites/default/files/" in lower_href
+                or "/publications/" in lower_href
+                or "/resources/" in lower_href
+            )
+            if not (is_pdf or is_pub):
+                continue
+            full_url = _absolutize(href, portal_url)
+            if "un.org" not in urlparse(full_url).netloc:
+                continue
+            if ".pdf" not in full_url.lower():
+                continue
+            _append_doc(docs, full_url, text, document_type)
+            if len(docs) >= _MAX_CANDIDATES:
+                break
     except Exception as exc:  # noqa: BLE001
         logger.warning("UN India scrape failed: %s", exc)
-    logger.info("UN India: discovered %d candidates", len(docs))
+    logger.info("UN India (playwright): discovered %d candidates", len(docs))
     return docs[:_MAX_CANDIDATES]
 
 

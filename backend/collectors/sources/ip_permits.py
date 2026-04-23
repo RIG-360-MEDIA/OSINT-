@@ -217,11 +217,9 @@ async def scrape_mca_notifications(
     document_type: str,
     since_days: int = 2,
 ) -> list[dict]:
-    """Ministry of Corporate Affairs notifications.
+    """Ministry of Corporate Affairs notifications (Playwright; ASP.NET grid hydrates via JS)."""
+    from backend.collectors.playwright_helper import render_html
 
-    The page renders an ASP.NET grid of dated notifications. Harvest .pdf
-    links plus any anchor matching notification-style keywords.
-    """
     docs: list[dict] = []
     keywords = (
         "notification",
@@ -232,20 +230,19 @@ async def scrape_mca_notifications(
         "act",
     )
     try:
-        async with httpx.AsyncClient(
-            timeout=_REQUEST_TIMEOUT,
-            follow_redirects=True,
-            headers=_HTTP_HEADERS,
-        ) as client:
-            html = await _fetch_html(client, portal_url)
-            if not html:
-                return docs
-            docs = _harvest_pdf_links(
-                html, portal_url, document_type, extra_keywords=keywords
-            )
+        html = await render_html(
+            portal_url,
+            wait_for_selector="a[href*='.pdf']",
+            timeout_ms=30000,
+        )
+        if not html:
+            return docs
+        docs = _harvest_pdf_links(
+            html, portal_url, document_type, extra_keywords=keywords
+        )
     except Exception as exc:  # noqa: BLE001
         logger.warning("MCA notifications scrape failed: %s", exc)
-    logger.info("MCA notifications: discovered %d candidates", len(docs))
+    logger.info("MCA notifications (playwright): discovered %d candidates", len(docs))
     return docs[:_MAX_CANDIDATES]
 
 

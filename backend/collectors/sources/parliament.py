@@ -129,20 +129,29 @@ async def _scrape_with_fallback(
     extra_keywords: tuple[str, ...] = (),
     label: str = "parliament",
 ) -> list[dict]:
-    """Try portal_url first; fall back to NIC mirrors if SPA shell detected."""
+    """Try portal_url via Playwright (sansad.in is an Angular SPA); fall back to NIC mirrors via httpx."""
+    from backend.collectors.playwright_helper import render_html
+
     docs: list[dict] = []
     try:
-        async with httpx.AsyncClient(
-            timeout=_REQUEST_TIMEOUT,
-            follow_redirects=True,
-            headers=_HTTP_HEADERS,
-        ) as client:
-            html = await _fetch_html(client, portal_url)
-            if html:
-                docs = _harvest_pdf_anchors(
-                    html, portal_url, document_type, extra_keywords
-                )
-            if len(docs) < _SPA_SHELL_THRESHOLD:
+        # Primary: sansad.in SPA — needs Playwright to hydrate the shell
+        primary_html = await render_html(
+            portal_url,
+            wait_for_selector="main a[href]",
+            timeout_ms=30000,
+        )
+        if primary_html:
+            docs = _harvest_pdf_anchors(
+                primary_html, portal_url, document_type, extra_keywords
+            )
+
+        # Fallback: NIC mirrors are plain HTML — httpx is fine
+        if len(docs) < _SPA_SHELL_THRESHOLD:
+            async with httpx.AsyncClient(
+                timeout=_REQUEST_TIMEOUT,
+                follow_redirects=True,
+                headers=_HTTP_HEADERS,
+            ) as client:
                 for fb in fallback_urls:
                     fb_html = await _fetch_html(client, fb)
                     if not fb_html:
@@ -150,7 +159,6 @@ async def _scrape_with_fallback(
                     fb_docs = _harvest_pdf_anchors(
                         fb_html, fb, document_type, extra_keywords
                     )
-                    # Merge dedup on URL
                     seen = {d["url"] for d in docs}
                     for d in fb_docs:
                         if d["url"] not in seen:
@@ -162,7 +170,7 @@ async def _scrape_with_fallback(
                         break
     except Exception as exc:  # noqa: BLE001
         logger.warning("%s scrape failed: %s", label, exc)
-    logger.info("%s: discovered %d candidates", label, len(docs))
+    logger.info("%s (playwright+fallback): discovered %d candidates", label, len(docs))
     return docs[:_MAX_CANDIDATES]
 
 

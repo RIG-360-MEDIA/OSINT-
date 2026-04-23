@@ -55,6 +55,10 @@ services:
       DATABASE_URL_SYNC: postgresql://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
       GROQ_API_KEYS: ${GROQ_API_KEYS:-}
       NEWSDATA_API_KEY: ${NEWSDATA_API_KEY:-}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      YOUTUBE_API_KEY_2: ${YOUTUBE_API_KEY_2:-}
+      YOUTUBE_API_KEY_3: ${YOUTUBE_API_KEY_3:-}
+      YOUTUBE_PROXY_URL: ${YOUTUBE_PROXY_URL:-}
       FRESHRSS_URL: ${FRESHRSS_URL:-http://rig-freshrss:80}
       FRESHRSS_USERNAME: ${FRESHRSS_USERNAME:-admin}
       FRESHRSS_PASSWORD: ${FRESHRSS_PASSWORD:-}
@@ -70,6 +74,9 @@ services:
       - "8000:8000"
     networks:
       - rig-network
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     depends_on:
       rig-postgres:
         condition: service_healthy

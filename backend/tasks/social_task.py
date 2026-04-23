@@ -318,3 +318,162 @@ async def _collect_telegram() -> None:
             len(monitors),
             total,
         )
+
+
+# ── Daily sentiment aggregation ────────────────────────────────────────────
+
+# Sentiment thresholds (compute_sentiment returns roughly -1..+1)
+_POS_THRESHOLD: float = 0.15
+_NEG_THRESHOLD: float = -0.15
+_TOP_ENTITY_LIMIT: int = 10
+_AGGREGATION_LOOKBACK_DAYS: int = 7
+
+
+@app.task(
+    name="tasks.aggregate_social_sentiment_daily",
+    queue="nlp",
+    max_retries=2,
+)
+def aggregate_social_sentiment_daily() -> None:
+    """Roll up social_posts into per-monitor per-day sentiment buckets.
+
+    Idempotent via UNIQUE(monitor_id, date) + ON CONFLICT DO UPDATE so it
+    can re-run safely. Looks back N days to catch late-arriving posts.
+    """
+    asyncio.run(_aggregate_social_sentiment_daily())
+
+
+async def _aggregate_social_sentiment_daily() -> None:
+    from backend.database import get_db
+
+    async with get_db() as db:
+        # One pass: aggregate by (monitor_id, platform, date) over the
+        # lookback window. UNNEST flattens matched_entities so we can
+        # rank top entities per bucket.
+        result = await db.execute(
+            text(
+                """
+                WITH bucketed AS (
+                    SELECT
+                        sp.monitor_id,
+                        sp.platform,
+                        DATE(sp.posted_at) AS bucket_date,
+                        sp.sentiment_score,
+                        sp.matched_entities
+                    FROM social_posts sp
+                    WHERE sp.monitor_id IS NOT NULL
+                      AND sp.posted_at IS NOT NULL
+                      AND sp.posted_at >= NOW() - (
+                          :lookback || ' days'
+                      )::interval
+                ),
+                entity_counts AS (
+                    SELECT
+                        monitor_id,
+                        bucket_date,
+                        entity,
+                        COUNT(*) AS ec
+                    FROM bucketed,
+                         LATERAL UNNEST(matched_entities) AS entity
+                    WHERE entity IS NOT NULL AND entity <> ''
+                    GROUP BY monitor_id, bucket_date, entity
+                ),
+                top_entities AS (
+                    SELECT
+                        monitor_id,
+                        bucket_date,
+                        ARRAY_AGG(
+                            entity ORDER BY ec DESC
+                        ) FILTER (WHERE rn <= :top_n) AS top
+                    FROM (
+                        SELECT
+                            monitor_id,
+                            bucket_date,
+                            entity,
+                            ec,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY monitor_id, bucket_date
+                                ORDER BY ec DESC
+                            ) AS rn
+                        FROM entity_counts
+                    ) ranked
+                    GROUP BY monitor_id, bucket_date
+                )
+                SELECT
+                    b.monitor_id,
+                    b.platform,
+                    b.bucket_date,
+                    COUNT(*) AS post_count,
+                    COUNT(*) FILTER (
+                        WHERE b.sentiment_score >= :pos
+                    ) AS positive_count,
+                    COUNT(*) FILTER (
+                        WHERE b.sentiment_score <= :neg
+                    ) AS negative_count,
+                    COUNT(*) FILTER (
+                        WHERE b.sentiment_score > :neg
+                          AND b.sentiment_score < :pos
+                    ) AS neutral_count,
+                    AVG(b.sentiment_score) AS avg_sentiment,
+                    COALESCE(te.top, ARRAY[]::TEXT[]) AS top_entities
+                FROM bucketed b
+                LEFT JOIN top_entities te
+                  ON te.monitor_id = b.monitor_id
+                 AND te.bucket_date = b.bucket_date
+                GROUP BY
+                    b.monitor_id, b.platform, b.bucket_date, te.top
+                """
+            ),
+            {
+                "lookback": str(_AGGREGATION_LOOKBACK_DAYS),
+                "pos": _POS_THRESHOLD,
+                "neg": _NEG_THRESHOLD,
+                "top_n": _TOP_ENTITY_LIMIT,
+            },
+        )
+
+        rows = result.fetchall()
+        upserts = 0
+
+        for r in rows:
+            await db.execute(
+                text(
+                    """
+                    INSERT INTO social_sentiment_daily (
+                        monitor_id, date, platform,
+                        positive_count, negative_count, neutral_count,
+                        avg_sentiment, post_count, top_entities
+                    ) VALUES (
+                        :mid, :d, :platform,
+                        :pos, :neg, :neu,
+                        :avg, :count, :entities
+                    )
+                    ON CONFLICT (monitor_id, date) DO UPDATE SET
+                        platform = EXCLUDED.platform,
+                        positive_count = EXCLUDED.positive_count,
+                        negative_count = EXCLUDED.negative_count,
+                        neutral_count = EXCLUDED.neutral_count,
+                        avg_sentiment = EXCLUDED.avg_sentiment,
+                        post_count = EXCLUDED.post_count,
+                        top_entities = EXCLUDED.top_entities
+                    """
+                ),
+                {
+                    "mid": str(r.monitor_id),
+                    "d": r.bucket_date,
+                    "platform": r.platform,
+                    "pos": int(r.positive_count or 0),
+                    "neg": int(r.negative_count or 0),
+                    "neu": int(r.neutral_count or 0),
+                    "avg": float(r.avg_sentiment or 0.0),
+                    "count": int(r.post_count or 0),
+                    "entities": list(r.top_entities or []),
+                },
+            )
+            upserts += 1
+
+        await db.commit()
+        logger.info(
+            "social_sentiment_daily aggregation done — %s buckets upserted",
+            upserts,
+        )

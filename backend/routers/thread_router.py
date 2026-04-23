@@ -3,6 +3,7 @@ Thread API router — story thread nodes, edges, detail, and analyst integration
 """
 from __future__ import annotations
 
+import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,6 +11,18 @@ from sqlalchemy import text
 
 from backend.auth.auth_middleware import get_current_user
 from backend.database import get_db
+
+
+def _coerce_jsonb(value):
+    """JSONB columns may surface as str or already-decoded list/dict."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return None
+    return value
 
 logger = logging.getLogger(__name__)
 
@@ -29,78 +42,97 @@ async def get_threads(
     async with get_db() as db:
         momentum_filter = "" if include_fading else "AND momentum != 'fading'"
 
-        threads_result = await db.execute(
-            text(f"""
+        # Single round-trip: select top-N threads, then compute edges ONLY among
+        # those N (O(N^2)) instead of the full active-thread cross-product
+        # (which was the 24s bottleneck — O(M^2) over all active threads).
+        combined_sql = f"""
+            WITH top_threads AS (
+              SELECT
+                id,
+                title,
+                primary_entities,
+                article_count,
+                source_count,
+                momentum,
+                centroid_embedding,
+                first_seen_at,
+                last_updated_at
+              FROM story_threads
+              WHERE is_active = TRUE
+              {momentum_filter}
+              ORDER BY
+                CASE momentum
+                  WHEN 'escalating' THEN 1
+                  WHEN 'stable'     THEN 2
+                  WHEN 'fading'     THEN 3
+                END,
+                article_count DESC
+              LIMIT :limit
+            ),
+            nodes AS (
+              SELECT
+                id::text                AS thread_id,
+                title,
+                primary_entities,
+                article_count,
+                source_count,
+                momentum,
+                first_seen_at,
+                last_updated_at
+              FROM top_threads
+            ),
+            edges AS (
+              SELECT
+                t1.id::text                                                       AS source,
+                t2.id::text                                                       AS target,
+                ROUND(CAST(1 - (t1.centroid_embedding <=> t2.centroid_embedding)
+                           AS numeric), 3)                                        AS weight,
+                ROUND(CAST(t1.centroid_embedding <=> t2.centroid_embedding
+                           AS numeric), 3)                                        AS distance
+              FROM top_threads t1
+              JOIN top_threads t2 ON t1.id < t2.id
+              WHERE t1.centroid_embedding IS NOT NULL
+                AND t2.centroid_embedding IS NOT NULL
+                AND (t1.centroid_embedding <=> t2.centroid_embedding) < 0.50
+              ORDER BY distance ASC
+              LIMIT 300
+            )
             SELECT
-              id::text as thread_id,
-              title,
-              primary_entities,
-              article_count,
-              source_count,
-              momentum,
-              centroid_embedding,
-              first_seen_at,
-              last_updated_at
-            FROM story_threads
-            WHERE is_active = TRUE
-            {momentum_filter}
-            ORDER BY
-              CASE momentum
-                WHEN 'escalating' THEN 1
-                WHEN 'stable'     THEN 2
-                WHEN 'fading'     THEN 3
-              END,
-              article_count DESC
-            LIMIT :limit
-            """),
-            {"limit": limit},
-        )
-        threads = threads_result.fetchall()
+              (SELECT COALESCE(jsonb_agg(to_jsonb(n)), '[]'::jsonb) FROM nodes n) AS nodes_json,
+              (SELECT COALESCE(jsonb_agg(to_jsonb(e)), '[]'::jsonb) FROM edges e) AS edges_json
+        """
+        result = await db.execute(text(combined_sql), {"limit": limit})
+        row = result.fetchone()
+        nodes_raw = _coerce_jsonb(row.nodes_json) or []
+        edges_raw = _coerce_jsonb(row.edges_json) or []
 
-        if not threads:
+        if not nodes_raw:
             return {"nodes": [], "edges": [], "thread_count": 0, "escalating_count": 0}
 
-        # Collect returned thread IDs to filter edges
-        thread_id_set = {t.thread_id for t in threads}
-
-        # Compute edges via self-join, then filter to returned nodes.
-        # Avoids asyncpg array-param binding complexity with UUID arrays.
-        edges_result = await db.execute(
-            text("""
-            SELECT
-              t1.id::text as source,
-              t2.id::text as target,
-              ROUND(CAST(1 - (t1.centroid_embedding <=> t2.centroid_embedding) AS numeric), 3) as weight,
-              ROUND(CAST(t1.centroid_embedding <=> t2.centroid_embedding AS numeric), 3) as distance
-            FROM story_threads t1
-            JOIN story_threads t2 ON t1.id < t2.id
-            WHERE t1.is_active = TRUE
-            AND t2.is_active = TRUE
-            AND t1.centroid_embedding IS NOT NULL
-            AND t2.centroid_embedding IS NOT NULL
-            AND (t1.centroid_embedding <=> t2.centroid_embedding) < 0.50
-            ORDER BY distance ASC
-            LIMIT 300
-            """),
-        )
+        threads = nodes_raw  # list[dict] from jsonb_agg
         edges = [
-            {"source": e.source, "target": e.target, "weight": float(e.weight), "distance": float(e.distance)}
-            for e in edges_result.fetchall()
-            if e.source in thread_id_set and e.target in thread_id_set
+            {
+                "source": e["source"],
+                "target": e["target"],
+                "weight": float(e["weight"]),
+                "distance": float(e["distance"]),
+            }
+            for e in edges_raw
         ]
 
-        escalating_count = sum(1 for t in threads if t.momentum == "escalating")
+        escalating_count = sum(1 for t in threads if t.get("momentum") == "escalating")
 
         return {
             "nodes": [
                 {
-                    "thread_id": t.thread_id,
-                    "title": t.title,
-                    "primary_entities": t.primary_entities or [],
-                    "article_count": t.article_count,
-                    "momentum": t.momentum,
-                    "first_seen_at": t.first_seen_at.isoformat(),
-                    "last_updated_at": t.last_updated_at.isoformat(),
+                    "thread_id": t["thread_id"],
+                    "title": t.get("title"),
+                    "primary_entities": t.get("primary_entities") or [],
+                    "article_count": t.get("article_count"),
+                    "momentum": t.get("momentum"),
+                    # jsonb_agg already serializes timestamps to ISO strings.
+                    "first_seen_at": t.get("first_seen_at"),
+                    "last_updated_at": t.get("last_updated_at"),
                 }
                 for t in threads
             ],

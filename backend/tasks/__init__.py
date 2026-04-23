@@ -20,3 +20,4 @@ from backend.tasks.govt_relevance_task import (  # noqa: F401
     score_govt_doc_relevance,
 )
 from backend.tasks.govt_doctor_task import govt_collection_doctor as govt_collection_doctor  # noqa: F401
+from backend.tasks.newspaper_task import collect_newspapers as collect_newspapers  # noqa: F401

@@ -172,6 +172,9 @@ async def analyst_query(
                 RETURNING id::text AS session_id
             """), {"user_id": user["id"]})
             session_id = sess_result.fetchone().session_id
+            # Commit immediately so the row is visible to the fresh db2
+            # session used for the history-write step at the end.
+            await db.commit()
 
         # Mode resolution
         requested_mode = req.mode.strip().upper()
@@ -316,47 +319,54 @@ async def analyst_query(
             user_profile=user_profile,
         )
 
-        # Persist turn
-        await db.execute(text("""
-            INSERT INTO analyst_turns (
-              session_id, question, answer,
-              evidence_count, confidence, retrieval_ms
-            ) VALUES (
-              CAST(:session_id AS uuid), :question, :answer,
-              :evidence_count, :confidence, :retrieval_ms
-            )
-        """), {
-            "session_id": session_id,
-            "question": req.question,
-            "answer": answer,
-            "evidence_count": len(articles),
-            "confidence": confidence,
-            "retrieval_ms": elapsed_ms,
-        })
+    # Persist turn in a FRESH session — the retrieval session above may be
+    # in an aborted-transaction state from a failed govt-doc subquery.
+    # Logically independent: history write must not corrupt the answer.
+    try:
+        async with get_db() as db2:
+            await db2.execute(text("""
+                INSERT INTO analyst_turns (
+                  session_id, question, answer,
+                  evidence_count, confidence, retrieval_ms
+                ) VALUES (
+                  CAST(:session_id AS uuid), :question, :answer,
+                  :evidence_count, :confidence, :retrieval_ms
+                )
+            """), {
+                "session_id": session_id,
+                "question": req.question,
+                "answer": answer,
+                "evidence_count": len(articles),
+                "confidence": confidence,
+                "retrieval_ms": elapsed_ms,
+            })
 
-        await db.execute(text("""
-            UPDATE analyst_sessions
-            SET updated_at = NOW()
-            WHERE id = CAST(:sid AS uuid)
-        """), {"sid": session_id})
+            await db2.execute(text("""
+                UPDATE analyst_sessions
+                SET updated_at = NOW()
+                WHERE id = CAST(:sid AS uuid)
+            """), {"sid": session_id})
 
-        await db.commit()
+            await db2.commit()
+    except Exception as exc:
+        # History persistence is best-effort — never fail the user-visible answer.
+        logger.error("Failed to persist analyst turn: %s", exc)
 
-        return {
-            "mode": mode,
-            "auto_detected": bool(auto_mode),
-            "answer": answer,
-            "articles": articles,
-            "govt_docs": govt_docs,
-            "confidence": confidence,
-            "confidence_pct": confidence_pct,
-            "followups": followups,
-            "session_id": session_id,
-            "retrieval_ms": elapsed_ms,
-            "retrieval_method": retrieval_method,
-            "article_count": len(articles),
-            "govt_doc_count": len(govt_docs),
-        }
+    return {
+        "mode": mode,
+        "auto_detected": bool(auto_mode),
+        "answer": answer,
+        "articles": articles,
+        "govt_docs": govt_docs,
+        "confidence": confidence,
+        "confidence_pct": confidence_pct,
+        "followups": followups,
+        "session_id": session_id,
+        "retrieval_ms": elapsed_ms,
+        "retrieval_method": retrieval_method,
+        "article_count": len(articles),
+        "govt_doc_count": len(govt_docs),
+    }
 
 
 # ── Context suggestions ───────────────────────────────────────────────────────

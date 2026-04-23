@@ -34,6 +34,8 @@ app = Celery(
         "backend.tasks.govt_task",
         "backend.tasks.govt_relevance_task",
         "backend.tasks.govt_doctor_task",
+        "backend.tasks.social_task",
+        "backend.tasks.newspaper_task",
     ],
 )
 
@@ -58,6 +60,11 @@ app.config_from_object(
             "tasks.score_relevance_batch": {"queue": "relevance"},
             "tasks.score_unscored_articles": {"queue": "relevance"},
             "tasks.generate_all_briefs": {"queue": "brief"},
+            "tasks.collect_reddit": {"queue": "collectors"},
+            "tasks.collect_twitter": {"queue": "collectors"},
+            "tasks.collect_telegram": {"queue": "collectors"},
+            "tasks.aggregate_social_sentiment_daily": {"queue": "nlp"},
+            "tasks.collect_newspapers": {"queue": "collectors"},
         },
         "beat_schedule": {
             "collect-rss-every-15-min": {
@@ -119,6 +126,31 @@ app.config_from_object(
                 "task": "tasks.govt_collection_doctor",
                 "schedule": crontab(hour=7, minute=0),
                 "options": {"queue": "documents"},
+            },
+            "collect-reddit-every-30-min": {
+                "task": "tasks.collect_reddit",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "collectors"},
+            },
+            "collect-twitter-every-1-hour": {
+                "task": "tasks.collect_twitter",
+                "schedule": timedelta(hours=1),
+                "options": {"queue": "collectors"},
+            },
+            "collect-telegram-every-30-min": {
+                "task": "tasks.collect_telegram",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "collectors"},
+            },
+            "aggregate-social-sentiment-hourly": {
+                "task": "tasks.aggregate_social_sentiment_daily",
+                "schedule": crontab(minute=15),
+                "options": {"queue": "nlp"},
+            },
+            "collect-newspapers-daily": {
+                "task": "tasks.collect_newspapers",
+                "schedule": crontab(hour=7, minute=30),
+                "options": {"queue": "collectors"},
             },
         },
     }

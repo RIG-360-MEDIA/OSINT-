@@ -1361,28 +1361,34 @@ async def retrieve_relevant_govt_docs(
         min(distance_threshold + 0.2, 0.9),
     ]
     for threshold in thresholds:
+        # Use a SAVEPOINT so a failure here doesn't poison the outer transaction
+        # (caller may still want to INSERT analyst_turns afterward).
         try:
-            sem_result = await db.execute(
-                text(sem_sql),
-                {
-                    "embedding": embedding_str,
-                    "user_id": user_id,
-                    "threshold": threshold,
-                    "top_k": semantic_k,
-                },
-            )
-            semantic_rows = sem_result.fetchall()
+            async with db.begin_nested():
+                sem_result = await db.execute(
+                    text(sem_sql),
+                    {
+                        "embedding": embedding_str,
+                        "user_id": user_id,
+                        "threshold": threshold,
+                        "top_k": semantic_k,
+                    },
+                )
+                semantic_rows = sem_result.fetchall()
         except Exception as exc:
-            logger.warning(f"Govt semantic retrieval failed at threshold {threshold}: {exc}")
+            logger.warning(
+                f"Govt semantic retrieval failed at threshold {threshold}: {exc}"
+            )
             semantic_rows = []
         if len(semantic_rows) >= 3:
             break
 
     # ── Pool B: recency T1/T2 last 30 days ────────────────────────────────────
     try:
-        recency_rows = await _govt_recency_pool(
-            user_id=user_id, db=db, limit=recency_k,
-        )
+        async with db.begin_nested():
+            recency_rows = await _govt_recency_pool(
+                user_id=user_id, db=db, limit=recency_k,
+            )
     except Exception as exc:
         logger.warning(f"Govt recency pool failed: {exc}")
         recency_rows = []

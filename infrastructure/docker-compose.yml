@@ -67,6 +67,8 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       NLP_BATCH_SIZE: ${NLP_BATCH_SIZE:-25}
       BRIEF_ARTICLE_LIMIT: ${BRIEF_ARTICLE_LIMIT:-30}
+      TWITTER_BEARER_TOKEN: ${TWITTER_BEARER_TOKEN:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
     volumes:
       - ../backend:/app/backend
       - ../scripts:/app/scripts

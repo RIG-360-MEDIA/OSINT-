@@ -75,6 +75,10 @@ importlib_resources==6.4.5
 vaderSentiment==3.3.2
 textblob==0.18.0.post0
 
+# Telegram MTProto user-account client (P17 — read public channels
+# without requiring bot membership)
+telethon==1.36.0
+
 # Utilities
 python-dotenv==1.0.1
 python-jose[cryptography]==3.3.0

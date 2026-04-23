@@ -69,6 +69,9 @@ services:
       BRIEF_ARTICLE_LIMIT: ${BRIEF_ARTICLE_LIMIT:-30}
       TWITTER_BEARER_TOKEN: ${TWITTER_BEARER_TOKEN:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:-}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:-}
+      TELEGRAM_SESSION_STRING: ${TELEGRAM_SESSION_STRING:-}
     volumes:
       - ../backend:/app/backend
       - ../scripts:/app/scripts

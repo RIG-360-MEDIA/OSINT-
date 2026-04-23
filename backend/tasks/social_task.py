@@ -280,15 +280,49 @@ def collect_telegram() -> None:
 
 
 async def _collect_telegram() -> None:
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
-    if not bot_token:
+    """
+    Prefer user-account (MTProto/Telethon) collection when
+    TELEGRAM_API_ID/HASH/SESSION_STRING are set — this reads any public
+    channel without membership. Fall back to Bot API polling when only
+    TELEGRAM_BOT_TOKEN is set (requires the bot to be a channel member).
+    """
+    api_id_raw = os.getenv("TELEGRAM_API_ID", "").strip()
+    api_hash = os.getenv("TELEGRAM_API_HASH", "").strip()
+    session_string = os.getenv("TELEGRAM_SESSION_STRING", "").strip()
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+
+    use_user_client = bool(api_id_raw and api_hash and session_string)
+    use_bot = bool(bot_token) and not use_user_client
+
+    if not (use_user_client or use_bot):
         logger.info(
-            "TELEGRAM_BOT_TOKEN not set — skipping Telegram collection"
+            "Telegram: no credentials configured — skipping "
+            "(set TELEGRAM_API_ID + TELEGRAM_API_HASH + "
+            "TELEGRAM_SESSION_STRING for user-account mode, or "
+            "TELEGRAM_BOT_TOKEN for bot mode)"
         )
         return
 
-    from backend.collectors.social_collector import collect_telegram_channel
+    api_id: int = 0
+    if use_user_client:
+        try:
+            api_id = int(api_id_raw)
+        except ValueError:
+            logger.warning(
+                "TELEGRAM_API_ID is not an integer — aborting"
+            )
+            return
+
     from backend.database import get_db
+
+    if use_user_client:
+        from backend.collectors.telegram_user_collector import (
+            collect_telegram_channel_as_user,
+        )
+    else:
+        from backend.collectors.social_collector import (
+            collect_telegram_channel,
+        )
 
     async with get_db() as db:
         monitors = (
@@ -304,9 +338,18 @@ async def _collect_telegram() -> None:
         total = 0
 
         for m in monitors:
-            posts = await collect_telegram_channel(
-                m.identifier, bot_token, limit=20
-            )
+            if use_user_client:
+                posts = await collect_telegram_channel_as_user(
+                    m.identifier,
+                    api_id,
+                    api_hash,
+                    session_string,
+                    limit=20,
+                )
+            else:
+                posts = await collect_telegram_channel(
+                    m.identifier, bot_token, limit=20
+                )
             total += await _process_monitor_posts(
                 db, str(m.id), posts, user_entities
             )
@@ -314,7 +357,8 @@ async def _collect_telegram() -> None:
 
         await db.commit()
         logger.info(
-            "Telegram collection done — %s monitors, %s new posts",
+            "Telegram collection done (%s) — %s monitors, %s new posts",
+            "user-account" if use_user_client else "bot-api",
             len(monitors),
             total,
         )

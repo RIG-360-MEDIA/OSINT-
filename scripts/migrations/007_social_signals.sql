@@ -98,5 +98,13 @@ VALUES
     ('twitter',  'account',   'revanth_anumula',    'Revanth Reddy (CM)',       TRUE),
     ('twitter',  'account',   'KTRTRS',             'KTR (BRS)',                TRUE),
     ('twitter',  'account',   'trspartyonline',     'BRS Official',             TRUE),
-    ('telegram', 'channel',   'TelanganaCMO',       'Telangana CMO Official',   TRUE)
+    -- Telegram public channels (read via Telethon MTProto, no
+    -- membership required)
+    ('telegram', 'channel',   'TelanganaCMO',       'Telangana CMO Official',   TRUE),
+    ('telegram', 'channel',   'MIB_India',          'Ministry of I&B (Central)',TRUE),
+    ('telegram', 'channel',   'YSRCPOfficial',      'YSRCP Official',           TRUE),
+    ('telegram', 'channel',   'BRSPartyofficial',   'BRS Party Official',       TRUE),
+    ('telegram', 'channel',   'AamAadmiParty',      'Aam Aadmi Party',          TRUE),
+    ('telegram', 'channel',   'v6newstelugu',       'V6 News Telugu',           TRUE),
+    ('telegram', 'channel',   'scroll_in',          'Scroll.in',                TRUE)
 ON CONFLICT (platform, identifier) DO NOTHING;

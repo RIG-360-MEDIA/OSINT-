@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec rig-postgres psql -U rig -d rig -c 'SELECT:*)",
+      "Bash(docker exec *)",
+      "WebSearch"
+    ]
+  }
+}

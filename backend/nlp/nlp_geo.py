@@ -10,6 +10,7 @@ Priority order (first match wins for geo_primary):
 from __future__ import annotations
 
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,24 @@ _KNOWN_GEOS: tuple[str, ...] = (
 
 _GEO_ENTITY_LABELS: frozenset[str] = frozenset({"GPE", "LOC"})
 _GEO_ENTITY_TYPES: frozenset[str] = frozenset({"location", "constituency"})
+_SPACY_LABELS: frozenset[str] = frozenset({"GPE", "LOC", "location"})
+
+
+def _is_geo_entity(ent: dict) -> bool:
+    return (
+        ent.get("label") in _GEO_ENTITY_LABELS
+        or ent.get("type") in _GEO_ENTITY_TYPES
+    )
+
+
+def _label_priority(ent: dict) -> int:
+    """SpaCy-derived entities (0) beat DICT_MATCH (1) at equal prominence."""
+    return 0 if ent.get("label") in _SPACY_LABELS else 1
+
+
+def _word_match(name: str, text: str) -> bool:
+    """Word-boundary match — prevents 'Krishna' matching inside 'Gopalakrishnan'."""
+    return bool(re.search(r"\b" + re.escape(name.lower()) + r"\b", text))
 
 
 async def tag_geography(
@@ -48,31 +67,27 @@ async def tag_geography(
     geo_primary: str | None = None
     geo_secondary: list[str] = []
 
-    def _is_geo_entity(ent: dict) -> bool:
-        return (
-            ent.get("label") in _GEO_ENTITY_LABELS
-            or ent.get("type") in _GEO_ENTITY_TYPES
-        )
+    ranked = sorted(entities_extracted, key=_label_priority)
 
-    # Priority 1 — geo entity in title
-    for ent in entities_extracted:
+    # Priority 1 — geo entity in title (word-boundary match, spaCy before DICT_MATCH)
+    for ent in ranked:
         if not _is_geo_entity(ent):
             continue
         name = ent["name"]
-        if name.lower() not in title_l:
+        if not _word_match(name, title_l):
             continue
         if geo_primary is None:
             geo_primary = name
         else:
             geo_secondary.append(name)
 
-    # Priority 2 — geo entity in first 300 chars
+    # Priority 2 — geo entity in first 300 chars (word-boundary match)
     if geo_primary is None:
-        for ent in entities_extracted:
+        for ent in ranked:
             if not _is_geo_entity(ent):
                 continue
             name = ent["name"]
-            if name.lower() not in body_start:
+            if not _word_match(name, body_start):
                 continue
             if geo_primary is None:
                 geo_primary = name

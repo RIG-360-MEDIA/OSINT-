@@ -10,6 +10,7 @@ import os
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 
+from backend.auth.auth_middleware import get_current_user
 from backend.database import get_db
 
 
@@ -415,5 +416,68 @@ async def intelligence_status() -> dict:
                 {"entity": r.entity, "article_count": r.article_count}
                 for r in entity_rows
                 if r.entity and r.entity != "None"
+            ],
+        }
+
+
+# ── Panel 8: Govt Collection Health ───────────────────────────────────────────
+
+@debug_router.get("/govt-collection-health")
+async def govt_collection_health(user: dict = Depends(get_current_user)):
+    """Per-source last-10-runs + active alerts."""
+    async with get_db() as db:
+        sources = (await db.execute(text("""
+            SELECT name, source_geography, document_type, is_active,
+                   health_score, consecutive_failures, last_scraped_at
+            FROM govt_document_sources
+            ORDER BY name
+        """))).fetchall()
+
+        runs = (await db.execute(text("""
+            SELECT id::text, source_name, started_at, finished_at, status,
+                   urls_discovered, urls_filtered_junk, pdfs_downloaded,
+                   pdfs_extracted, docs_inserted, docs_failed, error_summary
+            FROM govt_collection_runs
+            ORDER BY started_at DESC
+            LIMIT 50
+        """))).fetchall()
+
+        return {
+            "sources": [
+                {
+                    "name": s.name,
+                    "geography": s.source_geography,
+                    "type": s.document_type,
+                    "is_active": s.is_active,
+                    "health_score": s.health_score,
+                    "consecutive_failures": s.consecutive_failures,
+                    "last_scraped_at": (
+                        s.last_scraped_at.isoformat() if s.last_scraped_at else None
+                    ),
+                }
+                for s in sources
+            ],
+            "recent_runs": [
+                {
+                    "id": r.id,
+                    "source": r.source_name,
+                    "started_at": r.started_at.isoformat() if r.started_at else None,
+                    "finished_at": (
+                        r.finished_at.isoformat() if r.finished_at else None
+                    ),
+                    "duration_seconds": (
+                        (r.finished_at - r.started_at).total_seconds()
+                        if (r.finished_at and r.started_at) else None
+                    ),
+                    "status": r.status,
+                    "urls_discovered": r.urls_discovered,
+                    "urls_filtered_junk": r.urls_filtered_junk,
+                    "pdfs_downloaded": r.pdfs_downloaded,
+                    "pdfs_extracted": r.pdfs_extracted,
+                    "docs_inserted": r.docs_inserted,
+                    "docs_failed": r.docs_failed,
+                    "error_summary": r.error_summary,
+                }
+                for r in runs
             ],
         }

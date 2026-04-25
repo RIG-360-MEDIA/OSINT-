@@ -15,16 +15,20 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import declarative_base
+from sqlalchemy.pool import NullPool
 
 DATABASE_URL: str = os.getenv(
     "DATABASE_URL",
     "postgresql+asyncpg://rig:rigpassword@rig-postgres:5432/rig",
 )
 
+# NullPool: connections are never reused between asyncio.run() calls.
+# Celery tasks each call asyncio.run(), which creates and destroys an event loop.
+# A persistent pool would hold asyncpg connections bound to the dead loop, causing
+# "cannot perform operation: another operation is in progress" on the next task run.
 engine = create_async_engine(
     DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
+    poolclass=NullPool,
     echo=False,
 )
 

@@ -429,7 +429,8 @@ class RSSCollector:
                     """
                     UPDATE sources
                     SET health_score = GREATEST(health_score - 0.2, 0.0),
-                        consecutive_failures = consecutive_failures + 1
+                        consecutive_failures = consecutive_failures + 1,
+                        last_collected_at = NOW()
                     WHERE id = $1::uuid
                     RETURNING name, consecutive_failures, health_score
                     """,
@@ -444,3 +445,12 @@ class RSSCollector:
                         "Source '%s' auto-disabled after 10 consecutive failures",
                         row["name"],
                     )
+            else:
+                await conn.execute(
+                    """
+                    UPDATE sources
+                    SET last_collected_at = NOW()
+                    WHERE id = $1::uuid
+                    """,
+                    source_id,
+                )

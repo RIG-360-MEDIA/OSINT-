@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Navigation from '@/components/Navigation'
+import { Dateline } from '@/components/Dateline'
 import { formatTimeAgo } from '@/lib/domainColor'
 
-// ─── Types ──────────────────────────────────────────────────────────────
+/* ── Types ─────────────────────────────────────────────────────── */
 
 interface Clipping {
   clipping_id: string
@@ -38,23 +39,12 @@ interface FeedResponse {
 
 type LangFilter = 'all' | 'en' | 'te'
 
-// ─── Constants ──────────────────────────────────────────────────────────
-
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
-const CLIPPING_RED = '#8B1A1A'
-const ACCENT_AMBER = '#F59E0B'
-const ACCENT_PALE = '#FFFBEB'
-const TEXT_PRIMARY = '#18181B'
-const TEXT_SECONDARY = '#52525B'
-const TEXT_TERTIARY = '#A1A1AA'
-const BORDER = '#E2E8F0'
-const DIVERGENCE_ROSE = '#F43F5E'
 
 function newspaperInitials(name: string): string {
   return name
     .split(/\s+/)
-    .map((w) => w[0])
+    .map(w => w[0])
     .join('')
     .slice(0, 3)
     .toUpperCase()
@@ -64,8 +54,6 @@ function normalizeHeadline(h: string): string {
   return (h || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
 }
 
-// Group clippings: adjacent entries with matching edition_date + similar
-// normalized headline from different papers form a divergence group.
 interface ClippingGroup {
   key: string
   divergence: boolean
@@ -89,8 +77,8 @@ function groupForDivergence(clippings: Clipping[]): ClippingGroup[] {
     ).slice(0, 40)}`
     const bucket = buckets.get(key)
     if (!bucket) continue
-    if (groups.find((g) => g.key === key)) continue
-    const distinctPapers = new Set(bucket.map((b) => b.newspaper_name)).size
+    if (groups.find(g => g.key === key)) continue
+    const distinctPapers = new Set(bucket.map(b => b.newspaper_name)).size
     groups.push({
       key,
       divergence: bucket.length > 1 && distinctPapers > 1,
@@ -100,7 +88,7 @@ function groupForDivergence(clippings: Clipping[]): ClippingGroup[] {
   return groups
 }
 
-// ─── Clipping image (lazy fetch) ────────────────────────────────────────
+/* ── Clipping image ────────────────────────────────────────────── */
 
 interface ClippingImageProps {
   clippingId: string
@@ -109,12 +97,7 @@ interface ClippingImageProps {
   newspaperName: string
 }
 
-function ClippingImage({
-  clippingId,
-  token,
-  hasImage,
-  newspaperName,
-}: ClippingImageProps) {
+function ClippingImage({ clippingId, token, hasImage, newspaperName }: ClippingImageProps) {
   const [imgB64, setImgB64] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -126,10 +109,9 @@ function ClippingImage({
     }
     const run = async () => {
       try {
-        const r = await fetch(
-          `${API_BASE}/api/clippings/${clippingId}/image`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        )
+        const r = await fetch(`${API_BASE}/api/clippings/${clippingId}/image`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
         if (!r.ok) {
           if (!cancelled) setFailed(true)
           return
@@ -144,9 +126,7 @@ function ClippingImage({
       }
     }
     run()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [clippingId, token, hasImage])
 
   if (imgB64) {
@@ -156,42 +136,54 @@ function ClippingImage({
         alt={`${newspaperName} clipping`}
         style={{
           width: '100%',
-          maxHeight: '200px',
+          maxHeight: '240px',
           objectFit: 'cover',
-          border: `2px solid ${CLIPPING_RED}`,
-          borderRadius: '2px',
+          border: '1px solid var(--rig-ink)',
           display: 'block',
+          filter: 'sepia(0.06) contrast(1.02)',
         }}
       />
     )
   }
 
-  // Fallback tile — newspaper initials on amber gradient
   return (
     <div
       style={{
         width: '100%',
-        height: '180px',
-        background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-        border: `2px solid ${CLIPPING_RED}`,
-        borderRadius: '2px',
+        height: '200px',
+        background: 'var(--rig-paper-2)',
+        border: '1px solid var(--rig-ink-2)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: '#FFFFFF',
-        fontFamily: "'Playfair Display', serif",
-        fontWeight: 700,
-        fontSize: '42px',
-        letterSpacing: '0.02em',
+        flexDirection: 'column',
+        gap: '8px',
       }}
     >
-      {newspaperInitials(newspaperName)}
-      {failed ? null : null}
+      <span
+        style={{
+          fontFamily: 'var(--font-serif)',
+          fontWeight: 500,
+          fontStyle: 'italic',
+          fontSize: '46px',
+          letterSpacing: '0.02em',
+          color: 'var(--rig-ink)',
+          lineHeight: 1,
+        }}
+      >
+        {newspaperInitials(newspaperName)}
+      </span>
+      <span
+        className="rig-kicker"
+        style={{ opacity: 0.6, fontSize: '9px' }}
+      >
+        {failed ? 'Image unavailable' : 'No scan filed'}
+      </span>
     </div>
   )
 }
 
-// ─── Clipping card ──────────────────────────────────────────────────────
+/* ── Clipping card ─────────────────────────────────────────────── */
 
 interface ClippingCardProps {
   clipping: Clipping
@@ -199,26 +191,21 @@ interface ClippingCardProps {
 }
 
 function ClippingCard({ clipping, token }: ClippingCardProps) {
-  const headlineDisplay =
-    clipping.headline_translated || clipping.headline
-  const bodyDisplay =
-    clipping.translated_preview || clipping.text_preview || ''
+  const headlineDisplay = clipping.headline_translated || clipping.headline
+  const bodyDisplay = clipping.translated_preview || clipping.text_preview || ''
   const timeAgo = formatTimeAgo(clipping.collected_at)
 
   return (
-    <div
+    <article
       style={{
         display: 'grid',
-        gridTemplateColumns: '220px 1fr',
-        gap: '18px',
-        padding: '18px',
-        backgroundColor: '#FFFFFF',
-        border: `1px solid ${BORDER}`,
-        borderRadius: '6px',
-        marginBottom: '12px',
+        gridTemplateColumns: '260px 1fr',
+        gap: '28px',
+        paddingTop: '32px',
+        paddingBottom: '32px',
+        borderBottom: '1px solid var(--rig-rule-hair)',
       }}
     >
-      {/* Left: clipping image */}
       <div>
         <ClippingImage
           clippingId={clipping.clipping_id}
@@ -226,49 +213,96 @@ function ClippingCard({ clipping, token }: ClippingCardProps) {
           hasImage={clipping.has_image}
           newspaperName={clipping.newspaper_name}
         />
-      </div>
-
-      {/* Right: metadata + text */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {/* Source line */}
         <div
+          className="rig-kicker"
           style={{
-            fontFamily: "'DM Mono', ui-monospace, monospace",
-            fontSize: '11px',
-            color: TEXT_TERTIARY,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
+            marginTop: '10px',
+            opacity: 0.75,
+            fontSize: '9px',
+            textAlign: 'center',
           }}
         >
-          {clipping.newspaper_name}
-          {clipping.page_number ? ` · Page ${clipping.page_number}` : ''}
-          {clipping.edition_date ? ` · ${clipping.edition_date}` : ''}
-          {timeAgo ? ` · ${timeAgo}` : ''}
+          {clipping.newspaper_language !== 'en'
+            ? `${clipping.newspaper_language.toUpperCase()} · filed`
+            : 'Filed'}
+          {' '}
+          {timeAgo}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Masthead line */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            borderBottom: '1px solid var(--rig-rule)',
+            paddingBottom: '8px',
+          }}
+          className="rig-byline"
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              fontWeight: 500,
+              fontSize: '18px',
+              color: 'var(--rig-ink)',
+              textTransform: 'none',
+              letterSpacing: 'normal',
+            }}
+          >
+            {clipping.newspaper_name}
+          </span>
+          <span aria-hidden="true" style={{ opacity: 0.5 }}>·</span>
+          <span>
+            {clipping.page_number ? `Page ${clipping.page_number}` : 'Page —'}
+          </span>
+          {clipping.edition_date && (
+            <>
+              <span aria-hidden="true" style={{ opacity: 0.5 }}>·</span>
+              <span>{clipping.edition_date}</span>
+            </>
+          )}
+          <span
+            style={{
+              marginLeft: 'auto',
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              color: 'var(--rig-gold)',
+              fontSize: '16px',
+            }}
+          >
+            {clipping.relevance_score.toFixed(2)}
+          </span>
         </div>
 
         {/* Headline */}
-        <div
+        <h2
+          className="rig-headline"
           style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: '17px',
-            fontWeight: 700,
-            lineHeight: 1.25,
-            color: TEXT_PRIMARY,
+            margin: 0,
+            fontSize: '24px',
+            lineHeight: 1.2,
+            color: 'var(--rig-ink)',
+            letterSpacing: '-0.005em',
           }}
         >
           {headlineDisplay}
-        </div>
+        </h2>
 
-        {/* Original (if translated is shown and different) */}
+        {/* Original headline (if translated) */}
         {clipping.headline_translated &&
           clipping.headline_translated !== clipping.headline && (
             <div
               style={{
-                fontFamily: "'Playfair Display', serif",
+                fontFamily: 'var(--font-serif)',
                 fontStyle: 'italic',
-                fontSize: '13px',
-                color: TEXT_TERTIARY,
+                fontSize: '14px',
+                color: 'var(--rig-ink-3)',
                 lineHeight: 1.35,
+                marginTop: '-6px',
               }}
             >
               {clipping.headline}
@@ -276,45 +310,41 @@ function ClippingCard({ clipping, token }: ClippingCardProps) {
           )}
 
         {/* Preview text */}
-        <div
+        <p
           style={{
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-            fontSize: '13px',
-            lineHeight: 1.5,
-            color: TEXT_SECONDARY,
+            margin: 0,
+            fontFamily: 'var(--font-serif)',
+            fontSize: '15px',
+            lineHeight: 1.55,
+            color: 'var(--rig-ink-2)',
           }}
         >
           {bodyDisplay}
           {bodyDisplay.length >= 280 ? '…' : ''}
-        </div>
+        </p>
 
-        {/* WHY THIS MATTERS */}
+        {/* Why this matters */}
         {clipping.relevance_explanation && (
           <div
             style={{
-              backgroundColor: ACCENT_PALE,
-              borderLeft: `4px solid ${ACCENT_AMBER}`,
-              padding: '8px 12px',
-              borderRadius: '3px',
+              borderLeft: '2px solid var(--rig-gold)',
+              background: 'color-mix(in srgb, var(--rig-gold) 6%, transparent)',
+              padding: '10px 14px',
+              marginTop: '4px',
             }}
           >
             <div
-              style={{
-                fontFamily: "'DM Mono', ui-monospace, monospace",
-                fontSize: '10px',
-                color: '#B45309',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                marginBottom: '4px',
-              }}
+              className="rig-kicker"
+              style={{ marginBottom: '4px', color: 'var(--rig-copper)' }}
             >
               Why this matters
             </div>
             <div
               style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '12px',
-                color: TEXT_PRIMARY,
+                fontFamily: 'var(--font-serif)',
+                fontStyle: 'italic',
+                fontSize: '14px',
+                color: 'var(--rig-ink)',
                 lineHeight: 1.45,
               }}
             >
@@ -322,64 +352,43 @@ function ClippingCard({ clipping, token }: ClippingCardProps) {
             </div>
           </div>
         )}
-
-        {/* Score chip */}
-        <div
-          style={{
-            fontFamily: "'DM Mono', ui-monospace, monospace",
-            fontSize: '11px',
-            color: '#2563EB',
-            marginTop: 'auto',
-          }}
-        >
-          score {clipping.relevance_score.toFixed(2)}
-          {clipping.newspaper_language !== 'en'
-            ? ` · ${clipping.newspaper_language.toUpperCase()}`
-            : ''}
-        </div>
       </div>
-    </div>
+    </article>
   )
 }
 
-// ─── Divergence strip ───────────────────────────────────────────────────
+/* ── Divergence strip ─────────────────────────────────────────── */
 
 function DivergenceStrip({ clippings }: { clippings: Clipping[] }) {
-  const papers = Array.from(
-    new Set(clippings.map((c) => c.newspaper_name)),
-  )
+  const papers = Array.from(new Set(clippings.map(c => c.newspaper_name)))
   const subtitle =
     papers.length === 2
-      ? `${papers[0]} and ${papers[1]} cover this story with different framing`
-      : `${papers.slice(0, -1).join(', ')} and ${papers.slice(-1)[0]} cover this story with different framing`
+      ? `${papers[0]} and ${papers[1]} file the same story in different words.`
+      : `${papers.slice(0, -1).join(', ')} and ${papers.slice(-1)[0]} file the same story in different words.`
+
   return (
     <div
       style={{
-        backgroundColor: 'rgba(244,63,94,0.06)',
-        border: `1px solid rgba(244,63,94,0.2)`,
-        borderRadius: '6px',
-        padding: '10px 14px',
-        marginBottom: '8px',
+        borderLeft: '2px solid var(--rig-oxblood)',
+        background: 'color-mix(in srgb, var(--rig-oxblood) 6%, transparent)',
+        padding: '12px 16px',
+        marginTop: '24px',
+        marginBottom: '-8px',
       }}
     >
       <div
-        style={{
-          fontFamily: "'DM Mono', ui-monospace, monospace",
-          fontSize: '10px',
-          color: DIVERGENCE_ROSE,
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          fontWeight: 500,
-        }}
+        className="rig-kicker"
+        style={{ color: 'var(--rig-oxblood)', marginBottom: '4px' }}
       >
-        Narrative divergence detected
+        Narrative divergence
       </div>
       <div
         style={{
-          fontFamily: "'DM Sans', system-ui, sans-serif",
-          fontSize: '12px',
-          color: TEXT_SECONDARY,
-          marginTop: '3px',
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontSize: '15px',
+          color: 'var(--rig-ink-2)',
+          lineHeight: 1.45,
         }}
       >
         {subtitle}
@@ -388,7 +397,7 @@ function DivergenceStrip({ clippings }: { clippings: Clipping[] }) {
   )
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────
+/* ── Page ─────────────────────────────────────────────────────── */
 
 export default function CuttingRoomPage() {
   const [token, setToken] = useState<string | null>(null)
@@ -414,9 +423,7 @@ export default function CuttingRoomPage() {
           `${API_BASE}/api/clippings/feed?${params.toString()}`,
           { headers: { Authorization: `Bearer ${authToken}` } },
         )
-        if (!r.ok) {
-          throw new Error(`Feed request failed: ${r.status}`)
-        }
+        if (!r.ok) throw new Error(`Feed request failed: ${r.status}`)
         const data = (await r.json()) as FeedResponse
         setFeed(data)
       } catch (e: unknown) {
@@ -431,9 +438,7 @@ export default function CuttingRoomPage() {
   useEffect(() => {
     const init = async () => {
       const supabase = createClient()
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      const { data: { session } } = await supabase.auth.getSession()
       const t = session?.access_token ?? null
       setToken(t)
       if (t) void fetchFeed(t)
@@ -447,153 +452,115 @@ export default function CuttingRoomPage() {
   const paperCount = feed?.newspapers.length ?? 0
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--rig-paper)' }}>
       <Navigation />
 
-      <main
-        style={{
-          paddingTop: '76px',
-          paddingLeft: '24px',
-          paddingRight: '24px',
-          paddingBottom: '48px',
-          maxWidth: '1080px',
-          margin: '0 auto',
-        }}
-      >
-        {/* Header */}
-        <header
-          style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            marginBottom: '20px',
-          }}
-        >
-          <h1
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: '32px',
-              fontWeight: 700,
-              color: TEXT_PRIMARY,
-              letterSpacing: '-0.02em',
-              margin: 0,
-            }}
-          >
-            CUTTING ROOM
-          </h1>
+      <div style={{ paddingTop: 'var(--topbar-h)' }}>
+        <Dateline
+          issueNumber={totalCount}
+          extra={paperCount > 0 ? [`${paperCount} MASTHEADS`] : undefined}
+        />
+
+        <main style={{ maxWidth: '980px', margin: '0 auto', padding: '48px 32px 80px' }}>
+          {/* Section head */}
+          <header style={{ marginBottom: '32px' }}>
+            <div className="rig-kicker" style={{ marginBottom: '10px' }}>
+              The Cutting Room
+            </div>
+            <h1
+              className="rig-headline"
+              style={{
+                fontSize: '34px',
+                margin: 0,
+                letterSpacing: '-0.01em',
+                lineHeight: 1.15,
+              }}
+            >
+              The morning papers,{' '}
+              <em style={{ fontWeight: 500, color: 'var(--rig-gold)' }}>
+                scissored and filed.
+              </em>
+            </h1>
+          </header>
+
+          {/* Filters */}
           <div
             style={{
-              fontFamily: "'DM Mono', ui-monospace, monospace",
-              fontSize: '11px',
-              color: TEXT_TERTIARY,
-              letterSpacing: '0.04em',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+              marginBottom: '32px',
+              paddingBottom: '22px',
+              borderBottom: '1px solid var(--rig-rule)',
             }}
           >
-            {totalCount} clipping{totalCount === 1 ? '' : 's'} · {paperCount} paper{paperCount === 1 ? '' : 's'}
-          </div>
-        </header>
+            <div>
+              <div className="rig-kicker" style={{ marginBottom: '8px', opacity: 0.7 }}>
+                Masthead
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                <FilterPill
+                  label="All"
+                  active={paperFilter === 'all'}
+                  onClick={() => setPaperFilter('all')}
+                />
+                {(feed?.newspapers ?? []).map(p => (
+                  <FilterPill
+                    key={p.name}
+                    label={`${p.name} · ${p.count}`}
+                    active={paperFilter === p.name}
+                    onClick={() => setPaperFilter(p.name)}
+                  />
+                ))}
+              </div>
+            </div>
 
-        {/* Newspaper filter pills */}
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-          <FilterPill
-            label="All"
-            active={paperFilter === 'all'}
-            onClick={() => setPaperFilter('all')}
-          />
-          {(feed?.newspapers ?? []).map((p) => (
-            <FilterPill
-              key={p.name}
-              label={`${p.name} (${p.count})`}
-              active={paperFilter === p.name}
-              onClick={() => setPaperFilter(p.name)}
+            <div>
+              <div className="rig-kicker" style={{ marginBottom: '8px', opacity: 0.7 }}>
+                Language
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <FilterPill label="All" active={langFilter === 'all'} onClick={() => setLangFilter('all')} />
+                <FilterPill label="English" active={langFilter === 'en'} onClick={() => setLangFilter('en')} />
+                <FilterPill label="Telugu" active={langFilter === 'te'} onClick={() => setLangFilter('te')} />
+              </div>
+            </div>
+          </div>
+
+          {/* States */}
+          {loading && <LoadingState />}
+
+          {!loading && error && (
+            <DeskMemo
+              kicker="Desk memo"
+              headline="The scanner went quiet."
+              body={error}
             />
+          )}
+
+          {!loading && !error && totalCount === 0 && (
+            <DeskMemo
+              kicker="Desk memo"
+              headline="No clippings filed today."
+              body="The morning run starts at 07:30 UTC. Fresh scans will appear here as the papers hit the desk."
+            />
+          )}
+
+          {!loading && !error && groups.map(g => (
+            <div key={g.key}>
+              {g.divergence && <DivergenceStrip clippings={g.clippings} />}
+              {g.clippings.map(c => (
+                <ClippingCard key={c.clipping_id} clipping={c} token={token} />
+              ))}
+            </div>
           ))}
-        </div>
-
-        {/* Language toggle */}
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '22px' }}>
-          <FilterPill
-            label="All"
-            active={langFilter === 'all'}
-            onClick={() => setLangFilter('all')}
-          />
-          <FilterPill
-            label="English"
-            active={langFilter === 'en'}
-            onClick={() => setLangFilter('en')}
-          />
-          <FilterPill
-            label="Telugu"
-            active={langFilter === 'te'}
-            onClick={() => setLangFilter('te')}
-          />
-        </div>
-
-        {/* Body */}
-        {loading && (
-          <div
-            style={{
-              fontFamily: "'DM Sans', system-ui, sans-serif",
-              fontSize: '14px',
-              color: TEXT_TERTIARY,
-              padding: '40px 0',
-              textAlign: 'center',
-            }}
-          >
-            Loading clippings…
-          </div>
-        )}
-
-        {error && !loading && (
-          <div
-            style={{
-              fontFamily: "'DM Sans', system-ui, sans-serif",
-              fontSize: '13px',
-              color: DIVERGENCE_ROSE,
-              padding: '16px',
-              backgroundColor: 'rgba(244,63,94,0.06)',
-              borderRadius: '6px',
-              border: `1px solid rgba(244,63,94,0.2)`,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {!loading && !error && totalCount === 0 && (
-          <div
-            style={{
-              fontFamily: "'DM Sans', system-ui, sans-serif",
-              fontSize: '14px',
-              color: TEXT_TERTIARY,
-              padding: '48px 0',
-              textAlign: 'center',
-              border: `1px dashed ${BORDER}`,
-              borderRadius: '6px',
-            }}
-          >
-            No clippings yet. The morning scrape runs at 07:30 UTC.
-          </div>
-        )}
-
-        {!loading && !error && groups.map((g) => (
-          <div key={g.key}>
-            {g.divergence && <DivergenceStrip clippings={g.clippings} />}
-            {g.clippings.map((c) => (
-              <ClippingCard
-                key={c.clipping_id}
-                clipping={c}
-                token={token}
-              />
-            ))}
-          </div>
-        ))}
-      </main>
+        </main>
+      </div>
     </div>
   )
 }
 
-// ─── Filter pill ────────────────────────────────────────────────────────
+/* ── Subcomponents ─────────────────────────────────────────────── */
 
 interface FilterPillProps {
   label: string
@@ -607,18 +574,96 @@ function FilterPill({ label, active, onClick }: FilterPillProps) {
       onClick={onClick}
       style={{
         padding: '5px 12px',
-        borderRadius: '9999px',
-        border: `1px solid ${active ? ACCENT_AMBER : BORDER}`,
-        backgroundColor: active ? ACCENT_PALE : '#FFFFFF',
-        color: active ? '#B45309' : TEXT_SECONDARY,
-        fontFamily: "'DM Sans', system-ui, sans-serif",
-        fontSize: '12px',
-        fontWeight: active ? 600 : 500,
         cursor: 'pointer',
-        letterSpacing: '0.01em',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '10px',
+        letterSpacing: '0.2em',
+        textTransform: 'uppercase',
+        border: '1px solid',
+        borderColor: active ? 'var(--rig-ink)' : 'var(--rig-rule)',
+        background: active
+          ? 'color-mix(in srgb, var(--rig-paper-2) 60%, transparent)'
+          : 'transparent',
+        color: active ? 'var(--rig-ink)' : 'var(--rig-ink-3)',
+        transition: 'all 0.15s',
       }}
     >
       {label}
     </button>
+  )
+}
+
+function LoadingState() {
+  return (
+    <div
+      style={{
+        padding: '72px 0',
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '14px',
+      }}
+    >
+      <span
+        className="rig-headline"
+        style={{
+          fontStyle: 'italic',
+          fontSize: '20px',
+          color: 'var(--rig-ink-2)',
+        }}
+      >
+        Sorting the morning papers…
+      </span>
+      <span
+        style={{
+          width: '160px',
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, var(--rig-gold), transparent)',
+        }}
+      />
+    </div>
+  )
+}
+
+interface DeskMemoProps {
+  kicker: string
+  headline: string
+  body: string
+}
+
+function DeskMemo({ kicker, headline, body }: DeskMemoProps) {
+  return (
+    <div
+      style={{
+        padding: '56px 32px',
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '12px',
+        border: '1px solid var(--rig-rule)',
+        background: 'var(--rig-paper-2)',
+      }}
+    >
+      <span className="rig-kicker">{kicker}</span>
+      <span
+        className="rig-headline"
+        style={{ fontStyle: 'italic', fontSize: '22px', color: 'var(--rig-ink-2)' }}
+      >
+        {headline}
+      </span>
+      <span
+        style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: '14px',
+          color: 'var(--rig-ink-3)',
+          maxWidth: '440px',
+          lineHeight: 1.55,
+        }}
+      >
+        {body}
+      </span>
+    </div>
   )
 }

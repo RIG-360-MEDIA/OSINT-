@@ -1,8 +1,10 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { ThemeToggle } from './theme/ThemeToggle'
 
 interface NavCounts {
   brief_ready: boolean
@@ -16,29 +18,39 @@ interface NavCounts {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const NAV_LINKS = [
-  { path: '/brief',    label: 'Daily Brief' },
-  { path: '/coverage', label: 'Coverage Room' },
-  { path: '/threads',  label: 'Story Threads' },
-  { path: '/clips',    label: 'Clip Room' },
-  { path: '/cuttings', label: 'Cutting Room' },
-  { path: '/signals',  label: 'Signal Room' },
-  { path: '/documents', label: 'Document Room' },
-  { path: '/analyst',  label: 'Analyst' },
+  { path: '/brief',     label: 'The Brief' },
+  { path: '/coverage',  label: 'Coverage' },
+  { path: '/threads',   label: 'Threads' },
+  { path: '/clips',     label: 'Clippings' },
+  { path: '/cuttings',  label: 'Cutting Room' },
+  { path: '/signals',   label: 'Signals' },
+  { path: '/documents', label: 'Archive' },
+  { path: '/analyst',   label: 'Analyst' },
 ]
 
 export default function Navigation() {
   const pathname = usePathname()
-  const router   = useRouter()
-  const [counts, setCounts] = useState<NavCounts>({ brief_ready: false, article_count: 0, thread_count: 0, escalating_count: 0, clip_count: 0, doc_count: 0 })
-  const [menuOpen, setMenuOpen] = useState(false)
+  const router = useRouter()
+  const [counts, setCounts] = useState<NavCounts>({
+    brief_ready: false,
+    article_count: 0,
+    thread_count: 0,
+    escalating_count: 0,
+    clip_count: 0,
+    doc_count: 0,
+  })
+  const [userInitial, setUserInitial] = useState<string>('')
 
   useEffect(() => {
     const supabase = createClient()
-    const fetchCounts = async () => {
+    const fetchAll = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) return
         const token = session.access_token
+
+        const email = session.user?.email ?? ''
+        setUserInitial(email.charAt(0).toUpperCase())
 
         const [briefRes, feedRes, threadsRes, clipsRes, docsRes] = await Promise.all([
           fetch(`${API_BASE}/api/brief/today`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -57,21 +69,21 @@ export default function Navigation() {
         let threadCount = 0
         let escalatingCount = 0
         if (threadsRes.ok) {
-          const tData = await threadsRes.json()
-          threadCount = tData?.thread_count ?? 0
-          escalatingCount = tData?.escalating_count ?? 0
+          const t = await threadsRes.json()
+          threadCount = t?.thread_count ?? 0
+          escalatingCount = t?.escalating_count ?? 0
         }
 
         let clipCount = 0
         if (clipsRes.ok) {
-          const cData = await clipsRes.json()
-          clipCount = cData?.total ?? 0
+          const c = await clipsRes.json()
+          clipCount = c?.total ?? 0
         }
 
         let docCount = 0
         if (docsRes.ok) {
-          const dData = await docsRes.json()
-          docCount = dData?.total ?? 0
+          const d = await docsRes.json()
+          docCount = d?.total ?? 0
         }
 
         setCounts({
@@ -83,10 +95,10 @@ export default function Navigation() {
           doc_count: docCount,
         })
       } catch {
-        // non-critical
+        /* non-critical */
       }
     }
-    fetchCounts()
+    fetchAll()
   }, [pathname])
 
   const handleSignOut = async () => {
@@ -96,280 +108,146 @@ export default function Navigation() {
   }
 
   return (
-    <header style={{
-      position:        'fixed',
-      top:             0,
-      left:            0,
-      right:           0,
-      height:          '56px',
-      backgroundColor: '#18181B',
-      borderBottom:    '1px solid rgba(255,255,255,0.07)',
-      display:         'flex',
-      alignItems:      'center',
-      padding:         '0 20px',
-      zIndex:          200,
-      gap:             '0',
-    }}>
-
-      {/* ── Logo ─────────────────────────────────────────────── */}
-      <div
-        onClick={() => router.push('/brief')}
+    <header
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 'var(--topbar-h)',
+        background: 'var(--rig-paper-2)',
+        borderBottom: '1px solid var(--rig-rule)',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 24px',
+        gap: '14px',
+        zIndex: 200,
+        backdropFilter: 'blur(6px)',
+      }}
+    >
+      {/* ── Wordmark ────────────────────────────────────────────── */}
+      <Link
+        href="/brief"
+        aria-label="Rig Surveillance"
         style={{
-          display:    'flex',
-          alignItems: 'center',
-          gap:        '10px',
-          cursor:     'pointer',
+          display: 'inline-flex',
+          alignItems: 'baseline',
+          textDecoration: 'none',
+          userSelect: 'none',
           flexShrink: 0,
-          marginRight: '32px',
+          marginRight: '8px',
         }}
       >
-        <div style={{
-          width:           '30px',
-          height:          '30px',
-          borderRadius:    '8px',
-          background:      'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-          display:         'flex',
-          alignItems:      'center',
-          justifyContent:  'center',
-          boxShadow:       '0 2px 8px rgba(245,158,11,0.4)',
-          flexShrink:      0,
-        }}>
-          <span style={{
-            fontFamily:  "'DM Sans', system-ui, sans-serif",
-            fontSize:    '13px',
-            fontWeight:  700,
-            color:       '#18181B',
-            letterSpacing: '-0.02em',
-          }}>R</span>
-        </div>
-        <div style={{ lineHeight: 1 }}>
-          <div style={{
-            fontFamily:    "'DM Sans', system-ui, sans-serif",
-            fontSize:      '13px',
-            fontWeight:    600,
-            color:         '#F8FAFC',
-            letterSpacing: '-0.01em',
-          }}>RIG Surveillance</div>
-          <div style={{
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-            fontSize:   '10px',
-            color:      'rgba(255,255,255,0.3)',
-            marginTop:  '1px',
-          }}>Intelligence Platform</div>
-        </div>
-      </div>
+        <span style={{ display: 'inline-block', width: '14px', height: '14px', marginRight: '10px', color: 'var(--rig-gold)', position: 'relative', top: '1px' }}>
+          <CompassGlyph />
+        </span>
+        <span
+          style={{
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            fontSize: '24px',
+            lineHeight: 1,
+            letterSpacing: '0.002em',
+          }}
+        >
+          <span style={{ fontWeight: 600, color: 'var(--rig-ink)' }}>Rig</span>
+          <span style={{ fontWeight: 500, color: 'var(--rig-gold)' }}> Surveillance</span>
+          <span style={{ color: 'var(--rig-gold)' }}>.</span>
+        </span>
+      </Link>
 
-      {/* ── Nav links ────────────────────────────────────────── */}
-      <nav style={{
-        display:    'flex',
-        alignItems: 'center',
-        gap:        '2px',
-        flex:       1,
-      }}>
-        {NAV_LINKS.map(({ path, label }) => {
-          const isActive = pathname === path
-          return (
-            <NavLink
-              key={path}
-              label={label}
-              isActive={isActive}
-              onClick={() => router.push(path)}
-            />
-          )
-        })}
+      {/* ── Nav ────────────────────────────────────────────────── */}
+      <nav
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0px',
+          flex: 1,
+          minWidth: 0,
+          justifyContent: 'flex-start',
+          marginRight: '8px',
+        }}
+      >
+        {NAV_LINKS.map(({ path, label }) => (
+          <NavItem
+            key={path}
+            label={label}
+            href={path}
+            isActive={pathname === path}
+          />
+        ))}
       </nav>
 
-      {/* ── Right side: stats + badges + sign out ────────────── */}
-      <div style={{
-        display:    'flex',
-        alignItems: 'center',
-        gap:        '10px',
-        flexShrink: 0,
-      }}>
-        {/* Document count chip */}
+      {/* ── Ticker + controls ──────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, paddingLeft: '12px', borderLeft: '1px solid var(--rig-rule)' }}>
         {counts.doc_count > 0 && (
-          <div style={{
-            display:         'flex',
-            alignItems:      'center',
-            gap:             '5px',
-            padding:         '4px 10px',
-            borderRadius:    '9999px',
-            border:          '1px solid rgba(148,163,184,0.3)',
-            backgroundColor: 'rgba(148,163,184,0.12)',
-          }}>
-            <span style={{
-              width:           '5px',
-              height:          '5px',
-              borderRadius:    '50%',
-              backgroundColor: '#94A3B8',
-              flexShrink:      0,
-            }} />
-            <span style={{
-              fontFamily:    "'DM Mono', ui-monospace, monospace",
-              fontSize:      '11px',
-              color:         '#CBD5E1',
-              fontWeight:    500,
-              letterSpacing: '0.02em',
-            }}>
-              {counts.doc_count} docs
-            </span>
-          </div>
+          <Chip tone="default" label={`${counts.doc_count} docs`} />
         )}
-
-        {/* Clip count chip */}
         {counts.clip_count > 0 && (
-          <div style={{
-            display:         'flex',
-            alignItems:      'center',
-            gap:             '5px',
-            padding:         '4px 10px',
-            borderRadius:    '9999px',
-            border:          '1px solid rgba(220,38,38,0.25)',
-            backgroundColor: 'rgba(220,38,38,0.1)',
-          }}>
-            <span style={{
-              width:           '5px',
-              height:          '5px',
-              borderRadius:    '50%',
-              backgroundColor: '#DC2626',
-              flexShrink:      0,
-            }} />
-            <span style={{
-              fontFamily:    "'DM Mono', ui-monospace, monospace",
-              fontSize:      '11px',
-              color:         '#FCA5A5',
-              fontWeight:    500,
-              letterSpacing: '0.02em',
-            }}>
-              {counts.clip_count} clips
-            </span>
-          </div>
+          <Chip tone="copper" label={`${counts.clip_count} clips`} />
         )}
-
-        {/* Article count chip */}
         {counts.article_count > 0 && (
-          <div style={{
-            display:         'flex',
-            alignItems:      'center',
-            gap:             '5px',
-            padding:         '4px 10px',
-            borderRadius:    '9999px',
-            border:          '1px solid rgba(59,130,246,0.25)',
-            backgroundColor: 'rgba(59,130,246,0.1)',
-          }}>
-            <span style={{
-              width:           '5px',
-              height:          '5px',
-              borderRadius:    '50%',
-              backgroundColor: '#3B82F6',
-              flexShrink:      0,
-            }} />
-            <span style={{
-              fontFamily:  "'DM Mono', ui-monospace, monospace",
-              fontSize:    '11px',
-              color:       '#93C5FD',
-              fontWeight:  500,
-              letterSpacing: '0.02em',
-            }}>
-              {counts.article_count.toLocaleString()}
-            </span>
-          </div>
+          <Chip tone="default" label={counts.article_count.toLocaleString()} />
         )}
-
-        {/* Story Threads escalating badge */}
         {counts.escalating_count > 0 && (
-          <div style={{
-            display:         'flex',
-            alignItems:      'center',
-            gap:             '5px',
-            padding:         '4px 10px',
-            borderRadius:    '9999px',
-            border:          '1px solid rgba(239,68,68,0.3)',
-            backgroundColor: 'rgba(239,68,68,0.1)',
-          }}>
-            <span style={{
-              width:           '5px',
-              height:          '5px',
-              borderRadius:    '50%',
-              backgroundColor: '#EF4444',
-              flexShrink:      0,
-            }} />
-            <span style={{
-              fontFamily:    "'DM Mono', ui-monospace, monospace",
-              fontSize:      '11px',
-              color:         '#FCA5A5',
-              fontWeight:    500,
-              letterSpacing: '0.02em',
-            }}>
-              {counts.escalating_count} escalating
-            </span>
-          </div>
+          <Chip tone="alert" label={`${counts.escalating_count} escalating`} />
         )}
-
-        {/* Brief ready badge */}
         {counts.brief_ready && (
-          <div
-            className="pulse-amber"
-            style={{
-              display:         'flex',
-              alignItems:      'center',
-              gap:             '5px',
-              padding:         '4px 10px',
-              borderRadius:    '9999px',
-              border:          '1px solid rgba(245,158,11,0.3)',
-              backgroundColor: 'rgba(245,158,11,0.12)',
-            }}
-          >
-            <span style={{
-              width:           '5px',
-              height:          '5px',
-              borderRadius:    '50%',
-              backgroundColor: '#F59E0B',
-              flexShrink:      0,
-            }} />
-            <span style={{
-              fontFamily: "'DM Sans', system-ui, sans-serif",
-              fontSize:   '11px',
-              fontWeight: 600,
-              color:      '#FCD34D',
-              letterSpacing: '0.02em',
-            }}>
-              Brief Ready
-            </span>
-          </div>
+          <span className="pulse-gold" style={{ display: 'inline-flex' }}>
+            <Chip tone="gold" label="Brief ready" />
+          </span>
         )}
 
-        {/* Divider */}
-        <div style={{
-          width:           '1px',
-          height:          '20px',
-          backgroundColor: 'rgba(255,255,255,0.1)',
-        }} />
+        <span
+          aria-hidden="true"
+          style={{
+            width: '1px',
+            height: '18px',
+            background: 'var(--rig-rule)',
+            margin: '0 6px',
+          }}
+        />
 
-        {/* Sign out */}
+        <ThemeToggle />
+
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '32px',
+            height: '32px',
+            border: '1px solid var(--rig-rule)',
+            color: 'var(--rig-ink-2)',
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            fontSize: '15px',
+            borderRadius: '50%',
+            marginLeft: '6px',
+            flexShrink: 0,
+          }}
+          aria-hidden="true"
+        >
+          {userInitial || '·'}
+        </div>
+
         <button
           onClick={handleSignOut}
           style={{
-            background:  'none',
-            border:      'none',
-            cursor:      'pointer',
-            padding:     '6px 10px',
-            borderRadius: '6px',
-            fontFamily:  "'DM Sans', system-ui, sans-serif",
-            fontSize:    '12px',
-            color:       'rgba(255,255,255,0.35)',
-            transition:  'color 0.15s, background 0.15s',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '8px 12px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '10.5px',
+            letterSpacing: '0.24em',
+            textTransform: 'uppercase',
+            color: 'var(--rig-ink-3)',
+            transition: 'color 0.2s',
+            whiteSpace: 'nowrap',
           }}
-          onMouseEnter={e => {
-            const el = e.currentTarget
-            el.style.color = 'rgba(255,255,255,0.7)'
-            el.style.background = 'rgba(255,255,255,0.06)'
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget
-            el.style.color = 'rgba(255,255,255,0.35)'
-            el.style.background = 'none'
-          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--rig-oxblood)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--rig-ink-3)' }}
         >
           Sign out
         </button>
@@ -378,67 +256,68 @@ export default function Navigation() {
   )
 }
 
-/* ── NavLink sub-component ─────────────────────────────────────────────────── */
-function NavLink({
-  label,
-  isActive,
-  onClick,
-}: {
-  label: string
-  isActive: boolean
-  onClick: () => void
-}) {
-  const [hovered, setHovered] = useState(false)
+/* ── Sub-components ──────────────────────────────────────────────────────── */
 
+function NavItem({ href, label, isActive }: { href: string; label: string; isActive: boolean }) {
+  const [hover, setHover] = useState(false)
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+    <Link
+      href={href}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{
-        position:        'relative',
-        background:      'none',
-        border:          'none',
-        cursor:          'pointer',
-        padding:         '6px 14px',
-        borderRadius:    '6px',
-        fontFamily:      "'DM Sans', system-ui, sans-serif",
-        fontSize:        '14px',
-        fontWeight:      isActive ? 600 : 400,
-        color:           isActive ? '#F8FAFC' : hovered ? '#CBD5E1' : 'rgba(255,255,255,0.5)',
-        transition:      'color 0.15s, background 0.15s',
-        backgroundColor: hovered && !isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
-        letterSpacing:   '-0.01em',
+        position: 'relative',
+        padding: '10px 10px',
+        textDecoration: 'none',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '10.5px',
+        letterSpacing: '0.16em',
+        textTransform: 'uppercase',
+        color: isActive ? 'var(--rig-ink)' : hover ? 'var(--rig-ink-2)' : 'var(--rig-ink-3)',
+        transition: 'color 0.2s',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
       }}
     >
       {label}
-      {/* Active underline */}
       {isActive && (
-        <span style={{
-          position:        'absolute',
-          bottom:          '-2px',
-          left:            '14px',
-          right:           '14px',
-          height:          '2px',
-          borderRadius:    '2px 2px 0 0',
-          background:      'linear-gradient(90deg, #F59E0B, #FBBF24)',
-          boxShadow:       '0 0 8px rgba(245,158,11,0.6)',
-          animation:       'nav-underline 0.22s ease both',
-        }} />
+        <span
+          style={{
+            position: 'absolute',
+            bottom: '-1px',
+            left: '10px',
+            right: '10px',
+            height: '1px',
+            background: 'var(--rig-gold)',
+          }}
+        />
       )}
-      {/* Hover underline */}
-      {hovered && !isActive && (
-        <span style={{
-          position:        'absolute',
-          bottom:          '-2px',
-          left:            '14px',
-          right:           '14px',
-          height:          '1px',
-          borderRadius:    '1px',
-          backgroundColor: 'rgba(255,255,255,0.2)',
-          animation:       'nav-underline 0.18s ease both',
-        }} />
-      )}
-    </button>
+    </Link>
+  )
+}
+
+function Chip({ label, tone }: { label: string; tone: 'default' | 'gold' | 'copper' | 'alert' }) {
+  return (
+    <span
+      className="rig-chip"
+      data-tone={tone === 'default' ? undefined : tone}
+    >
+      <span className="dot" />
+      {label}
+    </span>
+  )
+}
+
+function CompassGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="11" stroke="currentColor" strokeWidth="0.7" opacity="0.55" />
+      <path
+        d="M12 1 L13.2 10.8 L22 12 L13.2 13.2 L12 23 L10.8 13.2 L2 12 L10.8 10.8 Z"
+        fill="currentColor"
+        opacity="0.9"
+      />
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+    </svg>
   )
 }

@@ -72,25 +72,49 @@ async def get_clips_feed(
 
         result = await db.execute(
             text(f"""
+                WITH ents AS (
+                    SELECT video_id, clip_start_seconds,
+                           ARRAY_AGG(DISTINCT matched_entity) AS all_entities
+                    FROM youtube_clips
+                    GROUP BY video_id, clip_start_seconds
+                ),
+                ranked AS (
+                    SELECT yc.*,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY yc.video_id, yc.clip_start_seconds
+                            ORDER BY COALESCE(yc.relevance_score, 0) DESC, yc.collected_at DESC
+                        ) AS rn
+                    FROM youtube_clips yc
+                    WHERE {where_clause}
+                )
                 SELECT
-                    yc.id::text           AS clip_id,
-                    yc.video_id,
-                    yc.video_title,
-                    yc.channel_id,
-                    yc.channel_name,
-                    yc.video_published_at,
-                    yc.video_url,
-                    yc.clip_start_seconds,
-                    yc.clip_end_seconds,
-                    yc.embed_url,
-                    yc.transcript_segment,
-                    yc.transcript_language,
-                    yc.transcript_translated,
-                    yc.matched_entity,
-                    yc.collected_at
-                FROM youtube_clips yc
-                WHERE {where_clause}
-                ORDER BY yc.collected_at DESC
+                    r.id::text             AS clip_id,
+                    r.video_id,
+                    r.video_title,
+                    r.channel_id,
+                    r.channel_name,
+                    r.video_published_at,
+                    r.video_url,
+                    r.clip_start_seconds,
+                    r.clip_end_seconds,
+                    r.embed_url,
+                    r.transcript_segment,
+                    r.transcript_language,
+                    r.transcript_translated,
+                    r.matched_entity,
+                    e.all_entities,
+                    r.relevance_score,
+                    (r.clip_start_seconds > 0 OR COALESCE(LENGTH(r.transcript_segment), 0) > 30) AS has_transcript,
+                    r.collected_at
+                FROM ranked r
+                LEFT JOIN ents e
+                  ON e.video_id = r.video_id
+                 AND e.clip_start_seconds = r.clip_start_seconds
+                WHERE r.rn = 1
+                ORDER BY
+                    (r.clip_start_seconds > 0) DESC,
+                    COALESCE(r.relevance_score, 0) DESC,
+                    r.collected_at DESC
                 LIMIT :limit
             """),
             params,
@@ -147,6 +171,9 @@ async def get_clips_feed(
                     "transcript_segment":    c.transcript_segment,
                     "transcript_translated": c.transcript_translated,
                     "matched_entity":        c.matched_entity,
+                    "all_entities":          list(c.all_entities or []) if hasattr(c, "all_entities") else [c.matched_entity],
+                    "relevance_score":       float(c.relevance_score) if c.relevance_score is not None else None,
+                    "has_transcript":        bool(c.has_transcript) if hasattr(c, "has_transcript") else (c.clip_start_seconds > 0),
                     "transcript_language":   c.transcript_language,
                     "video_published_at":    (
                         c.video_published_at.isoformat() if c.video_published_at else None

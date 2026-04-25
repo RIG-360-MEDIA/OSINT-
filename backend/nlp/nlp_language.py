@@ -51,10 +51,30 @@ async def detect_and_translate(
     except Exception as exc:
         logger.warning("langdetect failed: %s", exc)
 
+    # Unicode range fallback: Odia script U+0B00–U+0B7F
+    # langdetect often misclassifies Odia as 'en' on short samples
+    if detected == "en" or not detected:
+        odia_chars = sum(1 for c in working_text[:100] if "\u0B00" <= c <= "\u0B7F")
+        if odia_chars > 5:
+            detected = "or"
+            logger.info("Odia script detected via Unicode range check for article")
+
     # English — no translation needed
     if detected == "en":
         source = lead_text_original or title
         return "en", (source or "")[:2000]
+
+    # Odia — route to Google Translate (Groq quality is unreliable for Odia)
+    if detected == "or":
+        try:
+            from deep_translator import GoogleTranslator
+            translated = GoogleTranslator(source="auto", target="english").translate(
+                working_text[:2000]
+            )
+            return detected, (translated or working_text[:2000])
+        except Exception as exc:
+            logger.warning("Odia translation failed: %s — falling back to title", exc)
+            return detected, title
 
     # Indian languages — Groq
     if detected in INDIAN_LANGUAGES:

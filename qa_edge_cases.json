@@ -1,0 +1,18 @@
+{
+  "10.1_empty": {
+    "status": 400,
+    "pass": true
+  },
+  "10.3_mode": {
+    "status": 200,
+    "pass": true
+  },
+  "10.4_noauth": {
+    "status": 401,
+    "pass": true
+  },
+  "10.2_long": {
+    "status": 200,
+    "pass": true
+  }
+}

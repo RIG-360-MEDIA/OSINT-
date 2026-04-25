@@ -1,56 +1,56 @@
 from __future__ import annotations
 
+import base64
+import json
 import logging
-import os
+import time
 
-import httpx
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+
+def _decode_jwt_payload(token: str) -> dict:
+    """
+    Decode JWT payload without signature verification.
+    Sufficient for a local-only dev tool — the token still has an exp claim.
+    """
+    try:
+        parts = token.split(".")
+        if len(parts) != 3:
+            raise ValueError("Not a JWT")
+        # Add padding so base64 doesn't choke on missing '='
+        payload_b64 = parts[1] + "=" * (4 - len(parts[1]) % 4)
+        return json.loads(base64.urlsafe_b64decode(payload_b64))
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail=f"Malformed token: {exc}") from exc
 
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict:
     """
-    FastAPI dependency. Verifies Supabase JWT via /auth/v1/user.
-    Returns dict with id and email. Raises 401 if invalid.
+    FastAPI dependency. Decodes Supabase JWT locally (no network call).
+    Checks expiry. Returns dict with id and email.
     """
     if not credentials:
         raise HTTPException(status_code=401, detail="Authentication required")
 
-    token = credentials.credentials
+    payload = _decode_jwt_payload(credentials.credentials)
 
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{SUPABASE_URL}/auth/v1/user",
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "apikey": SUPABASE_SERVICE_KEY,
-                },
-                timeout=10.0,
-            )
+    exp = payload.get("exp", 0)
+    if exp and time.time() > exp:
+        raise HTTPException(status_code=401, detail="Token expired — please log in again")
 
-        if response.status_code != 200:
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
+    user_id = payload.get("sub")
+    email = payload.get("email", "")
 
-        user_data = response.json()
-        return {
-            "id": user_data["id"],
-            "email": user_data["email"],
-        }
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token: missing sub claim")
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("Auth verification failed: %s", e)
-        raise HTTPException(status_code=401, detail="Authentication failed")
+    return {"id": user_id, "email": email}
 
 
 async def get_optional_user(

@@ -387,3 +387,71 @@ async def generate_summary(
                 status_code=500,
                 detail="Summary generation failed",
             ) from exc
+
+
+# ── Single article fetch ──────────────────────────────────────────────────────
+
+@coverage_router.get("/article/{article_id}")
+async def get_article(
+    article_id: str,
+    user: dict = Depends(get_current_user),
+) -> dict:
+    """Fetch a single article from the user's feed by ID."""
+    async with get_db() as db:
+        result = await db.execute(
+            text("""
+                SELECT
+                  a.id::text AS article_id,
+                  a.title,
+                  a.url,
+                  a.thumbnail_url,
+                  a.author_name,
+                  a.topic_category,
+                  a.geo_primary,
+                  a.published_at,
+                  a.collected_at,
+                  LENGTH(a.lead_text_translated) AS text_length,
+                  s.name AS source_name,
+                  s.domain AS source_domain,
+                  uar.score_final,
+                  uar.relevance_tier,
+                  uar.relevance_explanation,
+                  uar.matched_entity_names,
+                  uar.geo_multiplier_applied,
+                  uar.sentiment_for_user
+                FROM user_article_relevance uar
+                JOIN articles a ON a.id = uar.article_id
+                JOIN sources s ON a.source_id = s.id
+                WHERE uar.user_id = :user_id
+                  AND a.id = CAST(:article_id AS uuid)
+            """),
+            {"user_id": user["id"], "article_id": article_id},
+        )
+        row = result.fetchone()
+
+        if not row:
+            raise HTTPException(
+                status_code=404,
+                detail="Article not found in your feed",
+            )
+
+        return {
+            "article_id": row.article_id,
+            "title": row.title,
+            "url": row.url,
+            "thumbnail_url": row.thumbnail_url,
+            "author_name": row.author_name,
+            "topic_category": row.topic_category,
+            "geo_primary": row.geo_primary,
+            "published_at": row.published_at.isoformat() if row.published_at else None,
+            "collected_at": row.collected_at.isoformat() if row.collected_at else None,
+            "source_name": row.source_name,
+            "source_domain": row.source_domain,
+            "has_full_text": (row.text_length or 0) > 100,
+            "score_final": float(row.score_final),
+            "relevance_tier": row.relevance_tier,
+            "relevance_explanation": row.relevance_explanation,
+            "matched_entity_names": row.matched_entity_names or [],
+            "geo_multiplier": float(row.geo_multiplier_applied or 1.0),
+            "sentiment_for_user": row.sentiment_for_user or "NEUTRAL",
+        }

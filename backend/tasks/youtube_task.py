@@ -31,15 +31,17 @@ async def _collect_youtube() -> None:
 
     from backend.collectors.youtube_collector import (
         fetch_channel_videos,
+        get_api_keys,
         process_video,
     )
     from backend.database import get_db
     from backend.nlp.nlp_entities import _ENTITY_DICT
 
-    api_key = os.getenv("YOUTUBE_API_KEY", "")
-    if not api_key:
-        logger.warning("YOUTUBE_API_KEY not set — skipping YouTube collection")
+    api_keys = get_api_keys()
+    if not api_keys:
+        logger.warning("No YOUTUBE_API_KEY* set — skipping YouTube collection")
         return
+    logger.info("YouTube collection using %d API key(s)", len(api_keys))
 
     async with get_db() as db:
         channels_result = await db.execute(
@@ -67,7 +69,7 @@ async def _collect_youtube() -> None:
 
             videos = await fetch_channel_videos(
                 channel_id=channel.channel_id,
-                api_key=api_key,
+                api_key=api_keys,
                 since_days=2,
             )
             logger.info("Found %d videos for %s", len(videos), channel.channel_name)
@@ -86,8 +88,8 @@ async def _collect_youtube() -> None:
                 text("UPDATE youtube_channels SET last_checked_at = NOW() WHERE channel_id = :cid"),
                 {"cid": channel.channel_id},
             )
-
-        await db.commit()
+            # Commit per channel so progress is visible and clips appear immediately
+            await db.commit()
         logger.info(
             "YouTube collection done: %d new clips from %d channels",
             total_clips, len(channels),

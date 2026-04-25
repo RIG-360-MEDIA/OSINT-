@@ -3,30 +3,43 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { VideoBackground } from '@/components/ui/video-background'
+import styles from '@/components/auth/auth.module.css'
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '10px 0',
-  border: 'none',
-  borderBottom: '1.5px solid #DDD8D0',
-  background: 'transparent',
-  fontFamily: "'DM Sans', system-ui, sans-serif",
-  fontSize: '15px',
-  color: '#1A1614',
-  outline: 'none',
-  transition: 'border-color 0.15s',
+function CompassGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="11" stroke="currentColor" strokeWidth="0.6" opacity="0.55" />
+      <path
+        d="M12 1 L13.2 10.8 L22 12 L13.2 13.2 L12 23 L10.8 13.2 L2 12 L10.8 10.8 Z"
+        fill="currentColor"
+        opacity="0.9"
+      />
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+    </svg>
+  )
 }
 
-const labelStyle: React.CSSProperties = {
-  fontFamily: "'DM Sans', system-ui, sans-serif",
-  fontSize: '12px',
-  fontWeight: 500,
-  color: '#5C5249',
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-  display: 'block',
-  marginBottom: '6px',
+function Wordmark() {
+  return (
+    <Link href="/" className={styles.brand} aria-label="Rig Surveillance">
+      <span className={styles.brandOrnament} aria-hidden="true">
+        <CompassGlyph />
+      </span>
+      <span className={styles.brandRig}>Rig</span>
+      <span className={styles.brandSurveillance}>Surveillance</span>
+      <span className={styles.brandTerminal}>.</span>
+    </Link>
+  )
 }
+
+const STEPS: { num: string; text: string }[] = [
+  { num: 'I', text: 'Tell us who you are' },
+  { num: 'II', text: 'Define what you monitor' },
+  { num: 'III', text: 'Set your geography' },
+  { num: 'IV', text: 'Specify your signals' },
+  { num: 'V', text: 'Describe your risk horizon' },
+]
 
 export default function SignupPage() {
   const router = useRouter()
@@ -56,11 +69,11 @@ export default function SignupPage() {
     })
 
     if (authError) {
-      if (authError.message.toLowerCase().includes('already registered')) {
-        setError('This email is already registered.')
-      } else {
-        setError(authError.message)
-      }
+      setError(
+        authError.message.toLowerCase().includes('already registered')
+          ? 'This email is already registered.'
+          : authError.message,
+      )
       setLoading(false)
       return
     }
@@ -68,127 +81,140 @@ export default function SignupPage() {
     router.push('/onboarding')
   }
 
+  const alreadyRegistered = error.includes('already registered')
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#F7F4EF',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
-    }}>
-      <div style={{ width: '100%', maxWidth: '400px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <h1 style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: '24px',
-            fontWeight: 700,
-            color: '#8B1A1A',
-            letterSpacing: '0.05em',
-          }}>
-            RIG SURVEILLANCE
-          </h1>
-          <p style={{
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-            fontSize: '13px',
-            color: '#9C928A',
-            marginTop: '6px',
-          }}>
-            Create your intelligence account
-          </p>
+    <main className={styles.shell}>
+      <section className={styles.left}>
+        <div className={styles.videoLayer}>
+          <VideoBackground src="/landing/hero.mp4" poster="/landing/hero-poster.jpg" />
         </div>
+        <div className={styles.leftVignette} />
+        <div className={styles.grain} />
+        <div className={styles.watermarkMask} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <label style={labelStyle}>Your name</label>
-            <input
-              type="text"
-              value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              placeholder="Optional"
-              style={{ ...inputStyle, color: displayName ? '#1A1614' : '#9C928A' }}
-              onFocus={e => (e.target.style.borderBottom = '1.5px solid #8B1A1A')}
-              onBlur={e => (e.target.style.borderBottom = '1.5px solid #DDD8D0')}
-            />
-          </div>
+        <div className={styles.leftInner}>
+          <Wordmark />
 
-          <div>
-            <label style={labelStyle}>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              style={inputStyle}
-              onFocus={e => (e.target.style.borderBottom = '1.5px solid #8B1A1A')}
-              onBlur={e => (e.target.style.borderBottom = '1.5px solid #DDD8D0')}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSignup()}
-              style={inputStyle}
-              onFocus={e => (e.target.style.borderBottom = '1.5px solid #8B1A1A')}
-              onBlur={e => (e.target.style.borderBottom = '1.5px solid #DDD8D0')}
-            />
-          </div>
-
-          {error && (
-            <div style={{
-              fontFamily: "'DM Sans', system-ui, sans-serif",
-              fontSize: '13px',
-              color: '#8B1A1A',
-            }}>
-              {error}
-              {error.includes('already registered') && (
-                <span>
-                  {' '}
-                  <Link href="/login" style={{ color: '#8B1A1A', fontWeight: 600 }}>
-                    Sign in instead
-                  </Link>
-                </span>
-              )}
+          <div className={styles.copy}>
+            <div className={styles.copyEyebrow}>
+              <span className={styles.rule} />
+              <span>Press Credentials</span>
             </div>
-          )}
+            <h1 className={styles.copyTitle}>
+              Build your
+              <br />
+              <em>dossier.</em>
+            </h1>
+            <p className={styles.copyDeck}>
+              Five questions. Two minutes. A morning paper of one, tuned to the entities, regions,
+              and signals that move your work.
+            </p>
 
-          <button
-            onClick={handleSignup}
-            disabled={loading}
-            style={{
-              marginTop: '8px',
-              padding: '12px 24px',
-              backgroundColor: loading ? '#9C928A' : '#8B1A1A',
-              color: 'white',
-              border: 'none',
-              borderRadius: '2px',
-              fontFamily: "'DM Sans', system-ui, sans-serif",
-              fontSize: '14px',
-              fontWeight: 500,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              letterSpacing: '0.03em',
-              transition: 'background-color 0.15s',
-            }}
-          >
-            {loading ? 'Creating account...' : 'Create account'}
-          </button>
+            <div className={styles.list}>
+              {STEPS.map((step) => (
+                <div key={step.num} className={styles.listItem}>
+                  <span className={styles.listNum}>{step.num}.</span>
+                  <span className={styles.listText}>{step.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          <p style={{
-            textAlign: 'center',
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-            fontSize: '13px',
-            color: '#9C928A',
-          }}>
-            Already have an account?{' '}
-            <Link href="/login" style={{ color: '#8B1A1A', textDecoration: 'none' }}>
-              Sign in
-            </Link>
-          </p>
+          <div className={styles.leftFooter}>Scientia · Potentia · Est</div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <section className={styles.right}>
+        <div className={styles.rightInner}>
+          <div className={styles.mobileBrand}>
+            <Wordmark />
+          </div>
+
+          <div className={styles.formKicker}>Intake · Vol. I</div>
+          <h2 className={styles.formTitle}>
+            Create <em>account</em>
+          </h2>
+          <p className={styles.formSub}>A reading room of one, filed by morning.</p>
+
+          <div className={styles.fields}>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel} htmlFor="displayName">
+                Your name · optional
+              </label>
+              <input
+                id="displayName"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className={styles.input}
+                placeholder="Jane Smith"
+                autoComplete="name"
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.fieldLabel} htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={styles.input}
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.fieldLabel} htmlFor="password">
+                Passphrase
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSignup()}
+                className={styles.input}
+                placeholder="Minimum six characters"
+                autoComplete="new-password"
+              />
+            </div>
+
+            {error && (
+              <div className={styles.error}>
+                {error}
+                {alreadyRegistered && (
+                  <>
+                    {' '}
+                    <Link href="/login">Sign in instead.</Link>
+                  </>
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={handleSignup}
+              disabled={loading}
+              className={styles.submit}
+              type="button"
+            >
+              {loading ? 'Issuing credentials…' : 'Request credentials'}
+              <span className={styles.arrow}>→</span>
+            </button>
+
+            <p className={styles.altLine}>
+              Already on the masthead?
+              <Link href="/login" className={styles.altLink}>
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
   )
 }

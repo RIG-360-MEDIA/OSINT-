@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Navigation from '@/components/Navigation'
+import { Dateline } from '@/components/Dateline'
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+/* ── Types ─────────────────────────────────────────────────────── */
 
 interface DocumentItem {
   doc_id: string
@@ -28,18 +29,6 @@ interface DocumentItem {
   suggested_action: string | null
 }
 
-const URGENCY_BADGE: Record<string, { bg: string; text: string }> = {
-  HIGH:   { bg: '#FEE2E2', text: '#DC2626' },
-  MEDIUM: { bg: '#FEF3C7', text: '#D97706' },
-  LOW:    { bg: '#F1F5F9', text: '#64748B' },
-}
-
-const TIER_LEFT_BORDER: Record<number, string> = {
-  1: '#3B82F6',
-  2: '#10B981',
-  3: '#94A3B8',
-}
-
 interface GeoCount {
   geography: string
   count: number
@@ -55,11 +44,6 @@ interface FeedResponse {
 
 type GeoFilter = 'all' | 'LOCAL' | 'CENTRAL' | 'NEIGHBOURING' | 'INTERNATIONAL'
 
-interface DocTypeOption {
-  value: string
-  label: string
-}
-
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const GEO_FILTERS: Array<{ value: GeoFilter; label: string }> = [
@@ -70,8 +54,8 @@ const GEO_FILTERS: Array<{ value: GeoFilter; label: string }> = [
   { value: 'INTERNATIONAL', label: 'International' },
 ]
 
-const DOC_TYPES: DocTypeOption[] = [
-  { value: 'all',              label: 'All Types' },
+const DOC_TYPES: Array<{ value: string; label: string }> = [
+  { value: 'all',              label: 'All types' },
   { value: 'government_order', label: 'GO.Ms' },
   { value: 'court_order',      label: 'HC Orders' },
   { value: 'audit_report',     label: 'CAG Reports' },
@@ -79,14 +63,29 @@ const DOC_TYPES: DocTypeOption[] = [
   { value: 'ministry_order',   label: 'Ministry Orders' },
 ]
 
-const GEO_BADGE: Record<string, { bg: string; text: string; border: string }> = {
-  LOCAL:         { bg: '#EFF6FF', text: '#2563EB', border: '#DBEAFE' },
-  CENTRAL:       { bg: '#FFFBEB', text: '#D97706', border: 'rgba(245,158,11,0.25)' },
-  NEIGHBOURING:  { bg: '#ECFDF5', text: '#059669', border: '#D1FAE5' },
-  INTERNATIONAL: { bg: '#FEF2F2', text: '#DC2626', border: '#FECACA' },
+const URGENCY_TONE: Record<string, 'alert' | 'gold' | 'default'> = {
+  HIGH: 'alert',
+  MEDIUM: 'gold',
+  LOW: 'default',
 }
 
-// ── Page ───────────────────────────────────────────────────────────────────────
+const GEO_KICKER: Record<string, string> = {
+  LOCAL: 'Local desk',
+  CENTRAL: 'Central desk',
+  NEIGHBOURING: 'Neighbouring',
+  INTERNATIONAL: 'Foreign desk',
+}
+
+function formatShortDate(iso: string): string {
+  try {
+    const d = new Date(iso)
+    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }).toUpperCase()
+  } catch {
+    return ''
+  }
+}
+
+/* ── Page ──────────────────────────────────────────────────────── */
 
 export default function DocumentsPage() {
   const router = useRouter()
@@ -99,7 +98,7 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true)
   const [appending, setAppending] = useState(false)
 
-  const [geoFilter, setGeoFilter]   = useState<GeoFilter>('all')
+  const [geoFilter, setGeoFilter] = useState<GeoFilter>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
@@ -108,7 +107,6 @@ export default function DocumentsPage() {
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // ── Auth boot ────────────────────────────────────────────────────────────
   useEffect(() => {
     const supabase = createClient()
     void (async () => {
@@ -121,7 +119,6 @@ export default function DocumentsPage() {
     })()
   }, [router])
 
-  // ── Search debounce ─────────────────────────────────────────────────────
   useEffect(() => {
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => setSearch(searchInput), 350)
@@ -130,13 +127,11 @@ export default function DocumentsPage() {
     }
   }, [searchInput])
 
-  // ── Feed fetch ───────────────────────────────────────────────────────────
   const fetchFeed = useCallback(
     async (cursor: string | null, append: boolean) => {
       if (!token) return
       if (append) setAppending(true)
       else setLoading(true)
-
       try {
         const params = new URLSearchParams()
         params.set('limit', '20')
@@ -154,9 +149,7 @@ export default function DocumentsPage() {
           return
         }
         const data = (await res.json()) as FeedResponse
-        setDocuments(prev =>
-          append ? [...prev, ...data.documents] : data.documents,
-        )
+        setDocuments(prev => (append ? [...prev, ...data.documents] : data.documents))
         setHasMore(data.has_more)
         setNextCursor(data.next_cursor)
         setTotal(data.total)
@@ -174,248 +167,173 @@ export default function DocumentsPage() {
     void fetchFeed(null, false)
   }, [token, geoFilter, typeFilter, search, fetchFeed])
 
-  // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <>
+    <div style={{ minHeight: '100vh', background: 'var(--rig-paper)' }}>
       <Navigation />
 
-      <main
-        style={{
-          paddingTop:      '56px',
-          minHeight:       '100vh',
-          backgroundColor: '#F1F5F9',
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            padding:    '28px 32px 16px',
-            maxWidth:   '1400px',
-            margin:     '0 auto',
-            display:    'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap:        '16px',
-            flexWrap:   'wrap',
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontFamily:    "'DM Sans', system-ui",
-                fontSize:      '11px',
-                fontWeight:    600,
-                color:         '#94A3B8',
-                textTransform: 'uppercase',
-                letterSpacing: '0.15em',
-              }}
-            >
-              Document Room
+      <div style={{ paddingTop: 'var(--topbar-h)' }}>
+        <Dateline
+          issueNumber={total}
+          extra={geoCounts.length > 0 ? [`${geoCounts.length} DESKS`] : undefined}
+        />
+
+        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '48px 32px 80px' }}>
+          {/* Section head */}
+          <header style={{ marginBottom: '28px' }}>
+            <div className="rig-kicker" style={{ marginBottom: '10px' }}>
+              The Archive
             </div>
             <h1
+              className="rig-headline"
               style={{
-                fontFamily:    "'Playfair Display', serif",
-                fontSize:      '28px',
-                fontWeight:    700,
-                color:         '#18181B',
-                letterSpacing: '-0.02em',
-                margin:        '4px 0 0',
+                fontSize: '34px',
+                margin: 0,
+                letterSpacing: '-0.01em',
+                lineHeight: 1.15,
               }}
             >
-              Government Intelligence
+              Papers of record,{' '}
+              <em style={{ fontWeight: 500, color: 'var(--rig-gold)' }}>
+                filed by the State and filed by us.
+              </em>
             </h1>
-          </div>
+          </header>
+
+          {/* Filters */}
           <div
             style={{
-              fontFamily:    "'DM Mono', monospace",
-              fontSize:      '12px',
-              color:         '#64748B',
-              letterSpacing: '0.04em',
+              position: 'sticky',
+              top: 'var(--topbar-h)',
+              zIndex: 50,
+              background: 'var(--rig-paper-2)',
+              borderTop: '1px solid var(--rig-rule)',
+              borderBottom: '1px solid var(--rig-rule)',
+              padding: '14px 0',
+              marginBottom: '32px',
             }}
           >
-            {total.toLocaleString()} documents · {geoCounts.length} geographies
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div
-          style={{
-            position:        'sticky',
-            top:             '56px',
-            zIndex:          50,
-            backgroundColor: 'rgba(241,245,249,0.92)',
-            backdropFilter:  'blur(8px)',
-            padding:         '12px 32px',
-            borderBottom:    '1px solid #E2E8F0',
-          }}
-        >
-          <div
-            style={{
-              maxWidth: '1400px',
-              margin:   '0 auto',
-              display:  'flex',
-              flexDirection: 'column',
-              gap:      '10px',
-            }}
-          >
-            {/* Geography filter row */}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <FilterLabel>Geography</FilterLabel>
-              {GEO_FILTERS.map(({ value, label }) => (
-                <FilterPill
-                  key={value}
-                  active={geoFilter === value}
-                  onClick={() => setGeoFilter(value)}
-                >
-                  {label}
-                </FilterPill>
-              ))}
-            </div>
-
-            {/* Document type filter row */}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <FilterLabel>Type</FilterLabel>
-              {DOC_TYPES.map(({ value, label }) => (
-                <FilterPill
-                  key={value}
-                  active={typeFilter === value}
-                  onClick={() => setTypeFilter(value)}
-                >
-                  {label}
-                </FilterPill>
-              ))}
-            </div>
-
-            {/* Search */}
-            <input
-              type="text"
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              placeholder="Search documents..."
-              style={{
-                width:           '100%',
-                maxWidth:        '480px',
-                padding:         '8px 12px',
-                borderRadius:    '8px',
-                border:          '1px solid #E2E8F0',
-                backgroundColor: '#FFFFFF',
-                fontFamily:      "'DM Sans', system-ui",
-                fontSize:        '14px',
-                color:           '#18181B',
-                outline:         'none',
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Card grid */}
-        <div
-          style={{
-            maxWidth: '1400px',
-            margin:   '0 auto',
-            padding:  '20px 32px 48px',
-          }}
-        >
-          {loading && (
             <div
               style={{
-                display:             'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
-                gap:                 '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                padding: '0 24px',
               }}
             >
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="skeleton"
+              <FilterRow label="Desk">
+                {GEO_FILTERS.map(({ value, label }) => (
+                  <FilterPill
+                    key={value}
+                    label={label}
+                    active={geoFilter === value}
+                    onClick={() => setGeoFilter(value)}
+                  />
+                ))}
+              </FilterRow>
+
+              <FilterRow label="Document">
+                {DOC_TYPES.map(({ value, label }) => (
+                  <FilterPill
+                    key={value}
+                    label={label}
+                    active={typeFilter === value}
+                    onClick={() => setTypeFilter(value)}
+                  />
+                ))}
+              </FilterRow>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  borderTop: '1px solid var(--rig-rule-hair)',
+                  paddingTop: '10px',
+                }}
+              >
+                <span
                   style={{
-                    height:       '220px',
-                    borderRadius: '10px',
+                    fontFamily: 'var(--font-serif)',
+                    fontStyle: 'italic',
+                    fontSize: '16px',
+                    color: 'var(--rig-ink-3)',
                   }}
+                >
+                  ⌕
+                </span>
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
+                  placeholder="Search the archive…"
+                  className="rig-input"
+                  style={{ flex: 1, maxWidth: '520px' }}
                 />
-              ))}
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* Results */}
+          {loading && <LoadingState />}
 
           {!loading && documents.length === 0 && (
-            <div
-              style={{
-                padding:        '64px 16px',
-                textAlign:      'center',
-                fontFamily:     "'DM Sans', system-ui",
-              }}
-            >
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>📄</div>
-              <div style={{ fontSize: '14px', color: '#64748B' }}>
-                No documents match your filters yet.
-              </div>
-              <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '6px' }}>
-                The first govt collection runs daily at 06:30 UTC.
-              </div>
-            </div>
+            <DeskMemo
+              kicker="Desk memo"
+              headline="No papers match these terms."
+              body="The overnight sweep runs at 06:30 UTC. Loosen the filters, or wait for the next run."
+            />
           )}
 
           {!loading && documents.length > 0 && (
             <>
-              {total > 0 && (
-                <div style={{ display: 'flex', marginBottom: '12px' }}>
-                  <span
-                    style={{
-                      fontFamily:      "'DM Mono', monospace",
-                      fontSize:        '11px',
-                      color:           '#94A3B8',
-                      padding:         '4px 10px',
-                      backgroundColor: '#F1F5F9',
-                      border:          '1px solid #E2E8F0',
-                      borderRadius:    '9999px',
-                    }}
-                  >
-                    Sorted by: Relevance ↓
-                  </span>
-                </div>
-              )}
               <div
                 style={{
-                  display:             'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
-                  gap:                 '16px',
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                  paddingBottom: '14px',
+                  marginBottom: '8px',
+                  borderBottom: '1px solid var(--rig-rule)',
                 }}
               >
-                {documents.map(doc => (
-                  <DocumentCard
-                    key={doc.doc_id}
-                    doc={doc}
-                    onOpen={() => setOpenDoc(doc)}
-                  />
-                ))}
+                <span className="rig-kicker">The stacks — sorted by weight</span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '10px',
+                    letterSpacing: '0.2em',
+                    textTransform: 'uppercase',
+                    color: 'var(--rig-ink-3)',
+                  }}
+                >
+                  {documents.length} of {total.toLocaleString()}
+                </span>
               </div>
 
+              {documents.map((doc, i) => (
+                <DocumentRow
+                  key={doc.doc_id}
+                  doc={doc}
+                  index={i + 1}
+                  onOpen={() => setOpenDoc(doc)}
+                />
+              ))}
+
               {hasMore && (
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
                   <button
                     onClick={() => fetchFeed(nextCursor, true)}
                     disabled={appending}
-                    style={{
-                      padding:         '10px 20px',
-                      borderRadius:    '9999px',
-                      border:          '1px solid #E2E8F0',
-                      backgroundColor: '#FFFFFF',
-                      fontFamily:      "'DM Sans', system-ui",
-                      fontSize:        '13px',
-                      fontWeight:      500,
-                      color:           '#475569',
-                      cursor:          appending ? 'default' : 'pointer',
-                      opacity:         appending ? 0.6 : 1,
-                    }}
+                    className="rig-btn-ghost"
                   >
-                    {appending ? 'Loading…' : 'Load more'}
+                    {appending ? 'Pulling more…' : 'Pull more papers'}
                   </button>
                 </div>
               )}
             </>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
 
       {openDoc && token && (
         <DocumentDialog
@@ -430,301 +348,363 @@ export default function DocumentsPage() {
           }}
           onSummaryUpdated={summary => {
             setDocuments(prev =>
-              prev.map(d =>
-                d.doc_id === openDoc.doc_id ? { ...d, summary } : d,
-              ),
+              prev.map(d => (d.doc_id === openDoc.doc_id ? { ...d, summary } : d)),
             )
             setOpenDoc(prev => (prev ? { ...prev, summary } : prev))
           }}
         />
       )}
-    </>
+    </div>
   )
 }
 
-// ── Filter primitives ──────────────────────────────────────────────────────────
+/* ── Subcomponents ─────────────────────────────────────────────── */
 
-function FilterLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      style={{
-        fontFamily:    "'DM Sans', system-ui",
-        fontSize:      '10px',
-        fontWeight:    600,
-        color:         '#94A3B8',
-        textTransform: 'uppercase',
-        letterSpacing: '0.12em',
-        marginRight:   '4px',
-      }}
-    >
-      {children}
-    </span>
-  )
-}
-
-function FilterPill({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
+interface FilterRowProps {
+  label: string
   children: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        padding:         '5px 12px',
-        borderRadius:    '9999px',
-        border:          active
-          ? '1px solid rgba(245,158,11,0.4)'
-          : '1px solid #E2E8F0',
-        backgroundColor: active
-          ? 'rgba(245,158,11,0.12)'
-          : '#FFFFFF',
-        fontFamily:      "'DM Sans', system-ui",
-        fontSize:        '12px',
-        fontWeight:      active ? 600 : 500,
-        color:           active ? '#B45309' : '#475569',
-        cursor:          'pointer',
-        transition:      'all 0.15s',
-      }}
-    >
-      {children}
-    </button>
-  )
 }
 
-// ── Card ───────────────────────────────────────────────────────────────────────
-
-function DocumentCard({
-  doc,
-  onOpen,
-}: {
-  doc: DocumentItem
-  onOpen: () => void
-}) {
-  const geo = GEO_BADGE[doc.source_geography] ?? GEO_BADGE.CENTRAL
-  const tierLeft = doc.relevance_tier != null ? TIER_LEFT_BORDER[doc.relevance_tier] : undefined
-  const urgency = doc.urgency ? URGENCY_BADGE[doc.urgency] : null
-
+function FilterRow({ label, children }: FilterRowProps) {
   return (
-    <div
-      onClick={onOpen}
-      className="card-lift"
-      style={{
-        backgroundColor: '#FFFFFF',
-        borderRadius:    '10px',
-        border:          '1px solid #E2E8F0',
-        borderLeft:      tierLeft ? `3px solid ${tierLeft}` : '1px solid #E2E8F0',
-        boxShadow:       '0 1px 3px rgba(15,23,42,0.05)',
-        cursor:          'pointer',
-        overflow:        'hidden',
-        display:         'flex',
-        flexDirection:   'column',
-        padding:         '16px',
-        gap:             '12px',
-      }}
-    >
-      {/* Top badges */}
-      <div
-        style={{
-          display:        'flex',
-          gap:            '6px',
-          flexWrap:       'wrap',
-          alignItems:     'center',
-          justifyContent: 'space-between',
-        }}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+      <span
+        className="rig-kicker"
+        style={{ opacity: 0.7, minWidth: '78px' }}
       >
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          <span
-            style={{
-              padding:         '2px 8px',
-              borderRadius:    '9999px',
-              backgroundColor: geo.bg,
-              border:          `1px solid ${geo.border}`,
-              fontFamily:      "'DM Sans', system-ui",
-              fontSize:        '10px',
-              fontWeight:      700,
-              color:           geo.text,
-              letterSpacing:   '0.08em',
-            }}
-          >
-            {doc.source_geography}
-          </span>
-          <span
-            style={{
-              padding:         '2px 8px',
-              borderRadius:    '9999px',
-              backgroundColor: '#F8FAFC',
-              border:          '1px solid #E2E8F0',
-              fontFamily:      "'DM Sans', system-ui",
-              fontSize:        '10px',
-              fontWeight:      600,
-              color:           '#475569',
-              letterSpacing:   '0.06em',
-              textTransform:   'uppercase',
-            }}
-          >
-            {doc.document_type.replace(/_/g, ' ')}
-          </span>
-        </div>
-        {urgency && (
-          <span
-            style={{
-              padding:         '2px 8px',
-              borderRadius:    '9999px',
-              backgroundColor: urgency.bg,
-              border:          `1px solid ${urgency.text}`,
-              fontFamily:      "'DM Sans', system-ui",
-              fontSize:        '10px',
-              fontWeight:      700,
-              color:           urgency.text,
-              letterSpacing:   '0.08em',
-            }}
-          >
-            {doc.urgency}
-          </span>
-        )}
-      </div>
-
-      {/* Title */}
-      <h3
-        style={{
-          fontFamily:    "'Playfair Display', serif",
-          fontSize:      '17px',
-          fontWeight:    700,
-          color:         '#18181B',
-          lineHeight:    1.3,
-          letterSpacing: '-0.01em',
-          margin:        0,
-        }}
-      >
-        {doc.title}
-      </h3>
-
-      {/* Why it matters (if present) */}
-      {doc.why_it_matters && (
-        <div
-          style={{
-            fontFamily:    "'DM Sans', system-ui",
-            fontSize:      '12px',
-            fontStyle:     'italic',
-            color:         '#B45309',
-            lineHeight:    1.4,
-            whiteSpace:    'nowrap',
-            overflow:      'hidden',
-            textOverflow:  'ellipsis',
-          }}
-        >
-          {doc.why_it_matters}
-        </div>
-      )}
-
-      {/* Source */}
-      <div
-        style={{
-          fontFamily: "'DM Sans', system-ui",
-          fontSize:   '12px',
-          color:      '#64748B',
-        }}
-      >
-        {doc.source_name}
-      </div>
-
-      <div style={{ height: '1px', backgroundColor: '#F1F5F9' }} />
-
-      {/* Preview (only if no why_it_matters) */}
-      {!doc.why_it_matters && (
-        <p
-          style={{
-            fontFamily: "'DM Sans', system-ui",
-            fontSize:   '13px',
-            color:      '#475569',
-            lineHeight: 1.55,
-            margin:     0,
-            display:    '-webkit-box',
-            WebkitLineClamp: 4,
-            WebkitBoxOrient: 'vertical',
-            overflow:   'hidden',
-          }}
-        >
-          {doc.summary || doc.summary_preview || 'No preview available.'}
-        </p>
-      )}
-
-      {/* Footer chips */}
-      <div
-        style={{
-          display:        'flex',
-          alignItems:     'center',
-          justifyContent: 'space-between',
-          marginTop:      'auto',
-          gap:            '8px',
-          flexWrap:       'wrap',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-          {doc.topic_category && <FooterChip>{doc.topic_category}</FooterChip>}
-          {doc.geo_primary && <FooterChip>{doc.geo_primary}</FooterChip>}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {doc.score_final != null && (
-            <span
-              style={{
-                fontFamily: "'DM Mono', monospace",
-                fontSize:   '11px',
-                color:      '#3B82F6',
-              }}
-            >
-              {doc.score_final.toFixed(2)}
-            </span>
-          )}
-          <span
-            style={{
-              fontFamily: "'DM Mono', monospace",
-              fontSize:   '11px',
-              color:      '#94A3B8',
-            }}
-          >
-            {formatShortDate(doc.collected_at)}
-          </span>
-        </div>
+        {label}
+      </span>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        {children}
       </div>
     </div>
   )
 }
 
-function FooterChip({ children }: { children: React.ReactNode }) {
+interface FilterPillProps {
+  label: string
+  active: boolean
+  onClick: () => void
+}
+
+function FilterPill({ label, active, onClick }: FilterPillProps) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '5px 12px',
+        cursor: 'pointer',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '10px',
+        letterSpacing: '0.2em',
+        textTransform: 'uppercase',
+        border: '1px solid',
+        borderColor: active ? 'var(--rig-ink)' : 'var(--rig-rule)',
+        background: active
+          ? 'color-mix(in srgb, var(--rig-paper) 70%, transparent)'
+          : 'transparent',
+        color: active ? 'var(--rig-ink)' : 'var(--rig-ink-3)',
+        transition: 'all 0.15s',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+interface DocumentRowProps {
+  doc: DocumentItem
+  index: number
+  onOpen: () => void
+}
+
+function DocumentRow({ doc, index, onOpen }: DocumentRowProps) {
+  const [hover, setHover] = useState(false)
+  const urgencyTone = doc.urgency ? URGENCY_TONE[doc.urgency] : null
+  const urgencyColor =
+    urgencyTone === 'alert' ? 'var(--rig-oxblood)' :
+    urgencyTone === 'gold' ? 'var(--rig-gold)' :
+    'transparent'
+
+  return (
+    <article
+      onClick={onOpen}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '48px 1fr auto',
+        gap: '20px',
+        padding: '22px 14px 22px',
+        cursor: 'pointer',
+        borderBottom: '1px solid var(--rig-rule-hair)',
+        borderLeft: `2px solid ${urgencyColor}`,
+        marginLeft: '-14px',
+        background: hover
+          ? 'color-mix(in srgb, var(--rig-paper-2) 55%, transparent)'
+          : 'transparent',
+        transition: 'background 0.15s',
+      }}
+    >
+      {/* Numeral */}
+      <span
+        style={{
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontWeight: 400,
+          fontSize: '26px',
+          color: 'var(--rig-ink-3)',
+          lineHeight: 1,
+          paddingTop: '4px',
+        }}
+      >
+        {String(index).padStart(2, '0')}
+      </span>
+
+      {/* Body */}
+      <div style={{ minWidth: 0 }}>
+        {/* Kicker line */}
+        <div
+          className="rig-byline"
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}
+        >
+          <span style={{ color: 'var(--rig-copper)' }}>
+            {GEO_KICKER[doc.source_geography] ?? doc.source_geography}
+          </span>
+          <span aria-hidden="true" style={{ opacity: 0.4 }}>·</span>
+          <span>{doc.document_type.replace(/_/g, ' ')}</span>
+          <span aria-hidden="true" style={{ opacity: 0.4 }}>·</span>
+          <span>{doc.source_name}</span>
+          {doc.urgency && (
+            <>
+              <span aria-hidden="true" style={{ opacity: 0.4 }}>·</span>
+              <span style={{ color: urgencyColor !== 'transparent' ? urgencyColor : undefined }}>
+                {doc.urgency} urgency
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Title */}
+        <h2
+          className="rig-headline"
+          style={{
+            margin: 0,
+            fontSize: '19px',
+            lineHeight: 1.3,
+            color: 'var(--rig-ink)',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {doc.title}
+        </h2>
+
+        {/* Why it matters or preview */}
+        {doc.why_it_matters ? (
+          <p
+            style={{
+              margin: '8px 0 0',
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              fontSize: '14px',
+              color: 'var(--rig-copper)',
+              lineHeight: 1.45,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {doc.why_it_matters}
+          </p>
+        ) : (
+          <p
+            style={{
+              margin: '8px 0 0',
+              fontFamily: 'var(--font-serif)',
+              fontSize: '14px',
+              color: 'var(--rig-ink-2)',
+              lineHeight: 1.5,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {doc.summary || doc.summary_preview || ''}
+          </p>
+        )}
+
+        {/* Footer tags */}
+        {(doc.topic_category || doc.geo_primary) && (
+          <div
+            style={{
+              display: 'flex',
+              gap: '6px',
+              flexWrap: 'wrap',
+              marginTop: '10px',
+            }}
+          >
+            {doc.topic_category && <TagChip label={doc.topic_category} />}
+            {doc.geo_primary && <TagChip label={doc.geo_primary} />}
+          </div>
+        )}
+      </div>
+
+      {/* Right rail */}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          gap: '10px',
+          minWidth: '80px',
+        }}
+      >
+        {doc.score_final != null && (
+          <span
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              fontWeight: 500,
+              fontSize: '22px',
+              lineHeight: 1,
+              color: 'var(--rig-gold)',
+            }}
+          >
+            {doc.score_final.toFixed(2)}
+          </span>
+        )}
+        <span
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '9px',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color: 'var(--rig-ink-3)',
+          }}
+        >
+          {formatShortDate(doc.collected_at)}
+        </span>
+        <span
+          aria-hidden="true"
+          style={{
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            color: hover ? 'var(--rig-gold)' : 'var(--rig-ink-3)',
+            fontSize: '16px',
+            transition: 'color 0.15s',
+          }}
+        >
+          →
+        </span>
+      </div>
+    </article>
+  )
+}
+
+function TagChip({ label }: { label: string }) {
   return (
     <span
       style={{
-        padding:         '2px 7px',
-        borderRadius:    '9999px',
-        backgroundColor: '#F1F5F9',
-        border:          '1px solid #E2E8F0',
-        fontFamily:      "'DM Sans', system-ui",
-        fontSize:        '10px',
-        color:           '#475569',
-        letterSpacing:   '0.02em',
+        padding: '2px 8px',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '9px',
+        letterSpacing: '0.16em',
+        textTransform: 'uppercase',
+        border: '1px solid var(--rig-rule)',
+        color: 'var(--rig-ink-3)',
       }}
     >
-      {children}
+      {label}
     </span>
   )
 }
 
-function formatShortDate(iso: string): string {
-  try {
-    const d = new Date(iso)
-    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
-  } catch {
-    return ''
-  }
+function LoadingState() {
+  return (
+    <div
+      style={{
+        padding: '64px 0',
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '12px',
+      }}
+    >
+      <span
+        className="rig-headline"
+        style={{ fontStyle: 'italic', fontSize: '20px', color: 'var(--rig-ink-2)' }}
+      >
+        Opening the filing cabinet…
+      </span>
+      <span
+        style={{
+          width: '160px',
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, var(--rig-gold), transparent)',
+        }}
+      />
+    </div>
+  )
 }
 
-// ── Document dialog ────────────────────────────────────────────────────────────
+interface DeskMemoProps {
+  kicker: string
+  headline: string
+  body: string
+}
+
+function DeskMemo({ kicker, headline, body }: DeskMemoProps) {
+  return (
+    <div
+      style={{
+        padding: '56px 32px',
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '12px',
+        border: '1px solid var(--rig-rule)',
+        background: 'var(--rig-paper-2)',
+      }}
+    >
+      <span className="rig-kicker">{kicker}</span>
+      <span
+        className="rig-headline"
+        style={{ fontStyle: 'italic', fontSize: '22px', color: 'var(--rig-ink-2)' }}
+      >
+        {headline}
+      </span>
+      <span
+        style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: '14px',
+          color: 'var(--rig-ink-3)',
+          maxWidth: '460px',
+          lineHeight: 1.55,
+        }}
+      >
+        {body}
+      </span>
+    </div>
+  )
+}
+
+/* ── Document dialog ───────────────────────────────────────────── */
+
+interface DocumentDialogProps {
+  doc: DocumentItem
+  token: string
+  onClose: () => void
+  onInvestigate: () => void
+  onSummaryUpdated: (summary: string) => void
+}
 
 function DocumentDialog({
   doc,
@@ -732,13 +712,7 @@ function DocumentDialog({
   onClose,
   onInvestigate,
   onSummaryUpdated,
-}: {
-  doc: DocumentItem
-  token: string
-  onClose: () => void
-  onInvestigate: () => void
-  onSummaryUpdated: (summary: string) => void
-}) {
+}: DocumentDialogProps) {
   const [summary, setSummary] = useState<string | null>(doc.summary)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summaryError, setSummaryError] = useState<string | null>(null)
@@ -747,13 +721,10 @@ function DocumentDialog({
     setSummaryLoading(true)
     setSummaryError(null)
     try {
-      const res = await fetch(
-        `${API_BASE}/api/documents/${doc.doc_id}/summary`,
-        {
-          method:  'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      )
+      const res = await fetch(`${API_BASE}/api/documents/${doc.doc_id}/summary`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
       if (!res.ok) {
         setSummaryError('Summary generation failed.')
         return
@@ -768,104 +739,104 @@ function DocumentDialog({
     }
   }, [doc.doc_id, token, onSummaryUpdated])
 
-  const geo = GEO_BADGE[doc.source_geography] ?? GEO_BADGE.CENTRAL
+  const urgencyTone = doc.urgency ? URGENCY_TONE[doc.urgency] : null
 
   return (
     <div
       onClick={onClose}
       style={{
-        position:        'fixed',
-        inset:           0,
-        backgroundColor: 'rgba(15,23,42,0.5)',
-        backdropFilter:  'blur(4px)',
-        zIndex:          300,
+        position: 'fixed',
+        inset: 0,
+        background: 'color-mix(in srgb, var(--rig-ink) 45%, transparent)',
+        backdropFilter: 'blur(3px)',
+        zIndex: 300,
       }}
     >
-      <div
+      <aside
         onClick={e => e.stopPropagation()}
         className="anim-slide-right"
         style={{
-          position:        'fixed',
-          top:             '56px',
-          right:           0,
-          width:           '560px',
-          maxWidth:        '100vw',
-          height:          'calc(100vh - 56px)',
-          backgroundColor: '#FFFFFF',
-          overflowY:       'auto',
-          boxShadow:       '-8px 0 40px rgba(15,23,42,0.15)',
+          position: 'fixed',
+          top: 'var(--topbar-h)',
+          right: 0,
+          width: '580px',
+          maxWidth: '100vw',
+          height: 'calc(100vh - var(--topbar-h))',
+          background: 'var(--rig-paper)',
+          borderLeft: '1px solid var(--rig-rule)',
+          boxShadow: '-8px 0 32px color-mix(in srgb, var(--rig-ink) 10%, transparent)',
+          overflowY: 'auto',
         }}
       >
-        <button
-          onClick={onClose}
+        {/* Head */}
+        <div
           style={{
-            position:        'absolute',
-            top:             '14px',
-            right:           '14px',
-            width:           '28px',
-            height:          '28px',
-            borderRadius:    '50%',
-            backgroundColor: '#F1F5F9',
-            border:          '1px solid #E2E8F0',
-            display:         'flex',
-            alignItems:      'center',
-            justifyContent:  'center',
-            cursor:          'pointer',
-            fontSize:        '16px',
-            color:           '#64748B',
-            zIndex:          1,
+            position: 'sticky',
+            top: 0,
+            background: 'var(--rig-paper-2)',
+            borderBottom: '1px solid var(--rig-rule-hair)',
+            padding: '18px 28px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            zIndex: 2,
           }}
         >
-          ×
-        </button>
+          <span className="rig-kicker">On the desk</span>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              background: 'none',
+              border: '1px solid var(--rig-rule)',
+              cursor: 'pointer',
+              width: '28px',
+              height: '28px',
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              fontSize: '16px',
+              color: 'var(--rig-ink-2)',
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
 
-        <div style={{ padding: '32px 28px 48px' }}>
-          {/* Geography + type */}
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
-            <span
-              style={{
-                padding:         '3px 10px',
-                borderRadius:    '9999px',
-                backgroundColor: geo.bg,
-                border:          `1px solid ${geo.border}`,
-                fontFamily:      "'DM Sans', system-ui",
-                fontSize:        '10px',
-                fontWeight:      700,
-                color:           geo.text,
-                letterSpacing:   '0.08em',
-              }}
-            >
-              {doc.source_geography}
+        <div style={{ padding: '28px 32px 48px' }}>
+          {/* Kickers */}
+          <div
+            className="rig-byline"
+            style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}
+          >
+            <span style={{ color: 'var(--rig-copper)' }}>
+              {GEO_KICKER[doc.source_geography] ?? doc.source_geography}
             </span>
-            <span
-              style={{
-                padding:         '3px 10px',
-                borderRadius:    '9999px',
-                backgroundColor: '#F8FAFC',
-                border:          '1px solid #E2E8F0',
-                fontFamily:      "'DM Sans', system-ui",
-                fontSize:        '10px',
-                fontWeight:      600,
-                color:           '#475569',
-                letterSpacing:   '0.06em',
-                textTransform:   'uppercase',
-              }}
-            >
-              {doc.document_type.replace(/_/g, ' ')}
-            </span>
+            <span aria-hidden="true" style={{ opacity: 0.4 }}>·</span>
+            <span>{doc.document_type.replace(/_/g, ' ')}</span>
+            {doc.urgency && (
+              <>
+                <span aria-hidden="true" style={{ opacity: 0.4 }}>·</span>
+                <span
+                  className="rig-chip"
+                  data-tone={urgencyTone === 'default' ? undefined : urgencyTone ?? undefined}
+                >
+                  <span className="dot" />
+                  {doc.urgency} urgency
+                </span>
+              </>
+            )}
           </div>
 
           {/* Title */}
           <h2
+            className="rig-headline"
             style={{
-              fontFamily:    "'Playfair Display', serif",
-              fontSize:      '22px',
-              fontWeight:    700,
-              lineHeight:    1.3,
-              color:         '#18181B',
-              letterSpacing: '-0.02em',
-              marginBottom:  '8px',
-              marginTop:     0,
+              fontSize: '26px',
+              lineHeight: 1.25,
+              color: 'var(--rig-ink)',
+              margin: 0,
+              marginBottom: '10px',
             }}
           >
             {doc.title}
@@ -873,80 +844,40 @@ function DocumentDialog({
 
           {/* Source line */}
           <div
-            style={{
-              fontFamily:   "'DM Sans', system-ui",
-              fontSize:     '13px',
-              color:        '#475569',
-              marginBottom: '20px',
-            }}
+            className="rig-byline"
+            style={{ marginBottom: '24px' }}
           >
-            {doc.source_name}
-            <span style={{ color: '#94A3B8' }}>
-              {' · '}
-              {formatShortDate(doc.collected_at)}
+            <span style={{ textTransform: 'none', letterSpacing: 'normal', fontSize: '13px' }}>
+              {doc.source_name}
             </span>
+            <span aria-hidden="true" style={{ margin: '0 8px', opacity: 0.4 }}>·</span>
+            <span>Filed {formatShortDate(doc.collected_at)}</span>
           </div>
 
-          {/* Why This Matters To You */}
+          {/* Why This Matters */}
           {doc.why_it_matters && (
             <div
               style={{
-                marginBottom:    '14px',
-                padding:         '14px 16px',
-                borderRadius:    '8px',
-                backgroundColor: '#FFFBEB',
-                borderLeft:      '3px solid #F59E0B',
+                borderLeft: '2px solid var(--rig-gold)',
+                background: 'color-mix(in srgb, var(--rig-gold) 7%, transparent)',
+                padding: '14px 18px',
+                marginBottom: '20px',
               }}
             >
               <div
-                style={{
-                  display:        'flex',
-                  alignItems:     'center',
-                  justifyContent: 'space-between',
-                  gap:            '8px',
-                  marginBottom:   '8px',
-                }}
+                className="rig-kicker"
+                style={{ color: 'var(--rig-copper)', marginBottom: '6px' }}
               >
-                <div
-                  style={{
-                    fontFamily:    "'DM Sans', system-ui",
-                    fontSize:      '10px',
-                    fontWeight:    700,
-                    color:         '#B45309',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                  }}
-                >
-                  Why This Matters To You
-                </div>
-                {doc.urgency && (() => {
-                  const u = URGENCY_BADGE[doc.urgency]
-                  return (
-                    <span
-                      style={{
-                        padding:         '2px 8px',
-                        borderRadius:    '9999px',
-                        backgroundColor: u.bg,
-                        border:          `1px solid ${u.text}`,
-                        fontFamily:      "'DM Sans', system-ui",
-                        fontSize:        '10px',
-                        fontWeight:      700,
-                        color:           u.text,
-                        letterSpacing:   '0.08em',
-                      }}
-                    >
-                      {doc.urgency}
-                    </span>
-                  )
-                })()}
+                Why this matters to you
               </div>
               <p
                 style={{
-                  fontFamily: "'DM Sans', system-ui",
-                  fontSize:   '14px',
-                  lineHeight: 1.6,
-                  color:      '#78350F',
-                  margin:     0,
+                  margin: 0,
+                  fontFamily: 'var(--font-serif)',
+                  fontStyle: 'italic',
+                  fontSize: '15px',
+                  lineHeight: 1.55,
+                  color: 'var(--rig-ink)',
                 }}
               >
                 {doc.why_it_matters}
@@ -958,105 +889,98 @@ function DocumentDialog({
           {doc.suggested_action && (
             <div
               style={{
-                fontFamily:   "'DM Sans', system-ui",
-                fontSize:     '13px',
-                fontStyle:    'italic',
-                color:        '#475569',
                 marginBottom: '20px',
+                paddingBottom: '18px',
+                borderBottom: '1px solid var(--rig-rule-hair)',
               }}
             >
-              Suggested action: {doc.suggested_action}
+              <div className="rig-kicker" style={{ marginBottom: '4px' }}>
+                Suggested action
+              </div>
+              <div
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '14px',
+                  color: 'var(--rig-ink-2)',
+                  lineHeight: 1.5,
+                }}
+              >
+                {doc.suggested_action}
+              </div>
             </div>
           )}
 
-          {/* Summary section */}
+          {/* Summary */}
           {!summary && !summaryLoading && !summaryError && (
             <button
               onClick={generateSummary}
-              style={{
-                marginBottom:    '20px',
-                padding:         '8px 14px',
-                borderRadius:    '8px',
-                border:          '1px solid rgba(245,158,11,0.3)',
-                backgroundColor: 'rgba(245,158,11,0.08)',
-                fontFamily:      "'DM Sans', system-ui",
-                fontSize:        '13px',
-                fontWeight:      600,
-                color:           '#B45309',
-                cursor:          'pointer',
-              }}
+              className="rig-btn-ghost"
+              style={{ marginBottom: '20px' }}
             >
-              ✦ Generate Summary
+              ✦ Commission a summary
             </button>
           )}
+
           {summaryLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', padding: '12px 0' }}>
-              <div
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '20px',
+                padding: '10px 0',
+              }}
+            >
+              <span
+                className="rig-headline"
                 style={{
-                  width:        '16px',
-                  height:       '16px',
-                  borderRadius: '50%',
-                  border:       '2px solid #E2E8F0',
-                  borderTopColor: '#F59E0B',
-                  animation:    'spin 0.8s linear infinite',
+                  fontStyle: 'italic',
+                  fontSize: '16px',
+                  color: 'var(--rig-ink-2)',
                 }}
-              />
-              <span style={{ fontFamily: "'DM Sans', system-ui", fontSize: '13px', color: '#64748B' }}>
-                Generating summary…
+              >
+                Reading and condensing…
               </span>
             </div>
           )}
+
           {summaryError && !summaryLoading && (
-            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontFamily: "'DM Sans', system-ui", fontSize: '13px', color: '#E11D48' }}>
-                {summaryError}
-              </span>
-              <button
-                onClick={generateSummary}
+            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span
                 style={{
-                  background:     'none',
-                  border:         'none',
-                  cursor:         'pointer',
-                  fontFamily:     "'DM Sans', system-ui",
-                  fontSize:       '13px',
-                  color:          '#64748B',
-                  textDecoration: 'underline',
+                  fontFamily: 'var(--font-serif)',
+                  fontStyle: 'italic',
+                  fontSize: '14px',
+                  color: 'var(--rig-oxblood)',
                 }}
               >
+                {summaryError}
+              </span>
+              <button onClick={generateSummary} className="rig-btn-ghost">
                 Retry
               </button>
             </div>
           )}
+
           {summary && (
             <div
               style={{
-                marginBottom:    '20px',
-                padding:         '16px',
-                borderRadius:    '8px',
-                backgroundColor: '#F8FAFC',
-                border:          '1px solid #E2E8F0',
+                marginBottom: '24px',
+                padding: '16px 18px',
+                background: 'var(--rig-paper-2)',
+                border: '1px solid var(--rig-rule-hair)',
               }}
             >
-              <div
-                style={{
-                  fontFamily:    "'DM Sans', system-ui",
-                  fontSize:      '10px',
-                  fontWeight:    700,
-                  color:         '#94A3B8',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  marginBottom:  '8px',
-                }}
-              >
+              <div className="rig-kicker" style={{ marginBottom: '8px' }}>
                 Summary
               </div>
               <p
                 style={{
-                  fontFamily: "'DM Sans', system-ui",
-                  fontSize:   '14px',
+                  margin: 0,
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '15px',
                   lineHeight: 1.7,
-                  color:      '#334155',
-                  margin:     0,
+                  color: 'var(--rig-ink)',
                 }}
               >
                 {summary}
@@ -1064,14 +988,14 @@ function DocumentDialog({
             </div>
           )}
 
-          {/* Preview */}
+          {/* Preview fallback */}
           {doc.summary_preview && !summary && (
             <p
               style={{
-                fontFamily:   "'DM Sans', system-ui",
-                fontSize:     '14px',
-                lineHeight:   1.7,
-                color:        '#334155',
+                fontFamily: 'var(--font-serif)',
+                fontSize: '15px',
+                lineHeight: 1.7,
+                color: 'var(--rig-ink-2)',
                 marginBottom: '24px',
               }}
             >
@@ -1080,61 +1004,40 @@ function DocumentDialog({
             </p>
           )}
 
-          {/* Meta footer */}
+          {/* Meta row */}
           <div
             style={{
-              display:    'flex',
-              gap:        '6px',
-              flexWrap:   'wrap',
-              padding:    '14px 0',
-              borderTop:  '1px solid #F1F5F9',
-              borderBottom: '1px solid #F1F5F9',
-              marginBottom: '20px',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '6px',
+              paddingTop: '16px',
+              marginTop: '8px',
+              borderTop: '1px solid var(--rig-rule-hair)',
+              marginBottom: '22px',
             }}
           >
-            {doc.topic_category && <FooterChip>{doc.topic_category}</FooterChip>}
-            {doc.geo_primary && <FooterChip>{doc.geo_primary}</FooterChip>}
-            {doc.page_count && <FooterChip>{doc.page_count} pages</FooterChip>}
+            {doc.topic_category && <TagChip label={doc.topic_category} />}
+            {doc.geo_primary && <TagChip label={doc.geo_primary} />}
+            {doc.page_count && <TagChip label={`${doc.page_count} pages`} />}
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <a
               href={doc.document_url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                padding:         '10px 18px',
-                borderRadius:    '8px',
-                backgroundColor: '#18181B',
-                color:           '#F8FAFC',
-                fontFamily:      "'DM Sans', system-ui",
-                fontSize:        '13px',
-                fontWeight:      600,
-                textDecoration:  'none',
-              }}
+              className="rig-btn-primary"
+              style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
             >
-              Read Document ↗
+              Read the document ↗
             </a>
-            <button
-              onClick={onInvestigate}
-              style={{
-                padding:         '10px 18px',
-                borderRadius:    '8px',
-                backgroundColor: '#FFFFFF',
-                border:          '1px solid #E2E8F0',
-                fontFamily:      "'DM Sans', system-ui",
-                fontSize:        '13px',
-                fontWeight:      600,
-                color:           '#475569',
-                cursor:          'pointer',
-              }}
-            >
-              Investigate →
+            <button onClick={onInvestigate} className="rig-btn-ghost">
+              Take to Analyst →
             </button>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
   )
 }

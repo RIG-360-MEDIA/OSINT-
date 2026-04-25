@@ -3,32 +3,44 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { VideoBackground } from '@/components/ui/video-background'
+import styles from '@/components/auth/auth.module.css'
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '10px 0',
-  border: 'none',
-  borderBottom: '1.5px solid #DDD8D0',
-  background: 'transparent',
-  fontFamily: "'DM Sans', system-ui, sans-serif",
-  fontSize: '15px',
-  color: '#1A1614',
-  outline: 'none',
-  transition: 'border-color 0.15s',
+function CompassGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="11" stroke="currentColor" strokeWidth="0.6" opacity="0.55" />
+      <path
+        d="M12 1 L13.2 10.8 L22 12 L13.2 13.2 L12 23 L10.8 13.2 L2 12 L10.8 10.8 Z"
+        fill="currentColor"
+        opacity="0.9"
+      />
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+    </svg>
+  )
 }
 
-const labelStyle: React.CSSProperties = {
-  fontFamily: "'DM Sans', system-ui, sans-serif",
-  fontSize: '12px',
-  fontWeight: 500,
-  color: '#5C5249',
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-  display: 'block',
-  marginBottom: '6px',
+function Wordmark() {
+  return (
+    <Link href="/" className={styles.brand} aria-label="Rig Surveillance">
+      <span className={styles.brandOrnament} aria-hidden="true">
+        <CompassGlyph />
+      </span>
+      <span className={styles.brandRig}>Rig</span>
+      <span className={styles.brandSurveillance}>Surveillance</span>
+      <span className={styles.brandTerminal}>.</span>
+    </Link>
+  )
 }
+
+const FEATURES: { num: string; text: string }[] = [
+  { num: 'I', text: 'The morning brief, filed by 06:00 IST' },
+  { num: 'II', text: 'Coverage rooms across 17 languages' },
+  { num: 'III', text: 'An analyst you can audit, line by line' },
+  { num: 'IV', text: 'Signals weighted against their history' },
+]
 
 export default function LoginPage() {
   const router = useRouter()
@@ -59,113 +71,125 @@ export default function LoginPage() {
       const res = await fetch(`${API}/api/onboarding/status`, {
         headers: { Authorization: `Bearer ${token}` },
       })
+      if (!res.ok) {
+        router.push('/brief')
+        return
+      }
       const status = await res.json()
       router.push(status.has_profile ? '/brief' : '/onboarding')
     } catch {
-      router.push('/onboarding')
+      router.push('/brief')
     }
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#F7F4EF',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
-    }}>
-      <div style={{ width: '100%', maxWidth: '400px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <h1 style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: '24px',
-            fontWeight: 700,
-            color: '#8B1A1A',
-            letterSpacing: '0.05em',
-          }}>
-            RIG SURVEILLANCE
-          </h1>
-          <p style={{
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-            fontSize: '13px',
-            color: '#9C928A',
-            marginTop: '6px',
-          }}>
-            Personal Intelligence Platform
-          </p>
+    <main className={styles.shell}>
+      <section className={styles.left}>
+        <div className={styles.videoLayer}>
+          <VideoBackground src="/landing/hero.mp4" poster="/landing/hero-poster.jpg" />
         </div>
+        <div className={styles.leftVignette} />
+        <div className={styles.grain} />
+        <div className={styles.watermarkMask} />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <label style={labelStyle}>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              style={inputStyle}
-              onFocus={e => (e.target.style.borderBottom = '1.5px solid #8B1A1A')}
-              onBlur={e => (e.target.style.borderBottom = '1.5px solid #DDD8D0')}
-            />
-          </div>
+        <div className={styles.leftInner}>
+          <Wordmark />
 
-          <div>
-            <label style={labelStyle}>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}
-              style={inputStyle}
-              onFocus={e => (e.target.style.borderBottom = '1.5px solid #8B1A1A')}
-              onBlur={e => (e.target.style.borderBottom = '1.5px solid #DDD8D0')}
-            />
-          </div>
-
-          {error && (
-            <p style={{
-              fontFamily: "'DM Sans', system-ui, sans-serif",
-              fontSize: '13px',
-              color: '#8B1A1A',
-            }}>
-              {error}
+          <div className={styles.copy}>
+            <div className={styles.copyEyebrow}>
+              <span className={styles.rule} />
+              <span>Returning Reader</span>
+            </div>
+            <h1 className={styles.copyTitle}>
+              Credentials,
+              <br />
+              <em>please.</em>
+            </h1>
+            <p className={styles.copyDeck}>
+              The room remembers you. Sign in and the brief you missed will be waiting — filed,
+              annotated, ordered by consequence.
             </p>
-          )}
 
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            style={{
-              marginTop: '8px',
-              padding: '12px 24px',
-              backgroundColor: loading ? '#9C928A' : '#8B1A1A',
-              color: 'white',
-              border: 'none',
-              borderRadius: '2px',
-              fontFamily: "'DM Sans', system-ui, sans-serif",
-              fontSize: '14px',
-              fontWeight: 500,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              letterSpacing: '0.03em',
-              transition: 'background-color 0.15s',
-            }}
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
+            <div className={styles.list}>
+              {FEATURES.map((f) => (
+                <div key={f.num} className={styles.listItem}>
+                  <span className={styles.listNum}>{f.num}.</span>
+                  <span className={styles.listText}>{f.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          <p style={{
-            textAlign: 'center',
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-            fontSize: '13px',
-            color: '#9C928A',
-          }}>
-            No account?{' '}
-            <Link href="/signup" style={{ color: '#8B1A1A', textDecoration: 'none' }}>
-              Create one
-            </Link>
-          </p>
+          <div className={styles.leftFooter}>Scientia · Potentia · Est</div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      <section className={styles.right}>
+        <div className={styles.rightInner}>
+          <div className={styles.mobileBrand}>
+            <Wordmark />
+          </div>
+
+          <div className={styles.formKicker}>Access · Vol. I</div>
+          <h2 className={styles.formTitle}>
+            Sign <em>in</em>
+          </h2>
+          <p className={styles.formSub}>Welcome back to the desk of record.</p>
+
+          <div className={styles.fields}>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel} htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                className={styles.input}
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.fieldLabel} htmlFor="password">
+                Passphrase
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                className={styles.input}
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </div>
+
+            {error && <div className={styles.error}>{error}</div>}
+
+            <button
+              onClick={handleLogin}
+              disabled={loading}
+              className={styles.submit}
+              type="button"
+            >
+              {loading ? 'Signing in…' : 'Enter the room'}
+              <span className={styles.arrow}>→</span>
+            </button>
+
+            <p className={styles.altLine}>
+              No credentials yet?
+              <Link href="/signup" className={styles.altLink}>
+                Request press access
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
   )
 }

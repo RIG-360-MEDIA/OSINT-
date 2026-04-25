@@ -1,0 +1,97 @@
+# SearXNG config for RIG Dossier
+# Internal-only metasearch — reached at http://rig-searxng:8080 from rig-backend.
+# Tuned for free, scraper-tolerant engines. Google/Bing disabled (heavy CAPTCHA).
+
+use_default_settings: true
+
+general:
+  instance_name: "RIG SearXNG"
+  privacypolicy_url: false
+  donation_url: false
+  contact_url: false
+  enable_metrics: false
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "en"
+  formats:
+    - html
+    - json
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "rig-dossier-internal-only-not-exposed"
+  base_url: "http://rig-searxng:8080/"
+  image_proxy: false
+  http_protocol_version: "1.1"
+  method: "GET"
+  default_http_headers:
+    X-Content-Type-Options: nosniff
+    X-Download-Options: noopen
+    X-Robots-Tag: noindex, nofollow
+    Referrer-Policy: no-referrer
+
+ui:
+  static_use_hash: true
+  default_locale: "en"
+  query_in_title: false
+  infinite_scroll: false
+
+outgoing:
+  request_timeout: 8.0
+  max_request_timeout: 15.0
+  pool_connections: 100
+  pool_maxsize: 20
+  enable_http2: true
+
+# Engine overrides — only enable engines that work without API keys
+# and tolerate server-side scraping. Disable the ones that CAPTCHA us.
+engines:
+  - name: google
+    disabled: true
+  - name: google news
+    disabled: true
+  - name: google images
+    disabled: true
+  - name: google videos
+    disabled: true
+  - name: bing
+    disabled: true
+  - name: bing news
+    disabled: true
+  - name: bing images
+    disabled: true
+
+  - name: duckduckgo
+    disabled: false
+  - name: brave
+    disabled: false
+  - name: mojeek
+    disabled: false
+  - name: qwant
+    disabled: false
+  - name: startpage
+    disabled: false
+  - name: yandex
+    disabled: false
+  - name: yahoo
+    disabled: false
+
+  - name: wikipedia
+    disabled: false
+  - name: wikidata
+    disabled: false
+  - name: github
+    disabled: false
+  - name: reddit
+    disabled: false
+  - name: hackernews
+    disabled: false
+  - name: stackoverflow
+    disabled: false
+  - name: archive is
+    disabled: false
+  - name: wayback machine
+    disabled: false

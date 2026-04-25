@@ -15,10 +15,8 @@ import asyncio
 import json
 import logging
 import os
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    import groq as groq_sdk
+import groq as groq_sdk
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +30,7 @@ TOKEN_LIMITS: dict[str, int] = {
     "classification": 50,
     "translation": 500,
     "profile_extraction": 1000,
+    "transcript_analysis": 1500,
     "relevance_explanation": 200,
     "brief_generation": 4000,
     "rag_response": 2048,
@@ -109,9 +108,9 @@ class GroqKeyManager:
         Creates once on first access, reused on all subsequent calls.
         """
         if key_index not in self._clients:
-            import groq as groq_sdk_module
-            self._clients[key_index] = groq_sdk_module.AsyncGroq(
-                api_key=self.keys[key_index]
+            self._clients[key_index] = groq_sdk.AsyncGroq(
+                api_key=self.keys[key_index],
+                max_retries=0,
             )
         return self._clients[key_index]
 
@@ -217,8 +216,6 @@ async def call_groq(
         GroqQuotaExhausted: All keys are rate limited.
         GroqCallFailed:     Non-quota API error or unexpected failure.
     """
-    import groq as groq_sdk
-
     max_tokens = TOKEN_LIMITS.get(task_type, 1000)
 
     if model is None:
@@ -231,8 +228,8 @@ async def call_groq(
         {"role": "user", "content": user},
     ]
 
-    # Attempt up to min(total_keys, 3) times — try next key on rate limit
-    attempts = min(max(len(groq_manager.keys), 1), 3)
+    # Try every available key before giving up
+    attempts = max(len(groq_manager.keys), 1)
 
     for attempt in range(attempts):
         key_idx, client = await groq_manager.get_key()
@@ -258,6 +255,12 @@ async def call_groq(
                 )
             # Try next available key
             continue
+
+        except groq_sdk.APIConnectionError:
+            # Transient network error — retry same key once before rotating
+            if attempt < attempts - 1:
+                continue
+            raise GroqCallFailed("Groq connection error on all attempts")
 
         except groq_sdk.APIError as exc:
             raise GroqCallFailed(f"Groq API error: {exc}") from exc

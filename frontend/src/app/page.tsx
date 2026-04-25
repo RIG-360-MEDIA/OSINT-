@@ -1,12 +1,13 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import LandingPage from './landing/page'
 
 export default async function Home() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/login')
+    return <LandingPage />
   }
 
   const session = await supabase.auth.getSession()
@@ -23,8 +24,8 @@ export default async function Home() {
       redirect(status.has_profile ? '/brief' : '/onboarding')
     }
   } catch {
-    // Fall through to login on any error
+    // Fall through to landing on any error
   }
 
-  redirect('/login')
+  return <LandingPage />
 }

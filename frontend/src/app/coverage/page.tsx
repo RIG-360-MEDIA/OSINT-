@@ -1,12 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Navigation from '@/components/Navigation'
+import { Dateline } from '@/components/Dateline'
 import { domainColor, formatTimeAgo } from '@/lib/domainColor'
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+/* ── Types ────────────────────────────────────────────────────────────────── */
 
 interface Article {
   article_id: string
@@ -29,34 +30,18 @@ interface Article {
   sentiment_for_user: 'FOR_USER' | 'AGAINST_USER' | 'NEUTRAL'
 }
 
-interface Totals {
-  total: number
-  tier1: number
-  tier2: number
-  tier3: number
-}
-
+interface Totals { total: number; tier1: number; tier2: number; tier3: number }
 interface FeedResponse {
   articles: Article[]
-  pagination: {
-    has_more: boolean
-    next_cursor: string | null
-    returned: number
-  }
+  pagination: { has_more: boolean; next_cursor: string | null; returned: number }
   totals: Totals
 }
+interface SearchResponse { query: string; count: number; articles: Article[] }
 
-interface SearchResponse {
-  query: string
-  count: number
-  articles: Article[]
-}
+type TierFilter      = 'all' | '1' | '1,2'
+type SortOption      = 'relevance' | 'recency'
 
-type TierFilter = 'all' | '1' | '1,2'
-type SortOption = 'relevance' | 'recency'
-type SentimentOption = 'all' | 'FOR_USER' | 'AGAINST_USER' | 'NEUTRAL'
-
-// ── Constants ─────────────────────────────────────────────────────────────────
+/* ── Constants ────────────────────────────────────────────────────────────── */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -67,276 +52,272 @@ const TOPICS = [
   'EDUCATION', 'SPORTS', 'INTERNATIONAL',
 ]
 
-const TIER_META: Record<number, { bg: string; label: string }> = {
-  1: { bg: '#1B3A6B', label: 'T1' },
-  2: { bg: '#2D6B3A', label: 'T2' },
-  3: { bg: '#5C5249', label: 'T3' },
-}
+const TIER_LABEL: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III' }
+const TIER_NAME: Record<number, string>  = { 1: 'Lead', 2: 'Notable', 3: 'Background' }
 
+// Sentiment → left border on clipping
 const SENTIMENT_BORDER: Record<string, string> = {
-  FOR_USER: '2px solid #2D6B3A',
-  AGAINST_USER: '2px solid #8B1A1A',
-  NEUTRAL: 'none',
+  FOR_USER:     'var(--rig-gold)',
+  AGAINST_USER: 'var(--rig-oxblood)',
+  NEUTRAL:      'transparent',
 }
 
-// ── Article card ──────────────────────────────────────────────────────────────
+/* ── Clipping card ────────────────────────────────────────────────────────── */
 
-interface ArticleCardProps {
-  article: Article
-  onClick: () => void
-}
-
-function ArticleCard({ article, onClick }: ArticleCardProps) {
+function Clipping({ article, onClick }: { article: Article; onClick: () => void }) {
   const brandColor = domainColor(article.source_domain || article.source_name)
-  const timeAgo = formatTimeAgo(article.collected_at)
-  const tierInfo = TIER_META[article.relevance_tier] ?? TIER_META[3]
+  const timeAgo    = formatTimeAgo(article.collected_at)
   const [imgBroken, setImgBroken] = useState(false)
-  const hasImage = !!article.thumbnail_url && !imgBroken
+  const hasImage   = !!article.thumbnail_url && !imgBroken
+  const sentBorder = SENTIMENT_BORDER[article.sentiment_for_user] ?? 'transparent'
+  const tierLabel  = TIER_LABEL[article.relevance_tier] ?? 'III'
 
   return (
-    <div
+    <article
       onClick={onClick}
+      className="card-lift"
       style={{
-        backgroundColor: '#F7F4EF',
-        border: '1px solid #DDD8D0',
-        borderRadius: '2px',
-        padding: '16px',
+        background: 'var(--rig-paper-2)',
+        border: '1px solid var(--rig-rule)',
+        borderLeft: sentBorder !== 'transparent'
+          ? `2px solid ${sentBorder}`
+          : '1px solid var(--rig-rule)',
         cursor: 'pointer',
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        transition: 'border-color 0.2s',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-            fontSize: '12px',
-            color: '#5C5249',
-          }}
-        >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              backgroundColor: brandColor,
-              display: 'inline-block',
-              marginRight: 6,
-            }}
-          />
-          <span style={{ fontWeight: 500 }}>{article.source_name}</span>
-          {timeAgo && (
-            <span style={{ marginLeft: 6, color: '#9C928A' }}>
-              · {timeAgo}
-            </span>
-          )}
-        </div>
-
-        <span
-          style={{
-            backgroundColor: tierInfo.bg,
-            color: '#F7F4EF',
-            fontFamily: "'DM Mono', ui-monospace, monospace",
-            fontSize: '10px',
-            fontWeight: 600,
-            padding: '2px 6px',
-            borderRadius: '2px',
-            border: SENTIMENT_BORDER[article.sentiment_for_user] || 'none',
-            letterSpacing: '0.06em',
-          }}
-        >
-          {tierInfo.label}
-        </span>
-      </div>
-
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+      {/* Thumbnail / Fallback */}
+      <div style={{ height: '140px', position: 'relative', flexShrink: 0, overflow: 'hidden' }}>
         {hasImage ? (
           <img
             src={article.thumbnail_url as string}
             alt=""
             onError={() => setImgBroken(true)}
             style={{
-              width: '80px',
-              height: '80px',
+              width: '100%',
+              height: '100%',
               objectFit: 'cover',
-              borderRadius: '2px',
-              flexShrink: 0,
+              display: 'block',
+              filter: 'saturate(0.92) contrast(1.04)',
             }}
           />
         ) : (
-          <div
-            style={{
-              width: '80px',
-              height: '80px',
-              backgroundColor: brandColor,
-              borderRadius: '2px',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "'Playfair Display', Georgia, serif",
-                fontSize: '22px',
-                fontWeight: 700,
-                color: 'rgba(255,255,255,0.9)',
-              }}
-            >
+          <div style={{
+            width: '100%', height: '100%',
+            backgroundColor: brandColor,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            filter: 'saturate(0.5) brightness(0.9)',
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              fontSize: '44px',
+              color: 'var(--rig-paper)',
+            }}>
               {article.source_name.slice(0, 2).toUpperCase()}
             </span>
           </div>
         )}
-
-        <div
+        {/* Tier numeral overlay */}
+        <span
+          className="rig-kicker"
           style={{
-            fontFamily: "'Playfair Display', Georgia, serif",
-            fontSize: '17px',
-            fontWeight: 700,
-            color: '#1A1614',
-            lineHeight: 1.35,
-            flex: 1,
+            position: 'absolute',
+            top: '10px',
+            right: '12px',
+            background: 'var(--rig-paper)',
+            padding: '3px 9px',
+            border: '1px solid var(--rig-rule)',
+            fontSize: '9px',
+            letterSpacing: '0.28em',
+            color: 'var(--rig-ink)',
+          }}
+        >
+          T · {tierLabel}
+        </span>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: '16px 18px 18px', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Byline */}
+        <div className="rig-byline" style={{ fontSize: '9px' }}>
+          <span>{article.source_name}</span>
+          {timeAgo && (<><span className="sep">·</span><span>{timeAgo}</span></>)}
+        </div>
+
+        {/* Title */}
+        <h3
+          className="rig-headline"
+          style={{
+            fontSize: '18px',
+            lineHeight: 1.18,
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
           }}
         >
           {article.title}
-        </div>
-      </div>
+        </h3>
 
-      <hr
-        style={{
-          border: 'none',
-          borderTop: '1px dashed #DDD8D0',
-          margin: 0,
-        }}
-      />
-
-      <div
-        style={{
-          fontFamily: "'DM Sans', system-ui, sans-serif",
-          fontSize: '13px',
-          color: '#5C5249',
-          lineHeight: 1.5,
-        }}
-      >
-        {article.relevance_explanation ||
-          'Relevant to your monitored geography and topics'}
-      </div>
-
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {article.topic_category && (
-            <span
-              style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '10px',
-                letterSpacing: '0.06em',
-                color: '#5C5249',
-                backgroundColor: '#E8E3DA',
-                padding: '2px 6px',
-                borderRadius: '2px',
-              }}
-            >
-              {article.topic_category}
-            </span>
-          )}
-          {article.geo_primary && (
-            <span
-              style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '10px',
-                letterSpacing: '0.06em',
-                color: '#5C5249',
-                backgroundColor: '#E8E3DA',
-                padding: '2px 6px',
-                borderRadius: '2px',
-              }}
-            >
-              {article.geo_primary}
-            </span>
-          )}
-        </div>
-        <span
+        {/* Relevance */}
+        <p
+          className="rig-prose"
           style={{
-            fontFamily: "'DM Mono', ui-monospace, monospace",
-            fontSize: '12px',
-            color: '#1B3A6B',
+            fontSize: '13px',
+            color: 'var(--rig-ink-3)',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            fontStyle: 'italic',
+            fontFamily: 'var(--font-serif)',
+            lineHeight: 1.45,
           }}
         >
-          {article.score_final.toFixed(2)}
-        </span>
+          {article.relevance_explanation || 'Relevant to your monitored geography and topics.'}
+        </p>
+
+        {/* Footer */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: 'auto',
+            paddingTop: '10px',
+            borderTop: '1px solid var(--rig-rule-hair)',
+          }}
+        >
+          <div className="rig-byline" style={{ fontSize: '9px', gap: '8px' }}>
+            {article.topic_category && <span>{article.topic_category}</span>}
+            {article.topic_category && article.geo_primary && <span className="sep">·</span>}
+            {article.geo_primary && <span>{article.geo_primary}</span>}
+          </div>
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              color: 'var(--rig-gold)',
+              letterSpacing: '0.06em',
+            }}
+          >
+            {article.score_final.toFixed(2)}
+          </span>
+        </div>
       </div>
-    </div>
+    </article>
   )
 }
 
-// ── Tier separator ────────────────────────────────────────────────────────────
+/* ── Tier separator ───────────────────────────────────────────────────────── */
 
-function TierSeparator({ label }: { label: string }) {
+function TierSeparator({ numeral, name }: { numeral: string; name: string }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        margin: '24px 0 8px',
-      }}
-    >
-      <div style={{ flex: 1, height: '1px', backgroundColor: '#DDD8D0' }} />
+    <div style={{
+      gridColumn: '1 / -1',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '16px',
+      padding: '22px 0 8px',
+    }}>
       <span
         style={{
-          fontFamily: "'DM Sans', system-ui, sans-serif",
-          fontSize: '11px',
-          letterSpacing: '0.15em',
-          textTransform: 'uppercase',
-          color: '#9C928A',
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontSize: '24px',
+          color: 'var(--rig-copper)',
+          lineHeight: 1,
         }}
       >
-        {label}
+        {numeral}.
       </span>
-      <div style={{ flex: 1, height: '1px', backgroundColor: '#DDD8D0' }} />
+      <span
+        className="rig-kicker"
+        style={{ fontSize: '10px' }}
+      >
+        Tier {numeral} — {name}
+      </span>
+      <div style={{ flex: 1, height: '1px', background: 'var(--rig-rule)' }} />
     </div>
   )
 }
 
-// ── Article dialog ────────────────────────────────────────────────────────────
+/* ── Article dialog (slide-in panel) ──────────────────────────────────────── */
 
-interface DialogProps {
+function ArticleDialog({
+  article, summary, summaryLoading, summaryError,
+  onClose, onGenerateSummary,
+}: {
   article: Article
   summary: string | null
   summaryLoading: boolean
   summaryError: string | null
   onClose: () => void
   onGenerateSummary: () => void
-}
-
-function ArticleDialog({
-  article,
-  summary,
-  summaryLoading,
-  summaryError,
-  onClose,
-  onGenerateSummary,
-}: DialogProps) {
+}) {
   const brandColor = domainColor(article.source_domain || article.source_name)
-  const tierInfo = TIER_META[article.relevance_tier] ?? TIER_META[3]
   const [imgBroken, setImgBroken] = useState(false)
-  const hasImage = !!article.thumbnail_url && !imgBroken
+  const hasImage   = !!article.thumbnail_url && !imgBroken
+  const tierLabel  = TIER_LABEL[article.relevance_tier] ?? 'III'
+  const panelRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const html = document.documentElement
+    const body = document.body
+    const scrollY = window.scrollY
+    const scrollbarWidth = window.innerWidth - html.clientWidth
+
+    const prev = {
+      htmlOverflow: html.style.overflow,
+      bodyOverflow: body.style.overflow,
+      bodyPosition: body.style.position,
+      bodyTop: body.style.top,
+      bodyWidth: body.style.width,
+      bodyPaddingRight: body.style.paddingRight,
+    }
+
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+    body.style.position = 'fixed'
+    body.style.top = `-${scrollY}px`
+    body.style.width = '100%'
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${scrollbarWidth}px`
+    }
+
+    const blockOutside = (e: Event) => {
+      const panel = panelRef.current
+      if (!panel) { e.preventDefault(); return }
+      const target = e.target as Node | null
+      if (!target || !panel.contains(target)) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('wheel', blockOutside, { passive: false })
+    window.addEventListener('touchmove', blockOutside, { passive: false })
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+
+    return () => {
+      html.style.overflow = prev.htmlOverflow
+      body.style.overflow = prev.bodyOverflow
+      body.style.position = prev.bodyPosition
+      body.style.top = prev.bodyTop
+      body.style.width = prev.bodyWidth
+      body.style.paddingRight = prev.bodyPaddingRight
+      window.removeEventListener('wheel', blockOutside)
+      window.removeEventListener('touchmove', blockOutside)
+      window.removeEventListener('keydown', onKey)
+      window.scrollTo(0, scrollY)
+    }
+  }, [onClose])
 
   return (
     <div
@@ -344,22 +325,28 @@ function ArticleDialog({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(26,22,20,0.4)',
-        zIndex: 200,
+        background: 'color-mix(in srgb, var(--rig-ink) 50%, transparent)',
+        backdropFilter: 'blur(6px)',
+        zIndex: 300,
+        overscrollBehavior: 'contain',
       }}
     >
       <div
+        ref={panelRef}
         onClick={(e) => e.stopPropagation()}
+        className="anim-slide-right"
         style={{
           position: 'fixed',
-          top: 0,
+          top: 'var(--topbar-h, 0px)',
           right: 0,
+          bottom: 0,
           width: '560px',
           maxWidth: '100vw',
-          height: '100vh',
-          backgroundColor: '#F7F4EF',
+          background: 'var(--rig-paper)',
+          borderLeft: '1px solid var(--rig-rule)',
           overflowY: 'auto',
-          boxShadow: '-4px 0 24px rgba(26,22,20,0.15)',
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         <button
@@ -369,19 +356,24 @@ function ArticleDialog({
             position: 'absolute',
             top: '16px',
             right: '16px',
-            background: 'none',
-            border: 'none',
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-            fontSize: '20px',
-            color: '#9C928A',
+            width: '32px',
+            height: '32px',
+            background: 'var(--rig-paper-2)',
+            border: '1px solid var(--rig-rule)',
+            color: 'var(--rig-ink-2)',
             cursor: 'pointer',
+            fontSize: '18px',
             zIndex: 1,
+            fontFamily: 'var(--font-serif)',
             lineHeight: 1,
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--rig-gold)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--rig-rule)' }}
         >
           ×
         </button>
 
+        {/* Hero */}
         {hasImage ? (
           <img
             src={article.thumbnail_url as string}
@@ -389,213 +381,127 @@ function ArticleDialog({
             onError={() => setImgBroken(true)}
             style={{
               width: '100%',
-              height: '240px',
+              height: '220px',
               objectFit: 'cover',
               display: 'block',
+              filter: 'saturate(0.9) contrast(1.04)',
             }}
           />
         ) : (
-          <div
-            style={{
-              width: '100%',
-              height: '240px',
-              backgroundColor: brandColor,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "'Playfair Display', Georgia, serif",
-                fontSize: '64px',
-                fontWeight: 700,
-                color: 'rgba(255,255,255,0.9)',
-              }}
-            >
+          <div style={{
+            width: '100%',
+            height: '220px',
+            backgroundColor: brandColor,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            filter: 'saturate(0.45) brightness(0.88)',
+          }}>
+            <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '72px', color: 'var(--rig-paper)' }}>
               {article.source_name.slice(0, 2).toUpperCase()}
             </span>
           </div>
         )}
 
-        <div style={{ padding: '24px 32px 40px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              fontFamily: "'DM Sans', system-ui, sans-serif",
-              fontSize: '12px',
-              color: '#5C5249',
-              marginBottom: '12px',
-            }}
-          >
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                backgroundColor: brandColor,
-                display: 'inline-block',
-                marginRight: 6,
-              }}
-            />
-            <span style={{ fontWeight: 500 }}>{article.source_name}</span>
-            {article.collected_at && (
-              <span style={{ marginLeft: 6, color: '#9C928A' }}>
-                · {formatTimeAgo(article.collected_at)}
-              </span>
-            )}
-            {article.author_name && (
-              <span style={{ marginLeft: 6, color: '#9C928A' }}>
-                · by {article.author_name}
-              </span>
-            )}
+        <div style={{ padding: '32px 36px 56px' }}>
+          {/* Kicker */}
+          <div className="rig-kicker rig-kicker-gold" style={{ marginBottom: '18px' }}>
+            <span style={{ width: '28px', height: '1px', background: 'var(--rig-gold)', opacity: 0.7 }} />
+            Tier {tierLabel} · {TIER_NAME[article.relevance_tier] ?? 'Background'}
           </div>
 
+          {/* Title */}
           <h2
-            style={{
-              fontFamily: "'Playfair Display', Georgia, serif",
-              fontSize: '26px',
-              fontWeight: 700,
-              lineHeight: 1.3,
-              color: '#1A1614',
-              margin: '16px 0',
-            }}
+            className="rig-headline"
+            style={{ fontSize: '32px', lineHeight: 1.1, marginBottom: '18px' }}
           >
             {article.title}
           </h2>
 
-          <div
-            style={{
-              backgroundColor: '#FDF0EF',
-              borderLeft: '3px solid #8B1A1A',
-              padding: '12px 16px',
-              borderRadius: '2px',
-              marginBottom: '20px',
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '10px',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: '#9C928A',
-                marginBottom: '6px',
-              }}
-            >
-              Why This Matters To You
-            </div>
-            <div
-              style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '14px',
-                color: '#1A1614',
-                lineHeight: 1.6,
-              }}
-            >
-              {article.relevance_explanation ||
-                'Relevant to your monitored geography and topics'}
-            </div>
+          {/* Byline */}
+          <div className="rig-byline" style={{ marginBottom: '28px' }}>
+            <span>{article.source_name}</span>
+            {article.collected_at && (<><span className="sep">·</span><span>{formatTimeAgo(article.collected_at)}</span></>)}
+            {article.author_name && (<><span className="sep">·</span><span>{article.author_name}</span></>)}
           </div>
 
-          {!summary && !summaryLoading && !summaryError && (
-            <button
-              onClick={onGenerateSummary}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '13px',
-                color: '#8B1A1A',
-                cursor: 'pointer',
-                marginTop: '4px',
-              }}
+          {/* Why this matters */}
+          <div
+            style={{
+              padding: '18px 20px',
+              borderLeft: '2px solid var(--rig-gold)',
+              background: 'var(--rig-overlay)',
+              marginBottom: '28px',
+            }}
+          >
+            <div className="rig-kicker rig-kicker-gold" style={{ fontSize: '9px', marginBottom: '8px' }}>
+              Why this matters
+            </div>
+            <p
+              className="rig-serif-body"
+              style={{ fontSize: '17px', color: 'var(--rig-ink)' }}
             >
-              Generate Summary →
+              {article.relevance_explanation || 'Relevant to your monitored geography and topics.'}
+            </p>
+          </div>
+
+          {/* Summary */}
+          {!summary && !summaryLoading && !summaryError && (
+            <button onClick={onGenerateSummary} className="rig-btn-ghost" style={{ marginBottom: '24px' }}>
+              ✦ Generate summary
             </button>
           )}
-
           {summaryLoading && (
-            <p
-              style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '13px',
-                color: '#9C928A',
-                fontStyle: 'italic',
-              }}
-            >
-              Generating...
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+              <div style={{
+                width: '14px', height: '14px', borderRadius: '50%',
+                border: '1.5px solid var(--rig-rule)',
+                borderTopColor: 'var(--rig-gold)',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+              <span className="rig-byline">Filing summary…</span>
+            </div>
           )}
-
           {summaryError && !summaryLoading && (
-            <p
-              style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '13px',
-                color: '#8B1A1A',
-              }}
-            >
-              {summaryError}{' '}
-              <button
-                onClick={onGenerateSummary}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  fontSize: '13px',
-                  color: '#5C5249',
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                }}
-              >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+              <span className="rig-byline" style={{ color: 'var(--rig-oxblood)' }}>{summaryError}</span>
+              <button onClick={onGenerateSummary} className="rig-btn-ghost">
                 Retry
               </button>
-            </p>
+            </div>
           )}
-
           {summary && (
-            <p
-              style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '15px',
-                lineHeight: 1.7,
-                color: '#1A1614',
-                margin: 0,
-              }}
-            >
-              {summary}
-            </p>
+            <div style={{
+              padding: '18px 20px',
+              border: '1px solid var(--rig-rule)',
+              background: 'var(--rig-paper-2)',
+              marginBottom: '28px',
+            }}>
+              <div className="rig-kicker" style={{ fontSize: '9px', marginBottom: '10px' }}>
+                Summary
+              </div>
+              <p className="rig-serif-body" style={{ fontSize: '16px' }}>{summary}</p>
+            </div>
           )}
 
+          {/* Matched entities */}
           {article.matched_entity_names.length > 0 && (
-            <div style={{ marginTop: '28px' }}>
-              <div
-                style={{
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  fontSize: '10px',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: '#9C928A',
-                  marginBottom: '8px',
-                }}
-              >
-                Matched Entities
+            <div style={{ marginBottom: '28px' }}>
+              <div className="rig-kicker" style={{ fontSize: '9px', marginBottom: '12px' }}>
+                Matched entities
               </div>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {article.matched_entity_names.map((e) => (
                   <span
                     key={e}
                     style={{
-                      fontFamily: "'DM Sans', system-ui, sans-serif",
-                      fontSize: '12px',
-                      backgroundColor: '#EEF3FA',
-                      color: '#1B3A6B',
-                      padding: '3px 8px',
-                      borderRadius: '2px',
+                      padding: '4px 12px',
+                      border: '1px solid var(--rig-rule)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '10px',
+                      letterSpacing: '0.16em',
+                      textTransform: 'uppercase',
+                      color: 'var(--rig-ink-2)',
                     }}
                   >
                     {e}
@@ -605,156 +511,51 @@ function ArticleDialog({
             </div>
           )}
 
+          {/* Meta row */}
           <div
             style={{
-              marginTop: '24px',
-              paddingTop: '16px',
-              borderTop: '1px solid #DDD8D0',
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
+              gap: '16px',
               flexWrap: 'wrap',
+              padding: '16px 0',
+              borderTop: '1px solid var(--rig-rule-hair)',
+              borderBottom: '1px solid var(--rig-rule-hair)',
+              marginBottom: '24px',
             }}
           >
-            {article.topic_category && (
-              <span
-                style={{
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  fontSize: '11px',
-                  letterSpacing: '0.06em',
-                  color: '#5C5249',
-                  backgroundColor: '#E8E3DA',
-                  padding: '3px 8px',
-                  borderRadius: '2px',
-                }}
-              >
-                {article.topic_category}
-              </span>
-            )}
-            {article.geo_primary && (
-              <span
-                style={{
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  fontSize: '11px',
-                  letterSpacing: '0.06em',
-                  color: '#5C5249',
-                  backgroundColor: '#E8E3DA',
-                  padding: '3px 8px',
-                  borderRadius: '2px',
-                }}
-              >
-                {article.geo_primary}
-              </span>
-            )}
-            <span
-              style={{
-                backgroundColor: tierInfo.bg,
-                color: '#F7F4EF',
-                fontFamily: "'DM Mono', ui-monospace, monospace",
-                fontSize: '10px',
-                fontWeight: 600,
-                padding: '2px 6px',
-                borderRadius: '2px',
-                border: SENTIMENT_BORDER[article.sentiment_for_user] || 'none',
-              }}
-            >
-              {tierInfo.label}
+            <span className="rig-byline">
+              {article.topic_category && <span>{article.topic_category}</span>}
+              {article.topic_category && article.geo_primary && <span className="sep">·</span>}
+              {article.geo_primary && <span>{article.geo_primary}</span>}
             </span>
             <span
               style={{
                 marginLeft: 'auto',
-                fontFamily: "'DM Mono', ui-monospace, monospace",
-                fontSize: '13px',
-                color: '#1B3A6B',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '12px',
+                color: 'var(--rig-gold)',
+                letterSpacing: '0.1em',
               }}
             >
-              {article.score_final.toFixed(2)}
+              Score {article.score_final.toFixed(2)}
             </span>
           </div>
 
-          <div style={{ marginTop: '28px' }}>
-            <div
-              style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '10px',
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-                color: '#9C928A',
-                marginBottom: '8px',
-              }}
-            >
-              Journalist Coverage Bias
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '4px',
-              }}
-            >
-              <div
-                style={{
-                  flex: 1,
-                  height: '6px',
-                  backgroundColor: '#E8E3DA',
-                  borderRadius: '2px',
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  fontSize: '11px',
-                  color: '#9C928A',
-                }}
-              >
-                No data yet
-              </span>
-            </div>
-            <p
-              style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '12px',
-                color: '#9C928A',
-                fontStyle: 'italic',
-                margin: 0,
-              }}
-            >
-              Journalist bias tracking coming soon
-            </p>
-          </div>
-
-          <div
-            style={{
-              marginTop: '28px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span
-              title="Coming in Collections"
-              style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '13px',
-                color: '#9C928A',
-                cursor: 'default',
-              }}
-            >
-              ♦ Save to Collection
+          {/* Actions */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+            <span className="rig-byline" style={{ color: 'var(--rig-ink-4)', cursor: 'default' }}>
+              ♦ Save to collection
             </span>
             <a
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '13px',
-                color: '#8B1A1A',
-                textDecoration: 'none',
-              }}
+              className="rig-btn-primary"
+              style={{ padding: '12px 20px', fontSize: '10px', gap: '12px', textDecoration: 'none' }}
             >
-              Read Original →
+              Read original
+              <span className="arrow">→</span>
             </a>
           </div>
         </div>
@@ -763,286 +564,340 @@ function ArticleDialog({
   )
 }
 
-// ── Filter sidebar ────────────────────────────────────────────────────────────
+/* ── Filter bar ───────────────────────────────────────────────────────────── */
 
-interface FilterSidebarProps {
+function FilterBar(props: {
   selectedTopics: string[]
-  onToggleTopic: (topic: string) => void
+  onToggleTopic: (t: string) => void
   selectedTier: TierFilter
-  onTierChange: (tier: TierFilter) => void
+  onTierChange: (t: TierFilter) => void
   selectedDays: number
-  onDaysChange: (days: number) => void
-  selectedSentiment: SentimentOption
-  onSentimentChange: (s: SentimentOption) => void
+  onDaysChange: (d: number) => void
   sortBy: SortOption
   onSortChange: (s: SortOption) => void
   onClearFilters: () => void
-}
-
-function FilterSidebar(props: FilterSidebarProps) {
-  const labelStyle = {
-    fontFamily: "'DM Sans', system-ui, sans-serif",
-    fontSize: '10px',
-    letterSpacing: '0.12em',
-    textTransform: 'uppercase' as const,
-    color: '#9C928A',
-    marginBottom: '8px',
-    marginTop: '20px',
-  }
-  const optionStyle = {
-    fontFamily: "'DM Sans', system-ui, sans-serif",
-    fontSize: '13px',
-    color: '#1A1614',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '3px 0',
-    cursor: 'pointer',
-  }
+}) {
+  const [topicsOpen, setTopicsOpen] = useState(false)
+  const activeFilters =
+    props.selectedTopics.length > 0 ||
+    props.selectedTier !== 'all' ||
+    props.selectedDays !== 0
 
   return (
-    <aside
+    <div
       style={{
-        width: '200px',
-        flexShrink: 0,
-        paddingRight: '16px',
         position: 'sticky',
-        top: '16px',
-        alignSelf: 'flex-start',
-        maxHeight: 'calc(100vh - 32px)',
-        overflowY: 'auto',
+        top: 'var(--topbar-h)',
+        zIndex: 100,
+        background: 'var(--rig-paper-2)',
+        borderBottom: '1px solid var(--rig-rule)',
+        padding: '12px 40px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        flexWrap: 'wrap',
       }}
     >
-      <div style={labelStyle}>Topic</div>
-      {TOPICS.map((t) => (
-        <label key={t} style={optionStyle}>
-          <input
-            type="checkbox"
-            checked={props.selectedTopics.includes(t)}
-            onChange={() => props.onToggleTopic(t)}
-          />
-          {t}
-        </label>
-      ))}
+      {/* Topics */}
+      <div style={{ position: 'relative' }}>
+        <FilterPill active={props.selectedTopics.length > 0} onClick={() => setTopicsOpen((v) => !v)}>
+          Topics
+          {props.selectedTopics.length > 0 && (
+            <span style={{
+              marginLeft: '4px',
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--rig-gold)',
+            }}>{props.selectedTopics.length}</span>
+          )}
+          <span aria-hidden="true" style={{ marginLeft: '4px', fontSize: '8px', opacity: 0.6 }}>
+            {topicsOpen ? '▲' : '▼'}
+          </span>
+        </FilterPill>
 
-      <div style={labelStyle}>Tier</div>
-      {(
-        [
-          ['all', 'All tiers'],
-          ['1', 'Tier 1 only'],
-          ['1,2', 'Tier 1 + 2'],
-        ] as const
-      ).map(([v, lbl]) => (
-        <label key={v} style={optionStyle}>
-          <input
-            type="radio"
-            name="tier"
-            checked={props.selectedTier === v}
-            onChange={() => props.onTierChange(v)}
-          />
+        {topicsOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 10px)',
+              left: 0,
+              background: 'var(--rig-paper)',
+              border: '1px solid var(--rig-rule)',
+              padding: '12px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '4px',
+              minWidth: '360px',
+              zIndex: 200,
+            }}
+          >
+            {TOPICS.map((t) => {
+              const active = props.selectedTopics.includes(t)
+              return (
+                <button
+                  key={t}
+                  onClick={() => props.onToggleTopic(t)}
+                  style={{
+                    padding: '6px 10px',
+                    background: active ? 'var(--rig-overlay)' : 'transparent',
+                    border: 'none',
+                    color: active ? 'var(--rig-gold)' : 'var(--rig-ink-3)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '10px',
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'color 0.15s',
+                  }}
+                >
+                  {t}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <FilterDivider />
+
+      {([
+        ['all', 'All tiers'],
+        ['1', 'Tier I'],
+        ['1,2', 'T I+II'],
+      ] as const).map(([v, lbl]) => (
+        <FilterPill key={v} active={props.selectedTier === v} onClick={() => props.onTierChange(v)}>
           {lbl}
-        </label>
+        </FilterPill>
       ))}
 
-      <div style={labelStyle}>Time</div>
-      {(
-        [
-          [0, 'All time'],
-          [7, 'This week'],
-          [1, 'Today'],
-        ] as const
-      ).map(([v, lbl]) => (
-        <label key={v} style={optionStyle}>
-          <input
-            type="radio"
-            name="days"
-            checked={props.selectedDays === v}
-            onChange={() => props.onDaysChange(v)}
-          />
+      <FilterDivider />
+
+      {([[0, 'All time'], [7, 'This week'], [1, 'Today']] as const).map(([v, lbl]) => (
+        <FilterPill key={v} active={props.selectedDays === v} onClick={() => props.onDaysChange(v)}>
           {lbl}
-        </label>
+        </FilterPill>
       ))}
 
-      <div style={labelStyle}>Sentiment</div>
-      {(
-        [
-          ['all', 'All'],
-          ['FOR_USER', 'Supports you'],
-          ['AGAINST_USER', 'Against you'],
-          ['NEUTRAL', 'Neutral'],
-        ] as const
-      ).map(([v, lbl]) => (
-        <label key={v} style={optionStyle}>
-          <input
-            type="radio"
-            name="sent"
-            checked={props.selectedSentiment === v}
-            onChange={() => props.onSentimentChange(v)}
-          />
+      <FilterDivider />
+
+      {([
+        ['relevance', 'By weight'],
+        ['recency', 'By wire'],
+      ] as const).map(([v, lbl]) => (
+        <FilterPill key={v} active={props.sortBy === v} onClick={() => props.onSortChange(v)}>
           {lbl}
-        </label>
+        </FilterPill>
       ))}
 
-      <div style={labelStyle}>Sort</div>
-      {(
-        [
-          ['relevance', 'By relevance'],
-          ['recency', 'By recency'],
-        ] as const
-      ).map(([v, lbl]) => (
-        <label key={v} style={optionStyle}>
-          <input
-            type="radio"
-            name="sort"
-            checked={props.sortBy === v}
-            onChange={() => props.onSortChange(v)}
-          />
-          {lbl}
-        </label>
-      ))}
-
-      <button
-        onClick={props.onClearFilters}
-        style={{
-          marginTop: '24px',
-          background: 'none',
-          border: 'none',
-          padding: 0,
-          fontFamily: "'DM Sans', system-ui, sans-serif",
-          fontSize: '12px',
-          color: '#8B1A1A',
-          cursor: 'pointer',
-        }}
-      >
-        Clear filters
-      </button>
-    </aside>
+      {activeFilters && (
+        <>
+          <FilterDivider />
+          <button
+            onClick={props.onClearFilters}
+            style={{
+              padding: '5px 12px',
+              background: 'transparent',
+              border: '1px solid color-mix(in srgb, var(--rig-oxblood) 50%, transparent)',
+              color: 'var(--rig-oxblood)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '10px',
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+            }}
+          >
+            × Clear
+          </button>
+        </>
+      )}
+    </div>
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+function FilterPill({ active, onClick, children }: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '5px 12px',
+        border: `1px solid ${active ? 'var(--rig-gold)' : 'var(--rig-rule)'}`,
+        background: active ? 'var(--rig-overlay)' : 'transparent',
+        color: active ? 'var(--rig-gold)' : 'var(--rig-ink-3)',
+        fontFamily: 'var(--font-mono)',
+        fontSize: '10px',
+        letterSpacing: '0.2em',
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+        transition: 'color 0.15s, border-color 0.15s, background 0.15s',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+function FilterDivider() {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: '1px',
+        height: '16px',
+        background: 'var(--rig-rule)',
+        flexShrink: 0,
+      }}
+    />
+  )
+}
+
+/* ── Skeleton ─────────────────────────────────────────────────────────────── */
+
+function SkeletonClipping() {
+  return (
+    <div style={{ background: 'var(--rig-paper-2)', border: '1px solid var(--rig-rule)', overflow: 'hidden' }}>
+      <div className="skeleton" style={{ height: '140px' }} />
+      <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="skeleton" style={{ height: '10px', width: '50%' }} />
+        <div className="skeleton" style={{ height: '16px', width: '95%' }} />
+        <div className="skeleton" style={{ height: '14px', width: '80%' }} />
+        <div className="skeleton" style={{ height: '10px', width: '40%' }} />
+      </div>
+    </div>
+  )
+}
+
+/* ── Stats badge ──────────────────────────────────────────────────────────── */
+
+function StatBadge({ value, label, tone }: { value: string; label: string; tone?: 'gold' | 'copper' | 'default' }) {
+  const color =
+    tone === 'gold' ? 'var(--rig-gold)' :
+    tone === 'copper' ? 'var(--rig-copper)' :
+    'var(--rig-ink-2)'
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px' }}>
+      <span style={{
+        fontFamily: 'var(--font-serif)',
+        fontSize: '22px',
+        color,
+        lineHeight: 1,
+      }}>{value}</span>
+      <span
+        className="rig-byline"
+        style={{ fontSize: '9px' }}
+      >{label}</span>
+    </div>
+  )
+}
+
+/* ── Main page ────────────────────────────────────────────────────────────── */
 
 export default function CoveragePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
 
-  // Always get a fresh token — Supabase auto-refreshes expired sessions.
-  // Never store stale token in a ref; call this before every API request.
   const getToken = useCallback(async (): Promise<string | null> => {
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      router.push('/login')
-      return null
-    }
+    if (!session) { router.push('/login'); return null }
     return session.access_token
   }, [router])
 
-  const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [articles, setArticles] = useState<Article[]>([])
-  const [hasMore, setHasMore] = useState(false)
-  const [nextCursor, setNextCursor] = useState<string>('')
-  const [totals, setTotals] = useState<Totals>({
-    total: 0, tier1: 0, tier2: 0, tier3: 0,
-  })
-  const [errorMsg, setErrorMsg] = useState<string>('')
+  const [loading, setLoading]           = useState(true)
+  const [loadingMore, setLoadingMore]   = useState(false)
+  const [articles, setArticles]         = useState<Article[]>([])
+  const [hasMore, setHasMore]           = useState(false)
+  const [nextCursor, setNextCursor]     = useState<string>('')
+  const [totals, setTotals]             = useState<Totals>({ total: 0, tier1: 0, tier2: 0, tier3: 0 })
+  const [errorMsg, setErrorMsg]         = useState<string>('')
 
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([])
-  const [selectedTier, setSelectedTier] = useState<TierFilter>('all')
-  const [selectedDays, setSelectedDays] = useState<number>(0)
-  const [selectedSentiment, setSelectedSentiment] =
-    useState<SentimentOption>('all')
-  const [sortBy, setSortBy] = useState<SortOption>('relevance')
+  const [selectedTopics, setSelectedTopics]       = useState<string[]>([])
+  const [selectedTier, setSelectedTier]           = useState<TierFilter>('all')
+  const [selectedDays, setSelectedDays]           = useState<number>(0)
+  const [sortBy, setSortBy]                       = useState<SortOption>('relevance')
 
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery]     = useState('')
   const [searchResults, setSearchResults] = useState<Article[] | null>(null)
-  const [isSearching, setIsSearching] = useState(false)
+  const [isSearching, setIsSearching]     = useState(false)
 
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
-  const [summariesById, setSummariesById] = useState<Record<string, string>>({})
-  const [summaryLoading, setSummaryLoading] = useState(false)
-  const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [selectedArticle, setSelectedArticle]   = useState<Article | null>(null)
+  const [summariesById, setSummariesById]       = useState<Record<string, string>>({})
+  const [summaryLoading, setSummaryLoading]     = useState(false)
+  const [summaryError, setSummaryError]         = useState<string | null>(null)
 
-  const buildFeedUrl = useCallback(
-    (cursor: string = '') => {
-      const params = new URLSearchParams()
-      const tierParam = selectedTier === 'all' ? '1,2,3' : selectedTier
-      params.set('tier', tierParam)
-      if (selectedTopics.length > 0) {
-        params.set('topic', selectedTopics.join(','))
-      }
-      if (selectedDays > 0) params.set('days', String(selectedDays))
-      if (selectedSentiment !== 'all') {
-        params.set('sentiment', selectedSentiment)
-      }
-      params.set('sort', sortBy)
-      if (cursor) params.set('cursor', cursor)
-      params.set('limit', '20')
-      return `${API_BASE}/api/coverage/feed?${params.toString()}`
-    },
-    [selectedTier, selectedTopics, selectedDays, selectedSentiment, sortBy]
-  )
+  const buildFeedUrl = useCallback((cursor: string = '') => {
+    const params = new URLSearchParams()
+    const tierParam = selectedTier === 'all' ? '1,2,3' : selectedTier
+    params.set('tier', tierParam)
+    if (selectedTopics.length > 0) params.set('topic', selectedTopics.join(','))
+    if (selectedDays > 0) params.set('days', String(selectedDays))
+    params.set('sort', sortBy)
+    if (cursor) params.set('cursor', cursor)
+    params.set('limit', '20')
+    return `${API_BASE}/api/coverage/feed?${params.toString()}`
+  }, [selectedTier, selectedTopics, selectedDays, sortBy])
 
-  const fetchFeed = useCallback(
-    async (cursor: string = '', append = false) => {
-      const token = await getToken()
-      if (!token) return
-      if (append) {
-        setLoadingMore(true)
-      } else {
-        setLoading(true)
-      }
-      setErrorMsg('')
-
-      try {
-        const res = await fetch(buildFeedUrl(cursor), {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (!res.ok) {
-          setErrorMsg(`Feed request failed (${res.status})`)
-          return
-        }
-        const data: FeedResponse = await res.json()
-        setArticles((prev) =>
-          append ? [...prev, ...data.articles] : data.articles
-        )
-        setHasMore(data.pagination.has_more)
-        setNextCursor(data.pagination.next_cursor ?? '')
-        setTotals(data.totals)
-      } catch (e: unknown) {
-        setErrorMsg(
-          e instanceof Error ? e.message : 'Network error'
-        )
-      } finally {
+  const inflightRef = useRef<AbortController | null>(null)
+  const fetchFeed = useCallback(async (cursor: string = '', append = false) => {
+    const token = await getToken()
+    if (!token) return
+    inflightRef.current?.abort()
+    const ctrl = new AbortController()
+    inflightRef.current = ctrl
+    append ? setLoadingMore(true) : setLoading(true)
+    setErrorMsg('')
+    try {
+      const res = await fetch(buildFeedUrl(cursor), { headers: { Authorization: `Bearer ${token}` }, signal: ctrl.signal })
+      if (!res.ok) { setErrorMsg(`Feed request failed (${res.status})`); return }
+      const data: FeedResponse = await res.json()
+      setArticles((prev) => append ? [...prev, ...data.articles] : data.articles)
+      setHasMore(data.pagination.has_more)
+      setNextCursor(data.pagination.next_cursor ?? '')
+      setTotals(data.totals)
+    } catch (e) {
+      if (ctrl.signal.aborted) return
+      setErrorMsg(e instanceof Error ? e.message : 'Network error')
+    } finally {
+      if (inflightRef.current === ctrl) inflightRef.current = null
+      if (!ctrl.signal.aborted) {
         setLoading(false)
         setLoadingMore(false)
       }
-    },
-    [buildFeedUrl, getToken]
-  )
+    }
+  }, [buildFeedUrl, getToken])
 
-  // Auth check + initial fetch
+  useEffect(() => { void fetchFeed('', false) }, []) // eslint-disable-line
+
   useEffect(() => {
-    void fetchFeed('', false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    const articleParam = searchParams.get('article')
+    if (!articleParam) return
+    let cancelled = false
+    const open = async () => {
+      const token = await getToken()
+      if (!token || cancelled) return
+      try {
+        const res = await fetch(`${API_BASE}/api/coverage/article/${articleParam}`, { headers: { Authorization: `Bearer ${token}` } })
+        if (!res.ok || cancelled) return
+        const article: Article = await res.json()
+        if (!cancelled) handleOpenArticle(article)
+      } catch { /* silent */ }
+    }
+    void open()
+    return () => { cancelled = true }
+    // eslint-disable-next-line
+  }, [searchParams])
 
-  // Re-fetch when filters change (but not on initial mount)
-  const filtersKey = `${selectedTier}|${selectedTopics.join(',')}|${selectedDays}|${selectedSentiment}|${sortBy}`
+  const filtersKey = `${selectedTier}|${selectedTopics.join(',')}|${selectedDays}|${sortBy}`
   const didMountRef = useRef(false)
   useEffect(() => {
-    if (!didMountRef.current) {
-      didMountRef.current = true
-      return
-    }
+    if (!didMountRef.current) { didMountRef.current = true; return }
     void fetchFeed('', false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
   }, [filtersKey])
-
-  const handleLoadMore = () => {
-    if (!hasMore || !nextCursor) return
-    void fetchFeed(nextCursor, true)
-  }
 
   const handleSearchEnter = async () => {
     if (searchQuery.trim().length < 2) return
@@ -1050,55 +905,17 @@ export default function CoveragePage() {
     if (!token) return
     setIsSearching(true)
     try {
-      const params = new URLSearchParams()
-      params.set('q', searchQuery.trim())
-      const tierParam = selectedTier === 'all' ? '1,2,3' : selectedTier
-      params.set('tier', tierParam)
-      const res = await fetch(
-        `${API_BASE}/api/coverage/search?${params.toString()}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      if (res.ok) {
-        const data: SearchResponse = await res.json()
-        setSearchResults(data.articles)
-      }
-    } catch {
-      // ignore
-    } finally {
-      setIsSearching(false)
-    }
+      const params = new URLSearchParams({ q: searchQuery.trim(), tier: selectedTier === 'all' ? '1,2,3' : selectedTier })
+      const res = await fetch(`${API_BASE}/api/coverage/search?${params}`, { headers: { Authorization: `Bearer ${token}` } })
+      if (res.ok) { const data: SearchResponse = await res.json(); setSearchResults(data.articles) }
+    } catch { /* ignore */ } finally { setIsSearching(false) }
   }
 
-  const clearSearch = () => {
-    setSearchQuery('')
-    setSearchResults(null)
-  }
-
-  const handleToggleTopic = (topic: string) => {
-    setSelectedTopics((prev) =>
-      prev.includes(topic)
-        ? prev.filter((t) => t !== topic)
-        : [...prev, topic]
-    )
-  }
-
-  const clearFilters = () => {
-    setSelectedTopics([])
-    setSelectedTier('all')
-    setSelectedDays(0)
-    setSelectedSentiment('all')
-    setSortBy('relevance')
-  }
-
-  const handleOpenArticle = (article: Article) => {
-    setSelectedArticle(article)
-    setSummaryError(null)
-  }
-
-  const handleCloseDialog = () => {
-    setSelectedArticle(null)
-    setSummaryError(null)
-  }
+  const clearSearch     = () => { setSearchQuery(''); setSearchResults(null) }
+  const handleToggleTopic = (t: string) => setSelectedTopics((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t])
+  const clearFilters    = () => { setSelectedTopics([]); setSelectedTier('all'); setSelectedDays(0); setSortBy('relevance') }
+  const handleOpenArticle = (a: Article) => { setSelectedArticle(a); setSummaryError(null) }
+  const handleCloseDialog = () => { setSelectedArticle(null); setSummaryError(null) }
 
   const handleGenerateSummary = async () => {
     if (!selectedArticle) return
@@ -1109,375 +926,241 @@ export default function CoveragePage() {
     setSummaryLoading(true)
     setSummaryError(null)
     try {
-      const res = await fetch(
-        `${API_BASE}/api/coverage/summary/${id}`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-      if (!res.ok) {
-        setSummaryError('Summary generation failed')
-        return
-      }
+      const res = await fetch(`${API_BASE}/api/coverage/summary/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) { setSummaryError('Summary generation failed'); return }
       const data: { summary: string } = await res.json()
       setSummariesById((prev) => ({ ...prev, [id]: data.summary }))
-    } catch {
-      setSummaryError('Network error — check connection')
-    } finally {
-      setSummaryLoading(false)
-    }
+    } catch { setSummaryError('Network error — check connection') }
+    finally { setSummaryLoading(false) }
   }
 
-  // Determine visible list
-  const serverSearchActive = searchResults !== null
-  const clientFilterActive =
-    !serverSearchActive && searchQuery.trim().length >= 2
-  const visibleArticles: Article[] = serverSearchActive
+  const serverSearchActive  = searchResults !== null
+  const clientFilterActive  = !serverSearchActive && searchQuery.trim().length >= 2
+  const visibleArticles     = serverSearchActive
     ? (searchResults as Article[])
     : clientFilterActive
-      ? articles.filter((a) =>
-          a.title.toLowerCase().includes(searchQuery.trim().toLowerCase())
-        )
+      ? articles.filter((a) => a.title.toLowerCase().includes(searchQuery.trim().toLowerCase()))
       : articles
 
-  // Tier grouping for separators
-  const renderArticleList = () => {
-    const rendered: React.ReactNode[] = []
+  const renderGrid = () => {
+    const nodes: React.ReactNode[] = []
     let lastTier = 0
     visibleArticles.forEach((a) => {
-      if (
-        !serverSearchActive &&
-        !clientFilterActive &&
-        sortBy === 'relevance' &&
-        a.relevance_tier !== lastTier
-      ) {
-        if (a.relevance_tier === 2) {
-          rendered.push(
-            <TierSeparator key="sep-t2" label="Tier 2 — Notable" />
-          )
-        } else if (a.relevance_tier === 3) {
-          rendered.push(
-            <TierSeparator key="sep-t3" label="Tier 3 — Background" />
-          )
-        }
+      if (!serverSearchActive && !clientFilterActive && sortBy === 'relevance' && a.relevance_tier !== lastTier) {
+        if (a.relevance_tier === 2) nodes.push(<TierSeparator key="sep-t2" numeral="II" name="Notable" />)
+        else if (a.relevance_tier === 3) nodes.push(<TierSeparator key="sep-t3" numeral="III" name="Background" />)
         lastTier = a.relevance_tier
       }
-      rendered.push(
-        <ArticleCard
-          key={a.article_id}
-          article={a}
-          onClick={() => handleOpenArticle(a)}
-        />
-      )
+      nodes.push(<Clipping key={a.article_id} article={a} onClick={() => handleOpenArticle(a)} />)
     })
-    return rendered
+    return nodes
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F7F4EF' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--rig-paper)', position: 'relative', zIndex: 0 }}>
       <Navigation />
 
-      <main
-        style={{
-          marginLeft: '200px',
-          padding: '0',
-        }}
-      >
-        <div
-          style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 50,
-            backgroundColor: '#F7F4EF',
-            borderBottom: '1px solid #DDD8D0',
-            padding: '20px 32px 12px',
-          }}
-        >
-          <div
-            style={{
-              fontFamily: "'DM Sans', system-ui, sans-serif",
-              fontSize: '11px',
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              color: '#9C928A',
-            }}
-          >
-            Coverage Room
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginTop: '4px',
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "'DM Mono', ui-monospace, monospace",
-                fontSize: '12px',
-                color: '#9C928A',
-              }}
-            >
-              {totals.total.toLocaleString()} articles ranked
-              {' · '}T1: {totals.tier1}
-              {' · '}T2: {totals.tier2}
-              {' · '}T3: {totals.tier3}
-            </div>
-          </div>
+      <main style={{ paddingTop: 'var(--topbar-h)', position: 'relative', zIndex: 2 }}>
+        <Dateline
+          issueNumber="Coverage"
+          sources={totals.total > 0 ? totals.total : undefined}
+        />
 
-          <div
-            style={{
-              marginTop: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              flexWrap: 'wrap',
-            }}
-          >
-            <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
-              <input
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value)
-                  if (searchResults !== null) setSearchResults(null)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') void handleSearchEnter()
-                }}
-                placeholder="Search articles..."
+        {/* ── Section head ────────────────────────────────── */}
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '40px 40px 28px' }}>
+          <div className="rig-kicker rig-kicker-gold" style={{ marginBottom: '18px' }}>
+            <span style={{ width: '28px', height: '1px', background: 'var(--rig-gold)', opacity: 0.7 }} />
+            The Coverage Room
+          </div>
+          <h1 className="rig-headline" style={{ fontSize: 'clamp(38px, 4.6vw, 56px)', marginBottom: '20px' }}>
+            Who is saying what, and <em>who is silent.</em>
+          </h1>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '32px', flexWrap: 'wrap' }}>
+            <StatBadge value={totals.total.toLocaleString()} label="Articles in view" />
+            <StatBadge value={String(totals.tier1)} label="Tier I" tone="gold" />
+            <StatBadge value={String(totals.tier2)} label="Tier II" tone="copper" />
+            <StatBadge value={String(totals.tier3)} label="Tier III" />
+          </div>
+        </div>
+
+        <FilterBar
+          selectedTopics={selectedTopics}
+          onToggleTopic={handleToggleTopic}
+          selectedTier={selectedTier}
+          onTierChange={setSelectedTier}
+          selectedDays={selectedDays}
+          onDaysChange={setSelectedDays}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          onClearFilters={clearFilters}
+        />
+
+        {/* ── Search strip ────────────────────────────────── */}
+        <div style={{
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '20px 40px 4px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          flexWrap: 'wrap',
+        }}>
+          <div style={{ flex: 1, minWidth: '260px', position: 'relative' }}>
+            <span style={{
+              position: 'absolute',
+              left: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--rig-ink-4)',
+              fontFamily: 'var(--font-serif)',
+              fontSize: '18px',
+              pointerEvents: 'none',
+            }}>⌕</span>
+            <input
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); if (searchResults) setSearchResults(null) }}
+              onKeyDown={(e) => { if (e.key === 'Enter') void handleSearchEnter() }}
+              placeholder="Search the room… press enter for full search"
+              className="rig-input"
+              style={{ paddingLeft: '28px', paddingRight: searchQuery ? '28px' : '0' }}
+            />
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                aria-label="Clear search"
                 style={{
-                  width: '100%',
-                  padding: '8px 30px 8px 10px',
-                  border: '1px solid #DDD8D0',
-                  borderRadius: '2px',
-                  backgroundColor: '#F7F4EF',
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  fontSize: '13px',
-                  color: '#1A1614',
-                  outline: 'none',
+                  position: 'absolute',
+                  right: 0,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--rig-ink-4)',
+                  fontSize: '18px',
+                  fontFamily: 'var(--font-serif)',
+                  cursor: 'pointer',
+                  lineHeight: 1,
                 }}
-              />
-              {searchQuery && (
-                <button
-                  onClick={clearSearch}
-                  aria-label="Clear search"
-                  style={{
-                    position: 'absolute',
-                    right: '6px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#9C928A',
-                    fontSize: '16px',
-                    lineHeight: 1,
-                    padding: '2px 6px',
-                  }}
-                >
-                  ×
-                </button>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', gap: '4px' }}>
-              {(
-                [
-                  ['relevance', 'Relevance'],
-                  ['recency', 'Recency'],
-                ] as const
-              ).map(([v, lbl]) => {
-                const active = sortBy === v
-                return (
-                  <button
-                    key={v}
-                    onClick={() => setSortBy(v)}
-                    style={{
-                      padding: '6px 10px',
-                      border: `1px solid ${active ? '#8B1A1A' : '#DDD8D0'}`,
-                      backgroundColor: active ? '#FDF0EF' : 'transparent',
-                      fontFamily: "'DM Sans', system-ui, sans-serif",
-                      fontSize: '12px',
-                      color: active ? '#8B1A1A' : '#5C5249',
-                      borderRadius: '2px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {lbl}
-                  </button>
-                )
-              })}
-            </div>
+              >×</button>
+            )}
           </div>
 
-          {clientFilterActive && (
-            <div
-              style={{
-                marginTop: '10px',
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '12px',
-                color: '#5C5249',
-              }}
-            >
-              Showing {visibleArticles.length} of {articles.length} matching
-              &ldquo;{searchQuery}&rdquo; — press Enter to search all articles
+          {isSearching && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '14px', height: '14px', borderRadius: '50%',
+                border: '1.5px solid var(--rig-rule)',
+                borderTopColor: 'var(--rig-gold)',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+              <span className="rig-byline">Searching</span>
             </div>
           )}
 
           {serverSearchActive && (
-            <div
-              style={{
-                marginTop: '10px',
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '12px',
-                color: '#5C5249',
-              }}
-            >
-              {(searchResults as Article[]).length} articles mention
-              {' '}&ldquo;{searchQuery}&rdquo;
-            </div>
+            <span className="rig-byline">
+              {(searchResults as Article[]).length} results — &ldquo;{searchQuery}&rdquo;
+            </span>
           )}
-
-          {isSearching && (
-            <div
-              style={{
-                marginTop: '10px',
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-                fontSize: '12px',
-                color: '#9C928A',
-                fontStyle: 'italic',
-              }}
-            >
-              Searching...
-            </div>
+          {clientFilterActive && (
+            <span className="rig-byline">
+              {visibleArticles.length} of {articles.length} · enter to search all
+            </span>
           )}
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            gap: '24px',
-            padding: '24px 32px 80px',
-          }}
-        >
-          <FilterSidebar
-            selectedTopics={selectedTopics}
-            onToggleTopic={handleToggleTopic}
-            selectedTier={selectedTier}
-            onTierChange={setSelectedTier}
-            selectedDays={selectedDays}
-            onDaysChange={setSelectedDays}
-            selectedSentiment={selectedSentiment}
-            onSentimentChange={setSelectedSentiment}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            onClearFilters={clearFilters}
-          />
+        {/* ── Grid ────────────────────────────────────────── */}
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '28px 40px 120px' }}>
+          {loading && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '20px',
+            }}>
+              {Array.from({ length: 9 }).map((_, i) => <SkeletonClipping key={i} />)}
+            </div>
+          )}
 
-          <section style={{ flex: 1, minWidth: 0 }}>
-            {loading && (
-              <div
-                style={{
-                  padding: '60px 0',
-                  textAlign: 'center',
-                  fontFamily: "'DM Mono', ui-monospace, monospace",
-                  fontSize: '12px',
-                  color: '#9C928A',
-                }}
-              >
-                Loading feed...
-              </div>
-            )}
-
-            {errorMsg && !loading && (
-              <div
-                style={{
-                  padding: '24px 0',
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  fontSize: '13px',
-                  color: '#8B1A1A',
-                }}
-              >
+          {errorMsg && !loading && (
+            <div
+              style={{
+                padding: '24px',
+                border: '1px solid color-mix(in srgb, var(--rig-oxblood) 50%, transparent)',
+                background: 'var(--rig-overlay)',
+              }}
+            >
+              <div className="rig-kicker" style={{ color: 'var(--rig-oxblood)', marginBottom: '8px' }}>Desk Memo · Error</div>
+              <p className="rig-serif-body" style={{ fontStyle: 'italic', color: 'var(--rig-oxblood)' }}>
                 {errorMsg}
-              </div>
-            )}
+              </p>
+            </div>
+          )}
 
-            {!loading && !errorMsg && visibleArticles.length === 0 && (
-              <div
-                style={{
-                  padding: '60px 0',
-                  textAlign: 'center',
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  fontSize: '14px',
-                  color: '#9C928A',
-                }}
+          {!loading && !errorMsg && visibleArticles.length === 0 && (
+            <div style={{ textAlign: 'left', padding: '80px 0', maxWidth: '620px' }}>
+              <div className="rig-kicker" style={{ marginBottom: '18px' }}>Desk Memo</div>
+              <h3 className="rig-headline" style={{ fontSize: '30px', marginBottom: '12px' }}>
+                No clippings match <em>the filters you set.</em>
+              </h3>
+              <p className="rig-lede">
+                Try loosening the tier, widening the window, or clearing topic filters.
+              </p>
+            </div>
+          )}
+
+          {!loading && visibleArticles.length > 0 && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '20px',
+            }}>
+              {renderGrid()}
+            </div>
+          )}
+
+          {!loading && !serverSearchActive && !clientFilterActive && hasMore && (
+            <div style={{ textAlign: 'center', marginTop: '48px' }}>
+              <button
+                onClick={() => { if (!loadingMore && nextCursor) void fetchFeed(nextCursor, true) }}
+                disabled={loadingMore}
+                className="rig-btn-ghost"
               >
-                No articles match your filters.
-              </div>
-            )}
+                {loadingMore ? (
+                  <>
+                    <div style={{
+                      width: '12px', height: '12px', borderRadius: '50%',
+                      border: '1.5px solid var(--rig-rule)',
+                      borderTopColor: 'var(--rig-gold)',
+                      animation: 'spin 0.8s linear infinite',
+                    }} />
+                    Loading
+                  </>
+                ) : 'File more clippings'}
+              </button>
+            </div>
+          )}
 
-            {!loading && visibleArticles.length > 0 && (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
-                }}
-              >
-                {renderArticleList()}
-              </div>
-            )}
-
-            {!loading &&
-              !serverSearchActive &&
-              !clientFilterActive &&
-              hasMore && (
-                <div style={{ textAlign: 'center', marginTop: '32px' }}>
-                  <button
-                    onClick={handleLoadMore}
-                    disabled={loadingMore}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      fontFamily: "'DM Sans', system-ui, sans-serif",
-                      fontSize: '13px',
-                      color: '#5C5249',
-                      cursor: loadingMore ? 'default' : 'pointer',
-                      textDecoration: 'underline',
-                    }}
-                  >
-                    {loadingMore ? 'Loading...' : 'Load more articles'}
-                  </button>
-                </div>
-              )}
-
-            {serverSearchActive && (
-              <div
-                style={{
-                  marginTop: '24px',
-                  padding: '16px',
-                  border: '1px dashed #DDD8D0',
-                  borderRadius: '2px',
-                  textAlign: 'center',
-                }}
-              >
-                <span
-                  title="Coming soon"
+          {serverSearchActive && (
+            <div style={{ marginTop: '40px', textAlign: 'center' }}>
+              <span className="rig-byline">
+                Want deeper analysis?{' '}
+                <button
+                  onClick={() => router.push('/analyst')}
+                  className="rig-link"
                   style={{
-                    fontFamily: "'DM Sans', system-ui, sans-serif",
-                    fontSize: '13px',
-                    color: '#9C928A',
-                    cursor: 'default',
+                    background: 'none',
+                    padding: 0,
+                    fontFamily: 'inherit',
+                    fontSize: 'inherit',
+                    letterSpacing: 'inherit',
+                    cursor: 'pointer',
                   }}
                 >
-                  Want deeper analysis? Ask the Analyst →
-                </span>
-              </div>
-            )}
-          </section>
+                  Ask the Analyst →
+                </button>
+              </span>
+            </div>
+          )}
         </div>
       </main>
 

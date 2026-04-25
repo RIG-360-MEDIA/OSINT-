@@ -51,6 +51,18 @@ app.include_router(documents_router)
 app.include_router(signals_router)
 app.include_router(thread_router)
 
+# Dossier feature — entity enrichment over free OSINT sources.
+# Gated behind DOSSIER_ENABLED so it stays invisible to existing API surface
+# when off. try/except ensures a missing dossier dependency cannot prevent
+# the rest of the backend from booting.
+if os.getenv("DOSSIER_ENABLED", "false").lower() == "true":
+    try:
+        from backend.routers.dossier_router import dossier_router as _dossier_router
+        app.include_router(_dossier_router)
+    except Exception as _dx:
+        import logging as _dlog
+        _dlog.getLogger(__name__).warning(f"Dossier router failed to load: {_dx}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3001", "http://localhost:3000"],

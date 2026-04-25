@@ -45,6 +45,21 @@ services:
       retries: 10
       start_period: 30s
 
+  rig-searxng:
+    image: searxng/searxng:latest
+    container_name: rig-searxng
+    environment:
+      BASE_URL: "http://rig-searxng:8080/"
+      INSTANCE_NAME: "RIG SearXNG"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    networks:
+      - rig-network
+    restart: unless-stopped
+    # Internal-only: no ports exposed to host. Reached via Docker DNS at
+    # http://rig-searxng:8080 from rig-backend. Safe to leave running even
+    # if DOSSIER_ENABLED=false — backend does not depend on it.
+
   rig-backend:
     build:
       context: ..
@@ -54,6 +69,12 @@ services:
       DATABASE_URL: postgresql+asyncpg://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
       DATABASE_URL_SYNC: postgresql://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
       GROQ_API_KEYS: ${GROQ_API_KEYS:-}
+      DOSSIER_ENABLED: ${DOSSIER_ENABLED:-false}
+      SEARXNG_URL: ${SEARXNG_URL:-http://rig-searxng:8080}
+      OPENSANCTIONS_API_KEY: ${OPENSANCTIONS_API_KEY:-}
+      OPENCORPORATES_API_KEY: ${OPENCORPORATES_API_KEY:-}
+      DOSSIER_PER_ADAPTER_TIMEOUT_S: ${DOSSIER_PER_ADAPTER_TIMEOUT_S:-12}
+      DOSSIER_GDELT_TIMEOUT_S: ${DOSSIER_GDELT_TIMEOUT_S:-25}
       NEWSDATA_API_KEY: ${NEWSDATA_API_KEY:-}
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
       YOUTUBE_API_KEY_2: ${YOUTUBE_API_KEY_2:-}
@@ -92,15 +113,18 @@ services:
       dockerfile: infrastructure/Dockerfile.frontend
     container_name: rig-frontend
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://127.0.0.1:8000}
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+      NEXT_PUBLIC_DOSSIER_ENABLED: ${NEXT_PUBLIC_DOSSIER_ENABLED:-false}
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
     volumes:
       - ../frontend/src:/app/src
       - ../frontend/public:/app/public
       - ../frontend/package.json:/app/package.json
     ports:
-      - "3001:3000"
+      - "3000:3000"
     networks:
       - rig-network
     depends_on:

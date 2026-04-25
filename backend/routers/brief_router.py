@@ -130,10 +130,17 @@ async def generate_today_brief(
         if not articles:
             raise HTTPException(
                 status_code=404,
+                detail="No relevant articles found.",
+            )
+
+        if len(articles) < 10:
+            raise HTTPException(
+                status_code=425,
                 detail=(
-                    "No relevant articles found. "
-                    "The system is still processing your feed. "
-                    "Try again in a few minutes."
+                    f"Only {len(articles)} relevant articles found. "
+                    "Your feed is still being prepared — "
+                    "check back in a few minutes. "
+                    "Currently processing your article backlog."
                 ),
             )
 
@@ -229,16 +236,22 @@ async def get_brief_by_date(
     user: dict = Depends(get_current_user),
 ) -> dict:
     """Fetch a specific date's brief by ISO date string (YYYY-MM-DD)."""
+    import datetime as _dt
+    try:
+        parsed_date = _dt.date.fromisoformat(brief_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format — use YYYY-MM-DD")
+
     async with get_db() as db:
         result = await db.execute(
             text("""
                 SELECT content, brief_date, articles_used, generated_at
                 FROM briefs
                 WHERE user_id = :user_id
-                  AND brief_date = :brief_date::date
+                  AND brief_date = :brief_date
                 LIMIT 1
             """),
-            {"user_id": user["id"], "brief_date": brief_date},
+            {"user_id": user["id"], "brief_date": parsed_date},
         )
         row = result.fetchone()
 

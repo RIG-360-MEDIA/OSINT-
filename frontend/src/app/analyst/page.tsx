@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Navigation from '@/components/Navigation'
+import { Dateline } from '@/components/Dateline'
+import DossierPanel from '@/components/dossier/DossierPanel'
+
+const DOSSIER_ENABLED = process.env.NEXT_PUBLIC_DOSSIER_ENABLED === 'true'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -78,28 +82,36 @@ function formatTimeAgo(iso: string | null | undefined): string {
 
 const API_BASE  = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const VALID_MODES = ['SITUATION', 'OPPOSITION', 'RISK', 'POLICY', 'PATTERN', 'BRIEF']
-const LOADING_TEXTS = [
-  'Searching intelligence corpus…',
-  'Retrieving relevant articles…',
-  'Building context window…',
-  'Running analysis…',
-  'Structuring assessment…',
-]
-const CIRCLED: Record<number, string> = { 1:'①',2:'②',3:'③',4:'④',5:'⑤',6:'⑥',7:'⑦',8:'⑧',9:'⑨',10:'⑩' }
 
-const CONF_CONFIG: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  HIGH:   { bg: '#ECFDF5', text: '#059669', border: '#D1FAE5', dot: '#10B981' },
-  MEDIUM: { bg: '#FFFBEB', text: '#D97706', border: '#FEF3C7', dot: '#F59E0B' },
-  LOW:    { bg: '#FFF1F2', text: '#E11D48', border: '#FFE4E6', dot: '#F43F5E' },
+const MODE_LABEL: Record<string, string> = {
+  SITUATION:  'The situation',
+  OPPOSITION: 'The opposition',
+  RISK:       'The risk',
+  POLICY:     'The policy',
+  PATTERN:    'The pattern',
+  BRIEF:      'The brief',
 }
 
-const MODE_CONFIG: Record<string, { color: string; bg: string }> = {
-  SITUATION:  { color: '#2563EB', bg: '#EFF6FF' },
-  OPPOSITION: { color: '#E11D48', bg: '#FFF1F2' },
-  RISK:       { color: '#D97706', bg: '#FFFBEB' },
-  POLICY:     { color: '#7C3AED', bg: '#EDE9FE' },
-  PATTERN:    { color: '#059669', bg: '#ECFDF5' },
-  BRIEF:      { color: '#18181B', bg: '#F1F5F9' },
+const LOADING_TEXTS = [
+  'Pulling the corpus from the stacks…',
+  'Gathering dispatches of record…',
+  'Composing the context…',
+  'Reading between the lines…',
+  'Filing the assessment…',
+]
+
+const CIRCLED: Record<number, string> = { 1:'①',2:'②',3:'③',4:'④',5:'⑤',6:'⑥',7:'⑦',8:'⑧',9:'⑨',10:'⑩' }
+
+const CONF_TONE: Record<string, 'gold' | 'copper' | 'alert'> = {
+  HIGH:   'gold',
+  MEDIUM: 'copper',
+  LOW:    'alert',
+}
+
+const CONF_LABEL: Record<string, string> = {
+  HIGH:   'On the record',
+  MEDIUM: 'On balance',
+  LOW:    'Off the record',
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -142,13 +154,13 @@ function renderWithCitations(
             display:            'inline',
             background:         'none',
             border:             'none',
-            padding:            '0 2px',
-            fontFamily:         "'DM Mono', monospace",
-            fontSize:           '13px',
-            color:              '#3B82F6',
+            padding:            '0 3px',
+            fontFamily:         "'Cormorant Garamond', serif",
+            fontStyle:          'italic',
+            fontSize:           '18px',
+            color:              'var(--rig-gold)',
             cursor:             'pointer',
-            textDecoration:     'underline',
-            textDecorationStyle:'dotted',
+            verticalAlign:      'baseline',
           }}
         >{part}</button>
       )
@@ -164,27 +176,41 @@ function EvidenceCard({ article, index, router }: { article: EvidenceArticle; in
     <div style={{
       display:         'flex',
       alignItems:      'flex-start',
-      gap:             '10px',
-      padding:         '10px 14px',
-      borderRadius:    '8px',
-      backgroundColor: '#EFF6FF',
-      border:          '1px solid #DBEAFE',
-      borderLeft:      '3px solid #3B82F6',
+      gap:             '14px',
+      padding:         '12px 16px',
+      backgroundColor: 'var(--rig-paper-2)',
+      border:          '1px solid var(--rig-rule-hair)',
+      borderLeft:      '2px solid var(--rig-gold)',
     }}>
       <div style={{
-        width: '22px', height: '22px', borderRadius: '50%',
-        backgroundColor: '#DBEAFE', border: '1px solid #BFDBFE',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: "'Cormorant Garamond', serif",
+        fontStyle:  'italic',
+        fontSize:   '22px',
+        color:      'var(--rig-gold)',
+        lineHeight: 1,
         flexShrink: 0,
-        fontFamily: "'DM Mono', monospace", fontSize: '11px', color: '#3B82F6', fontWeight: 700,
+        width:      '28px',
+        textAlign:  'center',
       }}>
         {index + 1}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: '13px', fontWeight: 500, color: '#18181B', lineHeight: 1.4, marginBottom: '3px' }}>
+        <div style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize:   '17px',
+          color:      'var(--rig-ink)',
+          lineHeight: 1.35,
+          marginBottom: '4px',
+        }}>
           {article.title}
         </div>
-        <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: '11px', color: '#64748B' }}>
+        <div style={{
+          fontFamily:    "'DM Mono', monospace",
+          fontSize:      '10px',
+          color:         'var(--rig-ink-3)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+        }}>
           {article.source_name}
           {article.topic_category && ` · ${article.topic_category}`}
           {article.geo_primary && ` · ${article.geo_primary}`}
@@ -192,16 +218,18 @@ function EvidenceCard({ article, index, router }: { article: EvidenceArticle; in
       </div>
       <button
         onClick={() => router.push(`/coverage?article=${article.article_id}`)}
-        title="Open in Coverage Room"
+        title="Open in the Coverage Room"
         style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          padding: '3px 6px', borderRadius: '4px',
-          fontFamily: "'DM Sans', system-ui", fontSize: '13px', color: '#3B82F6',
-          transition: 'background 0.12s',
-          flexShrink: 0,
+          background:  'none',
+          border:      'none',
+          cursor:      'pointer',
+          padding:     '4px 8px',
+          fontFamily:  "'Cormorant Garamond', serif",
+          fontStyle:   'italic',
+          fontSize:    '16px',
+          color:       'var(--rig-gold)',
+          flexShrink:  0,
         }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(59,130,246,0.1)' }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
       >→</button>
     </div>
   )
@@ -227,84 +255,103 @@ function AnswerDocument({
 }) {
   const [showEvidence, setShowEvidence]     = useState(false)
   const [citedArticle, setCitedArticle]     = useState<EvidenceArticle | null>(null)
-  const modeConf  = MODE_CONFIG[mode] ?? { color: '#64748B', bg: '#F1F5F9' }
-  const confConf  = CONF_CONFIG[confidence] ?? { bg: '#F1F5F9', text: '#64748B', border: '#E2E8F0', dot: '#94A3B8' }
+  const confTone  = CONF_TONE[confidence] ?? 'copper'
+  const modeLabel = MODE_LABEL[mode] ?? mode.toLowerCase()
 
   return (
     <div className="anim-fade-up" style={{
-      backgroundColor: '#FFFFFF',
-      borderRadius:    '12px',
-      border:          '1px solid #E2E8F0',
-      boxShadow:       '0 4px 12px rgba(15,23,42,0.07)',
-      overflow:        'hidden',
-      marginBottom:    '24px',
+      backgroundColor: 'var(--rig-paper)',
+      border:          '1px solid var(--rig-rule)',
+      borderTop:       '3px solid var(--rig-ink)',
+      marginBottom:    '32px',
     }}>
-      {/* Header bar */}
+      {/* Masthead */}
       <div style={{
-        padding:         '12px 20px',
-        borderBottom:    '1px solid #F1F5F9',
+        padding:         '16px 28px 14px',
+        borderBottom:    '1px solid var(--rig-rule-hair)',
         display:         'flex',
-        alignItems:      'center',
-        gap:             '10px',
+        alignItems:      'flex-end',
+        justifyContent:  'space-between',
+        gap:             '16px',
         flexWrap:        'wrap',
-        backgroundColor: '#FAFAFA',
       }}>
-        {/* Mode badge */}
-        <span style={{
-          padding:         '3px 10px',
-          borderRadius:    '9999px',
-          backgroundColor: modeConf.bg,
-          fontFamily:      "'DM Mono', monospace",
-          fontSize:        '10px',
-          fontWeight:      700,
-          color:           modeConf.color,
-          letterSpacing:   '0.08em',
-        }}>{mode}</span>
-
-        {/* Confidence */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px',
-          padding: '3px 10px', borderRadius: '9999px',
-          backgroundColor: confConf.bg, border: `1px solid ${confConf.border}`,
-        }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: confConf.dot }} />
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', fontWeight: 700, color: confConf.text, letterSpacing: '0.06em' }}>
-            {confidence}{confidence_pct !== undefined ? ` ${confidence_pct}%` : ''}
-          </span>
+        <div>
+          <div style={{
+            fontFamily:    "'DM Mono', monospace",
+            fontSize:      '10px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.14em',
+            color:         'var(--rig-ink-3)',
+            marginBottom:  '4px',
+          }}>
+            The assessment · {mode.toLowerCase()}
+          </div>
+          <div style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontStyle:  'italic',
+            fontSize:   '24px',
+            color:      'var(--rig-ink)',
+            lineHeight: 1.1,
+          }}>
+            {modeLabel}
+          </div>
         </div>
 
-        {/* Stats */}
-        <span style={{ marginLeft: 'auto', fontFamily: "'DM Mono', monospace", fontSize: '11px', color: '#94A3B8' }}>
-          {article_count} sources · {retrieval_ms}ms
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <span className="rig-chip" data-tone={confTone}>
+            {CONF_LABEL[confidence] ?? confidence}
+            {confidence_pct !== undefined ? ` · ${confidence_pct}%` : ''}
+          </span>
+          <span style={{
+            fontFamily:    "'DM Mono', monospace",
+            fontSize:      '10px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color:         'var(--rig-ink-3)',
+          }}>
+            {article_count} dispatches · {retrieval_ms}ms
+          </span>
+        </div>
       </div>
 
       {/* Body */}
-      <div style={{ padding: '24px 28px' }}>
+      <div style={{ padding: '28px 32px' }}>
         {sections.slice(0, visibleCount).map((section, i) => (
-          <div key={i} className="anim-fade-up" style={{ marginBottom: '20px', animationDelay: `${i * 80}ms` }}>
+          <div key={i} className="anim-fade-up" style={{ marginBottom: '26px', animationDelay: `${i * 80}ms` }}>
             {section.header && (
               <div style={{
-                fontFamily:    "'DM Mono', monospace",
-                fontSize:      '10px',
-                fontWeight:    700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.14em',
-                color:         '#94A3B8',
-                marginBottom:  '8px',
                 display:       'flex',
                 alignItems:    'center',
-                gap:           '8px',
+                gap:           '12px',
+                marginBottom:  '12px',
               }}>
-                <div style={{ flex: 1, height: '1px', backgroundColor: '#F1F5F9' }} />
-                {section.header}
-                <div style={{ flex: 1, height: '1px', backgroundColor: '#F1F5F9' }} />
+                <span style={{
+                  fontFamily:    "'DM Mono', monospace",
+                  fontSize:      '10px',
+                  fontWeight:    700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.14em',
+                  color:         'var(--rig-gold)',
+                  flexShrink:    0,
+                }}>
+                  § {String(i + 1).padStart(2, '0')}
+                </span>
+                <span style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontStyle:  'italic',
+                  fontSize:   '20px',
+                  color:      'var(--rig-ink)',
+                }}>
+                  {section.header}
+                </span>
+                <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--rig-rule-hair)' }} />
               </div>
             )}
             <div style={{
-              fontFamily:  "'DM Sans', system-ui",
-              fontSize:    '15px',
-              lineHeight:  1.8,
-              color:       '#27272A',
+              fontFamily:  "'Cormorant Garamond', serif",
+              fontSize:    '18px',
+              lineHeight:  1.65,
+              color:       'var(--rig-ink-2)',
               whiteSpace:  'pre-wrap',
             }}>
               {renderWithCitations(section.body, articles, setCitedArticle)}
@@ -315,50 +362,64 @@ function AnswerDocument({
         {/* Cited article popover */}
         {citedArticle && (
           <div style={{
-            marginBottom:    '16px',
-            padding:         '12px 16px',
-            borderRadius:    '8px',
-            backgroundColor: '#EFF6FF',
-            border:          '1px solid #DBEAFE',
-            borderLeft:      '3px solid #3B82F6',
+            marginBottom:    '20px',
+            padding:         '14px 18px',
+            backgroundColor: 'var(--rig-paper-2)',
+            border:          '1px solid var(--rig-rule-hair)',
+            borderLeft:      '2px solid var(--rig-gold)',
             display:         'flex',
             alignItems:      'center',
-            gap:             '12px',
+            gap:             '14px',
           }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: '13px', fontWeight: 600, color: '#18181B' }}>{citedArticle.title}</div>
-              <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: '11px', color: '#64748B', marginTop: '2px' }}>{citedArticle.source_name}</div>
+              <div style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize:   '18px',
+                color:      'var(--rig-ink)',
+                lineHeight: 1.3,
+              }}>{citedArticle.title}</div>
+              <div style={{
+                fontFamily:    "'DM Mono', monospace",
+                fontSize:      '10px',
+                color:         'var(--rig-ink-3)',
+                marginTop:     '4px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+              }}>{citedArticle.source_name}</div>
             </div>
             <button
               onClick={() => router.push(`/coverage?article=${citedArticle.article_id}`)}
-              style={{
-                padding: '5px 12px', borderRadius: '6px',
-                border: '1px solid #DBEAFE', background: '#FFFFFF',
-                fontFamily: "'DM Sans', system-ui", fontSize: '12px', fontWeight: 500, color: '#3B82F6',
-                cursor: 'pointer', flexShrink: 0,
-              }}
+              className="rig-btn-ghost"
+              style={{ flexShrink: 0 }}
             >Open →</button>
-            <button onClick={() => setCitedArticle(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: '16px', flexShrink: 0 }}>×</button>
+            <button
+              onClick={() => setCitedArticle(null)}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--rig-ink-3)', fontSize: '18px', flexShrink: 0,
+              }}
+            >×</button>
           </div>
         )}
 
         {/* Evidence panel */}
         {visibleCount >= sections.length && articles.length > 0 && (
-          <div style={{ marginTop: '20px' }}>
+          <div style={{ marginTop: '24px' }}>
             <button
               onClick={() => setShowEvidence(v => !v)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: "'DM Sans', system-ui", fontSize: '13px', fontWeight: 500,
-                color: '#3B82F6', display: 'flex', alignItems: 'center', gap: '6px',
+                fontFamily: "'DM Mono', monospace", fontSize: '11px',
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+                color: 'var(--rig-gold)', display: 'flex', alignItems: 'center', gap: '8px',
                 padding: 0,
               }}
             >
               <span>{showEvidence ? '▴' : '▾'}</span>
-              {showEvidence ? 'Hide' : `Show ${articles.length} sources`}
+              {showEvidence ? 'Close the references' : `Consult the ${articles.length} references`}
             </button>
             {showEvidence && (
-              <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {articles.map((a, i) => <EvidenceCard key={a.article_id} article={a} index={i} router={router} />)}
               </div>
             )}
@@ -367,31 +428,39 @@ function AnswerDocument({
 
         {/* Follow-ups */}
         {visibleCount >= sections.length && followups.length > 0 && (
-          <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #F1F5F9' }}>
-            <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: '11px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-              Suggested follow-ups
+          <div style={{ marginTop: '28px', paddingTop: '24px', borderTop: '1px solid var(--rig-rule-hair)' }}>
+            <div style={{
+              fontFamily:    "'DM Mono', monospace",
+              fontSize:      '10px',
+              fontWeight:    700,
+              color:         'var(--rig-ink-3)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.14em',
+              marginBottom:  '14px',
+            }}>
+              Lines of further inquiry
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {followups.map((q, i) => (
                 <button
                   key={i}
                   onClick={() => onFollowup(q)}
                   style={{
-                    background:   '#F8FAFC',
-                    border:       '1px solid #E2E8F0',
-                    borderRadius: '8px',
-                    padding:      '10px 14px',
-                    fontFamily:   "'DM Sans', system-ui",
-                    fontSize:     '13px',
-                    color:        '#334155',
+                    background:   'var(--rig-paper-2)',
+                    border:       '1px solid var(--rig-rule-hair)',
+                    padding:      '12px 16px',
+                    fontFamily:   "'Cormorant Garamond', serif",
+                    fontSize:     '17px',
+                    fontStyle:    'italic',
+                    color:        'var(--rig-ink-2)',
                     cursor:       'pointer',
                     textAlign:    'left',
                     transition:   'all 0.15s',
                   }}
-                  onMouseEnter={e => { const el = e.currentTarget; el.style.background = '#F1F5F9'; el.style.borderColor = '#CBD5E1' }}
-                  onMouseLeave={e => { const el = e.currentTarget; el.style.background = '#F8FAFC'; el.style.borderColor = '#E2E8F0' }}
+                  onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--rig-gold)'; el.style.color = 'var(--rig-ink)' }}
+                  onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--rig-rule-hair)'; el.style.color = 'var(--rig-ink-2)' }}
                 >
-                  ↳ {q}
+                  <span style={{ color: 'var(--rig-gold)', marginRight: '8px' }}>↳</span>{q}
                 </button>
               ))}
             </div>
@@ -416,25 +485,31 @@ function LoadingState() {
 
   return (
     <div style={{
-      padding:         '28px 28px',
-      backgroundColor: '#FFFFFF',
-      borderRadius:    '12px',
-      border:          '1px solid #E2E8F0',
-      boxShadow:       '0 4px 12px rgba(15,23,42,0.06)',
+      padding:         '28px 32px',
+      backgroundColor: 'var(--rig-paper)',
+      border:          '1px solid var(--rig-rule)',
+      borderTop:       '3px solid var(--rig-gold)',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-        <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '2px solid #E2E8F0', borderTopColor: '#3B82F6', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-        <span style={{ fontFamily: "'DM Sans', system-ui", fontSize: '14px', color: '#475569' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+        <div style={{
+          width: '18px', height: '18px', borderRadius: '50%',
+          border: '2px solid var(--rig-rule-hair)', borderTopColor: 'var(--rig-gold)',
+          animation: 'spin 0.8s linear infinite', flexShrink: 0,
+        }} />
+        <span style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontStyle:  'italic',
+          fontSize:   '18px',
+          color:      'var(--rig-ink-2)',
+        }}>
           {LOADING_TEXTS[textIdx]}
         </span>
       </div>
-      <div style={{ height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
+      <div style={{ height: '2px', backgroundColor: 'var(--rig-rule-hair)', overflow: 'hidden' }}>
         <div style={{
           height: '100%', width: `${progress}%`,
-          background: 'linear-gradient(90deg, #3B82F6, #60A5FA)',
-          borderRadius: '4px',
+          backgroundColor: 'var(--rig-gold)',
           transition: 'width 150ms linear',
-          boxShadow: '0 0 8px rgba(59,130,246,0.5)',
         }} />
       </div>
     </div>
@@ -463,14 +538,13 @@ export default function AnalystPage() {
   const [trail, setTrail]                   = useState<Turn[]>([])
   const [suggestions, setSuggestions]       = useState<string[]>([])
   const [selectedMode, setSelectedMode]     = useState('')
+  const [dossierOpen, setDossierOpen]       = useState(false)
   const [trailOpen, setTrailOpen]           = useState(true)
   const [allSessions, setAllSessions]       = useState<Session[]>([])
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [viewingSession, setViewingSession] = useState<Session | null>(null)
 
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  // Ref to latest handleSubmit — used by the URL-param auto-submit effect
-  // to avoid stale closure issues with setTimeout.
   const handleSubmitRef = useRef<((q?: string) => Promise<void>) | null>(null)
 
   const fetchAllSessions = async (token: string) => {
@@ -577,10 +651,8 @@ export default function AnalystPage() {
     } finally { setLoading(false) }
   }
 
-  // Keep ref pointing to latest handleSubmit every render
   handleSubmitRef.current = handleSubmit
 
-  // Pre-load question + session from URL params (from Story Threads → Investigate)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const questionParam = params.get('question')
@@ -593,7 +665,7 @@ export default function AnalystPage() {
       handleSubmitRef.current?.(decoded)
     }, 700)
     return () => clearTimeout(timer)
-  }, []) // intentionally runs once on mount
+  }, [])
 
   const handleNewInvestigation = async () => {
     const token = await getToken()
@@ -617,17 +689,29 @@ export default function AnalystPage() {
   const handleFollowup = (q: string) => { setQuestion(q); inputRef.current?.focus() }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F1F5F9' }}>
+    <div style={{
+      height:          '100vh',
+      display:         'flex',
+      flexDirection:   'column',
+      backgroundColor: 'var(--rig-paper-2)',
+      overflow:        'hidden',
+    }}>
       <Navigation />
+      <div style={{ height: '56px', flexShrink: 0 }} aria-hidden />
 
-      <main style={{ paddingTop: '56px', display: 'flex', height: 'calc(100vh - 56px)' }}>
+      <main style={{
+        flex:     1,
+        display:  'flex',
+        minHeight: 0,
+      }}>
 
-        {/* ── Investigation trail (left panel) ─────────────── */}
+        {/* ── Trail (left panel) ─────────────── */}
         <aside style={{
-          width:           trailOpen ? '260px' : '48px',
+          width:           trailOpen ? '300px' : '52px',
           flexShrink:      0,
-          backgroundColor: '#18181B',
-          borderRight:     '1px solid rgba(255,255,255,0.07)',
+          backgroundColor: 'var(--rig-ink)',
+          color:           'var(--rig-paper)',
+          borderRight:     '1px solid var(--rig-rule)',
           display:         'flex',
           flexDirection:   'column',
           height:          '100%',
@@ -636,96 +720,168 @@ export default function AnalystPage() {
         }}>
           {/* Trail header */}
           <div style={{
-            padding:         trailOpen ? '16px 14px 12px' : '16px 10px 12px',
-            borderBottom:    '1px solid rgba(255,255,255,0.07)',
-            display:         'flex',
-            alignItems:      'center',
-            justifyContent:  'space-between',
+            padding:         trailOpen ? '20px 18px 16px' : '20px 12px 16px',
+            borderBottom:    '1px solid rgba(255,255,255,0.08)',
             flexShrink:      0,
           }}>
-            {trailOpen && (
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: '#64748B', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                Trail
-              </span>
-            )}
-            <div style={{ display: 'flex', gap: '6px', marginLeft: trailOpen ? 0 : 'auto' }}>
-              {trailOpen && (
+            {trailOpen ? (
+              <>
+                <div style={{
+                  display:        'flex',
+                  alignItems:     'center',
+                  justifyContent: 'space-between',
+                  marginBottom:   '10px',
+                }}>
+                  <span style={{
+                    fontFamily:    "'DM Mono', monospace",
+                    fontSize:      '9px',
+                    color:         'rgba(212,175,55,0.85)',
+                    letterSpacing: '0.2em',
+                    textTransform: 'uppercase',
+                  }}>
+                    The Trail
+                  </span>
+                  <button
+                    onClick={() => setTrailOpen(false)}
+                    title="Collapse"
+                    style={{
+                      width: '24px', height: '24px',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      background: 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', color: 'rgba(255,255,255,0.55)',
+                      fontSize: '12px',
+                    }}
+                  >‹</button>
+                </div>
+                <div style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontStyle:  'italic',
+                  fontSize:   '22px',
+                  color:      'var(--rig-paper)',
+                  lineHeight: 1.1,
+                  marginBottom: '12px',
+                }}>
+                  Lines of inquiry
+                </div>
                 <button
                   onClick={handleNewInvestigation}
                   style={{
-                    padding: '3px 8px', borderRadius: '5px',
-                    border: '1px solid rgba(255,255,255,0.12)', background: 'none',
-                    fontFamily: "'DM Sans', system-ui", fontSize: '10px', color: 'rgba(255,255,255,0.4)',
-                    cursor: 'pointer', transition: 'all 0.15s',
+                    display:        'inline-flex',
+                    alignItems:     'center',
+                    gap:            '6px',
+                    padding:        '5px 12px',
+                    border:         '1px solid rgba(212,175,55,0.35)',
+                    background:     'none',
+                    fontFamily:     "'DM Mono', monospace",
+                    fontSize:       '10px',
+                    textTransform:  'uppercase',
+                    letterSpacing:  '0.14em',
+                    color:          'var(--rig-gold)',
+                    cursor:         'pointer',
+                    transition:     'all 0.15s',
                   }}
-                  onMouseEnter={e => { const el = e.currentTarget; el.style.color = 'rgba(255,255,255,0.75)'; el.style.borderColor = 'rgba(255,255,255,0.25)' }}
-                  onMouseLeave={e => { const el = e.currentTarget; el.style.color = 'rgba(255,255,255,0.4)'; el.style.borderColor = 'rgba(255,255,255,0.12)' }}
-                >New</button>
-              )}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(212,175,55,0.08)' }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                >
+                  + Open a new file
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => setTrailOpen(v => !v)}
-                title={trailOpen ? 'Collapse' : 'Expand'}
+                onClick={() => setTrailOpen(true)}
+                title="Expand"
                 style={{
-                  width: '26px', height: '26px', borderRadius: '6px',
-                  border: '1px solid rgba(255,255,255,0.1)', background: 'none',
+                  width: '28px', height: '28px',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  background: 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: 'rgba(255,255,255,0.35)',
-                  fontSize: '11px', transition: 'all 0.15s',
+                  cursor: 'pointer', color: 'rgba(255,255,255,0.55)',
+                  fontSize: '13px',
+                  margin: '0 auto',
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.7)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.35)' }}
-              >
-                {trailOpen ? '‹' : '›'}
-              </button>
-            </div>
+              >›</button>
+            )}
           </div>
 
           {/* Trail items */}
           {trailOpen && (
-            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '14px 14px' }}>
               {trail.length === 0 && !viewingSession && (
-                <p style={{ fontFamily: "'DM Sans', system-ui", fontSize: '12px', color: '#334155', fontStyle: 'italic', marginTop: '8px' }}>
-                  No questions yet
+                <p style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontStyle: 'italic',
+                  fontSize: '15px',
+                  color: 'rgba(255,255,255,0.4)',
+                  marginTop: '8px',
+                  lineHeight: 1.4,
+                }}>
+                  The file is empty. Put your question to the room.
                 </p>
               )}
-              {trail.map((turn, i) => {
-                const cc = CONF_CONFIG[turn.confidence]
-                return (
-                  <div key={turn.id} style={{ marginBottom: '12px', padding: '8px 10px', borderRadius: '7px', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ display: 'flex', gap: '7px', alignItems: 'flex-start' }}>
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: '#F59E0B', flexShrink: 0, marginTop: '1px' }}>
-                        {String(i + 1).padStart(2, '0')}
-                      </span>
-                      <span style={{ fontFamily: "'DM Sans', system-ui", fontSize: '12px', color: '#CBD5E1', lineHeight: 1.4 }}>
-                        {turn.question}
-                      </span>
-                    </div>
-                    <div style={{ marginTop: '5px', display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '19px' }}>
-                      <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: cc?.dot ?? '#64748B', flexShrink: 0 }} />
-                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', color: '#475569' }}>
-                        {turn.evidence_count} src · {turn.confidence}
-                        {turn.confidence_pct !== undefined ? ` ${turn.confidence_pct}%` : ''}
-                      </span>
-                    </div>
+              {trail.map((turn, i) => (
+                <div key={turn.id} style={{
+                  marginBottom: '14px',
+                  padding: '10px 12px',
+                  backgroundColor: 'rgba(255,255,255,0.03)',
+                  borderLeft: '2px solid rgba(212,175,55,0.5)',
+                }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                    <span style={{
+                      fontFamily: "'Cormorant Garamond', serif",
+                      fontStyle: 'italic',
+                      fontSize: '18px',
+                      color: 'var(--rig-gold)',
+                      flexShrink: 0,
+                      lineHeight: 1,
+                      marginTop: '2px',
+                    }}>
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span style={{
+                      fontFamily: "'Cormorant Garamond', serif",
+                      fontSize: '15px',
+                      color: 'rgba(255,255,255,0.88)',
+                      lineHeight: 1.35,
+                    }}>
+                      {turn.question}
+                    </span>
                   </div>
-                )
-              })}
+                  <div style={{
+                    marginTop: '6px',
+                    paddingLeft: '26px',
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: '9px',
+                    color: 'rgba(255,255,255,0.4)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                  }}>
+                    {turn.evidence_count} src · {turn.confidence}
+                    {turn.confidence_pct !== undefined ? ` ${turn.confidence_pct}%` : ''}
+                  </div>
+                </div>
+              ))}
 
               {/* Previous Investigations */}
-              <div style={{ marginTop: '20px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+              <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                 <div style={{
                   fontFamily: "'DM Mono', monospace",
                   fontSize: '9px',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.12em',
-                  color: '#475569',
-                  marginBottom: '8px',
+                  letterSpacing: '0.14em',
+                  color: 'rgba(212,175,55,0.7)',
+                  marginBottom: '10px',
                 }}>
-                  Previous Investigations
+                  From the archive
                 </div>
 
                 {loadingSessions && (
-                  <div style={{ fontSize: '11px', color: '#475569', fontFamily: "'DM Sans', system-ui" }}>Loading…</div>
+                  <div style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontStyle: 'italic',
+                    fontSize: '14px',
+                    color: 'rgba(255,255,255,0.4)',
+                  }}>Pulling the files…</div>
                 )}
 
                 {allSessions
@@ -736,30 +892,33 @@ export default function AnalystPage() {
                       key={session.session_id}
                       onClick={() => void loadPastSession(session)}
                       style={{
-                        padding: '7px 0',
-                        borderBottom: '1px solid rgba(255,255,255,0.05)',
+                        padding: '9px 0',
+                        borderBottom: '1px solid rgba(255,255,255,0.06)',
                         cursor: 'pointer',
+                        transition: 'opacity 0.15s',
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.opacity = '0.75' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.opacity = '0.7' }}
                       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.opacity = '1' }}
                     >
                       <div style={{
-                        fontFamily: "'DM Sans', system-ui",
-                        fontSize: '11px',
-                        color: '#94A3B8',
-                        lineHeight: 1.4,
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontSize: '14px',
+                        color: 'rgba(255,255,255,0.75)',
+                        lineHeight: 1.35,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        maxWidth: '210px',
+                        maxWidth: '230px',
                       }}>
                         {session.first_question?.slice(0, 55) ?? 'Untitled investigation'}
                       </div>
                       <div style={{
                         fontFamily: "'DM Mono', monospace",
                         fontSize: '9px',
-                        color: '#334155',
-                        marginTop: '2px',
+                        color: 'rgba(255,255,255,0.35)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        marginTop: '3px',
                       }}>
                         {session.turn_count} q · {formatTimeAgo(session.last_activity)}
                       </div>
@@ -768,8 +927,13 @@ export default function AnalystPage() {
                 }
 
                 {!loadingSessions && allSessions.filter(s => s.session_id !== sessionId).length === 0 && (
-                  <div style={{ fontSize: '11px', color: '#334155', fontFamily: "'DM Sans', system-ui", fontStyle: 'italic' }}>
-                    No previous investigations
+                  <div style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontStyle: 'italic',
+                    fontSize: '14px',
+                    color: 'rgba(255,255,255,0.35)',
+                  }}>
+                    No files on record
                   </div>
                 )}
               </div>
@@ -779,85 +943,164 @@ export default function AnalystPage() {
 
         {/* ── Workspace (right area) ────────────────────────── */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-          {/* Page header */}
+          {/* Page masthead */}
           <div style={{
-            padding:         '16px 28px 14px',
-            borderBottom:    '1px solid #E2E8F0',
-            backgroundColor: '#FFFFFF',
+            padding:         '18px 40px 16px',
+            borderBottom:    '2px solid var(--rig-ink)',
+            backgroundColor: 'var(--rig-paper)',
             flexShrink:      0,
+            display:         'flex',
+            alignItems:      'center',
+            justifyContent:  'space-between',
+            gap:             '24px',
           }}>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', color: '#94A3B8', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '3px' }}>
-              Intelligence Analyst
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1 }}>
+              <span style={{
+                fontFamily:    "'DM Mono', monospace",
+                fontSize:      '10px',
+                color:         'var(--rig-gold)',
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                whiteSpace:    'nowrap',
+                flexShrink:    0,
+              }}>
+                Edition VII
+              </span>
+              <span style={{ width: '24px', height: '1px', backgroundColor: 'var(--rig-gold)', flexShrink: 0 }} />
+              <h1 style={{
+                fontFamily:    "'Cormorant Garamond', serif",
+                fontSize:      '26px',
+                fontWeight:    400,
+                color:         'var(--rig-ink)',
+                letterSpacing: '-0.01em',
+                lineHeight:    1.2,
+                overflow:      'hidden',
+                textOverflow:  'ellipsis',
+                whiteSpace:    'nowrap',
+                margin:        0,
+              }}>
+                The Reading Room
+                <span style={{
+                  fontStyle:  'italic',
+                  color:      'var(--rig-ink-3)',
+                  fontSize:   '20px',
+                  marginLeft: '12px',
+                }}>
+                  put the question to the corpus
+                </span>
+              </h1>
             </div>
-            <h1 style={{ fontFamily: "'DM Sans', system-ui", fontSize: '20px', fontWeight: 700, color: '#18181B', letterSpacing: '-0.02em' }}>
-              Ask an intelligence question
-            </h1>
+            <div style={{
+              fontFamily:    "'DM Mono', monospace",
+              fontSize:      '10px',
+              color:         'var(--rig-ink-3)',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              flexShrink:    0,
+              whiteSpace:    'nowrap',
+            }}>
+              {trail.length} {trail.length === 1 ? 'file' : 'files'} on desk
+            </div>
           </div>
 
           {/* Scrollable workspace */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px 0' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '28px 36px 0' }}>
 
             {/* Viewing past session banner */}
             {viewingSession && (
               <div style={{
-                backgroundColor: '#EEF3FA',
-                border: '1px solid #1B3A6B',
-                borderRadius: '4px',
-                padding: '10px 16px',
-                marginBottom: '16px',
+                backgroundColor: 'var(--rig-paper)',
+                border: '1px solid var(--rig-rule)',
+                borderLeft: '3px solid var(--rig-copper)',
+                padding: '12px 18px',
+                marginBottom: '20px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
               }}>
-                <span style={{ fontFamily: "'DM Sans', system-ui", fontSize: '13px', color: '#1B3A6B' }}>
-                  Viewing past investigation · {formatTimeAgo(viewingSession.last_activity)}
-                </span>
+                <div>
+                  <div style={{
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: '10px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.12em',
+                    color: 'var(--rig-ink-3)',
+                  }}>
+                    From the archive
+                  </div>
+                  <div style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontStyle: 'italic',
+                    fontSize: '17px',
+                    color: 'var(--rig-ink)',
+                    marginTop: '2px',
+                  }}>
+                    Filed {formatTimeAgo(viewingSession.last_activity)}
+                  </div>
+                </div>
                 <button
                   onClick={handleNewInvestigation}
                   style={{
                     background: 'none', border: 'none',
-                    fontFamily: "'DM Sans', system-ui", fontSize: '12px',
-                    color: '#8B1A1A', cursor: 'pointer',
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontStyle: 'italic',
+                    fontSize: '15px',
+                    color: 'var(--rig-copper)',
+                    cursor: 'pointer',
                   }}
                 >
-                  Return to current →
+                  Return to the desk →
                 </button>
               </div>
             )}
 
             {/* Suggestions */}
             {!response && !loading && suggestions.length > 0 && (
-              <div className="anim-fade-up" style={{ marginBottom: '28px' }}>
-                <div style={{ fontFamily: "'DM Sans', system-ui", fontSize: '11px', fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
-                  Suggested Investigations
+              <div className="anim-fade-up" style={{ marginBottom: '32px' }}>
+                <div style={{
+                  fontFamily:    "'DM Mono', monospace",
+                  fontSize:      '10px',
+                  fontWeight:    700,
+                  color:         'var(--rig-gold)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.14em',
+                  marginBottom:  '12px',
+                }}>
+                  The desk suggests
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {suggestions.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => handleFollowup(s)}
                       className="anim-fade-up"
                       style={{
-                        background:   '#FFFFFF',
-                        border:       '1px solid #E2E8F0',
-                        borderRadius: '8px',
-                        padding:      '12px 16px',
-                        fontFamily:   "'DM Sans', system-ui",
-                        fontSize:     '14px',
-                        color:        '#334155',
-                        cursor:       'pointer',
-                        textAlign:    'left',
-                        transition:   'all 0.15s',
+                        background:     'var(--rig-paper)',
+                        border:         '1px solid var(--rig-rule-hair)',
+                        padding:        '14px 18px',
+                        fontFamily:     "'Cormorant Garamond', serif",
+                        fontSize:       '18px',
+                        fontStyle:      'italic',
+                        color:          'var(--rig-ink-2)',
+                        cursor:         'pointer',
+                        textAlign:      'left',
+                        transition:     'all 0.15s',
                         animationDelay: `${i * 60}ms`,
+                        lineHeight:     1.35,
                       }}
-                      onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = '#CBD5E1'; el.style.background = '#F8FAFC' }}
-                      onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = '#E2E8F0'; el.style.background = '#FFFFFF' }}
+                      onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--rig-gold)'; el.style.color = 'var(--rig-ink)' }}
+                      onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--rig-rule-hair)'; el.style.color = 'var(--rig-ink-2)' }}
                     >
-                      <span style={{ color: '#94A3B8', marginRight: '8px' }}>✦</span>{s}
+                      <span style={{ color: 'var(--rig-gold)', marginRight: '10px' }}>✦</span>{s}
                     </button>
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Dossier panel — flag-gated, self-contained */}
+            {DOSSIER_ENABLED && dossierOpen && (
+              <DossierPanel onClose={() => setDossierOpen(false)} />
             )}
 
             {/* Loading */}
@@ -866,15 +1109,15 @@ export default function AnalystPage() {
             {/* Error */}
             {errorMsg && !loading && (
               <div style={{
-                padding:      '14px 18px',
-                borderRadius: '8px',
-                backgroundColor: '#FFF1F2',
-                border:       '1px solid #FFE4E6',
-                borderLeft:   '3px solid #F43F5E',
-                fontFamily:   "'DM Sans', system-ui",
-                fontSize:     '14px',
-                color:        '#E11D48',
-                marginBottom: '16px',
+                padding:      '14px 20px',
+                backgroundColor: 'var(--rig-paper)',
+                border:       '1px solid var(--rig-rule)',
+                borderLeft:   '3px solid var(--rig-oxblood)',
+                fontFamily:   "'Cormorant Garamond', serif",
+                fontSize:     '17px',
+                fontStyle:    'italic',
+                color:        'var(--rig-oxblood)',
+                marginBottom: '20px',
               }}>{errorMsg}</div>
             )}
 
@@ -895,36 +1138,42 @@ export default function AnalystPage() {
               />
             )}
 
-            {/* Spacer so content doesn't hide behind input bar */}
             <div style={{ height: '200px' }} />
           </div>
 
           {/* ── Input bar ──────────────────────────────────── */}
           <div style={{
             flexShrink:      0,
-            backgroundColor: '#FFFFFF',
-            borderTop:       '1px solid #E2E8F0',
-            padding:         '14px 28px 20px',
+            backgroundColor: 'var(--rig-paper)',
+            borderTop:       '1px solid var(--rig-rule)',
+            padding:         '16px 36px 22px',
           }}>
             {/* Mode selector */}
-            <div style={{ display: 'flex', gap: '5px', marginBottom: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+              <span style={{
+                fontFamily:    "'DM Mono', monospace",
+                fontSize:      '10px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.12em',
+                color:         'var(--rig-ink-3)',
+              }}>
+                Mode of enquiry ·
+              </span>
               {VALID_MODES.map(m => {
                 const active = selectedMode === m
-                const mc = MODE_CONFIG[m] ?? { color: '#64748B', bg: '#F1F5F9' }
                 return (
                   <button
                     key={m}
                     onClick={() => setSelectedMode(active ? '' : m)}
                     style={{
-                      padding:         '4px 10px',
-                      borderRadius:    '9999px',
-                      border:          `1px solid ${active ? mc.color + '50' : '#E2E8F0'}`,
-                      backgroundColor: active ? mc.bg : 'transparent',
+                      padding:         '4px 12px',
+                      border:          `1px solid ${active ? 'var(--rig-gold)' : 'var(--rig-rule)'}`,
+                      backgroundColor: active ? 'color-mix(in srgb, var(--rig-gold) 10%, transparent)' : 'transparent',
                       fontFamily:      "'DM Mono', monospace",
                       fontSize:        '10px',
                       fontWeight:      700,
-                      letterSpacing:   '0.08em',
-                      color:           active ? mc.color : '#94A3B8',
+                      letterSpacing:   '0.1em',
+                      color:           active ? 'var(--rig-gold)' : 'var(--rig-ink-3)',
                       cursor:          'pointer',
                       transition:      'all 0.15s',
                     }}
@@ -932,70 +1181,78 @@ export default function AnalystPage() {
                 )
               })}
               {selectedMode && (
-                <span style={{ fontFamily: "'DM Sans', system-ui", fontSize: '11px', color: '#94A3B8', alignSelf: 'center', marginLeft: '4px' }}>
-                  · mode locked
+                <span style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontStyle: 'italic',
+                  fontSize: '14px',
+                  color: 'var(--rig-ink-3)',
+                }}>
+                  locked
                 </span>
+              )}
+              {DOSSIER_ENABLED && (
+                <button
+                  onClick={() => setDossierOpen(v => !v)}
+                  style={{
+                    marginLeft:      'auto',
+                    background:      'transparent',
+                    padding:         '4px 12px',
+                    border:          `1px solid ${dossierOpen ? 'var(--rig-gold)' : 'var(--rig-rule)'}`,
+                    fontFamily:      "'DM Mono', monospace",
+                    fontSize:        '10px',
+                    fontWeight:      700,
+                    letterSpacing:   '0.1em',
+                    color:           dossierOpen ? 'var(--rig-gold)' : 'var(--rig-ink-3)',
+                    cursor:          'pointer',
+                    textTransform:   'uppercase',
+                  }}
+                >
+                  {dossierOpen ? 'Close dossier' : 'Dossier'}
+                </button>
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
               <textarea
                 ref={inputRef}
                 value={question}
                 onChange={e => setQuestion(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSubmit() } }}
-                placeholder="Ask an intelligence question… (Enter to submit, Shift+Enter for newline)"
-                rows={2}
+                placeholder="Put a question to the desk…   ·   Enter files · Shift+Enter drops a line"
+                rows={1}
+                className="rig-input"
                 style={{
                   flex:         1,
-                  padding:      '11px 14px',
-                  border:       '1.5px solid #E2E8F0',
-                  borderRadius: '10px',
-                  backgroundColor: '#F8FAFC',
-                  fontFamily:   "'DM Sans', system-ui",
-                  fontSize:     '14px',
-                  color:        '#18181B',
+                  fontFamily:   "'Cormorant Garamond', serif",
+                  fontSize:     '16px',
                   resize:       'none',
-                  outline:      'none',
-                  lineHeight:   1.55,
-                  transition:   'border-color 0.15s, box-shadow 0.15s',
+                  lineHeight:   1.45,
+                  minHeight:    '40px',
+                  padding:      '9px 14px',
                 }}
-                onFocus={e => { e.target.style.borderColor = '#3B82F6'; e.target.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.12)' }}
-                onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none' }}
               />
               <button
                 onClick={() => void handleSubmit()}
                 disabled={loading || !question.trim()}
+                className="rig-btn-primary"
                 style={{
-                  padding:         '0 22px',
-                  height:          '54px',
-                  backgroundColor: loading || !question.trim() ? '#E2E8F0' : '#18181B',
-                  color:           loading || !question.trim() ? '#94A3B8' : '#F8FAFC',
-                  border:          'none',
-                  borderRadius:    '10px',
-                  fontFamily:      "'DM Sans', system-ui",
-                  fontSize:        '14px',
-                  fontWeight:      600,
+                  padding:         '0 18px',
+                  height:          '40px',
                   cursor:          loading || !question.trim() ? 'not-allowed' : 'pointer',
+                  opacity:         loading || !question.trim() ? 0.5 : 1,
                   flexShrink:      0,
-                  transition:      'all 0.15s',
                   display:         'flex',
                   alignItems:      'center',
-                  gap:             '6px',
-                }}
-                onMouseEnter={e => {
-                  const el = e.currentTarget
-                  if (!loading && question.trim()) el.style.backgroundColor = '#27272A'
-                }}
-                onMouseLeave={e => {
-                  const el = e.currentTarget
-                  if (!loading && question.trim()) el.style.backgroundColor = '#18181B'
-                  else el.style.backgroundColor = '#E2E8F0'
+                  gap:             '8px',
+                  fontFamily:      "'Cormorant Garamond', serif",
+                  fontStyle:       'italic',
+                  fontSize:        '15px',
+                  whiteSpace:      'nowrap',
                 }}
               >
                 {loading ? (
-                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
-                ) : 'Analyse →'}
+                  <div style={{ width: '14px', height: '14px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
+                ) : 'File →'}
               </button>
             </div>
           </div>

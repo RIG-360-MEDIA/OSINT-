@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
+import { Dateline } from '@/components/Dateline'
 import { createClient } from '@/lib/supabase/client'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -50,23 +51,23 @@ interface SentimentResponse {
   sentiment_by_monitor: MonitorSentiment[]
 }
 
-const PLATFORM_COLOR: Record<SignalPost['platform'], string> = {
-  twitter:  '#1DA1F2',
-  reddit:   '#FF4500',
-  telegram: '#229ED9',
+const PLATFORM_LABEL: Record<SignalPost['platform'], string> = {
+  twitter: 'The Wire',
+  reddit: 'The Forums',
+  telegram: 'The Channels',
 }
 
-const PLATFORM_LABEL: Record<SignalPost['platform'], string> = {
-  twitter:  'Twitter / X',
-  reddit:   'Reddit',
+const PLATFORM_SUBLABEL: Record<SignalPost['platform'], string> = {
+  twitter: 'Twitter / X',
+  reddit: 'Reddit',
   telegram: 'Telegram',
 }
 
 const TAB_ORDER: { id: Platform; label: string }[] = [
-  { id: 'all',      label: 'All' },
-  { id: 'twitter',  label: 'Twitter / X' },
-  { id: 'reddit',   label: 'Reddit' },
-  { id: 'telegram', label: 'Telegram' },
+  { id: 'all', label: 'All wires' },
+  { id: 'twitter', label: 'The Wire' },
+  { id: 'reddit', label: 'The Forums' },
+  { id: 'telegram', label: 'The Channels' },
 ]
 
 function relativeTime(iso: string | null): string {
@@ -79,11 +80,17 @@ function relativeTime(iso: string | null): string {
   return `${Math.floor(diff / 86_400_000)}d ago`
 }
 
-function sentimentLabel(score: number | null): { label: string; color: string } {
-  if (score === null || score === undefined) return { label: '—', color: '#94A3B8' }
-  if (score >  0.1) return { label: 'POSITIVE', color: '#10B981' }
-  if (score < -0.1) return { label: 'NEGATIVE', color: '#F43F5E' }
-  return { label: 'NEUTRAL',  color: '#94A3B8' }
+function sentimentLabel(score: number | null): { label: string; tone: 'positive' | 'negative' | 'neutral' } {
+  if (score === null || score === undefined) return { label: '—', tone: 'neutral' }
+  if (score > 0.1) return { label: 'Favourable', tone: 'positive' }
+  if (score < -0.1) return { label: 'Hostile', tone: 'negative' }
+  return { label: 'Even', tone: 'neutral' }
+}
+
+function sentimentColor(tone: 'positive' | 'negative' | 'neutral'): string {
+  if (tone === 'positive') return 'var(--rig-gold)'
+  if (tone === 'negative') return 'var(--rig-oxblood)'
+  return 'var(--rig-ink-3)'
 }
 
 export default function SignalsPage() {
@@ -165,109 +172,135 @@ export default function SignalsPage() {
     return counts
   }, [posts])
 
+  const total = platformCounts.twitter + platformCounts.reddit + platformCounts.telegram
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F1F5F9' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--rig-paper)' }}>
       <Navigation />
-      <main style={{
-        paddingTop: '56px',
-        maxWidth:   '1160px',
-        margin:     '0 auto',
-        padding:    '56px 24px 80px',
-      }}>
-        <Header counts={platformCounts} />
-        <Tabs tab={tab} setTab={setTab} />
-        <SentimentBar data={sentiment} />
 
-        <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {posts.length === 0 && !loading && (
-            <EmptyState platform={tab} />
-          )}
-          {posts.map(p => (
-            <PostCard key={p.post_id} post={p} />
-          ))}
-          {hasMore && !loading && (
-            <button
-              onClick={() => token && cursor && fetchFeed(token, tab, cursor)}
-              style={loadMoreBtnStyle}
+      <div style={{ paddingTop: 'var(--topbar-h)' }}>
+        <Dateline issueNumber={total} />
+
+        <main style={{ maxWidth: '1120px', margin: '0 auto', padding: '48px 32px 80px' }}>
+          {/* Section head */}
+          <header style={{ marginBottom: '36px' }}>
+            <div className="rig-kicker" style={{ marginBottom: '10px' }}>
+              The Signal Room
+            </div>
+            <h1
+              className="rig-headline"
+              style={{
+                fontSize: '34px',
+                margin: 0,
+                letterSpacing: '-0.01em',
+                lineHeight: 1.15,
+                marginBottom: '22px',
+              }}
             >
-              Load more
-            </button>
-          )}
-          {loading && <LoadingRow />}
-          {error && (
-            <div style={errorBoxStyle}>Error: {error}</div>
-          )}
-        </div>
-      </main>
+              The noise of the street,{' '}
+              <em style={{ fontWeight: 500, color: 'var(--rig-gold)' }}>
+                filtered for signal.
+              </em>
+            </h1>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap' }}>
+              <PlatformStat label="The Wire" count={platformCounts.twitter} />
+              <PlatformStat label="The Forums" count={platformCounts.reddit} />
+              <PlatformStat label="The Channels" count={platformCounts.telegram} />
+            </div>
+          </header>
+
+          <Tabs tab={tab} setTab={setTab} />
+
+          {sentiment.length > 0 && <SentimentLedger data={sentiment} />}
+
+          <div style={{ marginTop: '32px' }}>
+            {posts.length === 0 && !loading && !error && (
+              <DeskMemo
+                kicker="Desk memo"
+                headline={
+                  tab === 'all'
+                    ? 'The street is quiet.'
+                    : `Nothing filed from ${PLATFORM_LABEL[tab as Exclude<Platform, 'all'>]} yet.`
+                }
+                body="Waiting for the next collection cycle. Signals arrive as monitored accounts post."
+              />
+            )}
+
+            {posts.map((p, i) => (
+              <PostCard key={p.post_id} post={p} index={i + 1} />
+            ))}
+
+            {hasMore && !loading && (
+              <div style={{ textAlign: 'center', marginTop: '24px' }}>
+                <button
+                  onClick={() => token && cursor && fetchFeed(token, tab, cursor)}
+                  className="rig-btn-ghost"
+                >
+                  Pull more dispatches
+                </button>
+              </div>
+            )}
+
+            {loading && <LoadingState />}
+
+            {error && (
+              <DeskMemo
+                kicker="Desk memo"
+                headline="The wires went silent."
+                body={error}
+              />
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   )
 }
 
-/* ── Header ──────────────────────────────────────────────────────────── */
+/* ── Subcomponents ─────────────────────────────────────────────── */
 
-function Header({ counts }: { counts: { twitter: number; reddit: number; telegram: number } }) {
-  return (
-    <header style={{
-      display:        'flex',
-      alignItems:     'baseline',
-      justifyContent: 'space-between',
-      gap:            '16px',
-      marginBottom:   '18px',
-    }}>
-      <div>
-        <div style={{
-          fontFamily:    "'DM Sans', system-ui, sans-serif",
-          fontSize:      '11px',
-          fontWeight:    600,
-          letterSpacing: '0.14em',
-          textTransform: 'uppercase',
-          color:         '#64748B',
-        }}>Intelligence Floor</div>
-        <h1 style={{
-          fontFamily:    "'DM Sans', system-ui, sans-serif",
-          fontSize:      '28px',
-          fontWeight:    700,
-          letterSpacing: '-0.02em',
-          color:         '#0F172A',
-          margin:        '4px 0 0',
-        }}>SIGNAL ROOM</h1>
-      </div>
-      <div style={{ display: 'flex', gap: '10px', fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '11px' }}>
-        <CountChip color="#1DA1F2" label="twitter" value={counts.twitter} />
-        <CountChip color="#FF4500" label="reddit"  value={counts.reddit}  />
-        <CountChip color="#229ED9" label="telegram" value={counts.telegram} />
-      </div>
-    </header>
-  )
+interface PlatformStatProps {
+  label: string
+  count: number
 }
 
-function CountChip({ color, label, value }: { color: string; label: string; value: number }) {
+function PlatformStat({ label, count }: PlatformStatProps) {
   return (
-    <div style={{
-      display:         'flex',
-      alignItems:      'center',
-      gap:             '6px',
-      padding:         '4px 10px',
-      borderRadius:    '6px',
-      backgroundColor: '#FFFFFF',
-      border:          '1px solid #E2E8F0',
-    }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: color }} />
-      <span style={{ color: '#475569', letterSpacing: '0.04em' }}>{value} {label}</span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <span
+        style={{
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontWeight: 500,
+          fontSize: '28px',
+          lineHeight: 1,
+          color: 'var(--rig-ink)',
+        }}
+      >
+        {count}
+      </span>
+      <span className="rig-kicker" style={{ opacity: 0.75 }}>{label}</span>
     </div>
   )
 }
 
-/* ── Tabs ────────────────────────────────────────────────────────────── */
+interface TabsProps {
+  tab: Platform
+  setTab: (t: Platform) => void
+}
 
-function Tabs({ tab, setTab }: { tab: Platform; setTab: (t: Platform) => void }) {
+function Tabs({ tab, setTab }: TabsProps) {
   return (
-    <div style={{
-      display:      'flex',
-      gap:          '4px',
-      borderBottom: '1px solid #E2E8F0',
-      marginBottom: '14px',
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '2px',
+        borderBottom: '1px solid var(--rig-rule)',
+        marginBottom: '24px',
+      }}
+    >
       {TAB_ORDER.map(t => {
         const active = tab === t.id
         return (
@@ -275,28 +308,31 @@ function Tabs({ tab, setTab }: { tab: Platform; setTab: (t: Platform) => void })
             key={t.id}
             onClick={() => setTab(t.id)}
             style={{
-              position:        'relative',
-              border:          'none',
-              background:      'transparent',
-              padding:         '10px 16px',
-              cursor:          'pointer',
-              fontFamily:      "'DM Sans', system-ui, sans-serif",
-              fontSize:        '14px',
-              fontWeight:      active ? 600 : 500,
-              color:           active ? '#0F172A' : '#64748B',
-              letterSpacing:   '-0.01em',
+              position: 'relative',
+              border: 'none',
+              background: 'transparent',
+              padding: '12px 18px',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '10px',
+              letterSpacing: '0.26em',
+              textTransform: 'uppercase',
+              color: active ? 'var(--rig-ink)' : 'var(--rig-ink-3)',
+              transition: 'color 0.15s',
             }}
           >
             {t.label}
             {active && (
-              <span style={{
-                position:        'absolute',
-                left:            0,
-                right:           0,
-                bottom:          '-1px',
-                height:          '2px',
-                backgroundColor: '#F43F5E',
-              }} />
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '18px',
+                  right: '18px',
+                  bottom: '-1px',
+                  height: '1px',
+                  background: 'var(--rig-gold)',
+                }}
+              />
             )}
           </button>
         )
@@ -305,33 +341,47 @@ function Tabs({ tab, setTab }: { tab: Platform; setTab: (t: Platform) => void })
   )
 }
 
-/* ── Sentiment bar ───────────────────────────────────────────────────── */
+/* ── Sentiment ledger ─────────────────────────────────────────── */
 
-function SentimentBar({ data }: { data: MonitorSentiment[] }) {
-  if (data.length === 0) return null
+function SentimentLedger({ data }: { data: MonitorSentiment[] }) {
   return (
-    <section style={{
-      padding:         '14px 16px',
-      backgroundColor: '#FFFFFF',
-      border:          '1px solid #E2E8F0',
-      borderRadius:    '6px',
-      display:         'flex',
-      flexDirection:   'column',
-      gap:             '8px',
-    }}>
-      <div style={{
-        fontFamily:    "'DM Sans', system-ui, sans-serif",
-        fontSize:      '11px',
-        letterSpacing: '0.14em',
-        textTransform: 'uppercase',
-        color:         '#64748B',
-        fontWeight:    600,
-      }}>
-        Sentiment · last 7 days
+    <section
+      style={{
+        padding: '22px 24px',
+        background: 'var(--rig-paper-2)',
+        border: '1px solid var(--rig-rule)',
+        marginBottom: '12px',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          marginBottom: '16px',
+          borderBottom: '1px solid var(--rig-rule-hair)',
+          paddingBottom: '8px',
+        }}
+      >
+        <span className="rig-kicker">The sentiment ledger</span>
+        <span
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '9px',
+            letterSpacing: '0.22em',
+            textTransform: 'uppercase',
+            color: 'var(--rig-ink-3)',
+          }}
+        >
+          Past seven days
+        </span>
       </div>
-      {data.map(m => (
-        <SentimentRow key={`${m.platform}-${m.identifier}`} m={m} />
-      ))}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {data.map(m => (
+          <SentimentRow key={`${m.platform}-${m.identifier}`} m={m} />
+        ))}
+      </div>
     </section>
   )
 }
@@ -339,250 +389,345 @@ function SentimentBar({ data }: { data: MonitorSentiment[] }) {
 function SentimentRow({ m }: { m: MonitorSentiment }) {
   const total = m.positive_count + m.negative_count + m.neutral_count
   const pos = total > 0 ? (m.positive_count / total) * 100 : 0
-  const neu = total > 0 ? (m.neutral_count  / total) * 100 : 0
+  const neu = total > 0 ? (m.neutral_count / total) * 100 : 0
   const neg = total > 0 ? (m.negative_count / total) * 100 : 0
-  const platformColor = PLATFORM_COLOR[m.platform]
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 96px', alignItems: 'center', gap: '12px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: platformColor }} />
-        <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '13px', color: '#0F172A', fontWeight: 500 }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '240px 1fr 110px',
+        alignItems: 'center',
+        gap: '16px',
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+        <span
+          style={{
+            fontFamily: 'var(--font-serif)',
+            fontWeight: 500,
+            fontSize: '14px',
+            color: 'var(--rig-ink)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
           {m.display_name || m.identifier}
         </span>
+        <span className="rig-byline" style={{ fontSize: '9px' }}>
+          {PLATFORM_SUBLABEL[m.platform]}
+        </span>
       </div>
-      <div style={{
-        display:         'flex',
-        height:          '8px',
-        borderRadius:    '4px',
-        overflow:        'hidden',
-        backgroundColor: '#F1F5F9',
-      }}>
-        <span style={{ width: `${pos}%`, backgroundColor: '#10B981' }} />
-        <span style={{ width: `${neu}%`, backgroundColor: '#E2E8F0' }} />
-        <span style={{ width: `${neg}%`, backgroundColor: '#F43F5E' }} />
+      <div
+        style={{
+          display: 'flex',
+          height: '4px',
+          overflow: 'hidden',
+          background: 'var(--rig-paper)',
+          border: '1px solid var(--rig-rule-hair)',
+        }}
+      >
+        <span style={{ width: `${pos}%`, background: 'var(--rig-gold)' }} />
+        <span style={{ width: `${neu}%`, background: 'var(--rig-ink-3)', opacity: 0.35 }} />
+        <span style={{ width: `${neg}%`, background: 'var(--rig-oxblood)' }} />
       </div>
-      <div style={{
-        fontFamily:  "'DM Mono', ui-monospace, monospace",
-        fontSize:    '11px',
-        color:       '#64748B',
-        textAlign:   'right',
-      }}>
+      <div
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '10px',
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+          color: 'var(--rig-ink-3)',
+          textAlign: 'right',
+        }}
+      >
         {total} posts
       </div>
     </div>
   )
 }
 
-/* ── Post card ───────────────────────────────────────────────────────── */
+/* ── Post card ─────────────────────────────────────────────────── */
 
-function PostCard({ post }: { post: SignalPost }) {
+interface PostCardProps {
+  post: SignalPost
+  index: number
+}
+
+function PostCard({ post, index }: PostCardProps) {
   const s = sentimentLabel(post.sentiment_score)
-  const border = PLATFORM_COLOR[post.platform]
   const viral = post.forward_count > 10
 
   return (
-    <article style={{
-      backgroundColor:  '#FFFFFF',
-      borderRadius:     '6px',
-      border:           '1px solid #E2E8F0',
-      borderLeft:       `4px solid ${border}`,
-      padding:          '16px 18px',
-      display:          'flex',
-      flexDirection:    'column',
-      gap:              '10px',
-    }}>
-      <header style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-        <span style={{
-          fontFamily:   "'DM Sans', system-ui, sans-serif",
-          fontSize:     '11px',
-          fontWeight:   600,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          color:        border,
-        }}>
-          {PLATFORM_LABEL[post.platform]}
-        </span>
-        {post.author_username && (
-          <span style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '12px', color: '#0F172A' }}>
-            @{post.author_username}
+    <article
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '56px 1fr',
+        gap: '20px',
+        paddingTop: '28px',
+        paddingBottom: '28px',
+        borderBottom: '1px solid var(--rig-rule-hair)',
+        borderLeft: viral ? '2px solid var(--rig-oxblood)' : '2px solid transparent',
+        paddingLeft: '14px',
+        marginLeft: '-14px',
+      }}
+    >
+      {/* Numeral */}
+      <div
+        style={{
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontWeight: 400,
+          fontSize: '28px',
+          color: 'var(--rig-ink-3)',
+          lineHeight: 1,
+          paddingTop: '4px',
+        }}
+      >
+        {String(index).padStart(2, '0')}
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {/* Byline */}
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            flexWrap: 'wrap',
+          }}
+          className="rig-byline"
+        >
+          <span style={{ color: 'var(--rig-copper)' }}>
+            {PLATFORM_LABEL[post.platform]}
           </span>
-        )}
-        {post.monitor_name && (
-          <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", fontSize: '12px', color: '#94A3B8' }}>
-            · {post.monitor_name}
+          {post.author_username && (
+            <>
+              <span aria-hidden="true" style={{ opacity: 0.4 }}>·</span>
+              <span style={{ textTransform: 'none', letterSpacing: 'normal', fontSize: '11px' }}>
+                @{post.author_username}
+              </span>
+            </>
+          )}
+          {post.monitor_name && (
+            <>
+              <span aria-hidden="true" style={{ opacity: 0.4 }}>·</span>
+              <span>{post.monitor_name}</span>
+            </>
+          )}
+          <span style={{ marginLeft: 'auto', opacity: 0.7 }}>
+            {relativeTime(post.posted_at || post.collected_at)}
           </span>
-        )}
-        <span style={{ fontFamily: "'DM Mono', ui-monospace, monospace", fontSize: '11px', color: '#94A3B8', marginLeft: 'auto' }}>
-          {relativeTime(post.posted_at || post.collected_at)}
-        </span>
-      </header>
+        </header>
 
-      <p style={{
-        margin:      0,
-        fontFamily:  "'DM Sans', system-ui, sans-serif",
-        fontSize:    '14px',
-        lineHeight:  1.6,
-        color:       '#18181B',
-        whiteSpace:  'pre-wrap',
-      }}>
-        {post.post_text}
-      </p>
+        {/* Post body as serif body */}
+        <p
+          style={{
+            margin: 0,
+            fontFamily: 'var(--font-serif)',
+            fontSize: '16px',
+            lineHeight: 1.55,
+            color: 'var(--rig-ink)',
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {post.post_text}
+        </p>
 
-      {post.has_document && (
-        <div style={{
-          fontFamily:  "'DM Sans', system-ui, sans-serif",
-          fontSize:    '11px',
-          color:       '#F43F5E',
-          fontWeight:  600,
-          letterSpacing: '0.04em',
-        }}>
-          📄 DOCUMENT ATTACHED — forwarded to Document Room for processing
-        </div>
-      )}
-      {post.forwarded_from && (
-        <div style={{
-          fontFamily:  "'DM Mono', ui-monospace, monospace",
-          fontSize:    '11px',
-          color:       '#94A3B8',
-        }}>
-          ↗ FORWARDED FROM {post.forwarded_from}
-        </div>
-      )}
-      {viral && (
-        <div style={{
-          fontFamily:    "'DM Sans', system-ui, sans-serif",
-          fontSize:      '11px',
-          fontWeight:    600,
-          color:         '#F43F5E',
-          letterSpacing: '0.04em',
-        }}>
-          🔥 {post.forward_count} forwards — VIRAL
-        </div>
-      )}
-
-      {post.matched_entities.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-          {post.matched_entities.map(e => (
-            <span key={e} style={{
-              fontFamily:      "'DM Sans', system-ui, sans-serif",
-              fontSize:        '11px',
-              padding:         '2px 8px',
-              borderRadius:    '6px',
-              backgroundColor: '#FFF1F2',
-              color:           '#9F1239',
-              border:          '1px solid #FECDD3',
-            }}>
-              {e}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <footer style={{
-        display:       'flex',
-        alignItems:    'center',
-        gap:           '18px',
-        fontFamily:    "'DM Mono', ui-monospace, monospace",
-        fontSize:      '12px',
-        color:         '#64748B',
-      }}>
-        <span>▲ {post.upvotes.toLocaleString()}</span>
-        <span>💬 {post.comment_count.toLocaleString()}</span>
-        {post.share_count > 0 && <span>🔁 {post.share_count.toLocaleString()}</span>}
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
-          <span style={{ fontFamily: "'DM Sans', system-ui, sans-serif", color: s.color, fontWeight: 600, letterSpacing: '0.06em' }}>
-            {s.label}
-          </span>
-          {post.sentiment_score !== null && (
-            <span style={{ color: '#94A3B8' }}>
-              ({post.sentiment_score.toFixed(2)})
+        {/* Badges */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 18px', alignItems: 'center' }}>
+          {post.has_document && (
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '10px',
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                color: 'var(--rig-oxblood)',
+              }}
+            >
+              ◆ Document attached — routed to the Archive
             </span>
           )}
-        </span>
-      </footer>
+          {post.forwarded_from && (
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '10px',
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                color: 'var(--rig-ink-3)',
+              }}
+            >
+              ↗ Forwarded from {post.forwarded_from}
+            </span>
+          )}
+          {viral && (
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '10px',
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                color: 'var(--rig-oxblood)',
+              }}
+            >
+              ▲ Travelling — {post.forward_count} forwards
+            </span>
+          )}
+        </div>
 
-      <div style={{ display: 'flex', gap: '8px' }}>
-        {post.post_url && (
-          <a
-            href={post.post_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={linkBtnStyle}
-          >
-            Open Original ↗
-          </a>
+        {/* Entity chips */}
+        {post.matched_entities.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {post.matched_entities.map(e => (
+              <span
+                key={e}
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '10px',
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  padding: '3px 9px',
+                  border: '1px solid var(--rig-rule)',
+                  color: 'var(--rig-ink-2)',
+                  background: 'transparent',
+                }}
+              >
+                {e}
+              </span>
+            ))}
+          </div>
         )}
+
+        {/* Footer row */}
+        <footer
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '18px',
+            paddingTop: '8px',
+            borderTop: '1px solid var(--rig-rule-hair)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '10px',
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'var(--rig-ink-3)',
+          }}
+        >
+          <span>▲ {post.upvotes.toLocaleString()}</span>
+          <span>✎ {post.comment_count.toLocaleString()}</span>
+          {post.share_count > 0 && <span>↻ {post.share_count.toLocaleString()}</span>}
+
+          <span
+            style={{
+              marginLeft: 'auto',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span style={{ color: sentimentColor(s.tone), fontWeight: 500 }}>
+              {s.label}
+            </span>
+            {post.sentiment_score !== null && (
+              <span style={{ opacity: 0.55, letterSpacing: '0.04em', textTransform: 'none' }}>
+                ({post.sentiment_score.toFixed(2)})
+              </span>
+            )}
+          </span>
+
+          {post.post_url && (
+            <a
+              href={post.post_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: 'var(--rig-ink-2)',
+                textDecoration: 'none',
+                borderBottom: '1px solid var(--rig-rule)',
+                paddingBottom: '1px',
+              }}
+            >
+              Open original ↗
+            </a>
+          )}
+        </footer>
       </div>
     </article>
   )
 }
 
-/* ── Misc UI pieces ──────────────────────────────────────────────────── */
+/* ── Misc ──────────────────────────────────────────────────────── */
 
-function EmptyState({ platform }: { platform: Platform }) {
-  const label = platform === 'all' ? 'any platform' : PLATFORM_LABEL[platform as Exclude<Platform, 'all'>]
+function LoadingState() {
   return (
-    <div style={{
-      backgroundColor: '#FFFFFF',
-      border:          '1px dashed #CBD5E1',
-      borderRadius:    '6px',
-      padding:         '40px 20px',
-      textAlign:       'center',
-      fontFamily:      "'DM Sans', system-ui, sans-serif",
-      color:           '#64748B',
-    }}>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>No signals yet</div>
-      <div style={{ fontSize: '13px', marginTop: '6px' }}>
-        Waiting for the next collection cycle from {label}.
-      </div>
+    <div
+      style={{
+        padding: '48px 0',
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '12px',
+      }}
+    >
+      <span
+        className="rig-headline"
+        style={{ fontStyle: 'italic', fontSize: '18px', color: 'var(--rig-ink-2)' }}
+      >
+        Pulling the wires…
+      </span>
+      <span
+        style={{
+          width: '140px',
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, var(--rig-gold), transparent)',
+        }}
+      />
     </div>
   )
 }
 
-function LoadingRow() {
+interface DeskMemoProps {
+  kicker: string
+  headline: string
+  body: string
+}
+
+function DeskMemo({ kicker, headline, body }: DeskMemoProps) {
   return (
-    <div style={{
-      padding:         '18px',
-      fontFamily:      "'DM Mono', ui-monospace, monospace",
-      fontSize:        '12px',
-      color:           '#94A3B8',
-      textAlign:       'center',
-    }}>
-      loading…
+    <div
+      style={{
+        padding: '56px 32px',
+        textAlign: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '12px',
+        border: '1px solid var(--rig-rule)',
+        background: 'var(--rig-paper-2)',
+      }}
+    >
+      <span className="rig-kicker">{kicker}</span>
+      <span
+        className="rig-headline"
+        style={{ fontStyle: 'italic', fontSize: '22px', color: 'var(--rig-ink-2)' }}
+      >
+        {headline}
+      </span>
+      <span
+        style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: '14px',
+          color: 'var(--rig-ink-3)',
+          maxWidth: '440px',
+          lineHeight: 1.55,
+        }}
+      >
+        {body}
+      </span>
     </div>
   )
-}
-
-const loadMoreBtnStyle: React.CSSProperties = {
-  alignSelf:       'center',
-  padding:         '8px 16px',
-  backgroundColor: '#FFFFFF',
-  border:          '1px solid #CBD5E1',
-  borderRadius:    '6px',
-  fontFamily:      "'DM Sans', system-ui, sans-serif",
-  fontSize:        '13px',
-  color:           '#0F172A',
-  cursor:          'pointer',
-}
-
-const linkBtnStyle: React.CSSProperties = {
-  fontFamily:    "'DM Sans', system-ui, sans-serif",
-  fontSize:      '12px',
-  color:         '#0F172A',
-  textDecoration: 'none',
-  padding:       '6px 12px',
-  borderRadius:  '6px',
-  border:        '1px solid #E2E8F0',
-  backgroundColor: '#F8FAFC',
-}
-
-const errorBoxStyle: React.CSSProperties = {
-  padding:         '14px 18px',
-  backgroundColor: '#FFF1F2',
-  border:          '1px solid #FECDD3',
-  borderRadius:    '6px',
-  fontFamily:      "'DM Sans', system-ui, sans-serif",
-  fontSize:        '13px',
-  color:           '#9F1239',
 }

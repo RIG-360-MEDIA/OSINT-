@@ -50,6 +50,7 @@ app.config_from_object(
         "enable_utc": True,
         "task_routes": {
             "tasks.collect_rss": {"queue": "collectors"},
+            "tasks.collect_rss_direct": {"queue": "collectors"},
             "tasks.collect_html": {"queue": "collectors"},
             "tasks.collect_youtube": {"queue": "youtube"},
             "tasks.collect_govt_documents": {"queue": "documents"},
@@ -70,6 +71,11 @@ app.config_from_object(
             "collect-rss-every-15-min": {
                 "task": "tasks.collect_rss",
                 "schedule": timedelta(minutes=15),
+                "options": {"queue": "collectors"},
+            },
+            "collect-rss-direct-every-30-min": {
+                "task": "tasks.collect_rss_direct",
+                "schedule": timedelta(minutes=30),
                 "options": {"queue": "collectors"},
             },
             "collect-html-every-6-hours": {

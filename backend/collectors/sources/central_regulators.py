@@ -39,6 +39,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from backend.collectors.govt_collector import _HTTP_HEADERS, _is_junk_title
+from backend.collectors.sources._dateparse import parse_listing_date
 from backend.collectors.sources.registry import register_source
 
 logger = logging.getLogger(__name__)
@@ -136,17 +137,32 @@ def _collect_links(
         title = _normalise_title(link.get_text(strip=True), full_url)
         if _is_junk_title(title, full_url):
             dropped_junk += 1
+            from backend.collectors.sources.registry import record_junk_dropped
+            record_junk_dropped()
             continue
 
         # F1 — PDF-only: drop navigation/category links that aren't actual PDFs.
         if ".pdf" not in full_url.lower():
             continue
 
+        # Parse a date out of the surrounding row text first, then the
+        # title, then the URL. RBI/SEBI/CCI etc. typically place the date
+        # in a sibling <td> within the same <tr>.
+        row_text = ""
+        row = link.find_parent(["tr", "li", "p", "div"])
+        if row is not None:
+            row_text = row.get_text(" ", strip=True)
+        published_at = (
+            parse_listing_date(row_text)
+            or parse_listing_date(title)
+            or parse_listing_date(full_url)
+        )
+
         docs.append(
             {
                 "url": full_url,
                 "title": title,
-                "published_at": None,
+                "published_at": published_at,
                 "type": document_type,
             }
         )
@@ -195,7 +211,9 @@ def _parse_rss_items(
             {
                 "url": full_url,
                 "title": title,
-                "published_at": None,
+                "published_at": (
+                    parse_listing_date(title) or parse_listing_date(full_url)
+                ),
                 "type": document_type,
             }
         )

@@ -29,6 +29,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from backend.collectors.govt_collector import _HTTP_HEADERS, _is_junk_title
+from backend.collectors.sources._dateparse import parse_listing_date
 from backend.collectors.sources.registry import register_source
 
 logger = logging.getLogger(__name__)
@@ -56,18 +57,31 @@ def _append_doc(
     document_type: str,
     *,
     bypass_junk: bool = False,
+    date_hint: str = "",
 ) -> None:
-    """Append a candidate. Court case numbers may trip junk filter — allow opt-out."""
+    """Append a candidate. Court case numbers may trip junk filter — allow opt-out.
+
+    ``published_at`` is parsed from ``date_hint`` (typically the surrounding
+    row text), then ``title``, then ``url``. Many court listings embed dates
+    in the title (e.g. ``Order dated 12.03.2024``).
+    """
     safe_title = (title or url.rsplit("/", 1)[-1]).strip()
     if not safe_title or len(safe_title) < _MIN_TITLE_LEN:
         return
     if not bypass_junk and _is_junk_title(safe_title, url):
+        from backend.collectors.sources.registry import record_junk_dropped
+        record_junk_dropped()
         return
+    pub = (
+        parse_listing_date(date_hint)
+        or parse_listing_date(safe_title)
+        or parse_listing_date(url)
+    )
     docs.append(
         {
             "url": url,
             "title": safe_title[:500],
-            "published_at": None,
+            "published_at": pub,
             "type": document_type,
         }
     )

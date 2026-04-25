@@ -161,3 +161,24 @@ app.config_from_object(
         },
     }
 )
+
+
+# ── Worker boot self-checks ─────────────────────────────────────
+#
+# Verify Playwright is usable so the 9 JS-rendered govt adapters
+# (SEBI, SCI, NGT, MCA, ADB, IMF, UN, CERC, PNGRB) do not silently
+# return zero rows on every collection. Logs CRITICAL on failure but
+# does not abort the worker — httpx-direct adapters still need to run.
+from celery.signals import worker_ready
+
+
+@worker_ready.connect
+def _govt_collector_self_check(**_kw) -> None:
+    try:
+        from backend.collectors.playwright_helper import assert_available_sync
+        assert_available_sync()
+    except Exception as exc:  # noqa: BLE001 — self-check must never crash worker
+        import logging
+        logging.getLogger(__name__).warning(
+            "Playwright self-check skipped: %s", exc,
+        )

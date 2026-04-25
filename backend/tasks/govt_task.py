@@ -94,6 +94,11 @@ async def _collect_govt_docs() -> dict:
             docs_failed = 0
             source_error: str | None = None
 
+            from backend.collectors.sources.registry import (
+                read_junk_counter,
+                reset_junk_counter,
+            )
+            reset_junk_counter()
             try:
                 doc_urls = await fetch_document_urls(
                     source.portal_url,
@@ -108,6 +113,7 @@ async def _collect_govt_docs() -> dict:
                 doc_urls = []
                 source_error = f"discovery: {exc}"
             urls_discovered = len(doc_urls)
+            urls_filtered_junk = read_junk_counter()
 
             for doc_info in doc_urls:
                 url = doc_info["url"]
@@ -134,6 +140,7 @@ async def _collect_govt_docs() -> dict:
                         continue
 
                     title = doc_info["title"]
+                    published_at = doc_info.get("published_at")
 
                     try:
                         lang, translated = await detect_and_translate(
@@ -219,7 +226,8 @@ async def _collect_govt_docs() -> dict:
                                 effective_date,
                                 winners,
                                 losers,
-                                enforcement_strength
+                                enforcement_strength,
+                                published_at
                             ) VALUES (
                                 :source_id,
                                 :source_name,
@@ -244,7 +252,8 @@ async def _collect_govt_docs() -> dict:
                                 CAST(:eff_date AS DATE),
                                 CAST(:winners AS JSONB),
                                 CAST(:losers AS JSONB),
-                                :enforcement
+                                :enforcement,
+                                :published_at
                             )
                             ON CONFLICT (document_url) DO NOTHING
                             RETURNING id
@@ -274,6 +283,7 @@ async def _collect_govt_docs() -> dict:
                             "winners": winners_json,
                             "losers": losers_json,
                             "enforcement": intel.enforcement_strength,
+                            "published_at": published_at,
                         },
                     )
 
@@ -345,6 +355,7 @@ async def _collect_govt_docs() -> dict:
                 run_id=run_id,
                 status="completed" if success else "failed",
                 urls_discovered=urls_discovered,
+                urls_filtered_junk=urls_filtered_junk,
                 pdfs_downloaded=pdfs_downloaded,
                 docs_inserted=source_inserted,
                 docs_failed=docs_failed,

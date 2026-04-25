@@ -96,3 +96,53 @@ async def shutdown() -> None:
         except Exception:
             pass
         _browser = None
+
+
+async def probe() -> tuple[bool, str]:
+    """Smoke-test that Chromium can render a page.
+
+    Returns ``(ok, detail)``. ``ok=False`` typically means Chromium isn't
+    installed in the worker container — in which case all 9
+    Playwright-strict adapters (SEBI, SCI, NGT, MCA, ADB, IMF, UN, CERC,
+    PNGRB) silently return ``[]`` on every collection run. Boot calls
+    this and refuses to start unless it returns ok.
+    """
+    try:
+        html = await render_html("https://example.com", timeout_ms=10000)
+    except Exception as exc:  # noqa: BLE001
+        return False, f"probe raised: {exc}"
+    if not html:
+        return False, "probe returned empty HTML"
+    if "Example Domain" not in html:
+        return False, "probe HTML did not match expected fixture"
+    return True, "ok"
+
+
+def assert_available_sync() -> None:
+    """Synchronous wrapper for use in Celery worker_init signal handlers.
+
+    Logs a CRITICAL warning if Playwright is not usable; does NOT raise,
+    because the rest of the worker still has 38 httpx-direct adapters
+    that work without it. Operators should treat the warning as a
+    deployment bug to fix.
+    """
+    import asyncio
+
+    try:
+        ok, detail = asyncio.run(probe())
+    except Exception as exc:  # noqa: BLE001
+        logger.critical(
+            "Playwright probe could not run (%s). 9 govt adapters will "
+            "silently return zero rows until Chromium is installed.",
+            exc,
+        )
+        return
+    if not ok:
+        logger.critical(
+            "Playwright probe failed: %s. 9 govt adapters (SEBI, SCI, "
+            "NGT, MCA, ADB, IMF, UN, CERC, PNGRB) will silently return "
+            "zero rows until this is fixed.",
+            detail,
+        )
+    else:
+        logger.info("Playwright probe ok — JS-rendered adapters enabled.")

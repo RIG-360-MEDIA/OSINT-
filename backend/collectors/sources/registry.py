@@ -24,6 +24,7 @@ Auto-import: every family module under ``backend/collectors/sources/*.py``
 """
 from __future__ import annotations
 
+import contextvars
 import importlib
 import logging
 import pkgutil
@@ -37,6 +38,33 @@ ScraperFn = Callable[[str, str, int], Awaitable[list[dict]]]
 SOURCE_REGISTRY: dict[str, ScraperFn] = {}
 
 _AUTOLOADED = False
+
+
+# Per-call junk-drop counter. Adapters increment via ``record_junk_dropped``.
+# The orchestrator resets it before each call and reads it after, then writes
+# the value to ``govt_collection_runs.urls_filtered_junk`` for selector-drift
+# detection (defect D-26 / fix-plan Phase 2D).
+_junk_counter: contextvars.ContextVar[int] = contextvars.ContextVar(
+    "govt_source_junk_counter",
+    default=0,
+)
+
+
+def reset_junk_counter() -> contextvars.Token:
+    """Reset the per-call junk counter to zero. Returns a token that
+    ``read_junk_counter`` does not need but is provided for completeness."""
+    return _junk_counter.set(0)
+
+
+def record_junk_dropped(n: int = 1) -> None:
+    """Adapters call this when ``_is_junk_title`` rejects a row. Cheap
+    no-op outside an active context."""
+    _junk_counter.set(_junk_counter.get() + n)
+
+
+def read_junk_counter() -> int:
+    """Read the per-call junk counter. Orchestrator only."""
+    return _junk_counter.get()
 
 
 def register_source(url_substring: str) -> Callable[[ScraperFn], ScraperFn]:

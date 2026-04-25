@@ -30,6 +30,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from backend.collectors.govt_collector import _HTTP_HEADERS, _is_junk_title
+from backend.collectors.sources._dateparse import parse_listing_date
 from backend.collectors.sources.registry import register_source
 
 logger = logging.getLogger(__name__)
@@ -54,16 +55,25 @@ def _append_doc(
     url: str,
     title: str,
     document_type: str,
+    *,
+    date_hint: str = "",
 ) -> None:
     """Append a candidate to docs (immutable-style helper) if not junk."""
     safe_title = (title or url.rsplit("/", 1)[-1]).strip()
     if _is_junk_title(safe_title, url):
+        from backend.collectors.sources.registry import record_junk_dropped
+        record_junk_dropped()
         return
+    pub = (
+        parse_listing_date(date_hint)
+        or parse_listing_date(safe_title)
+        or parse_listing_date(url)
+    )
     docs.append(
         {
             "url": url,
             "title": safe_title[:500],
-            "published_at": None,
+            "published_at": pub,
             "type": document_type,
         }
     )

@@ -120,6 +120,54 @@ async def _try_sitemap(portal_url: str) -> list[dict] | None:
 # ── Portal scrapers ─────────────────────────────────────────────────────────
 
 
+def _apply_since_days_filter(
+    docs: list[dict],
+    *,
+    since_days: int,
+    portal_url: str,
+) -> list[dict]:
+    """Drop rows whose ``published_at`` is older than ``since_days``.
+
+    Rows with ``published_at is None`` are kept (the date parser couldn't
+    extract a date — losing them would create silent black holes; the
+    parse-time WARNING already surfaces the gap). Rows with a parsed date
+    older than the cutoff are dropped — this is the gate that turns the
+    daily run into a real delta instead of a re-scrape (defect D-23).
+    """
+    from datetime import datetime, timedelta, timezone
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=since_days)
+    kept: list[dict] = []
+    dropped_old = 0
+    no_date = 0
+    for d in docs:
+        pub = d.get("published_at")
+        if pub is None:
+            no_date += 1
+            kept.append(d)
+            continue
+        if isinstance(pub, str):
+            try:
+                pub = datetime.fromisoformat(pub.replace("Z", "+00:00"))
+            except ValueError:
+                kept.append(d)
+                continue
+        if pub.tzinfo is None:
+            pub = pub.replace(tzinfo=timezone.utc)
+        if pub >= cutoff:
+            kept.append(d)
+        else:
+            dropped_old += 1
+
+    if dropped_old or no_date:
+        logger.info(
+            "since_days filter [%s]: kept %d, dropped %d as too old, "
+            "%d had no parseable date",
+            portal_url, len(kept), dropped_old, no_date,
+        )
+    return kept
+
+
 async def fetch_document_urls(
     portal_url: str,
     document_type: str,
@@ -135,27 +183,39 @@ async def fetch_document_urls(
       3. Built-in Telangana GO.Ms / TS High Court scraper
       4. Generic PDF-link scraper (any portal)
 
-    Returns list of dicts: {url, title, published_at, type}.
+    Returns list of dicts: {url, title, published_at, type}. Rows older
+    than ``since_days`` are filtered out by the shared gate; this is the
+    single point of date enforcement so per-adapter implementations
+    don't have to repeat it.
     """
     from backend.collectors.sources.registry import lookup
 
     adapter = lookup(portal_url)
+    raw: list[dict]
     if adapter is not None:
         try:
-            return await adapter(portal_url, document_type, since_days)
+            raw = await adapter(portal_url, document_type, since_days)
         except Exception as exc:
             logger.warning(
                 "Source adapter for %s failed: %s — falling back to built-ins",
                 portal_url,
                 exc,
             )
+            raw = await _legacy_fallback(portal_url, since_days)
+    else:
+        raw = await _legacy_fallback(portal_url, since_days)
 
+    return _apply_since_days_filter(
+        raw, since_days=since_days, portal_url=portal_url
+    )
+
+
+async def _legacy_fallback(portal_url: str, since_days: int) -> list[dict]:
+    """Built-in scrapers for portals without a registered adapter."""
     if "pib.gov.in" in portal_url:
         return await _scrape_pib(since_days)
-
     if "tggovernment" in portal_url or "tshc.gov.in" in portal_url:
         return await _scrape_tg_goms(since_days)
-
     return await _scrape_generic_pdfs(portal_url, since_days)
 
 
@@ -194,13 +254,23 @@ async def _scrape_pib(since_days: int) -> list[dict]:
 
                     if _is_junk_title(title, full_url):
                         dropped_junk += 1
+                        from backend.collectors.sources.registry import (
+                            record_junk_dropped,
+                        )
+                        record_junk_dropped()
                         continue
 
+                    from backend.collectors.sources._dateparse import (
+                        parse_listing_date,
+                    )
                     docs.append(
                         {
                             "url": full_url,
                             "title": title[:500],
-                            "published_at": None,
+                            "published_at": (
+                                parse_listing_date(title)
+                                or parse_listing_date(full_url)
+                            ),
                             "type": "press_release",
                         }
                     )
@@ -241,13 +311,23 @@ async def _scrape_tg_goms(since_days: int) -> list[dict]:
 
                     if _is_junk_title(title, full_url):
                         dropped_junk += 1
+                        from backend.collectors.sources.registry import (
+                            record_junk_dropped,
+                        )
+                        record_junk_dropped()
                         continue
 
+                    from backend.collectors.sources._dateparse import (
+                        parse_listing_date,
+                    )
                     docs.append(
                         {
                             "url": full_url,
                             "title": title,
-                            "published_at": None,
+                            "published_at": (
+                                parse_listing_date(title)
+                                or parse_listing_date(full_url)
+                            ),
                             "type": "government_order",
                         }
                     )
@@ -291,13 +371,23 @@ async def _scrape_generic_pdfs(
 
                     if _is_junk_title(title, full_url):
                         dropped_junk += 1
+                        from backend.collectors.sources.registry import (
+                            record_junk_dropped,
+                        )
+                        record_junk_dropped()
                         continue
 
+                    from backend.collectors.sources._dateparse import (
+                        parse_listing_date,
+                    )
                     docs.append(
                         {
                             "url": full_url,
                             "title": title,
-                            "published_at": None,
+                            "published_at": (
+                                parse_listing_date(title)
+                                or parse_listing_date(full_url)
+                            ),
                             "type": "document",
                         }
                     )

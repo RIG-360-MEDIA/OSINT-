@@ -31,13 +31,15 @@ from bs4 import BeautifulSoup
 
 from backend.collectors.govt_collector import _HTTP_HEADERS, _is_junk_title
 from backend.collectors.sources._dateparse import parse_listing_date
+from backend.config.govt_config import (
+    HTTP_TIMEOUT_SECONDS as _REQUEST_TIMEOUT,
+    PER_PORTAL_CAP as _MAX_CANDIDATES,
+)
 from backend.collectors.sources.registry import register_source
 
 logger = logging.getLogger(__name__)
 
 
-_MAX_CANDIDATES = 15
-_REQUEST_TIMEOUT = 30
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────

@@ -159,7 +159,7 @@ describe('DocumentsPage — happy path', () => {
     render(<DocumentsPage />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
 
-    const central = await screen.findByRole('button', { name: 'Central' })
+    const central = await screen.findByRole('radio', { name: 'Central' })
     await userEvent.click(central)
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
@@ -213,7 +213,7 @@ describe('DocumentsPage — error handling', () => {
     })
     render(<DocumentsPage />)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
-    const central = await screen.findByRole('button', { name: 'Central' })
+    const central = await screen.findByRole('radio', { name: 'Central' })
     await userEvent.click(central)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
     // Fast result must be visible; aborted slow request must not produce
@@ -249,8 +249,8 @@ describe('DocumentsPage — pagination', () => {
   })
 })
 
-describe('DocumentsPage — accessibility (xfail until D-10/D-12 fixed)', () => {
-  it.fails('modal opens with role="dialog" and aria-modal', async () => {
+describe('DocumentsPage — accessibility', () => {
+  it('modal opens with role="dialog" and aria-modal (D-10)', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => feedResponse([makeDoc({ title: 'Click me' })]),
@@ -262,14 +262,30 @@ describe('DocumentsPage — accessibility (xfail until D-10/D-12 fixed)', () => 
     expect(dialog).toHaveAttribute('aria-modal', 'true')
   })
 
-  it.fails('filter pill exposes aria-pressed when active', async () => {
+  it('filter pill exposes aria-pressed when active (D-12)', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => feedResponse([makeDoc()]),
     })
     render(<DocumentsPage />)
-    const local = await screen.findByRole('button', { name: 'Local' })
+    const local = await screen.findByRole('radio', { name: 'Local' })
     await userEvent.click(local)
     expect(local).toHaveAttribute('aria-pressed', 'true')
+    expect(local).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('Escape key closes the modal (D-10)', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => feedResponse([makeDoc({ title: 'Esc test' })]),
+    })
+    render(<DocumentsPage />)
+    const row = await screen.findByText('Esc test')
+    await userEvent.click(row)
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    )
   })
 })

@@ -40,13 +40,15 @@ from bs4 import BeautifulSoup
 
 from backend.collectors.govt_collector import _HTTP_HEADERS, _is_junk_title
 from backend.collectors.sources._dateparse import parse_listing_date
+from backend.config.govt_config import (
+    HTTP_TIMEOUT_SECONDS as _HTTP_TIMEOUT,
+    PER_PORTAL_CAP as _PER_PORTAL_CAP,
+)
 from backend.collectors.sources.registry import register_source
 
 logger = logging.getLogger(__name__)
 
 
-_PER_PORTAL_CAP = 15
-_HTTP_TIMEOUT = 30
 
 
 # ── Internal helpers ────────────────────────────────────────────────────────

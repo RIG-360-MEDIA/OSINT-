@@ -458,6 +458,10 @@ interface FilterPillProps {
 function FilterPill({ label, active, onClick }: FilterPillProps) {
   return (
     <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      aria-pressed={active}
       onClick={onClick}
       style={{
         padding: '5px 12px',
@@ -844,6 +848,27 @@ function DocumentDialog({
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summaryError, setSummaryError] = useState<string | null>(null)
 
+  const dialogRef = useRef<HTMLElement | null>(null)
+  const previouslyFocused = useRef<HTMLElement | null>(null)
+
+  // D-10: Esc closes the modal; focus is moved into the dialog on mount and
+  // restored to the row that opened it on unmount.
+  useEffect(() => {
+    previouslyFocused.current = document.activeElement as HTMLElement | null
+    dialogRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      previouslyFocused.current?.focus?.()
+    }
+  }, [onClose])
+
   const generateSummary = useCallback(async () => {
     setSummaryLoading(true)
     setSummaryError(null)
@@ -880,6 +905,11 @@ function DocumentDialog({
       }}
     >
       <aside
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={doc.title}
+        tabIndex={-1}
         onClick={e => e.stopPropagation()}
         className="anim-slide-right"
         style={{
@@ -893,6 +923,7 @@ function DocumentDialog({
           borderLeft: '1px solid var(--rig-rule)',
           boxShadow: '-8px 0 32px color-mix(in srgb, var(--rig-ink) 10%, transparent)',
           overflowY: 'auto',
+          outline: 'none',
         }}
       >
         {/* Head */}

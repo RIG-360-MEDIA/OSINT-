@@ -63,6 +63,15 @@ const DOC_TYPES: Array<{ value: string; label: string }> = [
   { value: 'ministry_order',   label: 'Ministry Orders' },
 ]
 
+type WindowDays = 7 | 30 | 90 | 365
+
+const WINDOWS: Array<{ value: WindowDays; label: string }> = [
+  { value: 7,   label: '7 days' },
+  { value: 30,  label: '30 days' },
+  { value: 90,  label: '90 days' },
+  { value: 365, label: '1 year' },
+]
+
 const URGENCY_TONE: Record<string, 'alert' | 'gold' | 'default'> = {
   HIGH: 'alert',
   MEDIUM: 'gold',
@@ -100,12 +109,15 @@ export default function DocumentsPage() {
 
   const [geoFilter, setGeoFilter] = useState<GeoFilter>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [windowDays, setWindowDays] = useState<WindowDays>(30)
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
 
   const [openDoc, setOpenDoc] = useState<DocumentItem | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fetchAbort = useRef<AbortController | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -130,11 +142,23 @@ export default function DocumentsPage() {
   const fetchFeed = useCallback(
     async (cursor: string | null, append: boolean) => {
       if (!token) return
+
+      // D-5: cancel any in-flight request before starting a new one so a
+      // slow stale response can't clobber the fresh result on rapid
+      // filter clicks.
+      if (fetchAbort.current) fetchAbort.current.abort()
+      const abort = new AbortController()
+      fetchAbort.current = abort
+
       if (append) setAppending(true)
-      else setLoading(true)
+      else {
+        setLoading(true)
+        setError(null)
+      }
       try {
         const params = new URLSearchParams()
         params.set('limit', '20')
+        params.set('days', String(windowDays))
         if (geoFilter !== 'all') params.set('geography', geoFilter)
         if (typeFilter !== 'all') params.set('doc_type', typeFilter)
         if (search) params.set('search', search)
@@ -142,9 +166,19 @@ export default function DocumentsPage() {
 
         const res = await fetch(
           `${API_BASE}/api/documents/feed?${params.toString()}`,
-          { headers: { Authorization: `Bearer ${token}` } },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: abort.signal,
+          },
         )
         if (!res.ok) {
+          // D-4: surface the failure. Preserve the previous list on
+          // append-failure (so a flaky load-more doesn't blank the page).
+          const message =
+            res.status === 401 ? 'Your session expired. Please sign in again.'
+              : res.status >= 500 ? 'The archive is temporarily unavailable. Try again in a moment.'
+              : `Couldn't load the archive (HTTP ${res.status}).`
+          setError(message)
           if (!append) setDocuments([])
           return
         }
@@ -154,18 +188,31 @@ export default function DocumentsPage() {
         setNextCursor(data.next_cursor)
         setTotal(data.total)
         setGeoCounts(data.geography_counts)
+        setError(null)
+      } catch (err) {
+        // AbortError means we cancelled this fetch on purpose — ignore.
+        if ((err as Error)?.name === 'AbortError') return
+        setError('Network error. Check your connection and try again.')
+        if (!append) setDocuments([])
       } finally {
+        if (fetchAbort.current === abort) fetchAbort.current = null
         setLoading(false)
         setAppending(false)
       }
     },
-    [token, geoFilter, typeFilter, search],
+    [token, geoFilter, typeFilter, windowDays, search],
   )
 
   useEffect(() => {
     if (!token) return
     void fetchFeed(null, false)
-  }, [token, geoFilter, typeFilter, search, fetchFeed])
+  }, [token, geoFilter, typeFilter, windowDays, search, fetchFeed])
+
+  useEffect(() => {
+    return () => {
+      if (fetchAbort.current) fetchAbort.current.abort()
+    }
+  }, [])
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--rig-paper)' }}>
@@ -242,6 +289,17 @@ export default function DocumentsPage() {
                 ))}
               </FilterRow>
 
+              <FilterRow label="Window">
+                {WINDOWS.map(({ value, label }) => (
+                  <FilterPill
+                    key={value}
+                    label={label}
+                    active={windowDays === value}
+                    onClick={() => setWindowDays(value)}
+                  />
+                ))}
+              </FilterRow>
+
               <div
                 style={{
                   display: 'flex',
@@ -274,9 +332,19 @@ export default function DocumentsPage() {
           </div>
 
           {/* Results */}
-          {loading && <LoadingState />}
+          {error && (
+            <ErrorBanner
+              message={error}
+              onRetry={() => {
+                setError(null)
+                void fetchFeed(null, false)
+              }}
+            />
+          )}
 
-          {!loading && documents.length === 0 && (
+          {loading && !error && <LoadingState />}
+
+          {!loading && !error && documents.length === 0 && (
             <DeskMemo
               kicker="Desk memo"
               headline="No papers match these terms."
@@ -692,6 +760,65 @@ function DeskMemo({ kicker, headline, body }: DeskMemoProps) {
       >
         {body}
       </span>
+    </div>
+  )
+}
+
+/* ── Error banner ──────────────────────────────────────────────── */
+
+interface ErrorBannerProps {
+  message: string
+  onRetry: () => void
+}
+
+function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
+  return (
+    <div
+      role="alert"
+      style={{
+        padding: '20px 24px',
+        margin: '0 0 24px',
+        border: '1px solid var(--rig-alert, #b1442d)',
+        background: 'rgba(177, 68, 45, 0.06)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '16px',
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <span className="rig-kicker" style={{ color: 'var(--rig-alert, #b1442d)' }}>
+          Stop press
+        </span>
+        <span
+          style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: '17px',
+            color: 'var(--rig-ink-1)',
+            lineHeight: 1.45,
+          }}
+        >
+          {message}
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rig-button"
+        style={{
+          fontSize: '12px',
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+          padding: '8px 16px',
+          border: '1px solid var(--rig-rule)',
+          background: 'var(--rig-paper)',
+          color: 'var(--rig-ink-1)',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Try again
+      </button>
     </div>
   )
 }

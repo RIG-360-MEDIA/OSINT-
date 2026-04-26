@@ -113,6 +113,12 @@ services:
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
       ENVIRONMENT: ${ENVIRONMENT:-development}
+      # Govt-doc collection window (days). Bumped from 2 to 30 because budget
+      # / policy / annual-report sources don't publish daily.
+      GOVT_DEFAULT_SINCE_DAYS: ${GOVT_DEFAULT_SINCE_DAYS:-30}
+      # Per-portal harvest cap. Bumped 15 -> 100 so adapters can pick up
+      # 30 days of backlog instead of just the front-page 15 items.
+      GOVT_PER_PORTAL_CAP: ${GOVT_PER_PORTAL_CAP:-100}
       NLP_BATCH_SIZE: ${NLP_BATCH_SIZE:-25}
       BRIEF_ARTICLE_LIMIT: ${BRIEF_ARTICLE_LIMIT:-30}
       TWITTER_BEARER_TOKEN: ${TWITTER_BEARER_TOKEN:-}
@@ -161,14 +167,18 @@ services:
 networks:
   rig-network:
     driver: bridge
-    # NOTE: 7 govt sources (finmin.nic.in, tserc.gov.in, tspsc.gov.in,
-    # loksabhadocs.nic.in, eparlib.nic.in, plus a couple Sansad mirrors)
-    # have IPv6-only DNS (NIC publishes only AAAA, no A). To enable
-    # those, you MUST manually:
-    #   1. Docker Desktop → Settings → Resources → Network → Enable IPv6
-    #   2. Re-add `enable_ipv6: true` + `ipam.config` IPv6 subnet here
-    #   3. Re-add `dns: [2606:4700:4700::1111, ...]` to rig-backend
-    # Doing it via daemon.json alone does not work on Docker Desktop.
+    # IPv6 enabled (Docker Desktop's "Enable IPv6" toggle is on); harmless
+    # for everything else. Originally added in a (failed) attempt to reach
+    # 7 govt domains (finmin.nic.in, tserc.gov.in, tspsc.gov.in,
+    # loksabhadocs.nic.in, eparlib.nic.in, plus Sansad mirrors). Investigation
+    # showed those domains return ANCOUNT=0 from any public resolver — they
+    # are genuinely NXDOMAIN, not IPv6-only. The fix is URL re-research,
+    # not network surgery.
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+        - subnet: fd00:dead:beef::/64
 
 volumes:
   rig-postgres-data:

@@ -427,12 +427,18 @@ async def download_pdf(url: str, tmpdir: str) -> str | None:
     """
     Download a PDF to a temp directory.
     Returns local file path or None if the URL is not a PDF / fails.
+
+    verify=False: many Indian govt CDNs ship cert chains with hostname
+    mismatches (TSHC, IP India, NCLT, NCLAT, CCI). The PDFs are public
+    documents; MITM is not a meaningful threat. Without this every TSHC
+    download fails with CERTIFICATE_VERIFY_FAILED.
     """
     try:
         async with httpx.AsyncClient(
             timeout=60,
             follow_redirects=True,
             headers=_HTTP_HEADERS,
+            verify=False,
         ) as client:
             r = await client.get(url)
             if r.status_code != 200:

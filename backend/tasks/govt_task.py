@@ -101,10 +101,12 @@ async def _collect_govt_docs() -> dict:
                     reset_junk_counter,
                 )
                 reset_junk_counter()
+                from backend.config.govt_config import DEFAULT_SINCE_DAYS
                 try:
                     doc_urls = await fetch_document_urls(
                         source.portal_url,
                         source.document_type,
+                        since_days=DEFAULT_SINCE_DAYS,
                     )
                 except Exception as exc:
                     logger.warning(

@@ -481,3 +481,49 @@ async def scrape_pib(
         logger.warning("PIB scrape failed: %s", exc)
     logger.info("PIB: discovered %d candidates", len(docs))
     return docs[:_MAX_CANDIDATES]
+
+
+# ── Union Budget portal (Ministry of Finance's actual content surface) ────
+
+
+@register_source("indiabudget.gov.in")
+async def scrape_indiabudget(
+    portal_url: str,
+    document_type: str,
+    since_days: int = 2,
+) -> list[dict]:
+    """Union Budget portal — the real content surface for MoF.
+
+    finmin.nic.in's homepage has nothing crawlable; indiabudget.gov.in
+    publishes the Budget Speech, Receipt Budget, Expenditure Budget, and
+    annual finance docs as direct .pdf links under /doc/.
+    """
+    docs: list[dict] = []
+    try:
+        async with httpx.AsyncClient(
+            timeout=_REQUEST_TIMEOUT,
+            follow_redirects=True,
+            headers=_HTTP_HEADERS,
+            verify=False,
+        ) as client:
+            html = await _fetch_html(client, portal_url)
+            if not html:
+                return docs
+            soup = BeautifulSoup(html, "html.parser")
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+                if ".pdf" not in href.lower():
+                    continue
+                full_url = _absolutize(href, portal_url)
+                title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
+                _append_doc(
+                    docs, full_url, title,
+                    document_type or "mof_notification",
+                    anchor=a,
+                )
+                if len(docs) >= _MAX_CANDIDATES:
+                    break
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("indiabudget scrape failed: %s", exc)
+    logger.info("indiabudget: discovered %d candidates", len(docs))
+    return docs[:_MAX_CANDIDATES]

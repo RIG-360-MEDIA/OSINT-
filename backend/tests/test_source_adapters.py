@@ -109,7 +109,7 @@ def test_registry_count_matches_inventory_doc():
     If this drifts again, re-run list_govt_sources --markdown and update
     the doc."""
 
-    expected = 49
+    expected = 53
     actual = len(_all_adapters())
     assert actual == expected, (
         f"Adapter count drift: registry={actual}, doc says {expected}. "

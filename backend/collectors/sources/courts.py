@@ -322,6 +322,114 @@ async def scrape_ngt(
     return docs[:_MAX_CANDIDATES]
 
 
+async def _scrape_state_hc_orders(
+    portal_url: str,
+    document_type: str,
+    *,
+    selector_keywords: tuple[str, ...] = (),
+    label: str = "state HC",
+) -> list[dict]:
+    """Shared workhorse for state High Court orders/judgments pages.
+
+    Each state HC publishes a recent-orders / daily-cause-list page that
+    links to PDFs (with case numbers and dates in anchor text — perfect
+    for the date parser). Selectors vary slightly per court; the calling
+    adapter passes its own keywords and we keep them as additive filters.
+    """
+    docs: list[dict] = []
+    try:
+        async with httpx.AsyncClient(
+            timeout=30,
+            follow_redirects=True,
+            headers=_HTTP_HEADERS,
+            verify=False,  # State HC sites frequently ship bad cert chains.
+        ) as client:
+            html = await _fetch_html(client, portal_url)
+            if not html:
+                return docs
+            soup = BeautifulSoup(html, "html.parser")
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+                if _is_skip_href(href):
+                    continue
+                lower = href.lower()
+                anchor_text = a.get_text(" ", strip=True)
+                if not (
+                    ".pdf" in lower
+                    or any(
+                        k in lower or k in anchor_text.lower()
+                        for k in selector_keywords
+                    )
+                ):
+                    continue
+                full_url = _absolutize(href, portal_url)
+                if ".pdf" not in full_url.lower():
+                    continue
+                row = a.find_parent(["tr", "li", "div", "p"])
+                date_hint = (
+                    row.get_text(" ", strip=True) if row is not None else ""
+                )
+                _append_doc(
+                    docs, full_url, anchor_text or "court order",
+                    document_type or "court_order",
+                    bypass_junk=True, date_hint=date_hint,
+                )
+                if len(docs) >= _MAX_CANDIDATES:
+                    break
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("%s scrape failed: %s", label, exc)
+    logger.info("%s: discovered %d candidates", label, len(docs))
+    return docs[:_MAX_CANDIDATES]
+
+
+@register_source("bombayhighcourt.nic.in")
+async def scrape_bombay_hc(
+    portal_url: str, document_type: str, since_days: int = 2,
+) -> list[dict]:
+    """Bombay High Court — orders & judgments listings (httpx-direct)."""
+    return await _scrape_state_hc_orders(
+        portal_url, document_type,
+        selector_keywords=("orders", "judgement", "judgment", "causelist"),
+        label="Bombay HC",
+    )
+
+
+@register_source("delhihighcourt.nic.in")
+async def scrape_delhi_hc(
+    portal_url: str, document_type: str, since_days: int = 2,
+) -> list[dict]:
+    """Delhi High Court — orders & judgments listings."""
+    return await _scrape_state_hc_orders(
+        portal_url, document_type,
+        selector_keywords=("dhc_case", "dhc_doc", "judgement", "judgment"),
+        label="Delhi HC",
+    )
+
+
+@register_source("hcmadras.tn.gov.in")
+async def scrape_madras_hc(
+    portal_url: str, document_type: str, since_days: int = 2,
+) -> list[dict]:
+    """Madras High Court — orders & judgments listings."""
+    return await _scrape_state_hc_orders(
+        portal_url, document_type,
+        selector_keywords=("orders", "judgement", "judgment", "causelist"),
+        label="Madras HC",
+    )
+
+
+@register_source("karnatakajudiciary.kar.nic.in")
+async def scrape_karnataka_hc(
+    portal_url: str, document_type: str, since_days: int = 2,
+) -> list[dict]:
+    """Karnataka High Court — orders & judgments listings."""
+    return await _scrape_state_hc_orders(
+        portal_url, document_type,
+        selector_keywords=("orders", "judgement", "judgment", "case_status"),
+        label="Karnataka HC",
+    )
+
+
 @register_source("ecourts.gov.in")
 async def scrape_ecourts_stub(
     portal_url: str,

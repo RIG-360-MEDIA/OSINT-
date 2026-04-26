@@ -1,0 +1,108 @@
+name: test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: backend (pytest)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rig
+          POSTGRES_PASSWORD: rigpassword
+          POSTGRES_DB: rig
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rig -d rig"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # asyncpg driver — used by backend.database.engine
+      DATABASE_URL: postgresql+asyncpg://rig:rigpassword@localhost:5432/rig
+      # psycopg2/sync — used by Celery / migrations
+      DATABASE_URL_SYNC: postgresql://rig:rigpassword@localhost:5432/rig
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install pgvector extension on Postgres
+        run: |
+          # The govt_documents schema uses pgvector. Install + create the
+          # extension before applying migrations.
+          PGPASSWORD=rigpassword psql -h localhost -U rig -d rig -c \
+            "CREATE EXTENSION IF NOT EXISTS vector;" || true
+
+      - name: Apply schema migrations
+        run: |
+          # Apply only the migrations the documents tests need: initial
+          # schema, govt documents, and the TTL index. Skipping the seed
+          # migrations keeps the test DB lean and decouples from data drift.
+          for f in \
+              scripts/migrations/001_initial_schema.sql \
+              scripts/migrations/006_govt_documents.sql \
+              scripts/migrations/008_doc_intelligence.sql \
+              scripts/migrations/009_govt_runs_ttl.sql ; do
+            if [ -f "$f" ]; then
+              echo "Applying $f"
+              PGPASSWORD=rigpassword psql -h localhost -U rig -d rig \
+                -v ON_ERROR_STOP=1 -f "$f"
+            fi
+          done
+
+      - name: Install Python deps
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx
+
+      - name: Run pytest (documents pillar only)
+        working-directory: ${{ github.workspace }}
+        run: |
+          python -m pytest \
+            backend/tests/test_dateparse.py \
+            backend/tests/test_source_adapters.py \
+            backend/tests/test_documents_router.py \
+            -q --tb=short
+
+  frontend:
+    name: frontend (vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Vitest
+        run: npm test -- --reporter=basic

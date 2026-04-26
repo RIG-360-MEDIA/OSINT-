@@ -60,6 +60,7 @@ def _append_doc(
     *,
     bypass_junk: bool = False,
     date_hint: str = "",
+    anchor=None,
 ) -> None:
     """Append a candidate. Court case numbers may trip junk filter — allow opt-out.
 
@@ -74,6 +75,10 @@ def _append_doc(
         from backend.collectors.sources.registry import record_junk_dropped
         record_junk_dropped()
         return
+    if anchor is not None and not date_hint:
+        row = anchor.find_parent(["tr", "li", "div", "p"])
+        if row is not None:
+            date_hint = row.get_text(" ", strip=True)
     pub = (
         parse_listing_date(date_hint)
         or parse_listing_date(safe_title)
@@ -143,7 +148,7 @@ async def scrape_sci_judgments(
                 continue
             full_url = _absolutize(href, portal_url)
             title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
-            _append_doc(docs, full_url, title, document_type, bypass_junk=True)
+            _append_doc(docs, full_url, title, document_type, bypass_junk=True, anchor=a)
             if len(docs) >= _MAX_CANDIDATES:
                 break
     except Exception as exc:  # noqa: BLE001
@@ -198,7 +203,7 @@ async def scrape_tshc(
                     continue
                 full_url = _absolutize(href, portal_url)
                 title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
-                _append_doc(docs, full_url, title, document_type, bypass_junk=True)
+                _append_doc(docs, full_url, title, document_type, bypass_junk=True, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001
@@ -238,7 +243,7 @@ async def scrape_nclt(
                     continue
                 full_url = _absolutize(href, portal_url)
                 title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
-                _append_doc(docs, full_url, title, document_type, bypass_junk=True)
+                _append_doc(docs, full_url, title, document_type, bypass_junk=True, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001
@@ -277,7 +282,7 @@ async def scrape_nclat(
                     continue
                 full_url = _absolutize(href, portal_url)
                 title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
-                _append_doc(docs, full_url, title, document_type, bypass_junk=True)
+                _append_doc(docs, full_url, title, document_type, bypass_junk=True, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001
@@ -313,7 +318,7 @@ async def scrape_ngt(
                 continue
             full_url = _absolutize(href, portal_url)
             title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
-            _append_doc(docs, full_url, title, document_type, bypass_junk=True)
+            _append_doc(docs, full_url, title, document_type, bypass_junk=True, anchor=a)
             if len(docs) >= _MAX_CANDIDATES:
                 break
     except Exception as exc:  # noqa: BLE001

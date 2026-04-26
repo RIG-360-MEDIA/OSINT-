@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Navigation from '@/components/Navigation'
@@ -796,7 +796,16 @@ function StatBadge({ value, label, tone }: { value: string; label: string; tone?
 
 /* ── Main page ────────────────────────────────────────────────────────────── */
 
+// Next 15 prerender requires useSearchParams() to be inside a Suspense boundary.
 export default function CoveragePage() {
+  return (
+    <Suspense fallback={null}>
+      <CoveragePageInner />
+    </Suspense>
+  )
+}
+
+function CoveragePageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
 

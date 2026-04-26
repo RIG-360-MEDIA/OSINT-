@@ -58,13 +58,24 @@ def _append_doc(
     document_type: str,
     *,
     date_hint: str = "",
+    anchor=None,
 ) -> None:
-    """Append a candidate to docs (immutable-style helper) if not junk."""
+    """Append a candidate to docs (immutable-style helper) if not junk.
+
+    If ``anchor`` is a BeautifulSoup tag, the surrounding row text
+    (parent ``<tr>`` / ``<li>`` / ``<div>`` / ``<p>``) is harvested as
+    a date hint when ``date_hint`` is empty. Lifts date-parser hit-rate
+    significantly because most listing pages render the publish date in
+    a sibling cell, not the title."""
     safe_title = (title or url.rsplit("/", 1)[-1]).strip()
     if _is_junk_title(safe_title, url):
         from backend.collectors.sources.registry import record_junk_dropped
         record_junk_dropped()
         return
+    if anchor is not None and not date_hint:
+        row = anchor.find_parent(["tr", "li", "div", "p"])
+        if row is not None:
+            date_hint = row.get_text(" ", strip=True)
     pub = (
         parse_listing_date(date_hint)
         or parse_listing_date(safe_title)
@@ -143,7 +154,7 @@ async def scrape_worldbank_india(
                 # F1 — PDF-only: drop /publication/ category landing pages.
                 if ".pdf" not in full_url.lower():
                     continue
-                _append_doc(docs, full_url, text, document_type)
+                _append_doc(docs, full_url, text, document_type, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001
@@ -186,7 +197,7 @@ async def scrape_adb_india(
                 continue
             if ".pdf" not in full_url.lower():
                 continue
-            _append_doc(docs, full_url, text, document_type)
+            _append_doc(docs, full_url, text, document_type, anchor=a)
             if len(docs) >= _MAX_CANDIDATES:
                 break
     except Exception as exc:  # noqa: BLE001
@@ -229,7 +240,7 @@ async def scrape_imf_india(
                 continue
             if ".pdf" not in full_url.lower():
                 continue
-            _append_doc(docs, full_url, text, document_type)
+            _append_doc(docs, full_url, text, document_type, anchor=a)
             if len(docs) >= _MAX_CANDIDATES:
                 break
     except Exception as exc:  # noqa: BLE001
@@ -276,7 +287,7 @@ async def scrape_un_india(
                 continue
             if ".pdf" not in full_url.lower():
                 continue
-            _append_doc(docs, full_url, text, document_type)
+            _append_doc(docs, full_url, text, document_type, anchor=a)
             if len(docs) >= _MAX_CANDIDATES:
                 break
     except Exception as exc:  # noqa: BLE001
@@ -328,7 +339,7 @@ async def scrape_ilo_india(
                 # F1 — PDF-only: drop /publications/ category landing pages.
                 if ".pdf" not in full_url.lower():
                     continue
-                _append_doc(docs, full_url, text, document_type)
+                _append_doc(docs, full_url, text, document_type, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001

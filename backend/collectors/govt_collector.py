@@ -33,6 +33,23 @@ _HTTP_HEADERS = {
 # matches one of these patterns. Curated from real PIB/CAG/Telangana junk.
 _JUNK_TITLE_PATTERNS: list[re.Pattern] = [
     re.compile(p, re.IGNORECASE) for p in (
+        # — Generic boilerplate that slips past content filters —
+        r"^\s*user[\s\-]*guide\s*$",
+        r"^\s*disclaimer\s*$",
+        r"^\s*terms\s+(of\s+)?(use|service)\s*$",
+        r"^\s*privacy\s+policy\s*$",
+        r"^\s*cookie\s+policy\s*$",
+        r"^\s*help(\s+(center|page))?\s*$",
+        r"^\s*site[\s\-]*map\s*$",
+        r"^\s*home\s*$",
+        r"^\s*contact[\s\-]*us\s*$",
+        r"^\s*about[\s\-]*us\s*$",
+        r"^\s*feedback\s*$",
+        # — Opaque ID-only filenames (e.g. "PR1417BAA07FE288C4...PDF") —
+        # Any title that's just a long alphanumeric token + extension is
+        # an upload-system filename, not a real document title.
+        r"^[A-Z0-9_\-]{16,}\.(pdf|doc|docx)\s*$",
+        # — Existing patterns —
         r"\bcitizen[\s\-]*charter\b",
         r"\brti\b.*\b(act|manual|compliance|response template)\b",
         r"\binformation\s+manual\b",

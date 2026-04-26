@@ -56,13 +56,24 @@ def _append_doc(
     document_type: str,
     *,
     date_hint: str = "",
+    anchor=None,
 ) -> None:
-    """Append a candidate to docs (immutable-style helper) if not junk."""
+    """Append a candidate to docs (immutable-style helper) if not junk.
+
+    If ``anchor`` is a BeautifulSoup tag, the surrounding row text
+    (parent ``<tr>`` / ``<li>`` / ``<div>`` / ``<p>``) is harvested as
+    a date hint when ``date_hint`` is empty. Lifts date-parser hit-rate
+    significantly because most listing pages render the publish date in
+    a sibling cell, not the title."""
     safe_title = (title or url.rsplit("/", 1)[-1]).strip()
     if _is_junk_title(safe_title, url):
         from backend.collectors.sources.registry import record_junk_dropped
         record_junk_dropped()
         return
+    if anchor is not None and not date_hint:
+        row = anchor.find_parent(["tr", "li", "div", "p"])
+        if row is not None:
+            date_hint = row.get_text(" ", strip=True)
     pub = (
         parse_listing_date(date_hint)
         or parse_listing_date(safe_title)
@@ -123,7 +134,7 @@ async def scrape_ts_goir(
                     continue
                 full_url = _absolutize(href, portal_url)
                 title = a.get_text(strip=True)
-                _append_doc(docs, full_url, title, document_type)
+                _append_doc(docs, full_url, title, document_type, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001
@@ -159,7 +170,7 @@ async def scrape_ts_gazette(
                     continue
                 full_url = _absolutize(href, portal_url)
                 title = a.get_text(strip=True) or "TS Gazette"
-                _append_doc(docs, full_url, title, document_type)
+                _append_doc(docs, full_url, title, document_type, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001
@@ -196,7 +207,7 @@ async def scrape_tserc_tariff(
                 full_url = _absolutize(href, portal_url)
                 # Apache index anchor text is the filename — that's fine
                 title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
-                _append_doc(docs, full_url, title, document_type)
+                _append_doc(docs, full_url, title, document_type, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001
@@ -241,7 +252,7 @@ async def scrape_ts_ipass(
                 # F1 — PDF-only: drop navigation/category links that aren't actual PDFs.
                 if ".pdf" not in full_url.lower():
                     continue
-                _append_doc(docs, full_url, text, document_type)
+                _append_doc(docs, full_url, text, document_type, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001
@@ -341,7 +352,7 @@ async def scrape_ghmc_tenders(
                 # F1 — PDF-only: drop navigation/category links that aren't actual PDFs.
                 if ".pdf" not in full_url.lower():
                     continue
-                _append_doc(docs, full_url, text or "GHMC Tender", document_type)
+                _append_doc(docs, full_url, text or "GHMC Tender", document_type, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001
@@ -374,7 +385,7 @@ async def scrape_hmda(
                     continue
                 full_url = _absolutize(href, portal_url)
                 title = a.get_text(strip=True) or href.rsplit("/", 1)[-1]
-                _append_doc(docs, full_url, title, document_type)
+                _append_doc(docs, full_url, title, document_type, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001
@@ -423,7 +434,7 @@ async def scrape_eproc_ts(
                 # F1 — PDF-only: drop navigation/category links that aren't actual PDFs.
                 if ".pdf" not in full_url.lower():
                     continue
-                _append_doc(docs, full_url, text or "eProc Tender", document_type)
+                _append_doc(docs, full_url, text or "eProc Tender", document_type, anchor=a)
                 if len(docs) >= _MAX_CANDIDATES:
                     break
     except Exception as exc:  # noqa: BLE001

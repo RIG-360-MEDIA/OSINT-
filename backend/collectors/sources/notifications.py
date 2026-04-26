@@ -55,8 +55,15 @@ def _append_doc(
     document_type: str,
     *,
     date_hint: str = "",
+    anchor=None,
 ) -> None:
     """Append a candidate to docs (immutable-style helper) if not junk.
+
+    If ``anchor`` is a BeautifulSoup tag, the surrounding row text
+    (parent ``<tr>`` / ``<li>`` / ``<div>`` / ``<p>``) is harvested as
+    a date hint when ``date_hint`` is empty. Lifts date-parser hit-rate
+    significantly because most listing pages render the publish date in
+    a sibling cell, not the title.
 
     ``published_at`` is parsed from ``date_hint`` first, then ``title``,
     then ``url``. Returns ``None`` if no plausible date is anywhere — the
@@ -68,6 +75,10 @@ def _append_doc(
         from backend.collectors.sources.registry import record_junk_dropped
         record_junk_dropped()
         return
+    if anchor is not None and not date_hint:
+        row = anchor.find_parent(["tr", "li", "div", "p"])
+        if row is not None:
+            date_hint = row.get_text(" ", strip=True)
     pub = (
         parse_listing_date(date_hint)
         or parse_listing_date(safe_title)
@@ -138,7 +149,7 @@ def _harvest_links(
         # category navigation that match keywords but aren't actual PDFs.
         if ".pdf" not in full_url.lower():
             continue
-        _append_doc(docs, full_url, text, document_type)
+        _append_doc(docs, full_url, text, document_type, anchor=a)
         if len(docs) >= _MAX_CANDIDATES:
             break
     return docs

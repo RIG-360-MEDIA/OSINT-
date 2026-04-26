@@ -1,5 +1,32 @@
 version: "3.9"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# DEPLOYMENT TOPOLOGY — read before adding worker services here.
+#
+# Celery workers and Beat scheduler do NOT live as separate compose services.
+# They run as 5 background processes inside the `rig-backend` container,
+# launched by /start.sh on container boot. See infrastructure/Dockerfile.backend
+# and the script's `celery -A backend.celery_app worker &` invocations.
+#
+# Queues and their consumers (one celery process each unless noted):
+#   collectors    — RSS, HTML, social, newspapers       (concurrency=1)
+#   youtube       — YouTube transcript + embedding      (concurrency=1)
+#   nlp           — article NLP / topic / entities      (concurrency=4)
+#   relevance     — per-user article + doc scoring      (concurrency=4)
+#   brief         — daily briefing generation           (shared with relevance)
+#   beat          — periodic-task scheduler             (1 process)
+#
+# KNOWN GAP: the `documents` queue (govt PDF collection — see celery_app.py
+# routing) has no consumer. Beat publishes `tasks.collect_govt_documents` but
+# no worker is subscribed → tasks rot in the queue. Adding the worker is a
+# 5-line patch to start.sh, not a new compose service. See
+# docs/qa/sources-why-broken.md.
+#
+# DO NOT add `rig-celery-worker-*` services here without first removing the
+# in-container workers from start.sh. Two Beat schedulers will double-fire
+# every periodic task — a real footgun.
+# ─────────────────────────────────────────────────────────────────────────────
+
 services:
   rig-postgres:
     image: ankane/pgvector:latest
@@ -134,6 +161,14 @@ services:
 networks:
   rig-network:
     driver: bridge
+    # NOTE: 7 govt sources (finmin.nic.in, tserc.gov.in, tspsc.gov.in,
+    # loksabhadocs.nic.in, eparlib.nic.in, plus a couple Sansad mirrors)
+    # have IPv6-only DNS (NIC publishes only AAAA, no A). To enable
+    # those, you MUST manually:
+    #   1. Docker Desktop → Settings → Resources → Network → Enable IPv6
+    #   2. Re-add `enable_ipv6: true` + `ipam.config` IPv6 subnet here
+    #   3. Re-add `dns: [2606:4700:4700::1111, ...]` to rig-backend
+    # Doing it via daemon.json alone does not work on Docker Desktop.
 
 volumes:
   rig-postgres-data:

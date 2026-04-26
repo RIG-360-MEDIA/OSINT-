@@ -373,3 +373,100 @@ async def scrape_gem_circulars(
         logger.warning("GeM circulars scrape failed: %s", exc)
     logger.info("GeM circulars: discovered %d candidates", len(docs))
     return docs[:_MAX_CANDIDATES]
+
+
+# ── CAG (Comptroller & Auditor General) ───────────────────────────────────
+
+
+@register_source("cag.gov.in")
+async def scrape_cag(
+    portal_url: str,
+    document_type: str,
+    since_days: int = 2,
+) -> list[dict]:
+    """CAG of India — audit reports listings.
+
+    The frontend exposes a "CAG Reports" filter chip; without this
+    adapter that chip surfaces nothing (defect D-17). CAG publishes
+    audit reports under /audit-report-list and similar paths; PDFs live
+    at /sites/default/files/audit_report_files/...
+    """
+    docs: list[dict] = []
+    keywords = (
+        "audit-report", "audit_report", "performance-audit",
+        "compliance-audit", "financial-audit",
+    )
+    try:
+        async with httpx.AsyncClient(
+            timeout=_REQUEST_TIMEOUT,
+            follow_redirects=True,
+            headers=_HTTP_HEADERS,
+        ) as client:
+            html = await _fetch_html(client, portal_url)
+            if not html:
+                return docs
+            docs = _harvest_links(
+                html, portal_url, document_type or "audit_report",
+                keywords=keywords,
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("CAG scrape failed: %s", exc)
+    logger.info("CAG: discovered %d candidates", len(docs))
+    return docs[:_MAX_CANDIDATES]
+
+
+# ── PIB (Press Information Bureau) ────────────────────────────────────────
+
+
+@register_source("pib.gov.in")
+async def scrape_pib(
+    portal_url: str,
+    document_type: str,
+    since_days: int = 2,
+) -> list[dict]:
+    """Press Information Bureau — daily press release index.
+
+    Promoted from the legacy fallback path in govt_collector.py to a
+    proper @register_source entry (defect D-16) so the registry-based
+    health/junk-rate observability covers it like every other source.
+    """
+    docs: list[dict] = []
+    try:
+        async with httpx.AsyncClient(
+            timeout=_REQUEST_TIMEOUT,
+            follow_redirects=True,
+            headers=_HTTP_HEADERS,
+        ) as client:
+            html = await _fetch_html(client, portal_url)
+            if not html:
+                return docs
+            soup = BeautifulSoup(html, "html.parser")
+            for a in soup.find_all("a", href=True):
+                href = a["href"]
+                lower = href.lower()
+                if not (
+                    ".pdf" in lower
+                    or "PressReleasePage.aspx" in href
+                    or "PressReleseDetailm.aspx" in href
+                ):
+                    continue
+                full_url = _absolutize(href, portal_url)
+                # Exclude the well-known PIB nav-stub URLs.
+                if any(stub in full_url for stub in (
+                    "/aboutus/", "/RTI/", "/Annual_Reports/",
+                    "/Holiday/", "/CitizenCharter/",
+                )):
+                    continue
+                title = a.get_text(strip=True)
+                if not title or len(title) < 10:
+                    title = full_url.rstrip("/").rsplit("/", 1)[-1] or full_url
+                _append_doc(
+                    docs, full_url, title,
+                    document_type or "press_release",
+                )
+                if len(docs) >= _MAX_CANDIDATES:
+                    break
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("PIB scrape failed: %s", exc)
+    logger.info("PIB: discovered %d candidates", len(docs))
+    return docs[:_MAX_CANDIDATES]

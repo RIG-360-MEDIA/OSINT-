@@ -74,7 +74,8 @@ async def _collect_govt_docs() -> dict:
         sources_result = await _src_db.execute(
             text(
                 """
-                SELECT id, name, portal_url, source_geography, document_type
+                SELECT id, name, portal_url, source_geography, document_type,
+                       since_days_override
                 FROM govt_document_sources
                 WHERE is_active = TRUE
                 """
@@ -102,11 +103,20 @@ async def _collect_govt_docs() -> dict:
                 )
                 reset_junk_counter()
                 from backend.config.govt_config import DEFAULT_SINCE_DAYS
+                # Per-source override wins over global env default. Used by
+                # quarterly/annual portals (CAG, MoF/indiabudget, NITI, etc.)
+                # that would otherwise lose 90% of their content to a 30-day
+                # gate.
+                effective_since_days = (
+                    source.since_days_override
+                    if source.since_days_override is not None
+                    else DEFAULT_SINCE_DAYS
+                )
                 try:
                     doc_urls = await fetch_document_urls(
                         source.portal_url,
                         source.document_type,
-                        since_days=DEFAULT_SINCE_DAYS,
+                        since_days=effective_since_days,
                     )
                 except Exception as exc:
                     logger.warning(

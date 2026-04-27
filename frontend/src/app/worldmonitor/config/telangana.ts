@@ -18,14 +18,18 @@ export const TELANGANA = {
 //   https://www.youtube.com/embed/live_stream?channel=<CHANNEL_ID>
 // If a channel isn't currently live, YouTube renders the channel's most-recent
 // video, which is the desired fallback.
+// Channel IDs scraped from each channel's @handle page on 2026-04-27 and
+// verified to return a live_stream embed (not "video unavailable").
 export const TELUGU_LIVE_CHANNELS = [
-  { id: 'UCwGsZ_OkUBP1FiouQ54AWcA', label: 'V6 News' },
-  { id: 'UCQ_FATLW83q-4xJ2fsi8qAw', label: 'TV9 Telugu' },
-  { id: 'UCqv1rbEJ5wY15SSxLfKPyCQ', label: 'T News' },
-  { id: 'UCIuWERA-rEKXvDX-PEVNAmw', label: 'ABN Telugu' },
-  { id: 'UCqd9JUdsoQA91TkOyiyMQww', label: '10TV Telugu' },
-  { id: 'UCJi7ND-0VGZUIo3-LVT-Y-w', label: 'Sakshi TV' },
-  { id: 'UC8HuYwPsAKaaXi0VGD4Ml_w', label: 'HMTV' },
+  { id: 'UCDCMjD1XIAsCZsYHNMGVcog', label: 'V6 News' },
+  { id: 'UCPXTXMecYqnRKNdqdVOGSFg', label: 'TV9 Telugu' },
+  { id: 'UCk0XiSICe9O0YO8oNFVpPAA', label: 'T News' },
+  { id: 'UC_2irx_BQR7RsBKmUV9fePQ', label: 'ABN Telugu' },
+  { id: 'UCfymZbh17_3T_UhgjkQ9fRQ', label: '10TV Telugu' },
+  { id: 'UCZ9m4KOh8Ei60428xeGYDCQ', label: 'Sakshi TV' },
+  { id: 'UC-PPlFHLfi4wcFOe6DrReCQ', label: 'News18 Telugu' },
+  { id: 'UCAR3h_9fLV82N2FH4cE4RKw', label: 'TV5 News' },
+  { id: 'UCumtYpCY26F6Jr3satUgMvA', label: 'NTV Telugu' },
 ] as const
 
 // Telangana / Hyderabad RSS sources. Fetched server-side to avoid CORS;

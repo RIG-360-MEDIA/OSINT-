@@ -614,21 +614,8 @@ function DrawerShell({
   onClose: () => void
   children: React.ReactNode
 }) {
-  // Drawer sits flush below the rig nav (fixed at top). The scope row is
-  // not sticky, so we don't need to clear it.
-  const [topOffset, setTopOffset] = useState(64)
-
   useEffect(() => {
-    const measure = () => {
-      const header = document.querySelector('header')
-      const navH = header?.getBoundingClientRect().height ?? 64
-      setTopOffset(navH)
-    }
-    measure()
-    window.addEventListener('resize', measure)
-
-    // Lock the page scroll while the drawer is open so the wheel doesn't
-    // bleed through to the briefing underneath.
+    // Lock the page scroll while the modal is open.
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
@@ -639,7 +626,6 @@ function DrawerShell({
     window.addEventListener('keydown', onKey)
 
     return () => {
-      window.removeEventListener('resize', measure)
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = prev
     }
@@ -652,27 +638,29 @@ function DrawerShell({
       onClick={onClose}
       style={{
         position: 'fixed',
-        top: topOffset,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0,0,0,0.35)',
-        zIndex: 90, // below the rig nav (200) so the nav stays usable
+        inset: 0,
+        background: 'rgba(20, 16, 12, 0.55)',
+        backdropFilter: 'blur(2px)',
+        zIndex: 250, // above the rig nav so the modal can fully cover it
         display: 'flex',
-        justifyContent: 'flex-end',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
       }}
     >
-      <aside
+      <div
         onClick={(e) => e.stopPropagation()}
         onWheel={(e) => e.stopPropagation()}
         style={{
-          width: 'min(720px, 92vw)',
-          height: '100%',
+          width: 'min(960px, 94vw)',
+          height: 'min(720px, 88vh)',
           background: 'var(--rig-paper)',
-          borderLeft: '1px solid var(--rig-rule)',
+          border: '1px solid var(--rig-rule)',
+          borderRadius: 4,
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '-4px 0 20px rgba(0,0,0,0.08)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.32)',
+          overflow: 'hidden',
         }}
       >
         <header
@@ -683,6 +671,7 @@ function DrawerShell({
             justifyContent: 'space-between',
             alignItems: 'baseline',
             flexShrink: 0,
+            background: 'var(--rig-paper-2)',
           }}
         >
           <h2
@@ -692,6 +681,7 @@ function DrawerShell({
               fontStyle: 'italic',
               fontWeight: 500,
               fontSize: 22,
+              color: 'var(--rig-ink)',
             }}
           >
             {title}
@@ -708,6 +698,8 @@ function DrawerShell({
               textTransform: 'uppercase',
               color: 'var(--rig-ink-3)',
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--rig-oxblood)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--rig-ink-3)' }}
           >
             Close ×
           </button>
@@ -715,7 +707,7 @@ function DrawerShell({
         <div style={{ flex: 1, overflow: 'auto', padding: '24px', overscrollBehavior: 'contain' }}>
           {children}
         </div>
-      </aside>
+      </div>
     </div>
   )
 }

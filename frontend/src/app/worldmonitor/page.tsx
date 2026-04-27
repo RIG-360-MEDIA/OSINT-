@@ -1,41 +1,41 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import Navigation from '@/components/Navigation'
+import { TelanganaBriefing } from './TelanganaBriefing'
+import { GlobalView } from './GlobalView'
 
-const WM_URL = process.env.NEXT_PUBLIC_WM_URL || 'http://localhost:3001'
+type Scope = 'telangana' | 'global'
 
 export default function WorldMonitorPage() {
-  const [navH, setNavH] = useState(86)
+  const params = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
 
+  // Default scope is Telangana (per product direction). User can toggle to
+  // Global to see the embedded WM dashboard.
+  const initial: Scope = params.get('scope') === 'global' ? 'global' : 'telangana'
+  const [scope, setScope] = useState<Scope>(initial)
+
+  // Keep the URL in sync so reloads / shares preserve the user's choice.
   useEffect(() => {
-    const measure = () => {
-      const header = document.querySelector('header')
-      if (header) setNavH(header.getBoundingClientRect().height)
+    const next = scope === 'global' ? 'global' : 'telangana'
+    if (params.get('scope') !== next) {
+      const sp = new URLSearchParams(params.toString())
+      sp.set('scope', next)
+      router.replace(`${pathname}?${sp.toString()}`, { scroll: false })
     }
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [])
+  }, [scope, params, router, pathname])
 
   return (
     <>
       <Navigation />
-      <iframe
-        title="World Monitor"
-        src={WM_URL}
-        loading="eager"
-        style={{
-          position: 'fixed',
-          top: navH,
-          left: 0,
-          width: '100vw',
-          height: `calc(100dvh - ${navH}px)`,
-          border: 'none',
-          display: 'block',
-          background: 'var(--rig-paper)',
-        }}
-      />
+      {scope === 'telangana' ? (
+        <TelanganaBriefing onSwitchToGlobal={() => setScope('global')} />
+      ) : (
+        <GlobalView onSwitchToTelangana={() => setScope('telangana')} />
+      )}
     </>
   )
 }

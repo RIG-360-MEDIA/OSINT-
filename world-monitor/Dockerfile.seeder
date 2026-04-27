@@ -1,0 +1,32 @@
+# =============================================================================
+# World Monitor — Seeder sidecar
+# =============================================================================
+# Runs the scripts/seed-*.mjs jobs on a loop so the WM Redis cache stays
+# populated. The main rig-worldmonitor container only serves nginx+API; the
+# seeds are pull-from-upstream cron work and live here.
+#
+# Build context: world-monitor/   (same as the main image)
+# =============================================================================
+
+FROM node:22-alpine
+
+# tini handles signals so docker stop is clean; coreutils gives us a real
+# `timeout` (busybox's is missing some flags).
+RUN apk add --no-cache tini coreutils
+
+WORKDIR /app
+
+# Install deps. --ignore-scripts skips the postinstall that would try to
+# rebuild blog-site (irrelevant for seeds and pulls a second package tree).
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund --ignore-scripts
+
+# Seed sources only. node_modules from the install above stays.
+COPY scripts/ ./scripts/
+
+# Loop driver (per-seed timeout, interval between cycles).
+COPY docker/seeder.sh /seeder.sh
+RUN chmod +x /seeder.sh
+
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["/seeder.sh"]

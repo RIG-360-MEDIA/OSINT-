@@ -251,6 +251,40 @@ services:
       - rig-wm-redis
     restart: unless-stopped
 
+  # Seeder sidecar. Runs every world-monitor/scripts/seed-*.mjs on a loop
+  # so the WM Redis cache stays populated (the runtime container only serves
+  # nginx + API; the cron-style seeders live here). All seeds inherit the
+  # API keys from this block; missing keys cause the relevant seeds to
+  # fail-soft and continue.
+  rig-wm-seeder:
+    build:
+      context: ../world-monitor
+      dockerfile: Dockerfile.seeder
+    image: rig-worldmonitor-seeder:latest
+    container_name: rig-wm-seeder
+    environment:
+      UPSTASH_REDIS_REST_URL: "http://rig-wm-redis-rest:80"
+      UPSTASH_REDIS_REST_TOKEN: "${WM_REDIS_TOKEN:-wm-local-token}"
+      GROQ_API_KEY: "${WM_GROQ_API_KEY:-}"
+      LLM_API_URL: "${WM_LLM_API_URL:-}"
+      LLM_API_KEY: "${WM_LLM_API_KEY:-}"
+      LLM_MODEL: "${WM_LLM_MODEL:-}"
+      AISSTREAM_API_KEY: "${AISSTREAM_API_KEY:-}"
+      FINNHUB_API_KEY: "${FINNHUB_API_KEY:-}"
+      EIA_API_KEY: "${EIA_API_KEY:-}"
+      FRED_API_KEY: "${FRED_API_KEY:-}"
+      ACLED_ACCESS_TOKEN: "${ACLED_ACCESS_TOKEN:-}"
+      NASA_FIRMS_API_KEY: "${NASA_FIRMS_API_KEY:-}"
+      CLOUDFLARE_API_TOKEN: "${CLOUDFLARE_API_TOKEN:-}"
+      AVIATIONSTACK_API: "${AVIATIONSTACK_API:-}"
+      SEEDER_INTERVAL_SEC: "${WM_SEEDER_INTERVAL_SEC:-3600}"
+      SEEDER_PER_SEED_TIMEOUT: "${WM_SEEDER_PER_SEED_TIMEOUT:-180}"
+    networks:
+      - rig-network
+    depends_on:
+      - rig-wm-redis-rest
+    restart: unless-stopped
+
 networks:
   rig-network:
     driver: bridge

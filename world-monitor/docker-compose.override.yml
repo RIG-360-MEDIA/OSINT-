@@ -1,0 +1,24 @@
+# docker-compose.override.yml
+# Adds extra env vars to the worldmonitor service.
+# Also used by scripts/run-seeders.sh to source API keys.
+
+services:
+  worldmonitor:
+    environment:
+      ACLED_EMAIL: "${ACLED_EMAIL:-}"
+      ACLED_PASSWORD: "${ACLED_PASSWORD:-}"
+      GROQ_API_KEY: "${GROQ_API_KEY:-}"
+      NASA_FIRMS_API_KEY: "${NASA_FIRMS_API_KEY:-}"
+      FINNHUB_API_KEY: "${FINNHUB_API_KEY:-}"
+      EIA_API_KEY: "${EIA_API_KEY:-}"
+      FRED_API_KEY: "${FRED_API_KEY:-}"
+      AISSTREAM_API_KEY: "${AISSTREAM_API_KEY:-}"
+      AVIATIONSTACK_API: "${AVIATIONSTACK_API:-}"
+      RELIEFWEB_APPNAME: "worldmonitor-local"
+      OPENAQ_API_KEY: "${OPENAQ_API_KEY:-}"
+      WAQI_API_KEY: "${WAQI_API_KEY:-}"
+
+  # Also expose keys for seeder scripts
+  ais-relay:
+    environment:
+      AISSTREAM_API_KEY: "${AISSTREAM_API_KEY:-}"

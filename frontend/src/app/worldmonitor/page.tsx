@@ -14,10 +14,10 @@ export default function WorldMonitorPage() {
         loading="eager"
         style={{
           position: 'fixed',
-          top: 'var(--topbar-h)',
+          top: 86,
           left: 0,
           width: '100vw',
-          height: 'calc(100vh - var(--topbar-h))',
+          height: 'calc(100dvh - 86px)',
           border: 'none',
           display: 'block',
           background: 'var(--rig-paper)',

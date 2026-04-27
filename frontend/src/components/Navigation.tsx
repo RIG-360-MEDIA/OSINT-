@@ -26,7 +26,7 @@ const NAV_LINKS = [
   { path: '/signals',   label: 'Signals' },
   { path: '/documents', label: 'Archive' },
   { path: '/analyst',   label: 'Analyst' },
-  { path: '/worldmonitor', label: 'World Monitor' },
+  { path: '/worldmonitor', label: 'Globe' },
 ]
 
 export default function Navigation() {
@@ -157,7 +157,7 @@ export default function Navigation() {
         </span>
       </Link>
 
-      {/* ── Nav ────────────────────────────────────────────────── */}
+      {/* ── Nav (horizontally scrollable on overflow) ──────────── */}
       <nav
         style={{
           display: 'flex',
@@ -167,7 +167,13 @@ export default function Navigation() {
           minWidth: 0,
           justifyContent: 'flex-start',
           marginRight: '8px',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none' as 'none',
         }}
+        // Hide horizontal scrollbar but keep scroll functionality
+        // (extra style block via className would also work; inline kept terse).
       >
         {NAV_LINKS.map(({ path, label }) => (
           <NavItem
@@ -180,15 +186,32 @@ export default function Navigation() {
       </nav>
 
       {/* ── Ticker + controls ──────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, paddingLeft: '12px', borderLeft: '1px solid var(--rig-rule)' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          flexShrink: 0,
+          paddingLeft: '12px',
+          borderLeft: '1px solid var(--rig-rule)',
+        }}
+      >
+        {/* Low-priority counters: hidden on viewports < 1400 px so the
+            high-signal chips (escalating, brief ready) always fit. */}
         {counts.doc_count > 0 && (
-          <Chip tone="default" label={`${counts.doc_count} docs`} />
+          <span className="rig-chip-mq-wide">
+            <Chip tone="default" label={`${counts.doc_count} docs`} />
+          </span>
         )}
         {counts.clip_count > 0 && (
-          <Chip tone="copper" label={`${counts.clip_count} clips`} />
+          <span className="rig-chip-mq-wide">
+            <Chip tone="copper" label={`${counts.clip_count} clips`} />
+          </span>
         )}
         {counts.article_count > 0 && (
-          <Chip tone="default" label={counts.article_count.toLocaleString()} />
+          <span className="rig-chip-mq-mid">
+            <Chip tone="default" label={counts.article_count.toLocaleString()} />
+          </span>
         )}
         {counts.escalating_count > 0 && (
           <Chip tone="alert" label={`${counts.escalating_count} escalating`} />
@@ -268,11 +291,11 @@ function NavItem({ href, label, isActive }: { href: string; label: string; isAct
       onMouseLeave={() => setHover(false)}
       style={{
         position: 'relative',
-        padding: '10px 10px',
+        padding: '10px 8px',
         textDecoration: 'none',
         fontFamily: 'var(--font-mono)',
-        fontSize: '10.5px',
-        letterSpacing: '0.16em',
+        fontSize: '10px',
+        letterSpacing: '0.12em',
         textTransform: 'uppercase',
         color: isActive ? 'var(--rig-ink)' : hover ? 'var(--rig-ink-2)' : 'var(--rig-ink-3)',
         transition: 'color 0.2s',
@@ -286,8 +309,8 @@ function NavItem({ href, label, isActive }: { href: string; label: string; isAct
           style={{
             position: 'absolute',
             bottom: '-1px',
-            left: '10px',
-            right: '10px',
+            left: '8px',
+            right: '8px',
             height: '1px',
             background: 'var(--rig-gold)',
           }}

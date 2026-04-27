@@ -27,11 +27,12 @@ from backend.routers.brief_router import brief_router
 from backend.routers.coverage_router import coverage_router
 from backend.routers.debug_router import debug_router
 from backend.routers.onboarding_router import onboarding_router
-from backend.routers.clippings_router import clippings_router
+from backend.routers.clippings_router import clippings_router, newspapers_router
 from backend.routers.clips_router import clips_router
 from backend.routers.documents_router import documents_router
 from backend.routers.signals_router import signals_router
 from backend.routers.thread_router import thread_router
+from backend.routers.worldmonitor_router import worldmonitor_router
 
 app = FastAPI(
     title="RIG SURVEILLANCE",
@@ -46,10 +47,12 @@ app.include_router(onboarding_router)
 app.include_router(brief_router)
 app.include_router(coverage_router)
 app.include_router(clippings_router)
+app.include_router(newspapers_router)
 app.include_router(clips_router)
 app.include_router(documents_router)
 app.include_router(signals_router)
 app.include_router(thread_router)
+app.include_router(worldmonitor_router)
 
 # Dossier feature — entity enrichment over free OSINT sources.
 # Gated behind DOSSIER_ENABLED so it stays invisible to existing API surface

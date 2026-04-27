@@ -376,8 +376,9 @@ function DataDrawer({
     { k: 'Conditions', v: signals.weather.label },
     { k: 'AQI (US scale)', v: signals.air.aqi !== null ? `${signals.air.aqi} — ${signals.air.label}` : '—' },
     { k: 'PM2.5', v: signals.air.pm25 !== null ? `${signals.air.pm25.toFixed(1)} µg/m³` : '—' },
-    { k: 'ACLED events', v: 'wiring up — backend proxy pending' },
-    { k: 'News headlines', v: 'wiring up — backend proxy pending' },
+    { k: 'ACLED events (7d)', v: signals.source === 'fallback' ? 'backend offline' : `${signals.events.length} recorded` },
+    { k: 'News headlines', v: signals.source === 'fallback' ? 'backend offline' : `${signals.news.length} fresh` },
+    { k: 'Source', v: signals.source === 'backend' ? (signals.cached ? 'rig backend (cached)' : 'rig backend') : 'public APIs (fallback)' },
   ]
   return (
     <DrawerShell title="Browse data" onClose={onClose}>
@@ -402,8 +403,88 @@ function DataDrawer({
             </tr>
           ))}
         </tbody>
+
+        {signals.news.length > 0 && (
+          <SectionList title="Today's headlines" items={signals.news.slice(0, 12).map((n) => ({
+            primary: n.title,
+            secondary: n.source_label,
+            link: n.link,
+          }))} />
+        )}
+
+        {signals.events.length > 0 && (
+          <SectionList title="ACLED · past 7 days" items={signals.events.slice(0, 20).map((e) => ({
+            primary: `${e.event_type}${e.sub_event_type ? ' · ' + e.sub_event_type : ''} — ${e.location || '—'}`,
+            secondary: `${e.event_date}${e.fatalities ? ' · ' + e.fatalities + ' fatalities' : ''}`,
+          }))} />
+        )}
       </table>
     </DrawerShell>
+  )
+}
+
+function SectionList({
+  title,
+  items,
+}: {
+  title: string
+  items: { primary: string; secondary?: string; link?: string }[]
+}) {
+  return (
+    <>
+      <h3
+        style={{
+          margin: '32px 0 8px',
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontSize: 18,
+          fontWeight: 500,
+          color: 'var(--rig-ink)',
+        }}
+      >
+        {title}
+      </h3>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {items.map((it, i) => (
+          <li key={i} style={{ padding: '12px 0', borderBottom: '1px solid var(--rig-rule)' }}>
+            {it.link ? (
+              <a
+                href={it.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: 16,
+                  color: 'var(--rig-ink)',
+                  textDecoration: 'none',
+                  borderBottom: '1px solid transparent',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderBottomColor = 'var(--rig-gold)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderBottomColor = 'transparent' }}
+              >
+                {it.primary}
+              </a>
+            ) : (
+              <span style={{ fontFamily: 'var(--font-serif)', fontSize: 16, color: 'var(--rig-ink)' }}>{it.primary}</span>
+            )}
+            {it.secondary && (
+              <div
+                style={{
+                  marginTop: 4,
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 10.5,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: 'var(--rig-ink-3)',
+                }}
+              >
+                {it.secondary}
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </>
   )
 }
 

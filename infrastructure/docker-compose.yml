@@ -126,6 +126,9 @@ services:
       TELEGRAM_API_ID: ${TELEGRAM_API_ID:-}
       TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:-}
       TELEGRAM_SESSION_STRING: ${TELEGRAM_SESSION_STRING:-}
+      # Used by /api/worldmonitor/telangana/* — ACLED for Telangana events.
+      ACLED_ACCESS_TOKEN: ${ACLED_ACCESS_TOKEN:-}
+      WM_TG_CACHE_TTL_S: ${WM_TG_CACHE_TTL_S:-1800}
     volumes:
       - ../backend:/app/backend
       - ../scripts:/app/scripts

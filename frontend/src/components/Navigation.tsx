@@ -26,6 +26,7 @@ const NAV_LINKS = [
   { path: '/signals',   label: 'Signals' },
   { path: '/documents', label: 'Archive' },
   { path: '/analyst',   label: 'Analyst' },
+  { path: '/worldmonitor', label: 'World Monitor' },
 ]
 
 export default function Navigation() {

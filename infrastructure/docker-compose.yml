@@ -150,18 +150,105 @@ services:
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
       NEXT_PUBLIC_DOSSIER_ENABLED: ${NEXT_PUBLIC_DOSSIER_ENABLED:-false}
+      # Reverse-proxy target for /world-monitor-app/* (see next.config.ts).
+      # Inside the rig-network, WM is reachable as http://rig-worldmonitor:8080.
+      WM_INTERNAL_URL: ${WM_INTERNAL_URL:-http://rig-worldmonitor:8080}
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
     volumes:
       - ../frontend/src:/app/src
       - ../frontend/public:/app/public
       - ../frontend/package.json:/app/package.json
+      # Mounted so editing the rewrite/iframe target hot-reloads in dev.
+      # Without this, next.config.ts changes require `docker compose build rig-frontend`.
+      - ../frontend/next.config.ts:/app/next.config.ts
     ports:
       - "3000:3000"
     networks:
       - rig-network
     depends_on:
       - rig-backend
+    restart: unless-stopped
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # World Monitor pillar (iframe-embedded). Display-only; no data flows into
+  # rig's Postgres. See plan: ~/.claude/plans/i-have-two-projects-misty-wren.md
+  # ───────────────────────────────────────────────────────────────────────────
+  rig-worldmonitor:
+    build:
+      context: ../world-monitor
+      dockerfile: Dockerfile
+    image: rig-worldmonitor:latest
+    container_name: rig-worldmonitor
+    environment:
+      # Inter-service URLs — rewritten from WM's stock compose to use renamed
+      # service hostnames on rig-network. Do NOT change these to the original
+      # short names; rig-network has no `redis-rest` / `ais-relay` aliases.
+      UPSTASH_REDIS_REST_URL: "http://rig-wm-redis-rest:80"
+      UPSTASH_REDIS_REST_TOKEN: "${WM_REDIS_TOKEN:-wm-local-token}"
+      LOCAL_API_PORT: "46123"
+      LOCAL_API_MODE: "docker"
+      LOCAL_API_CLOUD_FALLBACK: "false"
+      WS_RELAY_URL: "http://rig-wm-ais-relay:3004"
+      LLM_API_URL: "${WM_LLM_API_URL:-}"
+      LLM_API_KEY: "${WM_LLM_API_KEY:-}"
+      LLM_MODEL: "${WM_LLM_MODEL:-}"
+      GROQ_API_KEY: "${WM_GROQ_API_KEY:-}"
+      AISSTREAM_API_KEY: "${AISSTREAM_API_KEY:-}"
+      FINNHUB_API_KEY: "${FINNHUB_API_KEY:-}"
+      EIA_API_KEY: "${EIA_API_KEY:-}"
+      FRED_API_KEY: "${FRED_API_KEY:-}"
+      ACLED_ACCESS_TOKEN: "${ACLED_ACCESS_TOKEN:-}"
+      NASA_FIRMS_API_KEY: "${NASA_FIRMS_API_KEY:-}"
+      CLOUDFLARE_API_TOKEN: "${CLOUDFLARE_API_TOKEN:-}"
+      AVIATIONSTACK_API: "${AVIATIONSTACK_API:-}"
+    ports:
+      - "3001:8080"
+    networks:
+      - rig-network
+    depends_on:
+      rig-wm-redis-rest:
+        condition: service_started
+      rig-wm-ais-relay:
+        condition: service_started
+    restart: unless-stopped
+
+  rig-wm-ais-relay:
+    build:
+      context: ../world-monitor
+      dockerfile: Dockerfile.relay
+    image: rig-worldmonitor-ais-relay:latest
+    container_name: rig-wm-ais-relay
+    environment:
+      AISSTREAM_API_KEY: "${AISSTREAM_API_KEY:-}"
+      PORT: "3004"
+    networks:
+      - rig-network
+    restart: unless-stopped
+
+  rig-wm-redis:
+    image: docker.io/redis:7-alpine
+    container_name: rig-wm-redis
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - rig-wm-redis-data:/data
+    networks:
+      - rig-network
+    restart: unless-stopped
+
+  rig-wm-redis-rest:
+    build:
+      context: ../world-monitor/docker
+      dockerfile: Dockerfile.redis-rest
+    image: rig-worldmonitor-redis-rest:latest
+    container_name: rig-wm-redis-rest
+    environment:
+      SRH_TOKEN: "${WM_REDIS_TOKEN:-wm-local-token}"
+      SRH_CONNECTION_STRING: "redis://rig-wm-redis:6379"
+    networks:
+      - rig-network
+    depends_on:
+      - rig-wm-redis
     restart: unless-stopped
 
 networks:
@@ -185,3 +272,5 @@ volumes:
     name: rig-postgres-data
   rig-freshrss-data:
     name: rig-freshrss-data
+  rig-wm-redis-data:
+    name: rig-wm-redis-data

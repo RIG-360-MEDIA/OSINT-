@@ -272,12 +272,12 @@ function ScopeRow({
   active: 'telangana' | 'global'
   onPickGlobal: () => void
 }) {
+  // Non-sticky on purpose: a sticky bar at this size kept clipping the H1
+  // headline as it scrolled past. Scope toggle isn't a primary action, so
+  // scrolling back to the top to switch scope is acceptable.
   return (
     <div
       style={{
-        position: 'sticky',
-        top: 'var(--topbar-h, 64px)',
-        zIndex: 10,
         background: 'var(--rig-paper-2)',
         borderBottom: '1px solid var(--rig-rule)',
         padding: '10px 32px',
@@ -614,18 +614,15 @@ function DrawerShell({
   onClose: () => void
   children: React.ReactNode
 }) {
-  // Read the actual nav height so the drawer sits flush below it (sticky scope
-  // row + rig nav). Fall back to 100 (≈64 nav + 36 scope row) if the rig
-  // header isn't measurable for some reason.
-  const [topOffset, setTopOffset] = useState(100)
+  // Drawer sits flush below the rig nav (fixed at top). The scope row is
+  // not sticky, so we don't need to clear it.
+  const [topOffset, setTopOffset] = useState(64)
 
   useEffect(() => {
     const measure = () => {
       const header = document.querySelector('header')
       const navH = header?.getBoundingClientRect().height ?? 64
-      // The Telangana page also has a sticky 'Scope' bar (≈36px) just below
-      // the nav. Drawer should clear both.
-      setTopOffset(navH + 36)
+      setTopOffset(navH)
     }
     measure()
     window.addEventListener('resize', measure)

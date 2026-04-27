@@ -614,6 +614,40 @@ function DrawerShell({
   onClose: () => void
   children: React.ReactNode
 }) {
+  // Read the actual nav height so the drawer sits flush below it (sticky scope
+  // row + rig nav). Fall back to 100 (≈64 nav + 36 scope row) if the rig
+  // header isn't measurable for some reason.
+  const [topOffset, setTopOffset] = useState(100)
+
+  useEffect(() => {
+    const measure = () => {
+      const header = document.querySelector('header')
+      const navH = header?.getBoundingClientRect().height ?? 64
+      // The Telangana page also has a sticky 'Scope' bar (≈36px) just below
+      // the nav. Drawer should clear both.
+      setTopOffset(navH + 36)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+
+    // Lock the page scroll while the drawer is open so the wheel doesn't
+    // bleed through to the briefing underneath.
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    // Esc closes
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+
+    return () => {
+      window.removeEventListener('resize', measure)
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prev
+    }
+  }, [onClose])
+
   return (
     <div
       role="dialog"
@@ -621,15 +655,19 @@ function DrawerShell({
       onClick={onClose}
       style={{
         position: 'fixed',
-        inset: 0,
+        top: topOffset,
+        left: 0,
+        right: 0,
+        bottom: 0,
         background: 'rgba(0,0,0,0.35)',
-        zIndex: 100,
+        zIndex: 90, // below the rig nav (200) so the nav stays usable
         display: 'flex',
         justifyContent: 'flex-end',
       }}
     >
       <aside
         onClick={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
         style={{
           width: 'min(720px, 92vw)',
           height: '100%',
@@ -637,6 +675,7 @@ function DrawerShell({
           borderLeft: '1px solid var(--rig-rule)',
           display: 'flex',
           flexDirection: 'column',
+          boxShadow: '-4px 0 20px rgba(0,0,0,0.08)',
         }}
       >
         <header
@@ -646,6 +685,7 @@ function DrawerShell({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'baseline',
+            flexShrink: 0,
           }}
         >
           <h2
@@ -675,7 +715,9 @@ function DrawerShell({
             Close ×
           </button>
         </header>
-        <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>{children}</div>
+        <div style={{ flex: 1, overflow: 'auto', padding: '24px', overscrollBehavior: 'contain' }}>
+          {children}
+        </div>
       </aside>
     </div>
   )

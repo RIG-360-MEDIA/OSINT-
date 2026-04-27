@@ -17,6 +17,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 import time
 from typing import Any
 
@@ -46,6 +47,23 @@ TELANGANA_RSS_FEEDS = [
     ("tg-today",     "Telangana Today", "https://www.telanganatoday.com/feed"),
     ("siasat-hyd",   "Siasat — Hyderabad", "https://www.siasat.com/feed/"),
 ]
+
+# Telugu news YouTube channels — IDs scraped from each channel's @handle page.
+# The legacy youtube.com/embed/live_stream?channel=<ID> URL pattern is broken
+# in 2026; we instead resolve each channel's currently-live video ID by
+# scraping /channel/<ID>/live and embed that video directly.
+TELUGU_CHANNELS = [
+    ("UCDCMjD1XIAsCZsYHNMGVcog", "V6 News"),
+    ("UCPXTXMecYqnRKNdqdVOGSFg", "TV9 Telugu"),
+    ("UCk0XiSICe9O0YO8oNFVpPAA", "T News"),
+    ("UC_2irx_BQR7RsBKmUV9fePQ", "ABN Telugu"),
+    ("UCfymZbh17_3T_UhgjkQ9fRQ", "10TV Telugu"),
+    ("UCZ9m4KOh8Ei60428xeGYDCQ", "Sakshi TV"),
+    ("UC-PPlFHLfi4wcFOe6DrReCQ", "News18 Telugu"),
+    ("UCAR3h_9fLV82N2FH4cE4RKw", "TV5 News"),
+    ("UCumtYpCY26F6Jr3satUgMvA", "NTV Telugu"),
+]
+YT_VIDEO_ID_RE = re.compile(r"watch\?v=([A-Za-z0-9_-]{11})")
 
 # ─── tiny in-process TTL cache ───────────────────────────────────────────
 
@@ -290,6 +308,49 @@ async def telangana_news(user: dict = Depends(get_current_user)) -> dict[str, An
     items = await _fetch_rss_all()
     payload = {"items": items, "count": len(items), "cached": False}
     _cache_set("telangana:news", payload, ttl=900)  # 15 min
+    return payload
+
+
+async def _resolve_live_video(client: httpx.AsyncClient, channel_id: str) -> str | None:
+    """Scrape the channel's /live page and pull the canonical video ID.
+    Returns None if the channel is not currently broadcasting."""
+    try:
+        r = await client.get(
+            f"https://www.youtube.com/channel/{channel_id}/live",
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0)"},
+            follow_redirects=True,
+        )
+        if r.status_code != 200:
+            return None
+        m = YT_VIDEO_ID_RE.search(r.text)
+        return m.group(1) if m else None
+    except Exception as e:  # noqa: BLE001
+        logger.warning("YouTube live resolve failed for %s: %s", channel_id, e)
+        return None
+
+
+@worldmonitor_router.get("/telangana/live-channels")
+async def telangana_live_channels(user: dict = Depends(get_current_user)) -> dict[str, Any]:
+    """Resolve current live video IDs for the configured Telugu news channels.
+    Cached for 1 hour — live IDs change ~daily."""
+    cached = _cache_get("telangana:live-channels")
+    if cached:
+        return {**cached, "cached": True}
+
+    async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+        ids = await asyncio.gather(*(_resolve_live_video(client, cid) for cid, _ in TELUGU_CHANNELS))
+
+    channels = [
+        {"channel_id": cid, "label": label, "video_id": vid, "live": vid is not None}
+        for (cid, label), vid in zip(TELUGU_CHANNELS, ids)
+    ]
+    payload = {
+        "channels": channels,
+        "live_count": sum(1 for c in channels if c["live"]),
+        "total": len(channels),
+        "cached": False,
+    }
+    _cache_set("telangana:live-channels", payload, ttl=3600)
     return payload
 
 

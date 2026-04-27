@@ -1,8 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { useTelanganaSignals } from './hooks/useTelanganaSignals'
 import { TELANGANA, TELUGU_LIVE_CHANNELS } from './config/telangana'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+interface ResolvedChannel {
+  channel_id: string
+  label: string
+  video_id: string | null
+  live: boolean
+}
 
 interface Props {
   onSwitchToGlobal: () => void
@@ -322,40 +332,147 @@ function ScopeChip({
 /* ─── drawers ────────────────────────────────────────────────────────── */
 
 function LiveChannelsDrawer({ onClose }: { onClose: () => void }) {
+  const [channels, setChannels] = useState<ResolvedChannel[]>(
+    // Optimistic skeleton from config; real video IDs populate from backend
+    TELUGU_LIVE_CHANNELS.map((c) => ({
+      channel_id: c.id,
+      label: c.label,
+      video_id: null,
+      live: false,
+    })),
+  )
   const [activeIdx, setActiveIdx] = useState(0)
-  const ch = TELUGU_LIVE_CHANNELS[activeIdx]
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const ctrl = new AbortController()
+    ;(async () => {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          setError('Not signed in')
+          setLoading(false)
+          return
+        }
+        const r = await fetch(`${API_BASE}/api/worldmonitor/telangana/live-channels`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          signal: ctrl.signal,
+        })
+        if (!r.ok) {
+          setError(`Backend ${r.status}`)
+          setLoading(false)
+          return
+        }
+        const j = await r.json()
+        if (Array.isArray(j.channels)) {
+          setChannels(j.channels)
+          // Default to first channel that's actually live
+          const firstLive = j.channels.findIndex((c: ResolvedChannel) => c.live)
+          if (firstLive >= 0) setActiveIdx(firstLive)
+        }
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') setError((e as Error).message)
+      } finally {
+        setLoading(false)
+      }
+    })()
+    return () => ctrl.abort()
+  }, [])
+
+  const ch = channels[activeIdx]
+  const liveCount = channels.filter((c) => c.live).length
+
   return (
     <DrawerShell title="Live channels" onClose={onClose}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
+        <div
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10.5,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: 'var(--rig-ink-3)',
+          }}
+        >
+          {loading
+            ? 'Resolving live streams…'
+            : error
+              ? `Error: ${error}`
+              : `${liveCount} of ${channels.length} channels live`}
+        </div>
+
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {TELUGU_LIVE_CHANNELS.map((c, i) => (
+          {channels.map((c, i) => (
             <button
-              key={c.id}
+              key={c.channel_id}
               onClick={() => setActiveIdx(i)}
+              disabled={!c.live && !loading}
+              title={c.live ? '' : 'Not currently live'}
               style={{
                 padding: '6px 12px',
                 background: i === activeIdx ? 'var(--rig-ink)' : 'transparent',
-                color: i === activeIdx ? 'var(--rig-paper)' : 'var(--rig-ink-2)',
+                color: i === activeIdx
+                  ? 'var(--rig-paper)'
+                  : c.live
+                    ? 'var(--rig-ink-2)'
+                    : 'var(--rig-ink-3)',
                 border: '1px solid var(--rig-rule)',
                 fontFamily: 'var(--font-mono)',
                 fontSize: 10.5,
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase',
-                cursor: 'pointer',
+                cursor: c.live ? 'pointer' : 'not-allowed',
+                opacity: c.live ? 1 : 0.55,
               }}
             >
               {c.label}
+              {c.live && <span style={{ color: 'var(--rig-oxblood)', marginLeft: 6 }}>●</span>}
             </button>
           ))}
         </div>
-        <div style={{ flex: 1, minHeight: 360, background: '#000' }}>
-          <iframe
-            key={ch.id}
-            src={`https://www.youtube.com/embed/live_stream?channel=${ch.id}&autoplay=0`}
-            title={ch.label}
-            allow="autoplay; encrypted-media; picture-in-picture"
-            style={{ width: '100%', height: '100%', border: 'none' }}
-          />
+
+        <div style={{ flex: 1, minHeight: 360, background: '#000', position: 'relative' }}>
+          {ch?.video_id ? (
+            <iframe
+              key={ch.video_id}
+              src={`https://www.youtube.com/embed/${ch.video_id}?autoplay=1&rel=0`}
+              title={ch.label}
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+              style={{ width: '100%', height: '100%', border: 'none' }}
+            />
+          ) : (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#888',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                gap: 12,
+              }}
+            >
+              <div>{loading ? 'Loading…' : ch ? `${ch.label} not currently live` : 'No channel selected'}</div>
+              {ch && !loading && (
+                <a
+                  href={`https://www.youtube.com/channel/${ch.channel_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--rig-gold)', textDecoration: 'none' }}
+                >
+                  Open channel on YouTube →
+                </a>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </DrawerShell>

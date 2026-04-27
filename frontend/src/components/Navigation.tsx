@@ -213,9 +213,6 @@ export default function Navigation() {
             <Chip tone="default" label={counts.article_count.toLocaleString()} />
           </span>
         )}
-        {counts.escalating_count > 0 && (
-          <Chip tone="alert" label={`${counts.escalating_count} escalating`} />
-        )}
         {counts.brief_ready && (
           <span className="pulse-gold" style={{ display: 'inline-flex' }}>
             <Chip tone="gold" label="Brief ready" />

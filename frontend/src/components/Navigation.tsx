@@ -146,7 +146,7 @@ export default function Navigation() {
           style={{
             fontFamily: 'var(--font-serif)',
             fontStyle: 'italic',
-            fontSize: '24px',
+            fontSize: '26px',
             lineHeight: 1,
             letterSpacing: '0.002em',
           }}
@@ -157,7 +157,7 @@ export default function Navigation() {
         </span>
       </Link>
 
-      {/* ── Nav (horizontally scrollable on overflow) ──────────── */}
+      {/* ── Nav (spreads across available width; scrollable on overflow) ── */}
       <nav
         style={{
           display: 'flex',
@@ -165,8 +165,8 @@ export default function Navigation() {
           gap: '0px',
           flex: 1,
           minWidth: 0,
-          justifyContent: 'flex-start',
-          marginRight: '8px',
+          justifyContent: 'space-between',
+          marginRight: '12px',
           overflowX: 'auto',
           overflowY: 'hidden',
           scrollbarWidth: 'none',
@@ -236,13 +236,13 @@ export default function Navigation() {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '32px',
-            height: '32px',
+            width: '36px',
+            height: '36px',
             border: '1px solid var(--rig-rule)',
             color: 'var(--rig-ink-2)',
             fontFamily: 'var(--font-serif)',
             fontStyle: 'italic',
-            fontSize: '15px',
+            fontSize: '17px',
             borderRadius: '50%',
             marginLeft: '6px',
             flexShrink: 0,
@@ -258,9 +258,9 @@ export default function Navigation() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            padding: '8px 12px',
+            padding: '10px 14px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '10.5px',
+            fontSize: '12px',
             letterSpacing: '0.24em',
             textTransform: 'uppercase',
             color: 'var(--rig-ink-3)',
@@ -288,11 +288,11 @@ function NavItem({ href, label, isActive }: { href: string; label: string; isAct
       onMouseLeave={() => setHover(false)}
       style={{
         position: 'relative',
-        padding: '10px 8px',
+        padding: '12px 14px',
         textDecoration: 'none',
         fontFamily: 'var(--font-mono)',
-        fontSize: '10px',
-        letterSpacing: '0.12em',
+        fontSize: '12px',
+        letterSpacing: '0.14em',
         textTransform: 'uppercase',
         color: isActive ? 'var(--rig-ink)' : hover ? 'var(--rig-ink-2)' : 'var(--rig-ink-3)',
         transition: 'color 0.2s',
@@ -306,8 +306,8 @@ function NavItem({ href, label, isActive }: { href: string; label: string; isAct
           style={{
             position: 'absolute',
             bottom: '-1px',
-            left: '8px',
-            right: '8px',
+            left: '14px',
+            right: '14px',
             height: '1px',
             background: 'var(--rig-gold)',
           }}

@@ -35,7 +35,24 @@ app = Celery(
         "backend.tasks.govt_relevance_task",
         "backend.tasks.govt_doctor_task",
         "backend.tasks.social_task",
+        "backend.tasks.social_briefing_task",
+        "backend.tasks.social_intel_task",
         "backend.tasks.newspaper_task",
+        # Daily brief auto-generation (P10 / fix-brief-prod-readiness P1.5)
+        "backend.tasks.brief_task",
+        # Brief quality scorecard cron (fix-brief-prod-readiness P2.10)
+        "backend.tasks.brief_quality_task",
+        # CM Page political-intelligence tasks
+        "backend.tasks.cm.stance_task",
+        "backend.tasks.cm.speakers_task",
+        "backend.tasks.cm.issues_task",
+        "backend.tasks.cm.dissent_task",
+        "backend.tasks.cm.counter_narrative_task",
+        "backend.tasks.cm.refresh_views_task",
+        "backend.tasks.cm.risk_window_task",
+        "backend.tasks.cm.promise_task",
+        "backend.tasks.cm.backfill_newspaper_sentiment_task",
+        "backend.tasks.cm.exploitation_index_task",
     ],
 )
 
@@ -55,17 +72,45 @@ app.config_from_object(
             "tasks.collect_youtube": {"queue": "youtube"},
             "tasks.collect_govt_documents": {"queue": "documents"},
             "tasks.govt_collection_doctor": {"queue": "documents"},
+            # Newspaper collection moved off the busy `collectors` queue
+            # (which has concurrency=1 and is regularly blocked by
+            # 30-60 minute RSS scrapes). Lives on `documents` queue
+            # alongside govt-doc collection — both are heavy I/O and
+            # benefit from the dedicated 2-worker pool there.
             "tasks.score_govt_doc_relevance": {"queue": "relevance"},
             "tasks.score_govt_doc_for_all_users": {"queue": "relevance"},
             "tasks.process_nlp_batch": {"queue": "nlp"},
             "tasks.score_relevance_batch": {"queue": "relevance"},
             "tasks.score_unscored_articles": {"queue": "relevance"},
             "tasks.generate_all_briefs": {"queue": "brief"},
-            "tasks.collect_reddit": {"queue": "collectors"},
-            "tasks.collect_twitter": {"queue": "collectors"},
-            "tasks.collect_telegram": {"queue": "collectors"},
+            "tasks.generate_brief_for_user": {"queue": "brief"},
+            "tasks.score_brief_quality": {"queue": "brief"},
+            "tasks.collect_reddit": {"queue": "social"},
+            "tasks.collect_telegram": {"queue": "social"},
+            "tasks.backfill_social_entity_matches": {"queue": "social"},
+            "tasks.translate_pending_social_posts": {"queue": "social"},
+            "tasks.cluster_recent_social_posts": {"queue": "social"},
+            "tasks.recompute_social_baselines": {"queue": "social"},
+            "tasks.detect_social_events": {"queue": "social"},
+            "tasks.compose_social_summary": {"queue": "social"},
+            "tasks.auto_promote_subjects": {"queue": "social"},
             "tasks.aggregate_social_sentiment_daily": {"queue": "nlp"},
-            "tasks.collect_newspapers": {"queue": "collectors"},
+            "tasks.collect_newspapers": {"queue": "documents"},
+            # CM Page tasks. Heavy LLM work routes to `nlp`; cheap
+            # aggregation/refresh work routes to `social` to avoid
+            # competing with article NLP for the nlp pool.
+            "tasks.cm.tag_stance": {"queue": "nlp"},
+            "tasks.cm.extract_speakers": {"queue": "nlp"},
+            "tasks.cm.cluster_issues": {"queue": "nlp"},
+            "tasks.cm.score_dissent": {"queue": "nlp"},
+            "tasks.cm.generate_counter_narratives": {"queue": "nlp"},
+            "tasks.cm.score_promise_status": {"queue": "nlp"},
+            "tasks.cm.refresh_risk_window": {"queue": "nlp"},
+            "tasks.cm.backfill_newspaper_sentiment": {"queue": "nlp"},
+            "tasks.cm.compute_exploitation_index": {"queue": "social"},
+            "tasks.cm.refresh_voice_share": {"queue": "social"},
+            "tasks.cm.refresh_issue_hourly": {"queue": "social"},
+            "tasks.cm.refresh_constituency_heatmap": {"queue": "social"},
         },
         "beat_schedule": {
             "collect-rss-every-15-min": {
@@ -93,6 +138,14 @@ app.config_from_object(
                 "schedule": crontab(hour=0, minute=30),
                 "options": {"queue": "brief"},
             },
+            # Brief quality rubric scorecard — runs once a day, ~30 min
+            # after the daily fan-out so yesterday's briefs are already
+            # in the table. fix/brief-prod-readiness P2.10.
+            "score-brief-quality-daily": {
+                "task": "tasks.score_brief_quality",
+                "schedule": crontab(hour=1, minute=0),
+                "options": {"queue": "brief"},
+            },
             "reset-groq-keys-daily": {
                 "task": "tasks.reset_groq_keys",
                 "schedule": crontab(hour=0, minute=5),
@@ -118,45 +171,182 @@ app.config_from_object(
                 "schedule": crontab(hour=2, minute=0),
                 "options": {"queue": "nlp"},
             },
-            "collect-youtube-every-6h": {
+            "collect-youtube-every-2h": {
+                # Bumped from 6h → 2h: at the old cadence the wires were
+                # showing day-old clips even when fresh content existed
+                # on monitored channels. The YouTube transcript fetch is
+                # the slow step (~30-60s per video) but happens on the
+                # dedicated `youtube` queue, so it never blocks anything.
                 "task": "tasks.collect_youtube",
-                "schedule": timedelta(hours=6),
+                "schedule": timedelta(hours=2),
                 "options": {"queue": "youtube"},
             },
-            "collect-govt-docs-daily": {
+            # Govt docs and newspapers historically fired once a day on a
+            # crontab. When that single window missed (worker busy / blip)
+            # the pillar went silent for 24h. Both now fire every 12 hours
+            # so a missed window self-heals on the next tick. The collector
+            # itself dedupes by URL so re-running is a no-op when there's
+            # nothing new — cheap.
+            "collect-govt-docs-every-12h": {
                 "task": "tasks.collect_govt_documents",
-                "schedule": crontab(hour=6, minute=30),
+                "schedule": timedelta(hours=12),
                 "options": {"queue": "documents"},
             },
-            "govt-doctor-daily": {
+            "govt-doctor-every-12h": {
                 "task": "tasks.govt_collection_doctor",
-                "schedule": crontab(hour=7, minute=0),
+                "schedule": timedelta(hours=12),
                 "options": {"queue": "documents"},
             },
-            "collect-reddit-every-30-min": {
+            # ── Tiered cadence per platform ──
+            "collect-reddit-hot-every-15-min": {
                 "task": "tasks.collect_reddit",
-                "schedule": timedelta(minutes=30),
-                "options": {"queue": "collectors"},
+                "schedule": timedelta(minutes=15),
+                "kwargs": {"tier": "hot"},
+                "options": {"queue": "social"},
             },
-            "collect-twitter-every-1-hour": {
-                "task": "tasks.collect_twitter",
+            "collect-reddit-warm-every-1-hour": {
+                "task": "tasks.collect_reddit",
                 "schedule": timedelta(hours=1),
-                "options": {"queue": "collectors"},
+                "kwargs": {"tier": "warm"},
+                "options": {"queue": "social"},
             },
-            "collect-telegram-every-30-min": {
+            "collect-reddit-cold-every-6-hours": {
+                "task": "tasks.collect_reddit",
+                "schedule": timedelta(hours=6),
+                "kwargs": {"tier": "cold"},
+                "options": {"queue": "social"},
+            },
+            "collect-telegram-hot-every-15-min": {
                 "task": "tasks.collect_telegram",
+                "schedule": timedelta(minutes=15),
+                "kwargs": {"tier": "hot"},
+                "options": {"queue": "social"},
+            },
+            "collect-telegram-warm-every-1-hour": {
+                "task": "tasks.collect_telegram",
+                "schedule": timedelta(hours=1),
+                "kwargs": {"tier": "warm"},
+                "options": {"queue": "social"},
+            },
+            "collect-telegram-cold-every-6-hours": {
+                "task": "tasks.collect_telegram",
+                "schedule": timedelta(hours=6),
+                "kwargs": {"tier": "cold"},
+                "options": {"queue": "social"},
+            },
+            "translate-social-posts-every-10-min": {
+                "task": "tasks.translate_pending_social_posts",
+                "schedule": timedelta(minutes=10),
+                "options": {"queue": "social"},
+            },
+            "cluster-social-posts-every-15-min": {
+                "task": "tasks.cluster_recent_social_posts",
+                "schedule": timedelta(minutes=15),
+                "options": {"queue": "social"},
+            },
+            "auto-promote-social-subjects-nightly": {
+                "task": "tasks.auto_promote_subjects",
+                "schedule": crontab(hour=2, minute=0),
+                "options": {"queue": "social"},
+            },
+            "recompute-social-baselines-nightly": {
+                "task": "tasks.recompute_social_baselines",
+                "schedule": crontab(hour=2, minute=30),
+                "options": {"queue": "social"},
+            },
+            "detect-social-events-every-30-min": {
+                "task": "tasks.detect_social_events",
                 "schedule": timedelta(minutes=30),
-                "options": {"queue": "collectors"},
+                "options": {"queue": "social"},
+            },
+            "compose-social-summary-every-6-hours": {
+                "task": "tasks.compose_social_summary",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "social"},
             },
             "aggregate-social-sentiment-hourly": {
                 "task": "tasks.aggregate_social_sentiment_daily",
                 "schedule": crontab(minute=15),
                 "options": {"queue": "nlp"},
             },
-            "collect-newspapers-daily": {
+            "collect-newspapers-every-12h": {
                 "task": "tasks.collect_newspapers",
-                "schedule": crontab(hour=7, minute=30),
-                "options": {"queue": "collectors"},
+                "schedule": timedelta(hours=12),
+                # Moved off `collectors` queue (concurrency=1, blocked by
+                # long RSS scrapes) onto `documents` queue (2 workers,
+                # dedicated for heavy I/O like newspapers + govt PDFs).
+                "options": {"queue": "documents"},
+            },
+            # ── CM Page political-intelligence schedule ──
+            #
+            # Heavy LLM work runs on `nlp`; cheap aggregations on `social`.
+            # Frequencies match the per-section TTLs in
+            # backend/nlp/cm/cache.py so the cache is rarely warmer than
+            # the underlying data.
+            "cm-tag-stance-every-5-min": {
+                "task": "tasks.cm.tag_stance",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
+            },
+            "cm-extract-speakers-every-10-min": {
+                "task": "tasks.cm.extract_speakers",
+                "schedule": timedelta(minutes=10),
+                "options": {"queue": "nlp"},
+            },
+            "cm-cluster-issues-incremental-2h": {
+                "task": "tasks.cm.cluster_issues",
+                "schedule": timedelta(hours=2),
+                "options": {"queue": "nlp"},
+            },
+            "cm-cluster-issues-daily": {
+                "task": "tasks.cm.cluster_issues",
+                "schedule": crontab(hour=3, minute=0),
+                "options": {"queue": "nlp"},
+            },
+            "cm-score-dissent-daily": {
+                "task": "tasks.cm.score_dissent",
+                "schedule": crontab(hour=4, minute=0),
+                "options": {"queue": "nlp"},
+            },
+            "cm-generate-counter-narratives-daily": {
+                "task": "tasks.cm.generate_counter_narratives",
+                "schedule": crontab(hour=5, minute=0),
+                "options": {"queue": "nlp"},
+            },
+            "cm-score-promise-status-daily": {
+                "task": "tasks.cm.score_promise_status",
+                "schedule": crontab(hour=6, minute=0),
+                "options": {"queue": "nlp"},
+            },
+            "cm-refresh-risk-window-every-6h": {
+                "task": "tasks.cm.refresh_risk_window",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "nlp"},
+            },
+            "cm-backfill-newspaper-sentiment-daily": {
+                "task": "tasks.cm.backfill_newspaper_sentiment",
+                "schedule": crontab(hour=1, minute=30),
+                "options": {"queue": "nlp"},
+            },
+            "cm-refresh-issue-hourly-every-30-min": {
+                "task": "tasks.cm.refresh_issue_hourly",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "social"},
+            },
+            "cm-refresh-voice-share-every-6h": {
+                "task": "tasks.cm.refresh_voice_share",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "social"},
+            },
+            "cm-compute-exploitation-index-every-2h": {
+                "task": "tasks.cm.compute_exploitation_index",
+                "schedule": timedelta(hours=2),
+                "options": {"queue": "social"},
+            },
+            "cm-refresh-constituency-heatmap-daily": {
+                "task": "tasks.cm.refresh_constituency_heatmap",
+                "schedule": crontab(hour=2, minute=15),
+                "options": {"queue": "social"},
             },
         },
     }
@@ -182,3 +372,65 @@ def _govt_collector_self_check(**_kw) -> None:
         logging.getLogger(__name__).warning(
             "Playwright self-check skipped: %s", exc,
         )
+
+
+# ── Catch-up: kick stale collectors on worker boot ─────────────────────
+#
+# Govt-doc and newspaper collections used to be once-daily crontabs, so a
+# single missed window (worker restart, broker hiccup, source 5xx) left
+# the pillar silent for 24h. The schedule is now every-12h, but as belt-
+# and-braces this `worker_ready` handler queries the most recent
+# `collected_at` per pillar and fires the collector immediately if the
+# last successful run is more than 24 hours ago. The collector itself
+# dedupes by URL so it's safe to fire — no-op if nothing new.
+#
+# Only the `documents` worker runs this; running it from every queue
+# would re-fire the tasks several times on each restart.
+
+@worker_ready.connect
+def _collector_catch_up(sender=None, **_kw) -> None:  # noqa: D401, ANN001
+    # Only the documents worker triggers catch-ups (both targets route
+    # there now). Filter on hostname so the other workers stay quiet.
+    hostname: str = getattr(sender, "hostname", "") or ""
+    if "worker-documents" not in hostname:
+        return
+
+    import logging
+    import psycopg2
+    import os
+    from datetime import datetime, timedelta as _td, timezone
+
+    log = logging.getLogger(__name__)
+    pg_url = os.environ.get(
+        "DATABASE_URL_SYNC",
+        "postgresql://rig:rigpassword@rig-postgres:5432/rig",
+    )
+
+    # Tables to inspect → task to fire if stale.
+    targets = [
+        ("govt_documents", "tasks.collect_govt_documents"),
+        ("newspaper_clippings", "tasks.collect_newspapers"),
+    ]
+    threshold = datetime.now(tz=timezone.utc) - _td(hours=24)
+
+    try:
+        with psycopg2.connect(pg_url) as conn, conn.cursor() as cur:
+            for table, task_name in targets:
+                cur.execute(f"SELECT MAX(collected_at) FROM {table};")
+                last = cur.fetchone()[0]
+                if last is None or last < threshold:
+                    age = "never" if last is None else str(
+                        datetime.now(tz=timezone.utc) - last
+                    )
+                    log.warning(
+                        "Catch-up firing %s — last collected %s ago",
+                        task_name, age,
+                    )
+                    app.send_task(task_name)
+                else:
+                    log.info(
+                        "Catch-up skipped %s — last collected %s",
+                        task_name, last.isoformat(),
+                    )
+    except Exception as exc:  # noqa: BLE001 — never crash the worker on boot
+        log.warning("Collector catch-up skipped: %s", exc)

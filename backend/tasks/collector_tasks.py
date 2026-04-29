@@ -81,8 +81,7 @@ def reset_groq_keys() -> dict:  # type: ignore[no-untyped-def]
     return status
 
 
-@app.task(name="tasks.generate_all_briefs", bind=True)
-def generate_all_briefs(self):  # type: ignore[no-untyped-def]
-    """Daily brief generation — implemented in P10."""
-    logger.debug("generate_all_briefs called (not yet implemented)")
-    return {"status": "not_implemented", "prompt": "P10"}
+# NOTE: ``tasks.generate_all_briefs`` (and the new
+# ``tasks.generate_brief_for_user``) live in ``backend.tasks.brief_task``
+# now. See fix/brief-prod-readiness P1.5. The Beat schedule entry in
+# backend/celery_app.py is unchanged — only the implementation moved.

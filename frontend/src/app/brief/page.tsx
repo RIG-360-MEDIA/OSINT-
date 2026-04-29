@@ -1,26 +1,52 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Navigation from '@/components/Navigation'
 import { Dateline } from '@/components/Dateline'
+import {
+  parseBrief as parseBriefLib,
+  SECTION_NAMES,
+  type BriefMeta,
+  type ParsedBrief,
+  type SourceCounts,
+  type EvidenceBundle,
+} from './lib/parseBrief'
+import { BriefWizard } from './components/BriefWizard'
+import { CMSituationRoom } from './cm/CMSituationRoom'
+import { IntelMonitorToggle, type BriefView } from './monitor/IntelMonitorToggle'
+import { MonitorView } from './monitor/MonitorView'
+
+const VIEW_STORAGE_KEY = 'brief.view'
+
+function readInitialView(searchView: string | null): BriefView {
+  if (searchView === 'monitor' || searchView === 'intel' || searchView === 'cm') {
+    return searchView
+  }
+  if (typeof window !== 'undefined') {
+    const stored = window.localStorage.getItem(VIEW_STORAGE_KEY)
+    if (stored === 'monitor' || stored === 'intel' || stored === 'cm') return stored
+  }
+  return 'intel'
+}
 
 /* ── Types ────────────────────────────────────────────────────────────────── */
 
 type PageState = 'loading_check' | 'no_brief' | 'generating' | 'showing_brief' | 'error' | 'too_early'
 
-interface BriefMeta { briefDate: string; articlesUsed: number; generatedAt: string }
-interface ParsedBrief { date: string; generatedFor: string; sections: Record<string, string>; meta: BriefMeta }
 interface HistoryItem { date: string; articles_used: number; generated_at: string }
 
-/* ── Constants ────────────────────────────────────────────────────────────── */
+/** Extra fields the multi-pillar API now returns alongside `content`. The
+ * older /today endpoint may not include them; helper handles both. */
+interface MultiPillarFields {
+  source_counts?: SourceCounts
+  evidence?: EvidenceBundle
+}
 
-const SECTION_NAMES = [
-  'SITUATION STATUS', 'KEY DEVELOPMENTS', 'ENTITIES TODAY',
-  'SIGNALS TO WATCH', 'FINANCIAL PULSE', 'SOURCE COVERAGE',
-] as const
 type SectionName = typeof SECTION_NAMES[number]
+
+/* ── Constants ────────────────────────────────────────────────────────────── */
 
 const LOADING_PHASES = ['Reading the wires…', 'Marking the developments…', 'Filing the brief…']
 
@@ -28,18 +54,22 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 /* ── Brief parser ─────────────────────────────────────────────────────────── */
 
-function parseBrief(content: string, meta: BriefMeta): ParsedBrief {
-  const dateMatch = content.match(/^## (.+)$/m)
-  const metaMatch = content.match(/\*Generated for: (.+?)\*/)
-  const sections: Record<string, string> = {}
-  for (const part of content.split(/\n---\n/)) {
-    const m = part.trim().match(/^## ([A-Z ]+)\n\n([\s\S]*)/)
-    if (m) {
-      const name = m[1].trim()
-      if (SECTION_NAMES.includes(name as SectionName)) sections[name] = m[2].trim()
-    }
+/**
+ * Wrap the lib parser so the page can attach the new multi-pillar fields
+ * (`source_counts`, `evidence`) returned by the upgraded `/api/brief/*`
+ * endpoints. Falls through gracefully when the response shape is older.
+ */
+function parseBrief(
+  content: string,
+  meta: BriefMeta,
+  extra?: MultiPillarFields,
+): ParsedBrief {
+  const parsed = parseBriefLib(content, meta)
+  return {
+    ...parsed,
+    sourceCounts: extra?.source_counts,
+    evidence: extra?.evidence,
   }
-  return { date: dateMatch?.[1] ?? '', generatedFor: metaMatch?.[1] ?? '', sections, meta }
 }
 
 /* ── Newsroom section wrapper ─────────────────────────────────────────────── */
@@ -711,44 +741,96 @@ function HistoryStrip({
 
 export default function BriefPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [pageState, setPageState] = useState<PageState>('loading_check')
   const [brief, setBrief] = useState<ParsedBrief | null>(null)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [errorMsg, setErrorMsg] = useState('')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [view, setView] = useState<BriefView>(() =>
+    readInitialView(searchParams.get('view')),
+  )
   const tokenRef = useRef<string | null>(null)
+
+  // Persist view + sync URL whenever it changes (no full navigation).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(VIEW_STORAGE_KEY, view)
+    const params = new URLSearchParams(window.location.search)
+    if (view === 'monitor' || view === 'cm') {
+      params.set('view', view)
+    } else {
+      params.delete('view')
+    }
+    const qs = params.toString()
+    const nextUrl = `${window.location.pathname}${qs ? `?${qs}` : ''}`
+    if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
+      window.history.replaceState(null, '', nextUrl)
+    }
+  }, [view])
+
+  // AbortController for in-flight /api/brief/* requests. Cancelled on
+  // unmount and on rapid view/date change so a stale response cannot
+  // overwrite newer state. fix/brief-prod-readiness P3.12.
+  const abortRef = useRef<AbortController | null>(null)
+
+  const newAbortSignal = (): AbortSignal => {
+    abortRef.current?.abort()
+    const ctrl = new AbortController()
+    abortRef.current = ctrl
+    return ctrl.signal
+  }
 
   useEffect(() => {
     const supabase = createClient()
+    let cancelled = false
     supabase.auth.getSession().then(async ({ data }) => {
+      if (cancelled) return
       if (!data.session) {
         router.push('/login')
         return
       }
       tokenRef.current = data.session.access_token
+      setToken(data.session.access_token)
       await loadTodayBrief(data.session.access_token)
       await loadHistory(data.session.access_token)
     })
+    return () => {
+      cancelled = true
+      abortRef.current?.abort()
+    }
   }, [router])
+
+  const isAbortError = (e: unknown): boolean =>
+    e instanceof DOMException && e.name === 'AbortError'
 
   const loadTodayBrief = async (token: string) => {
     try {
       const res = await fetch(`${API_BASE}/api/brief/today`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal: newAbortSignal(),
       })
       if (res.ok) {
         const data = await res.json()
         setBrief(
-          parseBrief(data.content, {
-            briefDate: data.brief_date,
-            articlesUsed: data.articles_used,
-            generatedAt: data.generated_at,
-          }),
+          parseBrief(
+            data.content,
+            {
+              briefDate: data.brief_date,
+              articlesUsed: data.articles_used,
+              generatedAt: data.generated_at,
+            },
+            { source_counts: data.source_counts, evidence: data.evidence },
+          ),
         )
         setSelectedDate(data.brief_date)
         setPageState('showing_brief')
       } else if (res.status === 404) {
         setPageState('no_brief')
+      } else if (res.status === 403) {
+        setErrorMsg('You do not have access to the Brief page.')
+        setPageState('error')
       } else {
         const err = await res
           .json()
@@ -758,7 +840,8 @@ export default function BriefPage() {
         )
         setPageState('error')
       }
-    } catch (e) {
+    } catch (e: unknown) {
+      if (isAbortError(e)) return
       setErrorMsg(
         `Network error: ${e instanceof Error ? e.message : 'Is the server running?'}`,
       )
@@ -770,18 +853,21 @@ export default function BriefPage() {
     try {
       const res = await fetch(`${API_BASE}/api/brief/history/list`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal: newAbortSignal(),
       })
       if (res.ok) {
         const data = await res.json()
         setHistory(data.briefs ?? [])
       }
-    } catch {
+    } catch (e: unknown) {
+      if (isAbortError(e)) return
       /* non-critical */
     }
   }
 
   const handleGenerate = async () => {
     if (!tokenRef.current) return
+    if (pageState === 'generating') return // debounce double-click (D-BRIEF-8)
     setPageState('generating')
     setErrorMsg('')
     try {
@@ -791,6 +877,7 @@ export default function BriefPage() {
           Authorization: `Bearer ${tokenRef.current}`,
           'Content-Type': 'application/json',
         },
+        signal: newAbortSignal(),
       })
       if (res.status === 425) {
         const err = await res
@@ -803,6 +890,11 @@ export default function BriefPage() {
         setTimeout(() => setPageState('no_brief'), 60000)
         return
       }
+      if (res.status === 403) {
+        setErrorMsg('You do not have access to the Brief page.')
+        setPageState('error')
+        return
+      }
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: 'Generation failed' }))
         setErrorMsg(
@@ -813,16 +905,21 @@ export default function BriefPage() {
       }
       const data = await res.json()
       setBrief(
-        parseBrief(data.content, {
-          briefDate: data.brief_date,
-          articlesUsed: data.articles_used,
-          generatedAt: new Date().toISOString(),
-        }),
+        parseBrief(
+          data.content,
+          {
+            briefDate: data.brief_date,
+            articlesUsed: data.articles_used,
+            generatedAt: new Date().toISOString(),
+          },
+          { source_counts: data.source_counts, evidence: data.evidence },
+        ),
       )
       setSelectedDate(data.brief_date)
       setPageState('showing_brief')
       if (tokenRef.current) await loadHistory(tokenRef.current)
-    } catch {
+    } catch (e: unknown) {
+      if (isAbortError(e)) return
       setErrorMsg('Network error during generation')
       setPageState('error')
     }
@@ -836,19 +933,25 @@ export default function BriefPage() {
     try {
       const res = await fetch(`${API_BASE}/api/brief/${dateStr}`, {
         headers: { Authorization: `Bearer ${tokenRef.current}` },
+        signal: newAbortSignal(),
       })
       if (res.ok) {
         const data = await res.json()
         setBrief(
-          parseBrief(data.content, {
-            briefDate: data.brief_date,
-            articlesUsed: data.articles_used,
-            generatedAt: data.generated_at,
-          }),
+          parseBrief(
+            data.content,
+            {
+              briefDate: data.brief_date,
+              articlesUsed: data.articles_used,
+              generatedAt: data.generated_at,
+            },
+            { source_counts: data.source_counts, evidence: data.evidence },
+          ),
         )
         setPageState('showing_brief')
       }
-    } catch {
+    } catch (e: unknown) {
+      if (isAbortError(e)) return
       /* stay on current */
     }
   }
@@ -902,7 +1005,7 @@ export default function BriefPage() {
         )
 
       case 'showing_brief':
-        return brief ? <BriefContent brief={brief} onRegenerate={handleGenerate} /> : null
+        return brief ? <BriefWizard brief={brief} onRegenerate={handleGenerate} /> : null
 
       case 'error':
         return (
@@ -945,19 +1048,52 @@ export default function BriefPage() {
         />
         <div
           style={{
-            maxWidth: '980px',
+            // All three views now use the wide 1480px layout so the page
+            // feels spread instead of letterboxed inside a narrow column.
+            // Intelligence's BriefWizard centres its long-read content
+            // internally, so widening the outer wrapper just gives the
+            // header strip + previous-filings rail + step navigator more
+            // horizontal breathing room.
+            maxWidth: '1480px',
             margin: '0 auto',
             padding: '20px 40px 120px',
             position: 'relative',
             zIndex: 2,
+            transition: 'max-width 0.3s ease',
           }}
         >
-          <HistoryStrip
-            history={history}
-            onSelectDate={handleSelectDate}
-            selectedDate={selectedDate}
-          />
-          {renderMain()}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '20px 0 8px',
+            }}
+          >
+            <span
+              className="rig-byline"
+              style={{ margin: 0, fontSize: '10px', color: 'var(--rig-ink-3)' }}
+            >
+              View
+            </span>
+            <IntelMonitorToggle view={view} onChange={setView} />
+          </div>
+
+          {view === 'monitor' ? (
+            <MonitorView apiBase={API_BASE} token={token} />
+          ) : view === 'cm' ? (
+            <CMSituationRoom token={token} embedded />
+          ) : (
+            <>
+              <HistoryStrip
+                history={history}
+                onSelectDate={handleSelectDate}
+                selectedDate={selectedDate}
+              />
+              {renderMain()}
+            </>
+          )}
         </div>
       </main>
     </div>

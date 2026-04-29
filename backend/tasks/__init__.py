@@ -2,9 +2,15 @@
 from backend.tasks.collector_tasks import (  # noqa: F401
     collect_html,
     collect_rss,
-    generate_all_briefs,
     reset_groq_keys,
 )
+# Brief Beat tasks moved out of collector_tasks (P10 stub) into a
+# dedicated module by fix/brief-prod-readiness P1.5.
+from backend.tasks.brief_task import (  # noqa: F401
+    generate_all_briefs,
+    generate_brief_for_user,
+)
+from backend.tasks.brief_quality_task import score_brief_quality  # noqa: F401
 from backend.tasks.nlp_processor import process_nlp_batch as process_nlp_batch  # noqa: F401
 from backend.tasks.relevance_task import score_relevance_batch as score_relevance_batch  # noqa: F401
 from backend.tasks.backfill_task import score_unscored_articles as score_unscored_articles  # noqa: F401

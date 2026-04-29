@@ -1,217 +1,93 @@
 """
 Brief router — generate, retrieve, and list daily intelligence briefs.
+
+Hardened by ``fix/brief-prod-readiness``:
+
+* All five endpoints gate on ``require_page("brief")`` instead of just
+  ``get_current_user`` (D-BRIEF-AUDIT-1).
+* Generation flow extracted into :mod:`backend.nlp.brief_runner` so the
+  Beat task and the router share the same code path.
+* ``GET /{brief_date}`` is constrained by a regex and rejects future
+  dates (D-BRIEF-16).
+* ``GET /history/list`` accepts ``limit`` and ``offset`` (capped) so
+  the UI can lazy-load past briefs.
 """
 from __future__ import annotations
 
-import json
+import datetime as _dt
 import logging
 from datetime import date, datetime
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user
+from backend.auth.auth_middleware import require_page
 from backend.database import get_db
-from backend.nlp.brief_generator import generate_brief
+from backend.nlp.brief_runner import BriefError, run_for_user
 
 logger = logging.getLogger(__name__)
 
 brief_router = APIRouter(prefix="/api/brief", tags=["brief"])
 
 
+# Constrain ``brief_date`` path arg to ISO YYYY-MM-DD. Falls through with
+# 422 (FastAPI's automatic validation response) for anything else; previously
+# the route would 200/400 depending on parse outcome (D-BRIEF-16).
+_BRIEF_DATE_REGEX = r"^\d{4}-\d{2}-\d{2}$"
+_HISTORY_DEFAULT_LIMIT = 30
+_HISTORY_MAX_LIMIT = 100
+
+
 # ── Generate today's brief ────────────────────────────────────────────────────
 
 @brief_router.post("/generate")
 async def generate_today_brief(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_page("brief")),
 ) -> dict:
-    """
-    Generate today's brief on demand. Takes 15-30 seconds.
-    Stores result in briefs table (upsert by user+date).
-    """
-    user_id = user["id"]
-
+    """Generate today's brief on demand. Idempotent within ~5 minutes."""
     async with get_db() as db:
-        # Ghost-row: ensure user exists locally before FK insert
-        await db.execute(
-            text(
-                "INSERT INTO users (id, email) VALUES (:id, :email) "
-                "ON CONFLICT (id) DO NOTHING"
-            ),
-            {"id": user_id, "email": user["email"]},
-        )
-
-        # Fetch user profile + entities in one query
-        profile_result = await db.execute(
-            text("""
-                SELECT
-                    up.user_id,
-                    up.role_type,
-                    up.geo_primary,
-                    up.geo_secondary,
-                    up.signal_priorities,
-                    up.role_context,
-                    up.raw_description,
-                    up.language_preferences,
-                    up.brief_time,
-                    up.brief_timezone,
-                    up.organisation,
-                    up.created_at,
-                    up.updated_at,
-                    COALESCE(
-                        json_agg(
-                            json_build_object(
-                                'canonical_name', ue.canonical_name,
-                                'priority', ue.priority
-                            )
-                        ) FILTER (WHERE ue.id IS NOT NULL),
-                        '[]'::json
-                    ) AS entities
-                FROM user_profiles up
-                LEFT JOIN user_entities ue ON ue.user_id = up.user_id
-                WHERE up.user_id = :user_id
-                GROUP BY
-                    up.user_id, up.role_type, up.geo_primary,
-                    up.geo_secondary, up.signal_priorities, up.role_context,
-                    up.raw_description, up.language_preferences,
-                    up.brief_time, up.brief_timezone, up.organisation,
-                    up.created_at, up.updated_at
-            """),
-            {"user_id": user_id},
-        )
-        profile_row = profile_result.fetchone()
-
-        if not profile_row:
-            raise HTTPException(
-                status_code=404,
-                detail="User profile not found. Complete onboarding first.",
+        try:
+            result = await run_for_user(
+                db,
+                user_id=user["id"],
+                user_email=user.get("email", ""),
             )
+        except BriefError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.detail)
 
-        profile = dict(profile_row._mapping)
-
-        entities_raw = profile.get("entities", [])
-        if isinstance(entities_raw, str):
-            entities = json.loads(entities_raw)
-        else:
-            entities = entities_raw or []
-
-        # Fetch top 30 relevant articles (Tier 1 first, then Tier 2)
-        articles_result = await db.execute(
-            text("""
-                SELECT
-                    a.id,
-                    a.title,
-                    a.lead_text_translated,
-                    a.lead_text_original,
-                    a.topic_category,
-                    a.geo_primary,
-                    a.published_at,
-                    a.thumbnail_url,
-                    a.author_name,
-                    s.name AS source_name,
-                    s.domain,
-                    uar.score_final,
-                    uar.relevance_tier,
-                    uar.relevance_explanation,
-                    uar.matched_entity_names
-                FROM user_article_relevance uar
-                JOIN articles a ON a.id = uar.article_id
-                JOIN sources s ON a.source_id = s.id
-                WHERE uar.user_id = :user_id
-                  AND uar.relevance_tier IN (1, 2)
-                  AND a.nlp_confidence != 'error'
-                ORDER BY uar.relevance_tier ASC, uar.score_final DESC
-                LIMIT 30
-            """),
-            {"user_id": user_id},
-        )
-        articles = [dict(r._mapping) for r in articles_result.fetchall()]
-
-        if not articles:
-            raise HTTPException(
-                status_code=404,
-                detail="No relevant articles found.",
-            )
-
-        if len(articles) < 10:
-            raise HTTPException(
-                status_code=425,
-                detail=(
-                    f"Only {len(articles)} relevant articles found. "
-                    "Your feed is still being prepared — "
-                    "check back in a few minutes. "
-                    "Currently processing your article backlog."
-                ),
-            )
-
-        logger.info(
-            "Generating brief for user %s with %d articles",
-            user_id,
-            len(articles),
-        )
-
-        result = await generate_brief(
-            user_id=user_id,
-            user_profile=profile,
-            user_entities=entities,
-            articles=articles,
-        )
-
-        if not result.get("content"):
-            raise HTTPException(
-                status_code=500,
-                detail=result.get("error", "Brief generation failed"),
-            )
-
-        # Upsert — regeneration replaces today's brief
-        today = date.today()
-        await db.execute(
-            text("""
-                INSERT INTO briefs (
-                    user_id, content, brief_date, articles_used, model_used
-                ) VALUES (
-                    :user_id, :content, :brief_date, :articles_used, :model_used
-                )
-                ON CONFLICT (user_id, brief_date) DO UPDATE SET
-                    content = EXCLUDED.content,
-                    articles_used = EXCLUDED.articles_used,
-                    generated_at = NOW()
-            """),
-            {
-                "user_id": user_id,
-                "content": result["content"],
-                "brief_date": today,
-                "articles_used": result["articles_used"],
-                "model_used": "llama-3.3-70b-versatile",
-            },
-        )
-        await db.commit()
-
-        return {
-            "content": result["content"],
-            "brief_date": today.isoformat(),
-            "articles_used": result["articles_used"],
-            "sections": result.get("sections", {}),
-        }
+    return {
+        "content": result.content,
+        "brief_date": result.brief_date.isoformat(),
+        "articles_used": result.articles_used,
+        "sections": result.sections,
+        "source_counts": result.source_counts,
+        "evidence": result.evidence,
+        "cached": result.cached,
+        "section_failures": list(result.section_failures),
+    }
 
 
 # ── Get today's brief ─────────────────────────────────────────────────────────
 
 @brief_router.get("/today")
 async def get_today_brief(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_page("brief")),
 ) -> dict:
     """Get today's brief if it exists. Returns 404 if not yet generated."""
     async with get_db() as db:
         result = await db.execute(
-            text("""
-                SELECT content, brief_date, articles_used, generated_at, model_used
+            text(
+                """
+                SELECT content, brief_date, articles_used, generated_at,
+                       model_used, source_counts, evidence
                 FROM briefs
                 WHERE user_id = :user_id
                   AND brief_date = CURRENT_DATE
                 ORDER BY generated_at DESC
                 LIMIT 1
-            """),
+                """
+            ),
             {"user_id": user["id"]},
         )
         row = result.fetchone()
@@ -225,6 +101,15 @@ async def get_today_brief(
         "brief_date": r["brief_date"].isoformat(),
         "articles_used": r["articles_used"],
         "generated_at": r["generated_at"].isoformat(),
+        "source_counts": r["source_counts"] or {
+            "articles": r["articles_used"] or 0,
+            "govt_docs": 0, "social_posts": 0,
+            "newspaper_clippings": 0, "video_clips": 0,
+        },
+        "evidence": r["evidence"] or {
+            "govt_docs": [], "social_posts": [],
+            "newspaper_clippings": [], "video_clips": [],
+        },
     }
 
 
@@ -232,25 +117,35 @@ async def get_today_brief(
 
 @brief_router.get("/{brief_date}")
 async def get_brief_by_date(
-    brief_date: str,
-    user: dict = Depends(get_current_user),
+    brief_date: str = Path(..., regex=_BRIEF_DATE_REGEX),
+    user: dict = Depends(require_page("brief")),
 ) -> dict:
     """Fetch a specific date's brief by ISO date string (YYYY-MM-DD)."""
-    import datetime as _dt
     try:
         parsed_date = _dt.date.fromisoformat(brief_date)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format — use YYYY-MM-DD")
+        # Regex should already exclude this, but defend in depth.
+        raise HTTPException(
+            status_code=422, detail="Invalid date format — use YYYY-MM-DD"
+        )
+    if parsed_date > _dt.date.today():
+        raise HTTPException(
+            status_code=422,
+            detail="Future dates are not supported.",
+        )
 
     async with get_db() as db:
         result = await db.execute(
-            text("""
-                SELECT content, brief_date, articles_used, generated_at
+            text(
+                """
+                SELECT content, brief_date, articles_used, generated_at,
+                       source_counts, evidence
                 FROM briefs
                 WHERE user_id = :user_id
                   AND brief_date = :brief_date
                 LIMIT 1
-            """),
+                """
+            ),
             {"user_id": user["id"], "brief_date": parsed_date},
         )
         row = result.fetchone()
@@ -261,9 +156,237 @@ async def get_brief_by_date(
     r = row._mapping
     return {
         "content": r["content"],
+        "source_counts": r["source_counts"] or {
+            "articles": r["articles_used"] or 0,
+            "govt_docs": 0, "social_posts": 0,
+            "newspaper_clippings": 0, "video_clips": 0,
+        },
+        "evidence": r["evidence"] or {
+            "govt_docs": [], "social_posts": [],
+            "newspaper_clippings": [], "video_clips": [],
+        },
         "brief_date": r["brief_date"].isoformat(),
         "articles_used": r["articles_used"],
         "generated_at": r["generated_at"].isoformat(),
+    }
+
+
+# ── Monitoring highlights ─────────────────────────────────────────────────────
+
+@brief_router.get("/monitor/highlights")
+async def get_monitoring_highlights(
+    user: dict = Depends(require_page("brief")),
+) -> dict:
+    """Top cross-pillar items for the Brief → Monitoring view's hero band.
+
+    Returns one best item per pillar (articles, newspaper, social, clips,
+    govt docs) — ordered to give a guaranteed-mixed top-of-page layout.
+    Each item carries a uniform ``pillar`` tag so the frontend can render
+    one card type for all five.
+
+    Filters mirror the per-stripe rules:
+      - articles: tier 1 + 2 only, by score_final
+      - newspaper: relevance_score >= 0.3, by score
+      - social: monitored sources (Reddit + Telegram), by engagement
+      - clips: tracked entities, by relevance_score
+      - govt docs: by relevance_score
+    """
+    user_id = user["id"]
+
+    async with get_db() as db:
+        article_row = (
+            await db.execute(
+                text(
+                    """
+                    SELECT
+                        a.id::text AS id,
+                        a.title AS headline,
+                        s.name AS source,
+                        a.published_at AS ts,
+                        uar.relevance_tier,
+                        uar.score_final
+                    FROM user_article_relevance uar
+                    JOIN articles a ON a.id = uar.article_id
+                    JOIN sources  s ON s.id = a.source_id
+                    WHERE uar.user_id = :uid
+                      AND uar.relevance_tier IN (1, 2)
+                      AND a.nlp_confidence != 'error'
+                    ORDER BY uar.relevance_tier ASC,
+                             uar.score_final DESC,
+                             a.published_at DESC NULLS LAST
+                    LIMIT 1
+                    """
+                ),
+                {"uid": user_id},
+            )
+        ).fetchone()
+
+        paper_row = (
+            await db.execute(
+                text(
+                    """
+                    SELECT
+                        nc.id::text AS id,
+                        COALESCE(nc.headline_translated, nc.headline) AS headline,
+                        nc.newspaper_name AS source,
+                        nc.edition_date AS ts
+                    FROM newspaper_clippings nc
+                    WHERE nc.collected_at > NOW() - INTERVAL '24 hours'
+                      AND nc.relevance_score >= 0.3
+                    ORDER BY nc.relevance_score DESC, nc.collected_at DESC
+                    LIMIT 1
+                    """
+                )
+            )
+        ).fetchone()
+
+        social_row = (
+            await db.execute(
+                text(
+                    """
+                    SELECT
+                        sp.id::text AS id,
+                        COALESCE(
+                            NULLIF(LEFT(sp.post_text_translated, 140), ''),
+                            LEFT(sp.post_text, 140)
+                        ) AS headline,
+                        COALESCE(sm.display_name, sp.author_username) AS source,
+                        sp.posted_at AS ts,
+                        sp.sentiment_score
+                    FROM social_posts sp
+                    LEFT JOIN social_monitors sm ON sm.id = sp.monitor_id
+                    WHERE sp.collected_at > NOW() - INTERVAL '24 hours'
+                      AND sp.platform IN ('reddit', 'telegram')
+                      AND sp.monitor_id IS NOT NULL
+                    ORDER BY (
+                        COALESCE(sp.upvotes, 0)
+                        + 2 * COALESCE(sp.comment_count, 0)
+                        + COALESCE(sp.forward_count, 0)
+                    ) DESC, sp.collected_at DESC
+                    LIMIT 1
+                    """
+                )
+            )
+        ).fetchone()
+
+        clip_row = (
+            await db.execute(
+                text(
+                    """
+                    SELECT
+                        yc.id::text AS id,
+                        yc.video_title AS headline,
+                        yc.channel_name AS source,
+                        yc.video_published_at AS ts
+                    FROM youtube_clips yc
+                    JOIN user_entities ue ON ue.canonical_name = yc.matched_entity
+                    WHERE ue.user_id = :uid
+                      AND yc.processed = TRUE
+                      AND yc.collected_at > NOW() - INTERVAL '24 hours'
+                    ORDER BY COALESCE(yc.relevance_score, 0) DESC,
+                             yc.collected_at DESC
+                    LIMIT 1
+                    """
+                ),
+                {"uid": user_id},
+            )
+        ).fetchone()
+
+        doc_row = (
+            await db.execute(
+                text(
+                    """
+                    SELECT
+                        d.id::text AS id,
+                        d.title AS headline,
+                        d.source_geography AS source,
+                        d.published_at AS ts,
+                        d.relevance_score
+                    FROM documents d
+                    WHERE d.collected_at > NOW() - INTERVAL '24 hours'
+                    ORDER BY COALESCE(d.relevance_score, 0) DESC,
+                             d.published_at DESC NULLS LAST
+                    LIMIT 1
+                    """
+                )
+            )
+        ).fetchone()
+
+    def _iso(value: object) -> Optional[str]:
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value.isoformat()
+        try:
+            return value.isoformat()  # type: ignore[attr-defined]
+        except AttributeError:
+            return str(value)
+
+    highlights: list[dict] = []
+    if article_row:
+        highlights.append({
+            "pillar": "articles",
+            "id": article_row.id,
+            "headline": article_row.headline,
+            "source": article_row.source,
+            "timestamp": _iso(article_row.ts),
+            "score": float(article_row.score_final or 0),
+            "extra": {"tier": int(article_row.relevance_tier or 0)},
+        })
+    if paper_row:
+        highlights.append({
+            "pillar": "newspaper",
+            "id": paper_row.id,
+            "headline": paper_row.headline,
+            "source": paper_row.source,
+            "timestamp": _iso(paper_row.ts),
+            "score": None,
+            "extra": {},
+        })
+    if social_row:
+        highlights.append({
+            "pillar": "social",
+            "id": social_row.id,
+            "headline": social_row.headline,
+            "source": social_row.source,
+            "timestamp": _iso(social_row.ts),
+            "score": None,
+            "extra": {
+                "sentiment": (
+                    float(social_row.sentiment_score)
+                    if social_row.sentiment_score is not None
+                    else None
+                )
+            },
+        })
+    if clip_row:
+        highlights.append({
+            "pillar": "clips",
+            "id": clip_row.id,
+            "headline": clip_row.headline,
+            "source": clip_row.source,
+            "timestamp": _iso(clip_row.ts),
+            "score": None,
+            "extra": {},
+        })
+    if doc_row:
+        highlights.append({
+            "pillar": "documents",
+            "id": doc_row.id,
+            "headline": doc_row.headline,
+            "source": doc_row.source,
+            "timestamp": _iso(doc_row.ts),
+            "score": (
+                float(doc_row.relevance_score)
+                if doc_row.relevance_score is not None
+                else None
+            ),
+            "extra": {},
+        })
+
+    return {
+        "highlights": highlights,
+        "as_of": datetime.utcnow().isoformat(),
     }
 
 
@@ -271,19 +394,35 @@ async def get_brief_by_date(
 
 @brief_router.get("/history/list")
 async def get_brief_history(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_page("brief")),
+    limit: int = Query(_HISTORY_DEFAULT_LIMIT, ge=1, le=_HISTORY_MAX_LIMIT),
+    offset: int = Query(0, ge=0),
 ) -> dict:
-    """Return list of past brief dates (no content). Capped at 30 entries."""
+    """Return a page of past brief dates (no content). Capped at 100 per page."""
     async with get_db() as db:
+        count_result = await db.execute(
+            text(
+                "SELECT COUNT(*) AS n FROM briefs WHERE user_id = :user_id"
+            ),
+            {"user_id": user["id"]},
+        )
+        total = int(count_result.scalar() or 0)
+
         result = await db.execute(
-            text("""
+            text(
+                """
                 SELECT brief_date, articles_used, generated_at
                 FROM briefs
                 WHERE user_id = :user_id
                 ORDER BY brief_date DESC
-                LIMIT 30
-            """),
-            {"user_id": user["id"]},
+                LIMIT :limit OFFSET :offset
+                """
+            ),
+            {
+                "user_id": user["id"],
+                "limit": limit,
+                "offset": offset,
+            },
         )
         rows = result.fetchall()
 
@@ -295,5 +434,8 @@ async def get_brief_history(
                 "generated_at": r._mapping["generated_at"].isoformat(),
             }
             for r in rows
-        ]
+        ],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
     }

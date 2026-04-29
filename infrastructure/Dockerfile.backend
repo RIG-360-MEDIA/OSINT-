@@ -31,7 +31,8 @@ RUN apt-get update && apt-get install -y \
 # Copy and install Python dependencies first
 # (separate layer — only rebuilds when requirements.txt changes)
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 
 # P15 — government document PDF pipeline.
 # OpenDataLoader (Apache 2.0) is the primary extractor; PyMuPDF is the

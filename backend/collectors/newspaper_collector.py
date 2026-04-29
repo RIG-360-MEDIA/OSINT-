@@ -148,6 +148,22 @@ async def get_pdf_url_from_careerswave(careerswave_url: str) -> str | None:
         )
         return _gdrive_direct_url(m.group(1))
 
+    # Defect B6: silent failure here used to be the hardest debug.
+    # Emit a warning naming the page, the dates we tried, and whether
+    # any Drive link was even present so a human can tell at a glance
+    # whether the issue is upload delay, site format change, or the
+    # source URL being wrong.
+    drive_link_present = "drive.google.com/file/d/" in html
+    logger.warning(
+        "CareersWave %s: no Drive link matched dates %s "
+        "(any_drive_link_on_page=%s, html_bytes=%d)",
+        careerswave_url,
+        ", ".join(d.isoformat() for d in (
+            today, today - timedelta(days=1), today - timedelta(days=2),
+        )),
+        drive_link_present,
+        len(html),
+    )
     return None
 
 
@@ -744,17 +760,44 @@ def render_article_clipping(
             doc.close()
             return None
 
+        page_width = page.rect.width
+
+        # Some upstream extractors leak normalized bbox values (percentages
+        # or 0..1 fractions) instead of PDF points. If the whole bbox lives
+        # inside the first 100 units of a page that's ~600 pts wide, it has
+        # to be normalized — rescale to points before rendering, otherwise
+        # we get a 12×11 px crop that's useless on screen.
+        max_v = max(bbox[:4])
+        if max_v <= 1.5:
+            scale_x, scale_y = page_width, page_height
+        elif max_v <= 100:
+            scale_x, scale_y = page_width / 100.0, page_height / 100.0
+        else:
+            scale_x = scale_y = 1.0
+        b = [
+            bbox[0] * scale_x,
+            bbox[1] * scale_y,
+            bbox[2] * scale_x,
+            bbox[3] * scale_y,
+        ]
+
         # Detect coordinate convention. Groq Vision returns top-down Y
         # (top < bottom); PyMuPDF blocks are top-down too; OpenDataLoader
         # returns bottom-up.
-        if bbox[1] < bbox[3]:
-            rect = fitz.Rect(bbox[0], bbox[1], bbox[2], bbox[3])
+        if b[1] < b[3]:
+            rect = fitz.Rect(b[0], b[1], b[2], b[3])
         else:
             rect = fitz.Rect(
-                bbox[0], page_height - bbox[3],
-                bbox[2], page_height - bbox[1],
+                b[0], page_height - b[3],
+                b[2], page_height - b[1],
             )
         rect = rect + fitz.Rect(-3, -3, 3, 3)
+
+        # Safety: if the rect is still too small to be useful, skip — the
+        # frontend falls back to a masthead-initials thumbnail.
+        if rect.width < 30 or rect.height < 30:
+            doc.close()
+            return None
 
         pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale), clip=rect)
         img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
@@ -783,9 +826,16 @@ async def is_relevant_to_user(
     headline: str,
     text: str,
     user_entities: list[str],
-    user_geo: str,
+    user_geos: list[str] | str,
 ) -> tuple[bool, float, str]:
-    """Newsprint-specific relevance scorer. Returns (is_relevant, score, reason)."""
+    """Newsprint-specific relevance scorer. Returns (is_relevant, score, reason).
+
+    CODE-2: `user_geos` accepts a list of distinct user geographies (one
+    string for back-compat with existing single-tenant callers). The
+    article is relevant if it covers ANY of them. Previously this used
+    the geography of an arbitrary single user via `LIMIT 1`, biasing
+    every newspaper's relevance scoring to one location.
+    """
     combined = ((headline or "") + " " + (text or "")).lower()
 
     score = 0.0
@@ -797,19 +847,38 @@ async def is_relevant_to_user(
             reasons.append(f"{entity} mentioned")
             break
 
-    # Geography match across English/Telugu/Hindi transliterations
+    # Normalise to list of unique non-empty lowercase geo keys
+    if isinstance(user_geos, str):
+        geos_list = [user_geos] if user_geos else []
+    else:
+        geos_list = list(user_geos or [])
+    geo_keys = {g.strip().lower() for g in geos_list if g and g.strip()}
+
+    # Geography match across English/Telugu/Hindi/Malayalam/Tamil/Kannada/Marathi/Bengali/Gujarati/Punjabi transliterations
     geo_aliases: dict[str, tuple[str, ...]] = {
-        "telangana": ("telangana", "తెలంగాణ", "तेलंगाना", "hyderabad", "హైదరాబాద్", "हैदराबाद"),
-        "andhra pradesh": ("andhra", "ఆంధ్ర", "आंध्र"),
+        "telangana": (
+            "telangana", "తెలంగాణ", "तेलंगाना", "hyderabad", "హైదరాబాద్", "हैदराबाद",
+            "ടെലങ്കാന", "ஹைதராபாத்", "ತೆಲಂಗಾಣ", "তেলেঙ্গানা", "તેલંગાણા", "ਤੇਲੰਗਾਨਾ",
+        ),
+        "hyderabad": (
+            "hyderabad", "telangana",
+            "హైదరాబాద్", "తెలంగాణ", "हैदराबाद", "तेलंगाना",
+            "ടെലങ്കാന", "ஹைதராபாத்", "ತೆಲಂಗಾಣ", "তেলেঙ্গানা", "તેલંગાણા", "ਤੇਲੰਗਾਨਾ",
+        ),
+        "andhra pradesh": (
+            "andhra", "ఆంధ్ర", "आंध्र",
+            "ஆந்திர", "ಆಂಧ್ರ", "ആന്ധ്ര", "অন্ধ্র", "આંધ્ર",
+        ),
     }
-    matched_aliases = geo_aliases.get(
-        (user_geo or "").lower(), ((user_geo or "").lower(),)
-    )
-    for alias in matched_aliases:
-        if alias and alias in combined:
-            score += 0.3
-            reasons.append(f"Covers {user_geo}")
+    geo_matched: str | None = None
+    for key in geo_keys:
+        aliases = geo_aliases.get(key, (key,))
+        if any(a and a in combined for a in aliases):
+            geo_matched = key
             break
+    if geo_matched is not None:
+        score += 0.3
+        reasons.append(f"Covers {geo_matched}")
 
     political_terms = (
         # English
@@ -817,12 +886,22 @@ async def is_relevant_to_user(
         "cabinet", "policy", "scheme", "budget", "court", "order",
         "telangana", "hyderabad", "revanth", "kcr", "brs",
         "congress", "bjp", "modi", "parliament", "election",
+        "kishan reddy", "rama rao", "ktr", "chandrashekar",
         # Telugu
         "తెలంగాణ", "హైదరాబాద్", "కాంగ్రెస్", "బిజెపి",
-        "ముఖ్యమంత్రి", "ప్రభుత్వం", "రేవంత్",
+        "ముఖ్యమంత్రి", "ప్రభుత్వం", "రేవంత్", "కేసీఆర్",
+        "కేటీఆర్", "మోదీ", "బీఆర్‌ఎస్", "చంద్రశేఖర్",
         # Hindi
         "सरकार", "मुख्यमंत्री", "कांग्रेस", "भाजपा",
-        "तेलंगाना", "हैदराबाद",
+        "तेलंगाना", "हैदराबाद", "मोदी", "रेवंत", "केसीआर",
+        # Other Indic
+        "ടെലങ്കാന", "കോൺഗ്രസ്", "ബിജെപി",  # Malayalam
+        "தெலுங்கானா", "காங்கிரஸ்", "பிஜேபி", "மோடி",  # Tamil
+        "ತೆಲಂಗಾಣ", "ಕಾಂಗ್ರೆಸ್", "ಬಿಜೆಪಿ", "ಮೋದಿ",  # Kannada
+        "तेलंगणा", "काँग्रेस", "भाजप",  # Marathi
+        "তেলেঙ্গানা", "কংগ্রেস", "বিজেপি",  # Bengali
+        "તેલંગાણા", "કોંગ્રેસ", "ભાજપ",  # Gujarati
+        "ਤੇਲੰਗਾਨਾ", "ਕਾਂਗਰਸ", "ਭਾਜਪਾ",  # Punjabi
     )
     for term in political_terms:
         if term in combined:

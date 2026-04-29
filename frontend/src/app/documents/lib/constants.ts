@@ -71,8 +71,12 @@ export const GEO_KICKER: Record<string, string> = {
 export function formatShortDate(iso: string): string {
   try {
     const d = new Date(iso)
+    // D-11: pin locale so SSR (Node default) and CSR (browser default) agree.
+    // The previous `undefined` locale produced a hydration mismatch on every
+    // non-en-US client. The display format is intentionally numeric+short
+    // month, locale-stable across regions.
     return d
-      .toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+      .toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
       .toUpperCase()
   } catch {
     return ''

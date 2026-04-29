@@ -71,7 +71,7 @@ export function GlobalView({ onSwitchToTelangana }: Props) {
       </div>
 
       <iframe
-        title="World Monitor"
+        title="Live Monitoring"
         src={WM_URL}
         loading="eager"
         style={{

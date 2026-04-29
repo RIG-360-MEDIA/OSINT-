@@ -21,6 +21,14 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
+# trafilatura's transitive deps (htmldate, courlan, readability-lxml) emit
+# ERROR-level lines for every malformed / stub HTML body — typically bot-block
+# pages or paywall stubs. We already handle that case by returning full_text
+# = None upstream, so the messages add no signal and drown real errors.
+# Counted in C-7 of the coverage audit (2026-04-28): 4 137 / 24 h vanish.
+for _noisy in ("htmldate", "trafilatura", "courlan", "readability"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
+
 DATABASE_URL: str = os.environ.get(
     "DATABASE_URL_SYNC", "postgresql://rig:rigpassword@rig-postgres:5432/rig"
 )

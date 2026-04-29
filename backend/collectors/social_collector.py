@@ -1,9 +1,13 @@
 """
-Social media collectors — Reddit / Twitter / Telegram.
+Social media collectors — Reddit / Telegram.
 
-All three return a common post dict shape that gets stored in `social_posts`.
+Both return a common post dict shape that gets stored in `social_posts`.
 All network errors are swallowed and logged — a single platform failure must
 not poison a Celery task that covers multiple monitors.
+
+Twitter / X was removed on 2026-04-29 — the API free tier returns HTTP
+402 on user lookups, making collection non-functional. Restore from git
+tag pre-twitter-removal if a paid tier is procured.
 """
 from __future__ import annotations
 
@@ -17,8 +21,22 @@ import httpx
 logger = logging.getLogger(__name__)
 
 _REDDIT_UA = "RIGSurveillance/1.0 Intelligence Platform (contact: admin)"
-_TWITTER_API = "https://api.twitter.com"
 _TELEGRAM_API = "https://api.telegram.org"
+
+# SIG-8: Reddit 429 telemetry. Process-local; surfaces in
+# /api/health/social if the platform exposes it. Escalates from WARNING
+# to ERROR after _REDDIT_429_ESCALATE_AFTER consecutive throttles.
+_reddit_429_streak: int = 0
+_reddit_429_total: int = 0
+_REDDIT_429_ESCALATE_AFTER: int = 3
+
+def reddit_throttle_metrics() -> dict[str, int]:
+    """Return current 429 counters (process-local)."""
+    return {
+        "streak": _reddit_429_streak,
+        "total": _reddit_429_total,
+        "escalate_after": _REDDIT_429_ESCALATE_AFTER,
+    }
 
 
 # ── Reddit ─────────────────────────────────────────────────────────────────
@@ -60,19 +78,35 @@ async def collect_reddit_posts(
         f"https://www.reddit.com/r/{subreddit}/{category}.json"
         f"?limit={limit}"
     )
+    global _reddit_429_streak, _reddit_429_total
     try:
         async with httpx.AsyncClient(
             timeout=30, headers={"User-Agent": _REDDIT_UA}
         ) as client:
             r = await client.get(url)
             if r.status_code == 429:
-                logger.warning("Reddit rate-limited for r/%s", subreddit)
+                _reddit_429_streak += 1
+                _reddit_429_total += 1
+                msg = (
+                    "Reddit rate-limited for r/%s (streak=%s, total=%s)"
+                )
+                if _reddit_429_streak >= _REDDIT_429_ESCALATE_AFTER:
+                    logger.error(
+                        msg, subreddit, _reddit_429_streak,
+                        _reddit_429_total,
+                    )
+                else:
+                    logger.warning(
+                        msg, subreddit, _reddit_429_streak,
+                        _reddit_429_total,
+                    )
                 return []
             if r.status_code != 200:
                 logger.warning(
                     "Reddit error r/%s: %s", subreddit, r.status_code
                 )
                 return []
+            _reddit_429_streak = 0  # success resets streak
             children = (r.json().get("data") or {}).get("children") or []
             return [p for p in (_reddit_to_post(c) for c in children) if p]
     except Exception as exc:
@@ -102,129 +136,9 @@ async def search_reddit_keyword(
 
 
 # ── Twitter / X ────────────────────────────────────────────────────────────
-
-def _twitter_tweet_to_post(
-    t: dict[str, Any], username: str
-) -> dict[str, Any] | None:
-    tid = t.get("id")
-    text = t.get("text") or ""
-    if not tid or not text:
-        return None
-    metrics = t.get("public_metrics") or {}
-    return {
-        "platform": "twitter",
-        "platform_post_id": str(tid),
-        "author_username": username,
-        "post_text": text[:3000],
-        "post_url": (
-            f"https://twitter.com/{username}/status/{tid}"
-            if username
-            else f"https://twitter.com/i/web/status/{tid}"
-        ),
-        "upvotes": int(metrics.get("like_count") or 0),
-        "comment_count": int(metrics.get("reply_count") or 0),
-        "share_count": int(metrics.get("retweet_count") or 0),
-        "post_language": t.get("lang") or "en",
-        "posted_at": t.get("created_at"),
-    }
-
-
-async def collect_twitter_user_tweets(
-    username: str,
-    bearer_token: str,
-    max_results: int = 10,
-    since_id: str | None = None,
-) -> list[dict[str, Any]]:
-    """Collect recent tweets from a user via Twitter API v2 (Bearer Token)."""
-    if not bearer_token:
-        return []
-
-    try:
-        async with httpx.AsyncClient(
-            timeout=30,
-            headers={"Authorization": f"Bearer {bearer_token}"},
-        ) as client:
-            user_r = await client.get(
-                f"{_TWITTER_API}/2/users/by/username/{username}",
-                params={"user.fields": "public_metrics"},
-            )
-            if user_r.status_code != 200:
-                logger.warning(
-                    "Twitter user lookup failed @%s: %s",
-                    username,
-                    user_r.status_code,
-                )
-                return []
-            user_id = ((user_r.json().get("data") or {}).get("id"))
-            if not user_id:
-                return []
-
-            params: dict[str, Any] = {
-                "max_results": min(max(max_results, 5), 100),
-                "tweet.fields": "created_at,public_metrics,lang",
-                "expansions": "author_id",
-            }
-            if since_id:
-                params["since_id"] = since_id
-
-            tweets_r = await client.get(
-                f"{_TWITTER_API}/2/users/{user_id}/tweets",
-                params=params,
-            )
-            if tweets_r.status_code != 200:
-                logger.warning(
-                    "Twitter tweets failed @%s: %s",
-                    username,
-                    tweets_r.status_code,
-                )
-                return []
-
-            tweets = tweets_r.json().get("data") or []
-            return [
-                p
-                for p in (_twitter_tweet_to_post(t, username) for t in tweets)
-                if p
-            ]
-    except Exception as exc:
-        logger.warning("Twitter collection failed @%s: %s", username, exc)
-        return []
-
-
-async def search_twitter_keyword(
-    query: str,
-    bearer_token: str,
-    max_results: int = 10,
-) -> list[dict[str, Any]]:
-    """Search recent tweets by keyword (last 7 days on free tier)."""
-    if not bearer_token:
-        return []
-
-    try:
-        async with httpx.AsyncClient(
-            timeout=30,
-            headers={"Authorization": f"Bearer {bearer_token}"},
-        ) as client:
-            r = await client.get(
-                f"{_TWITTER_API}/2/tweets/search/recent",
-                params={
-                    "query": query,
-                    "max_results": min(max(max_results, 10), 100),
-                    "tweet.fields": "created_at,public_metrics,lang",
-                },
-            )
-            if r.status_code != 200:
-                return []
-            return [
-                p
-                for p in (
-                    _twitter_tweet_to_post(t, "")
-                    for t in (r.json().get("data") or [])
-                )
-                if p
-            ]
-    except Exception as exc:
-        logger.warning("Twitter keyword search failed: %s", exc)
-        return []
+# Removed 2026-04-29. Twitter API free tier returns HTTP 402 Payment
+# Required for user lookups, making collection non-functional. Restore
+# from git history (tag pre-twitter-removal) if a paid X tier is procured.
 
 
 # ── Telegram ───────────────────────────────────────────────────────────────
@@ -333,11 +247,74 @@ def compute_sentiment(text: str, language: str = "en") -> float:
 
 # ── Entity matching ────────────────────────────────────────────────────────
 
+import re as _re_match  # local alias to avoid clobbering top-level if any
+
+
+def _word_boundary(name: str) -> _re_match.Pattern[str]:
+    """Build a case-insensitive whole-word matcher for a name.
+
+    \\b alone fails for non-ASCII (Telugu/Hindi/etc.). We pad with
+    look-around for non-letter chars in either Unicode script. This stops
+    "RT" matching inside "PARTY" while still matching Telugu names
+    surrounded by punctuation.
+    """
+    return _re_match.compile(
+        r"(?<![\wऀ-ॿఀ-౿])"
+        + _re_match.escape(name)
+        + r"(?![\wऀ-ॿఀ-౿])",
+        _re_match.IGNORECASE,
+    )
+
+
+# Module-level cache — recompiling 11k regexes per post is wasteful.
+_PATTERN_CACHE: dict[str, _re_match.Pattern[str]] = {}
+
+
+def _pattern_for(name: str) -> _re_match.Pattern[str]:
+    pat = _PATTERN_CACHE.get(name)
+    if pat is None:
+        pat = _word_boundary(name)
+        _PATTERN_CACHE[name] = pat
+    return pat
+
+
 def find_matched_entities(
-    text: str, user_entities: list[str]
+    text: str,
+    user_entities: list[str],
+    *,
+    text_translated: str | None = None,
+    aliases: dict[str, list[str]] | None = None,
 ) -> list[str]:
-    """Case-insensitive substring match — entity canonical name in post."""
-    if not text or not user_entities:
+    """Case-insensitive whole-word match — entity canonical name in post.
+
+    Args:
+        text: Post body in its original language.
+        user_entities: Canonical names to look for.
+        text_translated: Optional English translation of `text`. When given,
+            both source and translation are scanned — lets English entity
+            names match Telugu/Hindi/etc. posts via the English mirror.
+        aliases: Optional `{canonical_name: [alias1, alias2, ...]}` map.
+            A hit on any alias counts as a hit on the canonical name.
+
+    Returns canonical names (deduplicated, original casing preserved).
+    """
+    if not user_entities:
         return []
-    lowered = text.lower()
-    return [e for e in user_entities if e and e.lower() in lowered]
+    haystack = " ".join(filter(None, [text or "", text_translated or ""]))
+    if not haystack.strip():
+        return []
+    aliases = aliases or {}
+    out: list[str] = []
+    seen: set[str] = set()
+    for name in user_entities:
+        if not name or name in seen:
+            continue
+        candidates = [name, *(aliases.get(name) or [])]
+        for cand in candidates:
+            if not cand:
+                continue
+            if _pattern_for(cand).search(haystack):
+                out.append(name)
+                seen.add(name)
+                break
+    return out

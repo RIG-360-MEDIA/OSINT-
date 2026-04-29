@@ -13,6 +13,10 @@ Pillars (each a separate page + ingest pipeline):
 - **Clips** (`/clips`) — YouTube transcripts
 - **Cuttings** (`/cuttings`) — newspaper editions
 - **Threads** (`/threads`) — social signals (Reddit/Twitter/Telegram)
+- **Signals** (`/signals`) — "The Signal Room": Reddit + Telegram feed
+  with sentiment + entity matching. Twitter is **hidden from the user
+  UI** for now (data layer remains active). Tasks run on the dedicated
+  `social` queue (see `start.sh` and `backend/tasks/social_task.py`).
 - **Documents** (`/documents`) — government PDFs (this is the "archive")
 - **Brief** (`/brief`) — daily generated digest
 - **Analyst** (`/analyst`) — per-user RAG over the corpus
@@ -37,7 +41,7 @@ the compose file in isolation will conclude "no workers" and be wrong.
 
 ### Where workers actually live
 
-`rig-backend` boots via `/start.sh`, which forks 5 background Celery
+`rig-backend` boots via `/start.sh`, which forks 6 background Celery
 processes plus the FastAPI uvicorn in the foreground. The script lives
 at `infrastructure/Dockerfile.backend` (CMD `["/start.sh"]`); to read
 the actual launched processes, exec into the container:
@@ -47,20 +51,25 @@ the actual launched processes, exec into the container:
 
 | Queue | Consumer process | Concurrency | Tasks |
 |---|---|---|---|
-| `collectors` | `worker-collectors` | 1 | RSS, HTML, social, newspapers |
+| `collectors` | `worker-collectors` | 1 | RSS, HTML |
+| `social`     | `worker-social`     | 2 | Reddit / Twitter / Telegram + entity backfill |
 | `youtube`    | `worker-youtube`    | 1 | YouTube transcript + entity tagging |
-| `nlp`        | `worker-nlp`        | 4 | Article NLP / topic / entities |
-| `relevance`  | `worker-relevance`  | 4 | Per-user article + doc scoring |
+| `documents`  | `worker-documents`  | 2 (prefetch=1) | govt PDF collection + doctor + newspapers |
+| `nlp`        | `worker-nlp`        | 4 | Article NLP / topic / entities / social sentiment / CM stance + speakers + clustering + dissent + counter-narratives |
+| `relevance`  | `worker-relevance`  | 4 | Per-user article + doc scoring + CM voice-share / heatmap / exploitation index |
 | `brief`      | `worker-relevance`  | (shared) | Daily brief generation |
-| **`documents`** | **(none — known gap)** | — | govt PDF collection + doctor |
 
-The `documents` queue exists in the routing config
-(`backend/celery_app.py:56-58`) but `start.sh` does not launch a worker
-for it. Beat publishes `tasks.collect_govt_documents` daily; messages
-sit in the Postgres-backed queue with no consumer. **The fix is a 5-line
-addition to `start.sh`, not a new compose service.** Two compose-level
-beat schedulers running side-by-side would double-fire every periodic
-task — confirmed footgun.
+Newspapers historically lived on `collectors` but were moved to
+`documents` because the single-concurrency `collectors` worker was
+regularly blocked by 30–60 minute RSS scrapes. CM political-intelligence
+tasks (`tasks.cm.*`) route to either `nlp` (LLM-heavy) or `social`
+(cheap aggregations).
+
+**Resolved gap:** the `documents` queue had no consumer until the
+2026-04-28 audit. `start.sh` now launches `worker-documents` with
+concurrency=2 prefetch=1. Govt PDFs and newspapers drain on schedule.
+Two compose-level beat schedulers running side-by-side would
+double-fire every periodic task — confirmed footgun, do not split.
 
 ### Stale infrastructure on disk
 

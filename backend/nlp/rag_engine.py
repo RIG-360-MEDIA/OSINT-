@@ -38,6 +38,36 @@ MODE_POOL_SIZES: dict[str, tuple[int, int]] = {
 DEFAULT_TOP_K = 15
 DEFAULT_POOL: tuple[int, int] = (10, 5)
 
+
+def _smart_truncate(text_in: str, max_chars: int) -> str:
+    """
+    Truncate `text_in` to at most `max_chars`, preferring the last sentence-
+    boundary (`. ! ?` or newline) within the budget. Falls back to the last
+    word boundary; falls back to a hard cut as a last resort.
+
+    Used to keep evidence snippets readable when the per-tier cap would
+    otherwise chop the text mid-sentence — protects answer quality when the
+    LLM uses the snippet for direct quoting or paraphrase.
+    """
+    if not text_in:
+        return ""
+    if len(text_in) <= max_chars:
+        return text_in
+    window = text_in[:max_chars]
+    # Prefer ending at a sentence terminator with following whitespace.
+    sentence_end = max(
+        window.rfind(". "), window.rfind("! "), window.rfind("? "),
+        window.rfind(".\n"), window.rfind("!\n"), window.rfind("?\n"),
+    )
+    if sentence_end >= int(max_chars * 0.5):
+        return window[: sentence_end + 1].rstrip()
+    # Else fall back to last whitespace boundary.
+    last_space = window.rfind(" ")
+    if last_space >= int(max_chars * 0.6):
+        return window[:last_space].rstrip() + "…"
+    # Hard cut.
+    return window.rstrip() + "…"
+
 # ── Mode prompts ──────────────────────────────────────────────────────────────
 
 MODE_PROMPTS: dict[str, str] = {
@@ -263,25 +293,61 @@ State it. Label it. Move on.
 
 \u2501\u2501\u2501 TYPE 2: CORPUS KNOWLEDGE \u2501\u2501\u2501
 
-Facts from the retrieved intelligence articles \u2014 time-sensitive, specific,
-recent. Statements made, orders passed, numbers reported, events occurred
-in recent days or weeks.
+Facts from the retrieved intelligence \u2014 time-sensitive, specific, recent.
+Statements made, orders passed, numbers reported, events occurred in
+recent days or weeks. The corpus is composed of FIVE evidence kinds, each
+with its own citation format. Use whichever kinds the question and the
+retrieved evidence call for. Do not restrict yourself to articles when
+other kinds carry the load.
 
-YOU MUST CITE THESE WITH \u2460 \u2461 \u2462
+  1. ARTICLES \u2014 RSS / web reporting. Cite as numbered: \u2460 \u2461 \u2462 \u2463 \u2026
+     The number must match the [N] index of the article in the
+     INTELLIGENCE block. Articles are the dominant evidence pool.
 
-Use numbered citations tied to the specific article that contains the
-specific claim you are making.
+  2. GOVT DOCUMENT EVIDENCE \u2014 official orders, circulars, tenders,
+     reports. Cite as: (Doc: <title>, p.<page_number> if available).
+     Use these when the question is about policy, official action,
+     scheme details, or anything where a primary-source document is
+     stronger than reporting.
 
-If an article does not directly support a claim \u2014 do NOT cite it for that
-claim. Find an article that does, or say the information is not in the
-current corpus.
+  3. SOCIAL SIGNAL EVIDENCE \u2014 Reddit / Telegram / Twitter posts.
+     Cite as: (Social: <platform> @ <YYYY-MM-DD>). Treat these as
+     CHATTER and SENTIMENT, not confirmed reporting. Use them to
+     answer "what is the public mood / online discourse / sentiment"
+     style questions, or to corroborate a trend already supported by
+     articles. Never let a social post alone establish a contested
+     factual claim.
+
+  4. NEWSPAPER EDITION EVIDENCE \u2014 scanned print-edition clippings.
+     Cite as: (Paper: <newspaper> <edition_date>, p.<page_number>).
+     These often carry vernacular and regional coverage that does not
+     appear in the article RSS stream. They are confirmed reporting,
+     equivalent in weight to articles.
+
+  5. VIDEO EVIDENCE \u2014 YouTube clip transcripts. Cite as:
+     (Video: <channel> @ <mm:ss>). Use when the spoken content is
+     directly relevant to the question.
+
+YOU MUST CITE EVERY CORPUS-DERIVED CLAIM with one of the five formats
+above, tied to the specific item that contains the specific claim.
+
+If no retrieved item directly supports a claim \u2014 do NOT cite anything
+for that claim. Either find an item that does, or say the information
+is not in the current corpus.
+
+When the question naturally invites a particular evidence kind (e.g.
+"what is online sentiment?" \u2192 social, "what does the order say?" \u2192
+govt doc, "what is the print press saying?" \u2192 paper), bias your answer
+toward that kind even if articles also retrieved \u2014 don't ignore the
+right-shaped evidence just because articles outnumber it.
 
 \u2501\u2501\u2501 FORBIDDEN BEHAVIOUR \u2501\u2501\u2501
 
-\u2460 Never cite an article as evidence for a claim that article does not
-  actually contain. If you retrieved a railway article and your question
-  is about Kaleshwaram \u2014 the railway article cannot be cited for a
-  Kaleshwaram claim.
+\u2460 Never cite any retrieved item \u2014 article, govt doc, social post,
+  newspaper clipping, or video clip \u2014 as evidence for a claim that the
+  item does not actually contain. If you retrieved a railway article
+  and your question is about Kaleshwaram \u2014 the railway article cannot
+  be cited for a Kaleshwaram claim. Same rule for every evidence kind.
 
 \u2461 Never present a foundational fact as if it came from the corpus.
   Do not say [\u2460] next to something you knew before reading the articles.
@@ -724,14 +790,18 @@ async def retrieve_relevant_articles(
             or r.title
             or ""
         )
-        # Tiered snippet length: T1 = primary evidence (full), T2 = supporting, T3 = brief
+        # Tiered snippet length: T1 = primary evidence, T2 = supporting, T3 = brief.
+        # Caps tightened (1500/800/400 → 900/500/280) so a 20-article batch fits
+        # under Groq's 12K TPM ceiling without truncating mid-sentence. The cuts
+        # land on the last sentence boundary within the budget — preserves
+        # readable evidence rather than chopping a word in half.
         tier = r.relevance_tier
         if tier == 1:
-            snippet_len = 1500
+            snippet_len = 900
         elif tier == 2:
-            snippet_len = 800
+            snippet_len = 500
         else:
-            snippet_len = 400
+            snippet_len = 280
 
         articles.append({
             "article_id": r.article_id,
@@ -745,7 +815,7 @@ async def retrieve_relevant_articles(
             "collected_at": r.collected_at.isoformat() if r.collected_at else None,
             "score_final": float(r.score_final),
             "relevance_tier": r.relevance_tier,
-            "text_snippet": raw_text[:snippet_len],
+            "text_snippet": _smart_truncate(raw_text, snippet_len),
             "distance": float(r.distance),
         })
 
@@ -757,14 +827,24 @@ async def retrieve_relevant_articles(
 async def retrieve_relevant_clips(
     query: str,
     user_id: str,
-    db,
+    db=None,
     top_k: int = 3,
 ) -> list[dict]:
     """
     Find YouTube clips relevant to the query via LaBSE cosine similarity.
     Returns up to top_k clips to include as VIDEO EVIDENCE in RAG context.
+
+    Opens its own DB session if `db` is None (the safe path for concurrent
+    callers — asyncpg cannot multiplex statements on a single connection).
+    Existing callers that pass an explicit `db` continue to work unchanged.
     """
     from sqlalchemy import text
+    from backend.database import get_db as _get_db
+
+    own_session_cm = None
+    if db is None:
+        own_session_cm = _get_db()
+        db = await own_session_cm.__aenter__()
 
     try:
         entities_result = await db.execute(
@@ -773,14 +853,14 @@ async def retrieve_relevant_clips(
         )
         user_entities = [r.canonical_name for r in entities_result.fetchall()]
 
-        if not user_entities:
-            return []
-
         query_emb = embed_query(query)
         emb_str = "[" + ",".join(str(x) for x in query_emb) + "]"
 
-        result = await db.execute(
-            text("""
+        # If the user has tracked entities, prefer clips that match them; otherwise
+        # fall back to pure semantic so accounts without an entity profile still
+        # get video evidence rather than a silent blackout.
+        if user_entities:
+            sql = """
                 SELECT
                     video_id,
                     video_title,
@@ -791,17 +871,39 @@ async def retrieve_relevant_clips(
                     transcript_translated,
                     matched_entity,
                     video_published_at,
-                    (labse_embedding <=> :emb::vector) AS distance
+                    (labse_embedding <=> CAST(:emb AS vector)) AS distance
                 FROM youtube_clips
                 WHERE labse_embedding IS NOT NULL
                   AND processed = TRUE
                   AND matched_entity = ANY(:entities)
-                  AND (labse_embedding <=> :emb::vector) < 0.6
+                  AND (labse_embedding <=> CAST(:emb AS vector)) < 0.6
                 ORDER BY distance ASC
                 LIMIT :top_k
-            """),
-            {"emb": emb_str, "entities": user_entities, "top_k": top_k},
-        )
+            """
+            params = {"emb": emb_str, "entities": user_entities, "top_k": top_k}
+        else:
+            sql = """
+                SELECT
+                    video_id,
+                    video_title,
+                    channel_name,
+                    clip_start_seconds,
+                    embed_url,
+                    transcript_segment,
+                    transcript_translated,
+                    matched_entity,
+                    video_published_at,
+                    (labse_embedding <=> CAST(:emb AS vector)) AS distance
+                FROM youtube_clips
+                WHERE labse_embedding IS NOT NULL
+                  AND processed = TRUE
+                  AND (labse_embedding <=> CAST(:emb AS vector)) < 0.6
+                ORDER BY distance ASC
+                LIMIT :top_k
+            """
+            params = {"emb": emb_str, "top_k": top_k}
+
+        result = await db.execute(text(sql), params)
         clips = result.fetchall()
 
         return [
@@ -823,6 +925,228 @@ async def retrieve_relevant_clips(
         ]
     except Exception:
         logger.warning("Clip retrieval failed", exc_info=True)
+        return []
+    finally:
+        if own_session_cm is not None:
+            try:
+                await own_session_cm.__aexit__(None, None, None)
+            except Exception:
+                logger.warning("Clip session close failed", exc_info=True)
+
+
+async def retrieve_relevant_social(
+    query: str,
+    user_id: str,
+    db=None,
+    top_k: int = 5,
+) -> list[dict]:
+    """
+    Find Reddit / Telegram / Twitter posts relevant to the query via LaBSE
+    cosine similarity over `social_posts.labse_embedding`.
+
+    Strategy: pure semantic search with a tight distance gate (0.65). If the
+    user has tracked entities, posts whose `matched_entities` JSONB intersects
+    those entities are preferred (boosted to the front of the result set), but
+    semantic match is the only hard filter — that way accounts without an
+    entity profile still get social evidence.
+
+    Opens its own DB session so it can be safely awaited concurrently with
+    other retrieval calls (asyncpg connections are not safe to share across
+    concurrent statements).
+    """
+    from sqlalchemy import text
+    from backend.database import get_db
+
+    try:
+        async with get_db() as own_db:
+            entities_result = await own_db.execute(
+                text("SELECT canonical_name FROM user_entities WHERE user_id = :uid"),
+                {"uid": user_id},
+            )
+            user_entities = [r.canonical_name for r in entities_result.fetchall()]
+
+            query_emb = embed_query(query)
+            emb_str = "[" + ",".join(str(x) for x in query_emb) + "]"
+
+            # Pull a slightly wider candidate pool, then re-rank in Python so we
+            # can boost entity-matched posts without a complex SQL CASE clause.
+            result = await own_db.execute(
+                text("""
+                    SELECT
+                        id::text                   AS post_id,
+                        platform,
+                        author_username,
+                        post_text,
+                        post_text_translated,
+                        post_url,
+                        sentiment_score,
+                        matched_entities,
+                        topic_category,
+                        posted_at,
+                        collected_at,
+                        (labse_embedding <=> CAST(:emb AS vector)) AS distance
+                    FROM social_posts
+                    WHERE labse_embedding IS NOT NULL
+                      AND (labse_embedding <=> CAST(:emb AS vector)) < 0.65
+                    ORDER BY distance ASC
+                    LIMIT :pool
+                """),
+                {"emb": emb_str, "pool": top_k * 3},
+            )
+            rows = result.fetchall()
+
+        def _entity_overlap(matched: object) -> int:
+            if not user_entities or not matched:
+                return 0
+            try:
+                if isinstance(matched, str):
+                    import json as _json
+                    matched = _json.loads(matched)
+                if isinstance(matched, dict):
+                    names = list(matched.keys())
+                elif isinstance(matched, list):
+                    names = [str(m) for m in matched]
+                else:
+                    names = []
+                return sum(1 for n in names if n in user_entities)
+            except Exception:
+                return 0
+
+        ranked = sorted(
+            rows,
+            # Lower is better: entity boost subtracts 0.05 per match.
+            key=lambda r: float(r.distance) - 0.05 * _entity_overlap(r.matched_entities),
+        )[:top_k]
+
+        return [
+            {
+                "type":         "social_post",
+                "post_id":      r.post_id,
+                "platform":     r.platform,
+                "author":       r.author_username,
+                "text_snippet": (r.post_text_translated or r.post_text or "")[:400],
+                "url":          r.post_url,
+                "sentiment":    float(r.sentiment_score) if r.sentiment_score is not None else None,
+                "topic":        r.topic_category,
+                "matched_entities": r.matched_entities,
+                "posted_at":    r.posted_at.isoformat() if r.posted_at else None,
+                "distance":     float(r.distance),
+            }
+            for r in ranked
+        ]
+    except Exception:
+        logger.warning("Social retrieval failed", exc_info=True)
+        return []
+
+
+async def retrieve_relevant_newspaper_clippings(
+    query: str,
+    user_id: str,
+    db=None,
+    geo_filter: list[str] | None = None,
+    top_k: int = 4,
+) -> list[dict]:
+    """
+    Find newspaper-edition clippings relevant to the query via LaBSE cosine
+    similarity over `newspaper_clippings.labse_embedding`.
+
+    Geo filter is a soft preference: we run the query with the geo filter
+    first, and if it returns fewer than top_k, fall back to an unconstrained
+    search so a question with no geo match still gets clippings.
+
+    Opens its own DB session so it can be safely awaited concurrently with
+    other retrieval calls.
+    """
+    from sqlalchemy import text
+    from backend.database import get_db
+
+    try:
+        query_emb = embed_query(query)
+        emb_str = "[" + ",".join(str(x) for x in query_emb) + "]"
+
+        rows: list = []
+
+        async with get_db() as own_db:
+            if geo_filter:
+                geo_result = await own_db.execute(
+                    text("""
+                        SELECT
+                            id::text       AS clip_id,
+                            newspaper_name,
+                            newspaper_language,
+                            edition_date,
+                            page_number,
+                            headline,
+                            headline_translated,
+                            article_text,
+                            article_text_translated,
+                            topic_category,
+                            geo_primary,
+                            sentiment,
+                            (labse_embedding <=> CAST(:emb AS vector)) AS distance
+                        FROM newspaper_clippings
+                        WHERE labse_embedding IS NOT NULL
+                          AND (labse_embedding <=> CAST(:emb AS vector)) < 0.7
+                          AND geo_primary = ANY(:geos)
+                        ORDER BY distance ASC
+                        LIMIT :top_k
+                    """),
+                    {"emb": emb_str, "geos": geo_filter, "top_k": top_k},
+                )
+                rows = list(geo_result.fetchall())
+
+            if len(rows) < top_k:
+                seen_ids = {r.clip_id for r in rows}
+                fallback = await own_db.execute(
+                    text("""
+                        SELECT
+                            id::text       AS clip_id,
+                            newspaper_name,
+                            newspaper_language,
+                            edition_date,
+                            page_number,
+                            headline,
+                            headline_translated,
+                            article_text,
+                            article_text_translated,
+                            topic_category,
+                            geo_primary,
+                            sentiment,
+                            (labse_embedding <=> CAST(:emb AS vector)) AS distance
+                        FROM newspaper_clippings
+                        WHERE labse_embedding IS NOT NULL
+                          AND (labse_embedding <=> CAST(:emb AS vector)) < 0.7
+                        ORDER BY distance ASC
+                        LIMIT :pool
+                    """),
+                    {"emb": emb_str, "pool": top_k * 3},
+                )
+                for r in fallback.fetchall():
+                    if r.clip_id in seen_ids:
+                        continue
+                    rows.append(r)
+                    if len(rows) >= top_k:
+                        break
+
+        return [
+            {
+                "type":            "newspaper_clipping",
+                "clip_id":         r.clip_id,
+                "newspaper":       r.newspaper_name,
+                "language":        r.newspaper_language,
+                "edition_date":    r.edition_date.isoformat() if r.edition_date else None,
+                "page_number":     r.page_number,
+                "headline":        r.headline_translated or r.headline,
+                "text_snippet":    (r.article_text_translated or r.article_text or "")[:400],
+                "topic_category":  r.topic_category,
+                "geo_primary":     r.geo_primary,
+                "sentiment":       r.sentiment,
+                "distance":        float(r.distance),
+            }
+            for r in rows
+        ]
+    except Exception:
+        logger.warning("Newspaper-clipping retrieval failed", exc_info=True)
         return []
 
 
@@ -1228,6 +1552,9 @@ async def _govt_recency_pool(
               ugr.urgency,
               NULL::text          AS section_heading,
               NULL::int           AS chunk_index,
+              NULL::int           AS page_number,
+              COALESCE(d.summary, LEFT(d.full_text_translated, 1000),
+                       LEFT(d.full_text, 1000)) AS snippet,
               0.5::float          AS distance
             FROM user_govt_doc_relevance ugr
             JOIN govt_documents d ON d.id = ugr.doc_id
@@ -1431,7 +1758,7 @@ async def retrieve_relevant_govt_docs(
 
         snippet_raw = (r.snippet or r.summary or r.title or "")
         tier = int(r.relevance_tier) if r.relevance_tier is not None else 3
-        snippet_len = 1500 if tier == 1 else 800 if tier == 2 else 500
+        snippet_len = 900 if tier == 1 else 500 if tier == 2 else 300
 
         docs.append({
             "doc_id":           r.doc_id,
@@ -1449,7 +1776,7 @@ async def retrieve_relevant_govt_docs(
             "section_heading":  getattr(r, "section_heading", None),
             "chunk_index":      getattr(r, "chunk_index", None),
             "page_number":      getattr(r, "page_number", None),
-            "snippet":          snippet_raw[:snippet_len],
+            "snippet":          _smart_truncate(snippet_raw, snippet_len),
             "distance":         float(r.distance) if r.distance is not None else 0.5,
             "published_at": (
                 r.published_at.isoformat()

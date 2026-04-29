@@ -10,12 +10,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user
+from backend.auth.auth_middleware import get_current_user, require_page
 from backend.database import get_db
 
 logger = logging.getLogger(__name__)
 
-analyst_router = APIRouter(prefix="/api/analyst", tags=["analyst"])
+analyst_router = APIRouter(
+    prefix="/api/analyst",
+    tags=["analyst"],
+    dependencies=[Depends(require_page("analyst"))],
+)
 
 
 class QueryRequest(BaseModel):
@@ -113,6 +117,8 @@ async def analyst_query(
         retrieve_relevant_articles,
         retrieve_relevant_clips,
         retrieve_relevant_govt_docs,
+        retrieve_relevant_social,
+        retrieve_relevant_newspaper_clippings,
         build_context,
         detect_mode,
         compute_confidence,
@@ -201,38 +207,71 @@ async def analyst_query(
             except Exception:
                 geo_filter.append(str(raw_geo).strip())
 
-        # Retrieve relevant articles AND govt documents concurrently.
-        # Articles call returns (list, method, elapsed_ms); govt call returns list[dict].
-        articles_task = retrieve_relevant_articles(
+        # Retrieval strategy:
+        # - articles + govt-docs share the router's `db` session, so they MUST
+        #   run sequentially (asyncpg cannot multiplex statements on a single
+        #   connection — the prior `gather` here was a known footgun, called
+        #   out in this file's earlier comments).
+        # - social + newspaper open their own DB sessions internally, so they
+        #   are safe to run in parallel with each other while articles runs.
+        # Articles remain the dominant pool (top-K 12-25 by mode); other
+        # sources surface as supplementary evidence.
+
+        social_task = asyncio.create_task(retrieve_relevant_social(
             query=req.question,
             user_id=user["id"],
-            db=db,
-            geo_filter=geo_filter or None,
-            mode=mode,
-        )
-        govt_task = retrieve_relevant_govt_docs(
+            top_k=5,
+        ))
+        newspaper_task = asyncio.create_task(retrieve_relevant_newspaper_clippings(
             query=req.question,
             user_id=user["id"],
-            db=db,
             geo_filter=geo_filter or None,
-            mode=mode,
-        )
-        articles_result, govt_docs_result = await asyncio.gather(
-            articles_task, govt_task, return_exceptions=True,
-        )
+            top_k=4,
+        ))
 
-        if isinstance(articles_result, Exception):
-            logger.error("Article retrieval failed: %s", articles_result)
-            raise articles_result
-        articles, retrieval_method, elapsed_ms = articles_result
+        try:
+            articles, retrieval_method, elapsed_ms = await retrieve_relevant_articles(
+                query=req.question,
+                user_id=user["id"],
+                db=db,
+                geo_filter=geo_filter or None,
+                mode=mode,
+            )
+        except Exception as exc:
+            # Cancel side tasks so they don't run unattached after we 500.
+            social_task.cancel()
+            newspaper_task.cancel()
+            logger.error("Article retrieval failed: %s", exc)
+            raise
 
-        if isinstance(govt_docs_result, Exception):
-            logger.warning("Govt-doc retrieval failed: %s", govt_docs_result)
-            govt_docs: list[dict] = []
+        try:
+            govt_docs = await retrieve_relevant_govt_docs(
+                query=req.question,
+                user_id=user["id"],
+                db=db,
+                geo_filter=geo_filter or None,
+                mode=mode,
+            ) or []
+        except Exception as exc:
+            logger.warning("Govt-doc retrieval failed: %s", exc)
+            govt_docs = []
+
+        social_result, newspaper_result = await asyncio.gather(
+            social_task, newspaper_task, return_exceptions=True,
+        )
+        if isinstance(social_result, Exception):
+            logger.warning("Social retrieval failed: %s", social_result)
+            social_posts: list[dict] = []
         else:
-            govt_docs = govt_docs_result or []
+            social_posts = social_result or []
 
-        if not articles and not govt_docs:
+        if isinstance(newspaper_result, Exception):
+            logger.warning("Newspaper retrieval failed: %s", newspaper_result)
+            newspaper_clippings: list[dict] = []
+        else:
+            newspaper_clippings = newspaper_result or []
+
+        if not articles and not govt_docs and not social_posts and not newspaper_clippings:
             return {
                 "mode": mode,
                 "auto_detected": bool(auto_mode),
@@ -247,6 +286,8 @@ async def analyst_query(
                 ),
                 "articles": [],
                 "govt_docs": [],
+                "social_posts": [],
+                "newspaper_clippings": [],
                 "confidence": "LOW",
                 "followups": [],
                 "session_id": session_id,
@@ -254,6 +295,8 @@ async def analyst_query(
                 "retrieval_method": retrieval_method,
                 "article_count": 0,
                 "govt_doc_count": 0,
+                "social_post_count": 0,
+                "newspaper_clipping_count": 0,
             }
 
         # Retrieve relevant YouTube clips (parallel intelligence source)
@@ -302,21 +345,106 @@ async def analyst_query(
                 + "\n---\n".join(doc_items)
             )
 
+        # Social-post evidence — supplementary, lower weight than articles.
+        # Marked clearly so the LLM treats it as a sentiment / chatter signal
+        # rather than confirmed reportage.
+        if social_posts:
+            social_items: list[str] = []
+            for i, s in enumerate(social_posts, 1):
+                snippet = (s.get("text_snippet") or "").replace("\n", " ").strip()
+                sentiment = s.get("sentiment")
+                sentiment_str = (
+                    f" | Sentiment: {sentiment:+.2f}"
+                    if isinstance(sentiment, (int, float)) else ""
+                )
+                posted = (s.get("posted_at") or "")[:10]
+                social_items.append(
+                    f"[Social {i}] {s.get('platform','').upper()} @ {posted}"
+                    f" | Author: {s.get('author','')}"
+                    f"{sentiment_str}"
+                    f" | Topic: {s.get('topic','') or ''}\n"
+                    f"{snippet}\n"
+                )
+            context += (
+                f"\n\nSOCIAL SIGNAL EVIDENCE ({len(social_items)} posts — Reddit / "
+                "Telegram / Twitter):\n"
+                "These are public social-media posts retrieved by semantic match. "
+                "Treat them as CHATTER / SENTIMENT — not confirmed reporting. When "
+                "citing, use the form (Social: <platform> @ <date>).\n\n"
+                + "\n---\n".join(social_items)
+            )
+
+        # Newspaper-clipping evidence — print-edition coverage that doesn't
+        # appear in the RSS / HTML article stream.
+        if newspaper_clippings:
+            paper_items: list[str] = []
+            for i, n in enumerate(newspaper_clippings, 1):
+                snippet = (n.get("text_snippet") or "").replace("\n", " ").strip()
+                edition = (n.get("edition_date") or "")[:10]
+                page = n.get("page_number")
+                page_str = f" | p.{page}" if page else ""
+                paper_items.append(
+                    f"[Paper {i}] {n.get('headline','(untitled)')}\n"
+                    f"Newspaper: {n.get('newspaper','')} ({n.get('language','')})"
+                    f" | Edition: {edition}{page_str}"
+                    f" | Geo: {n.get('geo_primary','') or ''}"
+                    f" | Topic: {n.get('topic_category','') or ''}\n"
+                    f"{snippet}\n"
+                )
+            context += (
+                f"\n\nNEWSPAPER EDITION EVIDENCE ({len(paper_items)} clippings):\n"
+                "These are scanned print-edition clippings. When citing, use the "
+                "form (Paper: <newspaper> <edition_date>, p.<page_number>).\n\n"
+                + "\n---\n".join(paper_items)
+            )
+
         system_prompt = KNOWLEDGE_HIERARCHY_BLOCK + "\n\n" + MODE_PROMPTS[mode]
-        answer = await generate(
-            system=system_prompt,
-            user=f"QUESTION: {req.question}\n\n{context}",
-            task_type="rag_response",
+
+        # Multi-source nudge: appended after the context so the model reads it
+        # last, with the actual retrieval mix substituted in. Forces the answer
+        # to draw on the non-article evidence kinds when they were retrieved
+        # and are relevant to the question. This counteracts the model's
+        # default preference for citing articles only.
+        # Compact multi-source nudge — kept short to stay under free-tier
+        # 12K TPM ceiling. The full citation-format guidance lives in the
+        # system prompt (KNOWLEDGE_HIERARCHY_BLOCK).
+        multi_source_nudge = (
+            f"\n\nRetrieved: {len(articles)} articles, {len(govt_docs)} govt "
+            f"docs, {len(social_posts)} social, {len(newspaper_clippings)} "
+            f"papers, {len(clips) if clips else 0} videos. Cite non-article "
+            "items in their native format when they directly support a claim."
         )
+
+        # Generate the main answer and the follow-up suggestions in parallel.
+        # Follow-ups depend only on question/mode/articles/user_profile, NOT on
+        # the answer text — so the two Groq round-trips can run concurrently.
+        # Saves roughly the latency of one follow-up call (~500ms-1s) per query.
+        answer, followups_result = await asyncio.gather(
+            generate(
+                system=system_prompt,
+                user=f"QUESTION: {req.question}\n\n{context}{multi_source_nudge}",
+                task_type="rag_response",
+            ),
+            generate_followups(
+                question=req.question,
+                mode=mode,
+                articles=articles,
+                user_profile=user_profile,
+            ),
+            return_exceptions=True,
+        )
+        # Main answer failure is fatal — the user must see a real answer.
+        if isinstance(answer, Exception):
+            raise answer
+        # Follow-ups are best-effort cosmetic; never fail the response on them.
+        if isinstance(followups_result, Exception):
+            logger.warning("Follow-up generation failed: %s", followups_result)
+            followups: list[str] = []
+        else:
+            followups = followups_result or []
 
         confidence, confidence_pct = compute_confidence(
             articles, retrieval_method, query=req.question, mode=mode,
-        )
-        followups = await generate_followups(
-            question=req.question,
-            mode=mode,
-            articles=articles,
-            user_profile=user_profile,
         )
 
     # Persist turn in a FRESH session — the retrieval session above may be
@@ -358,6 +486,8 @@ async def analyst_query(
         "answer": answer,
         "articles": articles,
         "govt_docs": govt_docs,
+        "social_posts": social_posts,
+        "newspaper_clippings": newspaper_clippings,
         "confidence": confidence,
         "confidence_pct": confidence_pct,
         "followups": followups,
@@ -366,6 +496,8 @@ async def analyst_query(
         "retrieval_method": retrieval_method,
         "article_count": len(articles),
         "govt_doc_count": len(govt_docs),
+        "social_post_count": len(social_posts),
+        "newspaper_clipping_count": len(newspaper_clippings),
     }
 
 
@@ -461,7 +593,7 @@ async def get_session_detail(
     async with get_db() as db:
         ownership = await db.execute(text("""
             SELECT id FROM analyst_sessions
-            WHERE id = :sid::uuid
+            WHERE id = CAST(:sid AS uuid)
               AND user_id = :user_id
         """), {"sid": session_id, "user_id": user["id"]})
         if not ownership.fetchone():
@@ -477,7 +609,7 @@ async def get_session_detail(
               retrieval_ms,
               created_at
             FROM analyst_turns
-            WHERE session_id = :sid::uuid
+            WHERE session_id = CAST(:sid AS uuid)
             ORDER BY created_at ASC
         """), {"sid": session_id})
         turns = turns_result.fetchall()

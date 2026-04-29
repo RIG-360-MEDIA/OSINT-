@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import { TelanganaBriefing } from './TelanganaBriefing'
@@ -8,7 +8,10 @@ import { GlobalView } from './GlobalView'
 
 type Scope = 'telangana' | 'global'
 
-export default function WorldMonitorPage() {
+// Inner component holds the useSearchParams() call. Next.js 15 requires
+// any component that calls useSearchParams() to be wrapped in <Suspense>
+// so the page can be statically prerendered up to the suspense boundary.
+function WorldMonitorBody() {
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -28,14 +31,20 @@ export default function WorldMonitorPage() {
     }
   }, [scope, params, router, pathname])
 
+  return scope === 'telangana' ? (
+    <TelanganaBriefing onSwitchToGlobal={() => setScope('global')} />
+  ) : (
+    <GlobalView onSwitchToTelangana={() => setScope('telangana')} />
+  )
+}
+
+export default function WorldMonitorPage() {
   return (
     <>
       <Navigation />
-      {scope === 'telangana' ? (
-        <TelanganaBriefing onSwitchToGlobal={() => setScope('global')} />
-      ) : (
-        <GlobalView onSwitchToTelangana={() => setScope('telangana')} />
-      )}
+      <Suspense fallback={null}>
+        <WorldMonitorBody />
+      </Suspense>
     </>
   )
 }

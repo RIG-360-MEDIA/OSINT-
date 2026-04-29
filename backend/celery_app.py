@@ -269,9 +269,14 @@ app.config_from_object(
                 "schedule": crontab(minute=15),
                 "options": {"queue": "nlp"},
             },
-            "collect-newspapers-every-12h": {
+            "collect-newspapers-daily-0430-utc": {
                 "task": "tasks.collect_newspapers",
-                "schedule": timedelta(hours=12),
+                # 04:30 UTC = 10:00 IST — most Indian dailies publish their
+                # e-paper editions by mid-morning. Daily crontab (not 12h
+                # timedelta) so a missed fire isn't repeated within the
+                # same calendar day, and the next fire time isn't reset
+                # by container restarts.
+                "schedule": crontab(hour=4, minute=30),
                 # Moved off `collectors` queue (concurrency=1, blocked by
                 # long RSS scrapes) onto `documents` queue (2 workers,
                 # dedicated for heavy I/O like newspapers + govt PDFs).

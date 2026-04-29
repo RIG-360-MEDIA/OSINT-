@@ -1,105 +1,75 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useAccess, type PageSlug } from '@/lib/access'
 import { ThemeToggle } from './theme/ThemeToggle'
 
-interface NavCounts {
-  brief_ready: boolean
-  article_count: number
-  thread_count: number
-  escalating_count: number
-  clip_count: number
-  doc_count: number
+interface NavLink {
+  path: string
+  label: string
+  slug: PageSlug  // matches the slug in allowed_pages from /api/me/access
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
-const NAV_LINKS = [
-  { path: '/brief',     label: 'The Brief' },
-  { path: '/coverage',  label: 'Coverage' },
-  { path: '/threads',   label: 'Threads' },
-  { path: '/clips',     label: 'Clippings' },
-  { path: '/cuttings',  label: 'Cutting Room' },
-  { path: '/signals',   label: 'Signals' },
-  { path: '/documents', label: 'Archive' },
-  { path: '/analyst',   label: 'Analyst' },
-  { path: '/worldmonitor', label: 'Globe' },
+// Each link carries the page slug it gates on. Order in this array is the
+// order shown in the nav. The slug *must* match a value in
+// `KNOWN_PAGES` in `backend/auth/auth_middleware.py`.
+const BASE_NAV_LINKS: ReadonlyArray<NavLink> = [
+  { path: '/brief',        label: 'The Brief',       slug: 'brief' },
+  { path: '/coverage',     label: 'Articles',        slug: 'coverage' },
+  { path: '/threads',      label: 'Threads',         slug: 'threads' },
+  { path: '/clips',        label: 'TV',              slug: 'clips' },
+  { path: '/cuttings',     label: 'Newspaper',       slug: 'cuttings' },
+  { path: '/signals',      label: 'Social Media',    slug: 'signals' },
+  { path: '/documents',    label: 'Govt Docs',       slug: 'documents' },
+  { path: '/analyst',      label: 'Chat System',     slug: 'analyst' },
+  { path: '/worldmonitor', label: 'Live Monitoring', slug: 'worldmonitor' },
 ]
+
+// `slug` here is unused for routing (admin is super_admin-only at the
+// backend) but we keep the field for type consistency.
+const ADMIN_NAV_LINK: NavLink = {
+  path: '/admin',
+  label: 'Admin',
+  slug: 'brief',  // unused — admin shows for super_admin only
+}
 
 export default function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
-  const [counts, setCounts] = useState<NavCounts>({
-    brief_ready: false,
-    article_count: 0,
-    thread_count: 0,
-    escalating_count: 0,
-    clip_count: 0,
-    doc_count: 0,
-  })
+  const { access, loading: accessLoading } = useAccess()
   const [userInitial, setUserInitial] = useState<string>('')
+
+  // Filter the nav so users only see links to pages they can actually open.
+  //   - Super_admins: every page + the Admin link.
+  //   - Regular users: only pages in their allowed_pages set.
+  //   - While access is still loading: show every base page optimistically
+  //     so the nav doesn't flash empty on first paint. Backend gates still
+  //     enforce permissions on the data even if a stale link is clicked.
+  const navLinks = useMemo<ReadonlyArray<NavLink>>(() => {
+    if (accessLoading || !access) return BASE_NAV_LINKS
+    if (access.role === 'super_admin') {
+      return [...BASE_NAV_LINKS, ADMIN_NAV_LINK]
+    }
+    const allowed = new Set(access.allowed_pages)
+    return BASE_NAV_LINKS.filter((l) => allowed.has(l.slug))
+  }, [access, accessLoading])
 
   useEffect(() => {
     const supabase = createClient()
-    const fetchAll = async () => {
+    const fetchSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) return
-        const token = session.access_token
-
         const email = session.user?.email ?? ''
         setUserInitial(email.charAt(0).toUpperCase())
-
-        const [briefRes, feedRes, threadsRes, clipsRes, docsRes] = await Promise.all([
-          fetch(`${API_BASE}/api/brief/today`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_BASE}/api/coverage/feed?limit=1`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_BASE}/api/threads?limit=50`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_BASE}/api/clips/feed?limit=1`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_BASE}/api/documents/feed?limit=1`, { headers: { Authorization: `Bearer ${token}` } }),
-        ])
-
-        let articleCount = 0
-        if (feedRes.ok) {
-          const data = await feedRes.json()
-          articleCount = data?.totals?.total ?? 0
-        }
-
-        let threadCount = 0
-        let escalatingCount = 0
-        if (threadsRes.ok) {
-          const t = await threadsRes.json()
-          threadCount = t?.thread_count ?? 0
-          escalatingCount = t?.escalating_count ?? 0
-        }
-
-        let clipCount = 0
-        if (clipsRes.ok) {
-          const c = await clipsRes.json()
-          clipCount = c?.total ?? 0
-        }
-
-        let docCount = 0
-        if (docsRes.ok) {
-          const d = await docsRes.json()
-          docCount = d?.total ?? 0
-        }
-
-        setCounts({
-          brief_ready: briefRes.status === 200,
-          article_count: articleCount,
-          thread_count: threadCount,
-          escalating_count: escalatingCount,
-          clip_count: clipCount,
-          doc_count: docCount,
-        })
       } catch {
         /* non-critical */
       }
     }
-    fetchAll()
+    fetchSession()
   }, [pathname])
 
   const handleSignOut = async () => {
@@ -157,7 +127,7 @@ export default function Navigation() {
         </span>
       </Link>
 
-      {/* ── Nav (spreads across available width; scrollable on overflow) ── */}
+      {/* ── Nav (spreads across available width; all items fit, no scroll) ── */}
       <nav
         style={{
           display: 'flex',
@@ -167,25 +137,20 @@ export default function Navigation() {
           minWidth: 0,
           justifyContent: 'space-between',
           marginRight: '12px',
-          overflowX: 'auto',
-          overflowY: 'hidden',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none' as 'none',
+          flexWrap: 'nowrap',
         }}
-        // Hide horizontal scrollbar but keep scroll functionality
-        // (extra style block via className would also work; inline kept terse).
       >
-        {NAV_LINKS.map(({ path, label }) => (
+        {navLinks.map(({ path, label }) => (
           <NavItem
             key={path}
             label={label}
             href={path}
-            isActive={pathname === path}
+            isActive={pathname === path || pathname.startsWith(`${path}/`)}
           />
         ))}
       </nav>
 
-      {/* ── Ticker + controls ──────────────────────────────────── */}
+      {/* ── Controls ───────────────────────────────────────────── */}
       <div
         style={{
           display: 'flex',
@@ -196,39 +161,6 @@ export default function Navigation() {
           borderLeft: '1px solid var(--rig-rule)',
         }}
       >
-        {/* Low-priority counters: hidden on viewports < 1400 px so the
-            high-signal chips (escalating, brief ready) always fit. */}
-        {counts.doc_count > 0 && (
-          <span className="rig-chip-mq-wide">
-            <Chip tone="default" label={`${counts.doc_count} docs`} />
-          </span>
-        )}
-        {counts.clip_count > 0 && (
-          <span className="rig-chip-mq-wide">
-            <Chip tone="copper" label={`${counts.clip_count} clips`} />
-          </span>
-        )}
-        {counts.article_count > 0 && (
-          <span className="rig-chip-mq-mid">
-            <Chip tone="default" label={counts.article_count.toLocaleString()} />
-          </span>
-        )}
-        {counts.brief_ready && (
-          <span className="pulse-gold" style={{ display: 'inline-flex' }}>
-            <Chip tone="gold" label="Brief ready" />
-          </span>
-        )}
-
-        <span
-          aria-hidden="true"
-          style={{
-            width: '1px',
-            height: '18px',
-            background: 'var(--rig-rule)',
-            margin: '0 6px',
-          }}
-        />
-
         <ThemeToggle />
 
         <div
@@ -288,16 +220,17 @@ function NavItem({ href, label, isActive }: { href: string; label: string; isAct
       onMouseLeave={() => setHover(false)}
       style={{
         position: 'relative',
-        padding: '12px 14px',
+        padding: '12px 10px',
         textDecoration: 'none',
         fontFamily: 'var(--font-mono)',
-        fontSize: '12px',
-        letterSpacing: '0.14em',
+        fontSize: '11.5px',
+        letterSpacing: '0.12em',
         textTransform: 'uppercase',
         color: isActive ? 'var(--rig-ink)' : hover ? 'var(--rig-ink-2)' : 'var(--rig-ink-3)',
         transition: 'color 0.2s',
         whiteSpace: 'nowrap',
-        flexShrink: 0,
+        flexShrink: 1,
+        minWidth: 0,
       }}
     >
       {label}
@@ -306,26 +239,14 @@ function NavItem({ href, label, isActive }: { href: string; label: string; isAct
           style={{
             position: 'absolute',
             bottom: '-1px',
-            left: '14px',
-            right: '14px',
+            left: '10px',
+            right: '10px',
             height: '1px',
             background: 'var(--rig-gold)',
           }}
         />
       )}
     </Link>
-  )
-}
-
-function Chip({ label, tone }: { label: string; tone: 'default' | 'gold' | 'copper' | 'alert' }) {
-  return (
-    <span
-      className="rig-chip"
-      data-tone={tone === 'default' ? undefined : tone}
-    >
-      <span className="dot" />
-      {label}
-    </span>
   )
 }
 

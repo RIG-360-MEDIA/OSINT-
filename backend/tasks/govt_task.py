@@ -95,6 +95,11 @@ async def _collect_govt_docs() -> dict:
                 pdfs_downloaded = 0
                 source_inserted = 0
                 docs_failed = 0
+                # D-8: count docs that landed with degraded NLP (intel
+                # extraction failed) so we can spot Groq outages / quota
+                # exhaustion in the run summary instead of blaming "nothing
+                # in the archive today" on the collector.
+                nlp_degraded = 0
                 source_error: str | None = None
 
                 from backend.collectors.sources.registry import (
@@ -161,37 +166,62 @@ async def _collect_govt_docs() -> dict:
                                 full_text[:2000],
                                 title,
                             )
-                        except Exception as exc:
-                            logger.warning("Translation failed: %s", exc)
+                        except Exception:
+                            logger.exception(
+                                "Translation failed for %s", title[:60],
+                            )
                             lang, translated = "en", None
 
                         text_for_nlp = (translated or full_text)[:3000]
 
                         # Structured intel extraction (Groq) + intrinsic importance score
+                        intel_failed = False
                         try:
                             intel = await extract_intel(translated or full_text, title)
                             intrinsic = compute_intrinsic_importance(intel)
-                        except Exception as exc:
-                            logger.warning("Intel extraction failed for %s: %s", title[:60], exc)
+                        except Exception:
+                            # D-15: stack trace surfaces the real cause (timeout,
+                            # JSON parse, quota) instead of a flat message.
+                            logger.exception(
+                                "Intel extraction failed for %s", title[:60],
+                            )
                             from backend.nlp.govt_intel_schema import GovtDocIntel
                             intel = GovtDocIntel(what_it_does="(extraction failed)")
                             intrinsic = 0.0
+                            intel_failed = True
 
+                        entities_failed = False
                         try:
                             entities = extract_entities(
                                 title,
                                 text_for_nlp,
                                 nlp_model,
                             )
-                        except Exception as exc:
-                            logger.warning("Entity extraction failed: %s", exc)
+                        except Exception:
+                            logger.exception(
+                                "Entity extraction failed for %s", title[:60],
+                            )
                             entities = []
+                            entities_failed = True
 
+                        topic_failed = False
                         try:
                             topic = await classify_topic(title, text_for_nlp)
-                        except Exception as exc:
-                            logger.warning("Topic classification failed: %s", exc)
+                        except Exception:
+                            logger.exception(
+                                "Topic classification failed for %s", title[:60],
+                            )
                             topic = "OTHER"
+                            topic_failed = True
+
+                        # Quality fix Q5: write `nlp_processed = FALSE` only
+                        # when the *entire* NLP pipeline failed for this row.
+                        # The previous unconditional `TRUE` made the router's
+                        # `nlp_processed = TRUE` filter meaningless and hid
+                        # silent quality regressions. With this gate the
+                        # filter actually means "intel succeeded for at least
+                        # one of {Groq, spaCy, classifier}".
+                        nlp_ok = not (intel_failed and entities_failed and topic_failed)
 
                         try:
                             geo, _ = await tag_geography(
@@ -199,9 +229,17 @@ async def _collect_govt_docs() -> dict:
                                 text_for_nlp,
                                 entities,
                             )
-                        except Exception as exc:
-                            logger.warning("Geo tagging failed: %s", exc)
+                        except Exception:
+                            logger.exception(
+                                "Geo tagging failed for %s", title[:60],
+                            )
                             geo = None
+                        # D-14: fall back to the portal's declared geography
+                        # when the geocoder couldn't decide. Otherwise the
+                        # frontend renders a blank chip and filters miss the
+                        # row entirely.
+                        if not geo:
+                            geo = source.source_geography
 
                         embedding = generate_embedding(text_for_nlp[:512])
 
@@ -266,7 +304,7 @@ async def _collect_govt_docs() -> dict:
                                     :geo,
                                     CAST(:entities AS JSONB),
                                     CAST(:embedding AS vector),
-                                    TRUE,
+                                    :nlp_ok,
                                     CAST(:intel_json AS JSONB),
                                     :intrinsic,
                                     :doc_nature,
@@ -297,6 +335,7 @@ async def _collect_govt_docs() -> dict:
                                 "geo": geo,
                                 "entities": json.dumps(entities),
                                 "embedding": str(embedding) if embedding else None,
+                                "nlp_ok": nlp_ok,
                                 "intel_json": intel.model_dump_json(),
                                 "intrinsic": float(intrinsic),
                                 "doc_nature": intel.document_nature,
@@ -356,6 +395,8 @@ async def _collect_govt_docs() -> dict:
 
                         documents_inserted += 1
                         source_inserted += 1
+                        if intel_failed:
+                            nlp_degraded += 1
                         logger.info(
                             "Stored govt doc: %s",
                             title[:60],
@@ -388,6 +429,23 @@ async def _collect_govt_docs() -> dict:
                 await update_source_health(
                     db, source_id=str(source.id), success=success,
                 )
+
+                # D-8: per-source health line at INFO so a degraded Groq run
+                # is visible in `docker logs rig-backend` without grepping.
+                # Loud at WARNING when intel extraction failed for >30% of
+                # the rows we kept — that's the threshold above which the
+                # archive becomes useless even if rows are landing.
+                if source_inserted > 0:
+                    degraded_pct = (nlp_degraded / source_inserted) * 100
+                    log_fn = (
+                        logger.warning if degraded_pct > 30 else logger.info
+                    )
+                    log_fn(
+                        "Source %s run: %d inserted, %d nlp-degraded (%.0f%%), "
+                        "%d failed, %d junk-filtered",
+                        source.name, source_inserted, nlp_degraded,
+                        degraded_pct, docs_failed, urls_filtered_junk,
+                    )
 
                 await db.commit()
         except Exception as exc:

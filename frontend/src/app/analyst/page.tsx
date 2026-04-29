@@ -979,7 +979,7 @@ export default function AnalystPage() {
                 whiteSpace:    'nowrap',
                 margin:        0,
               }}>
-                The Reading Room
+                Chat System
                 <span style={{
                   fontStyle:  'italic',
                   color:      'var(--rig-ink-3)',

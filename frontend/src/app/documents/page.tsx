@@ -60,6 +60,22 @@ export default function DocumentsPage() {
       }
       setToken(session.access_token)
     })()
+
+    // D-13: keep the in-memory token in sync with Supabase. When the access
+    // token rotates (~1h cadence) the previous behaviour was a silent 401 on
+    // the next fetch; now we receive TOKEN_REFRESHED, swap in the new token,
+    // and the existing fetchFeed effect re-runs because `token` is in its
+    // dep list. SIGNED_OUT bounces the user to /login.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
+          router.push('/login')
+          return
+        }
+        setToken(session.access_token)
+      },
+    )
+    return () => subscription.unsubscribe()
   }, [router])
 
   useEffect(() => {
@@ -156,7 +172,7 @@ export default function DocumentsPage() {
           {/* Section head */}
           <header style={{ marginBottom: '28px' }}>
             <div className="rig-kicker" style={{ marginBottom: '10px' }}>
-              The Archive
+              Govt Docs
             </div>
             <h1
               className="rig-headline"

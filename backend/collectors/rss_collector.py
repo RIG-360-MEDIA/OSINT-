@@ -36,6 +36,47 @@ LEAD_TEXT_MAX_CHARS = 2000
 MIN_FULL_TEXT_CHARS = 50
 ITEMS_PER_FEED = 20
 
+# ── Per-domain scrape back-off ────────────────────────────────────────────────
+#
+# Some domains (e.g. communicationstoday.co.in, observed in coverage audit
+# 2026-04-28 → defect C-8) consistently return stub HTML to our scraper while
+# their RSS feed still ingests fine. Hammering them on every article costs
+# 20–30 s of pointless wall-time and floods the logs. We track per-domain
+# scrape failures in-process; after _SCRAPE_FAIL_THRESHOLD consecutive
+# failures the domain is suppressed for _SCRAPE_BACKOFF_S. RSS-only ingest
+# continues — only the full-text scrape is skipped during back-off.
+#
+# State is per-worker-process: distributed back-off would require Redis.
+import time as _time_module
+from collections import defaultdict as _defaultdict
+
+_DOMAIN_SCRAPE_FAILS: dict[str, int] = _defaultdict(int)
+_DOMAIN_SCRAPE_SKIP_UNTIL: dict[str, float] = {}
+_SCRAPE_FAIL_THRESHOLD = 5
+_SCRAPE_BACKOFF_S = 3600  # 1 hour
+
+
+def _should_skip_scrape(domain: str) -> bool:
+    until = _DOMAIN_SCRAPE_SKIP_UNTIL.get(domain, 0.0)
+    return _time_module.time() < until
+
+
+def _record_scrape_result(domain: str, success: bool) -> None:
+    if success:
+        _DOMAIN_SCRAPE_FAILS[domain] = 0
+        return
+    _DOMAIN_SCRAPE_FAILS[domain] += 1
+    if _DOMAIN_SCRAPE_FAILS[domain] >= _SCRAPE_FAIL_THRESHOLD:
+        _DOMAIN_SCRAPE_SKIP_UNTIL[domain] = (
+            _time_module.time() + _SCRAPE_BACKOFF_S
+        )
+        logger.warning(
+            "Domain %s entered scrape back-off for %ds after %d "
+            "consecutive extraction failures",
+            domain, _SCRAPE_BACKOFF_S, _DOMAIN_SCRAPE_FAILS[domain],
+        )
+        _DOMAIN_SCRAPE_FAILS[domain] = 0  # reset counter once back-off armed
+
 
 # ---------------------------------------------------------------------------
 # Pure utilities
@@ -290,13 +331,28 @@ class RSSCollector:
             _summary_raw = _summary_raw.get("content", "")
         rss_summary = (_summary_raw or "").strip()
 
-        # Fetch + extract using tiered fetcher
-        full_text, lead_text, thumbnail, author = await self._fetch_and_extract(
-            url,
-            fetcher=fetcher,
-            domain=_host_from_url(url),
-            rss_summary=rss_summary,
-        )
+        # Fetch + extract using tiered fetcher, gated by per-domain back-off (C-8).
+        host = _host_from_url(url)
+        if _should_skip_scrape(host):
+            logger.debug("Skipping scrape for %s (in back-off window)", host)
+            full_text = lead_text = thumbnail = author = None
+            if rss_summary:
+                lead_text = rss_summary[:LEAD_TEXT_MAX_CHARS]
+        else:
+            try:
+                full_text, lead_text, thumbnail, author = await self._fetch_and_extract(
+                    url,
+                    fetcher=fetcher,
+                    domain=host,
+                    rss_summary=rss_summary,
+                )
+                _record_scrape_result(host, success=bool(full_text))
+            except Exception as _scrape_exc:
+                _record_scrape_result(host, success=False)
+                logger.debug("Scrape exception for %s: %s", url, _scrape_exc)
+                full_text = lead_text = thumbnail = author = None
+                if rss_summary:
+                    lead_text = rss_summary[:LEAD_TEXT_MAX_CHARS]
 
         # Parse published timestamp
         published_at: datetime | None = None

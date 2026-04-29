@@ -21,9 +21,18 @@ vi.mock('next/navigation', () => ({
 }))
 
 const getSessionMock = vi.fn()
+const onAuthStateChangeMock = vi.fn(() => ({
+  data: { subscription: { unsubscribe: vi.fn() } },
+}))
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
-    auth: { getSession: getSessionMock },
+    auth: {
+      getSession: getSessionMock,
+      // D-13: page.tsx subscribes to onAuthStateChange to handle token
+      // rotation. Tests don't need to fire events — they just need a
+      // function that returns the same shape as the real Supabase SDK.
+      onAuthStateChange: onAuthStateChangeMock,
+    },
   }),
 }))
 
@@ -106,6 +115,10 @@ beforeEach(() => {
   fetchMock.mockReset()
   pushMock.mockReset()
   getSessionMock.mockReset()
+  onAuthStateChangeMock.mockClear()
+  onAuthStateChangeMock.mockReturnValue({
+    data: { subscription: { unsubscribe: vi.fn() } },
+  })
   getSessionMock.mockResolvedValue({
     data: { session: { access_token: 'tok' } },
   })

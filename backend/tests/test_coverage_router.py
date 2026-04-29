@@ -109,7 +109,19 @@ def install_fake_db(monkeypatch: pytest.MonkeyPatch, session: FakeSession) -> No
 def make_app() -> FastAPI:
     app = FastAPI()
     app.include_router(coverage_router)
+    # The router-level `require_page("coverage")` runs its own DB lookup
+    # against `user_page_access` and would 403 every test request.
+    # Disable it for tests by replacing each router dep with a no-op.
+    for dep in coverage_router.dependencies:
+        app.dependency_overrides[dep.dependency] = lambda: None
     return app
+
+
+@pytest.fixture(autouse=True)
+def _reset_router_state() -> None:
+    """Reset module-level caches/buckets so tests don't leak across each other."""
+    cov_module._SUMMARY_CACHE.clear()
+    cov_module._SUMMARY_RATE_BUCKET.clear()
 
 
 def _article_row(**overrides: Any) -> FakeRow:
@@ -271,10 +283,10 @@ def test_feed_sort_relevance_vs_recency_orders_differ(
 # ── Feed: pagination & cursor robustness ──────────────────────────────────────
 
 @pytest.mark.unit
-def test_feed_garbage_cursor_does_not_500(
+def test_feed_garbage_cursor_returns_400(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Malformed cursor must be silently ignored — try/except in router."""
+    """Malformed cursor must return 400 (not silent fallback, not 500)."""
     for bad in ["garbage", "no_underscore", "abc_", "_abc", "x_y_z"]:
         sess = FakeSession([[_article_row()], [_totals_row()]])
         install_fake_db(monkeypatch, sess)
@@ -283,7 +295,69 @@ def test_feed_garbage_cursor_does_not_500(
             f"/api/coverage/feed?cursor={bad}",
             headers={"Authorization": f"Bearer {make_jwt()}"},
         )
-        assert r.status_code == 200, f"cursor {bad!r} crashed"
+        assert r.status_code == 400, f"cursor {bad!r} did not return 400"
+        assert "Malformed cursor" in r.json()["detail"]
+
+
+@pytest.mark.unit
+def test_feed_cursor_with_non_uuid_id_returns_400(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cursor with valid score but non-UUID id must 400 (SQL injection guard)."""
+    sess = FakeSession([[_article_row()], [_totals_row()]])
+    install_fake_db(monkeypatch, sess)
+    client = TestClient(make_app())
+    r = client.get(
+        "/api/coverage/feed?cursor=0.5_evil';drop",
+        headers={"Authorization": f"Bearer {make_jwt()}"},
+    )
+    assert r.status_code == 400
+
+
+@pytest.mark.unit
+def test_feed_valid_cursor_passes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A well-formed score_uuid cursor must be accepted and bound."""
+    sess = FakeSession([[_article_row()], [_totals_row()]])
+    install_fake_db(monkeypatch, sess)
+    client = TestClient(make_app())
+    cursor = f"0.500000_{uuid4()}"
+    r = client.get(
+        f"/api/coverage/feed?cursor={cursor}",
+        headers={"Authorization": f"Bearer {make_jwt()}"},
+    )
+    assert r.status_code == 200
+    feed_q, feed_params = sess.calls[0]
+    assert feed_params["cursor_score"] == 0.5
+    assert "cursor_id" in feed_params
+
+
+@pytest.mark.unit
+def test_feed_bad_sentiment_returns_422(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """sentiment outside the Literal enum must 422 (Pydantic validation)."""
+    install_fake_db(monkeypatch, FakeSession([]))
+    client = TestClient(make_app())
+    r = client.get(
+        "/api/coverage/feed?sentiment=BANANA",
+        headers={"Authorization": f"Bearer {make_jwt()}"},
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.unit
+def test_feed_bad_sort_returns_422(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    install_fake_db(monkeypatch, FakeSession([]))
+    client = TestClient(make_app())
+    r = client.get(
+        "/api/coverage/feed?sort=BANANA",
+        headers={"Authorization": f"Bearer {make_jwt()}"},
+    )
+    assert r.status_code == 422
 
 
 @pytest.mark.unit
@@ -529,6 +603,191 @@ def test_summary_groq_failure_returns_500(
 
 
 # ── Single article ────────────────────────────────────────────────────────────
+
+@pytest.mark.unit
+def test_feed_days_filter_binds_int_not_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Regression: days=1 (TODAY button) must produce a SQL clause that binds
+    days as an int. A previous edit used `(:days || ' days')::interval`
+    which silently 500'd in prod because :days was bound as int. Live
+    test should also confirm the route returns 200.
+    """
+    sess = FakeSession([[_article_row()], [_totals_row()]])
+    install_fake_db(monkeypatch, sess)
+    client = TestClient(make_app())
+    r = client.get(
+        "/api/coverage/feed?days=1",
+        headers={"Authorization": f"Bearer {make_jwt()}"},
+    )
+    assert r.status_code == 200
+    feed_q, feed_params = sess.calls[0]
+    assert feed_params["days"] == 1
+    # Critical: must NOT use string-concat-into-interval (text ||)
+    assert " || " not in feed_q, (
+        "Days clause regressed to text-concat form — broken by int binding"
+    )
+    # Either NOW() - :days * INTERVAL '1 day'  or  make_interval(days => :days)
+    assert "make_interval" in feed_q or "INTERVAL '1 day'" in feed_q
+
+
+@pytest.mark.unit
+def test_feed_uses_jwt_user_id_in_query(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RBAC scope check: the bound :user_id must equal the JWT sub claim."""
+    user_a = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    user_b = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+
+    sess_a = FakeSession([[_article_row()], [_totals_row()]])
+    install_fake_db(monkeypatch, sess_a)
+    client = TestClient(make_app())
+    r = client.get(
+        "/api/coverage/feed",
+        headers={"Authorization": f"Bearer {make_jwt(sub=user_a)}"},
+    )
+    assert r.status_code == 200
+    feed_q, feed_params = sess_a.calls[0]
+    assert feed_params["user_id"] == user_a, "Feed query did not bind user_a"
+
+    # Same client, different JWT — must scope to user_b, never leak user_a's id.
+    sess_b = FakeSession([[_article_row()], [_totals_row()]])
+    install_fake_db(monkeypatch, sess_b)
+    r2 = client.get(
+        "/api/coverage/feed",
+        headers={"Authorization": f"Bearer {make_jwt(sub=user_b)}"},
+    )
+    assert r2.status_code == 200
+    feed_q2, feed_params2 = sess_b.calls[0]
+    assert feed_params2["user_id"] == user_b
+    # Critical: nothing from user_a leaks into user_b's params
+    for v in feed_params2.values():
+        assert v != user_a, "user_a id leaked into user_b query"
+
+
+@pytest.mark.unit
+def test_article_endpoint_uses_jwt_user_id_in_query(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cross-user check on /article: a forged article_id must scope to JWT sub."""
+    user_a = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    aid = str(uuid4())
+    sess = FakeSession([[]])  # 404 (not in user_a's feed)
+    install_fake_db(monkeypatch, sess)
+    client = TestClient(make_app())
+    r = client.get(
+        f"/api/coverage/article/{aid}",
+        headers={"Authorization": f"Bearer {make_jwt(sub=user_a)}"},
+    )
+    assert r.status_code == 404
+    _q, params = sess.calls[0]
+    assert params["user_id"] == user_a
+    assert params["article_id"] == aid
+
+
+@pytest.mark.unit
+def test_article_bad_uuid_returns_422(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Path param is typed UUID — non-UUID input must 422, never reach SQL."""
+    install_fake_db(monkeypatch, FakeSession([]))
+    client = TestClient(make_app())
+    r = client.get(
+        "/api/coverage/article/not-a-uuid",
+        headers={"Authorization": f"Bearer {make_jwt()}"},
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.unit
+def test_summary_bad_uuid_returns_422(monkeypatch: pytest.MonkeyPatch) -> None:
+    install_fake_db(monkeypatch, FakeSession([]))
+    client = TestClient(make_app())
+    r = client.post(
+        "/api/coverage/summary/not-a-uuid",
+        headers={"Authorization": f"Bearer {make_jwt()}"},
+    )
+    assert r.status_code == 422
+
+
+@pytest.mark.unit
+def test_summary_caches_on_second_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Second /summary call for the same article must hit cache, skip Groq+DB."""
+    # Reset module-level cache so test order doesn't leak
+    cov_module._SUMMARY_CACHE.clear()
+    cov_module._SUMMARY_RATE_BUCKET.clear()
+
+    article_row = FakeRow(
+        title="Test article",
+        lead_text_translated="A" * 200,  # > 50 chars to trigger Groq path
+        lead_text_original=None,
+        topic_category="POLITICS",
+        geo_primary="IN",
+        relevance_explanation="why",
+    )
+
+    groq_calls = {"n": 0}
+
+    async def fake_groq(*_a: Any, **_kw: Any) -> str:
+        groq_calls["n"] += 1
+        return "Generated summary."
+
+    monkeypatch.setattr(cov_module, "call_groq", fake_groq)
+
+    aid = str(uuid4())
+
+    # First call: DB hit + Groq call → cached: false
+    sess1 = FakeSession([[article_row]])
+    install_fake_db(monkeypatch, sess1)
+    client = TestClient(make_app())
+    r1 = client.post(
+        f"/api/coverage/summary/{aid}",
+        headers={"Authorization": f"Bearer {make_jwt()}"},
+    )
+    assert r1.status_code == 200
+    assert r1.json() == {"summary": "Generated summary.", "cached": False}
+    assert groq_calls["n"] == 1
+
+    # Second call: cache hit → no DB query, no Groq, cached: true
+    sess2 = FakeSession([])  # would raise if hit
+    install_fake_db(monkeypatch, sess2)
+    r2 = client.post(
+        f"/api/coverage/summary/{aid}",
+        headers={"Authorization": f"Bearer {make_jwt()}"},
+    )
+    assert r2.status_code == 200
+    assert r2.json() == {"summary": "Generated summary.", "cached": True}
+    assert groq_calls["n"] == 1  # NOT incremented
+    assert sess2.calls == []  # DB never touched
+
+
+@pytest.mark.unit
+def test_summary_rate_limit_returns_429(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """After _SUMMARY_RATE_MAX calls in window, return 429 with Retry-After."""
+    cov_module._SUMMARY_CACHE.clear()
+    cov_module._SUMMARY_RATE_BUCKET.clear()
+
+    sess = FakeSession([[]])  # any call hits 404 path (article not in feed)
+    install_fake_db(monkeypatch, sess)
+    client = TestClient(make_app())
+
+    # Burn through the bucket with distinct UUIDs (cache won't help)
+    headers = {"Authorization": f"Bearer {make_jwt()}"}
+    for _ in range(cov_module._SUMMARY_RATE_MAX):
+        # Refresh fake session each iteration since FakeSession pops responses
+        install_fake_db(monkeypatch, FakeSession([[]]))
+        r = client.post(f"/api/coverage/summary/{uuid4()}", headers=headers)
+        assert r.status_code == 404, f"unexpected pre-limit status {r.status_code}"
+
+    # The next call must be rate-limited
+    install_fake_db(monkeypatch, FakeSession([[]]))
+    r_limited = client.post(f"/api/coverage/summary/{uuid4()}", headers=headers)
+    assert r_limited.status_code == 429
+    assert "Retry-After" in r_limited.headers
+
 
 @pytest.mark.unit
 def test_article_404_when_missing(monkeypatch: pytest.MonkeyPatch) -> None:

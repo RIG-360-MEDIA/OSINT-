@@ -57,9 +57,28 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"
 
+    # Super-admin bootstrap. Comma-separated list of emails that should be
+    # promoted to role='super_admin' on every backend boot (idempotent).
+    # The accounts must already exist in Supabase Auth — the boot hook only
+    # flips the role on the matching public.users row, it never creates the
+    # auth account. Replaces the hard-coded seed in migration 030.
+    SUPER_ADMIN_EMAILS: str = ""
+
     @property
     def groq_keys_list(self) -> list[str]:
         return [k.strip() for k in self.GROQ_API_KEYS.split(",") if k.strip()]
+
+    @property
+    def super_admin_emails_list(self) -> list[str]:
+        """Lower-cased, deduped list of admin emails from SUPER_ADMIN_EMAILS."""
+        seen: set[str] = set()
+        out: list[str] = []
+        for raw in self.SUPER_ADMIN_EMAILS.split(","):
+            email = raw.strip().lower()
+            if email and email not in seen:
+                seen.add(email)
+                out.append(email)
+        return out
 
     model_config = {"env_file": "infrastructure/.env", "extra": "ignore"}
 

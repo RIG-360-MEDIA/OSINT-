@@ -11,6 +11,16 @@ celery -A backend.celery_app worker \
   --hostname=worker-collectors@%h \
   --loglevel=info &
 
+# Dedicated social worker — Reddit / Telegram never starve behind
+# slow HTML scrapes. SIG-11 fix. --prefetch-multiplier=1 prevents one
+# slow collect from blocking sibling tasks (P5 fix, 2026-04-28).
+celery -A backend.celery_app worker \
+  --queues=social \
+  --concurrency=2 \
+  --prefetch-multiplier=1 \
+  --hostname=worker-social@%h \
+  --loglevel=info &
+
 # Dedicated YouTube worker — transcript fetch + entity detection + embedding
 celery -A backend.celery_app worker \
   --queues=youtube \
@@ -40,8 +50,16 @@ celery -A backend.celery_app worker \
   --hostname=worker-relevance@%h \
   --loglevel=info &
 
-# Start Celery Beat scheduler
+# Start Celery Beat scheduler.
+# --schedule points at a persistent volume (see docker-compose.yml's
+# rig-beat-schedule volume on /app/beat). Without this, container
+# restarts reset Beat's last-run-times DB and crontab/timedelta entries
+# drift — e.g. the daily newspaper cron would never fire if the stack
+# was restarted between the previous run and the next anchor.
+mkdir -p /app/beat
 celery -A backend.celery_app beat \
+  --schedule=/app/beat/celerybeat-schedule \
+  --pidfile=/app/beat/celerybeat.pid \
   --loglevel=info &
 
 # Start FastAPI in foreground (keeps container alive)

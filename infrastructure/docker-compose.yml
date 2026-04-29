@@ -112,6 +112,13 @@ services:
       FRESHRSS_PASSWORD: ${FRESHRSS_PASSWORD:-}
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      # HS256 secret used to verify Supabase access tokens. Optional in dev,
+      # REQUIRED in production. See infrastructure/.env.example.
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+      # Super-admin bootstrap. Comma-separated list of emails promoted to
+      # role='super_admin' on every backend boot. See
+      # docs/RUNBOOK_SUPER_ADMIN_BOOTSTRAP.md.
+      SUPER_ADMIN_EMAILS: ${SUPER_ADMIN_EMAILS:-}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       # Govt-doc collection window (days). Bumped from 2 to 30 because budget
       # / policy / annual-report sources don't publish daily.
@@ -132,6 +139,10 @@ services:
     volumes:
       - ../backend:/app/backend
       - ../scripts:/app/scripts
+      # Persist Celery Beat's last-run-times DB across container restarts.
+      # Without this, every `docker compose up` resets the schedule to
+      # "now" and crontab/timedelta entries silently drift forward.
+      - rig-beat-schedule:/app/beat
     ports:
       - "8000:8000"
     networks:
@@ -166,7 +177,10 @@ services:
       # Without this, next.config.ts changes require `docker compose build rig-frontend`.
       - ../frontend/next.config.ts:/app/next.config.ts
     ports:
-      - "3000:3000"
+      # Host port 4000 → container 3000. Host ports 2962-3061 are
+      # blocked by a Windows WinNAT reservation on this machine, so
+      # the original 3000:3000 mapping fails to bind.
+      - "4000:3000"
     networks:
       - rig-network
     depends_on:
@@ -311,3 +325,5 @@ volumes:
     name: rig-freshrss-data
   rig-wm-redis-data:
     name: rig-wm-redis-data
+  rig-beat-schedule:
+    name: rig-beat-schedule

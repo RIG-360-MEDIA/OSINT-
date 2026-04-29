@@ -22,7 +22,11 @@ logger = logging.getLogger(__name__)
 
 @app.task(
     name="tasks.collect_newspapers",
-    queue="collectors",
+    # Routed to `documents` (concurrency=2) via celery_app.task_routes —
+    # the `collectors` queue is concurrency=1 and regularly blocked by
+    # multi-hour RSS scrapes. Decorator default kept consistent with
+    # the actual route to prevent surprises if task_routes is bypassed.
+    queue="documents",
     max_retries=2,
 )
 def collect_newspapers() -> None:
@@ -31,6 +35,10 @@ def collect_newspapers() -> None:
 
 
 async def _collect_newspapers() -> None:
+    import json
+
+    import spacy
+
     from backend.database import get_db
     from backend.collectors.newspaper_collector import (
         download_pdf_from_url,
@@ -40,11 +48,19 @@ async def _collect_newspapers() -> None:
         render_article_clipping,
     )
     from backend.nlp.nlp_embedding import generate_embedding
+    from backend.nlp.nlp_entities import extract_entities, load_entity_dictionary
     from backend.nlp.nlp_language import detect_and_translate
 
     today = date.today()
 
+    # QUAL-1: load the entity tagger once at the start of the run so
+    # every clipping inserted today gets `entities_extracted` populated
+    # at insert time. Without this, downstream RBAC filtering on
+    # `entities_extracted` returns zero rows for every user.
+    nlp_model = spacy.load("en_core_web_sm")
+
     async with get_db() as db:
+        await load_entity_dictionary(db)
         papers_result = await db.execute(
             text(
                 """
@@ -64,11 +80,23 @@ async def _collect_newspapers() -> None:
             r.canonical_name for r in entities_result.fetchall()
         ]
 
+        # CODE-2: aggregate distinct geographies across ALL active users
+        # (previously this took the first row's geo via LIMIT 1, biasing
+        # the relevance gate against every other user). is_relevant_to_user
+        # now treats an article as geo-relevant if it covers ANY of these.
         geo_result = await db.execute(
-            text("SELECT geo_primary FROM user_profiles LIMIT 1")
+            text(
+                """
+                SELECT DISTINCT geo_primary
+                FROM user_profiles
+                WHERE geo_primary IS NOT NULL
+                  AND TRIM(geo_primary) <> ''
+                """
+            )
         )
-        geo_row = geo_result.fetchone()
-        user_geo = geo_row.geo_primary if geo_row else "Telangana"
+        user_geos: list[str] = [r.geo_primary for r in geo_result.fetchall()]
+        if not user_geos:
+            user_geos = ["Telangana"]
 
         total_clippings = 0
 
@@ -94,6 +122,20 @@ async def _collect_newspapers() -> None:
             if not pdf_url:
                 logger.warning(f"No PDF URL found for {paper.name}")
                 continue
+
+            await db.execute(
+                text(
+                    """
+                    INSERT INTO newspaper_editions
+                        (newspaper_id, edition_date, pdf_url, fetched_at)
+                    VALUES (CAST(:pid AS uuid), :ed, :url, NOW())
+                    ON CONFLICT (newspaper_id, edition_date)
+                    DO UPDATE SET pdf_url = EXCLUDED.pdf_url, fetched_at = NOW()
+                    """
+                ),
+                {"pid": str(paper.id), "ed": today, "url": pdf_url},
+            )
+            await db.commit()
 
             with tempfile.TemporaryDirectory() as tmpdir:
                 safe_name = paper.name.replace(" ", "_").replace("/", "_")
@@ -126,20 +168,41 @@ async def _collect_newspapers() -> None:
                         continue
 
                     is_rel, score, reason = await is_relevant_to_user(
-                        headline, body, user_entities, user_geo,
+                        headline, body, user_entities, user_geos,
                     )
-                    if not is_rel:
-                        continue
 
+                    # For non-English papers, retry the relevance check with a
+                    # translated headline so English entity names (KCR, Revanth
+                    # Reddy, BRS) get a chance to match against headlines that
+                    # the printed paper renders in the local script.
                     headline_translated: str | None = None
-                    text_translated: str | None = None
-                    if paper.language != "en":
+                    if paper.language != "en" and not is_rel:
                         try:
                             _, headline_translated = await detect_and_translate(
                                 None, headline
                             )
                         except Exception as e:
                             logger.debug(f"Headline translate failed: {e}")
+                        if headline_translated:
+                            enriched_headline = (
+                                headline + " " + headline_translated
+                            )
+                            is_rel, score, reason = await is_relevant_to_user(
+                                enriched_headline, body, user_entities, user_geos,
+                            )
+
+                    if not is_rel:
+                        continue
+
+                    text_translated: str | None = None
+                    if paper.language != "en":
+                        if headline_translated is None:
+                            try:
+                                _, headline_translated = await detect_and_translate(
+                                    None, headline
+                                )
+                            except Exception as e:
+                                logger.debug(f"Headline translate failed: {e}")
                         try:
                             _, text_translated = await detect_and_translate(
                                 body[:2000], headline
@@ -163,6 +226,27 @@ async def _collect_newspapers() -> None:
                     except Exception as e:
                         logger.debug(f"Embedding failed: {e}")
 
+                    # QUAL-1: tag entities at insert time so the new row
+                    # is immediately visible through user-entity-filtered
+                    # endpoints. The translated headline + body is fed in
+                    # because spaCy's English NER is what backs the
+                    # dictionary lookup. Falls back to original text on
+                    # English papers.
+                    entity_title = headline_translated or headline
+                    entity_body = text_translated or body
+                    entities: list[dict] = []
+                    try:
+                        entities = extract_entities(
+                            title=entity_title,
+                            text=entity_body,
+                            nlp_model=nlp_model,
+                        )
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning(
+                            "entity extraction failed for %s headline=%r: %s",
+                            paper.name, headline[:60], e,
+                        )
+
                     try:
                         await db.execute(
                             text(
@@ -184,6 +268,7 @@ async def _collect_newspapers() -> None:
                                     clipping_image_b64,
                                     relevance_score,
                                     relevance_explanation,
+                                    entities_extracted,
                                     labse_embedding
                                 ) VALUES (
                                     CAST(:nid AS uuid),
@@ -202,6 +287,7 @@ async def _collect_newspapers() -> None:
                                     :clipping,
                                     :score,
                                     :reason,
+                                    CAST(:entities AS jsonb),
                                     CAST(:emb AS vector)
                                 )
                                 ON CONFLICT (
@@ -226,6 +312,7 @@ async def _collect_newspapers() -> None:
                                 "clipping": clipping_b64,
                                 "score": score,
                                 "reason": reason,
+                                "entities": json.dumps(entities),
                                 "emb": str(embedding) if embedding else None,
                             },
                         )

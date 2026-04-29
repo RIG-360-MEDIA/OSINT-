@@ -15,13 +15,22 @@ export default async function Home() {
 
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
-    const res = await fetch(`${apiUrl}/api/onboarding/status`, {
+    // Use /api/me/access (role-aware) so super_admins land on /admin
+    // instead of being trapped at /onboarding.
+    const res = await fetch(`${apiUrl}/api/me/access`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     })
     if (res.ok) {
-      const status = await res.json()
-      redirect(status.has_profile ? '/brief' : '/onboarding')
+      const access = (await res.json()) as {
+        role: 'user' | 'super_admin'
+        has_profile: boolean
+        has_entities: boolean
+      }
+      if (access.role === 'super_admin') {
+        redirect('/admin')
+      }
+      redirect(access.has_profile && access.has_entities ? '/brief' : '/onboarding')
     }
   } catch {
     // Fall through to landing on any error

@@ -971,7 +971,7 @@ function CoveragePageInner() {
 
       <main style={{ paddingTop: 'var(--topbar-h)', position: 'relative', zIndex: 2 }}>
         <Dateline
-          issueNumber="Coverage"
+          issueNumber="Articles"
           sources={totals.total > 0 ? totals.total : undefined}
         />
 
@@ -979,7 +979,7 @@ function CoveragePageInner() {
         <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '40px 40px 28px' }}>
           <div className="rig-kicker rig-kicker-gold" style={{ marginBottom: '18px' }}>
             <span style={{ width: '28px', height: '1px', background: 'var(--rig-gold)', opacity: 0.7 }} />
-            The Coverage Room
+            Articles
           </div>
           <h1 className="rig-headline" style={{ fontSize: 'clamp(38px, 4.6vw, 56px)', marginBottom: '20px' }}>
             Who is saying what, and <em>who is silent.</em>

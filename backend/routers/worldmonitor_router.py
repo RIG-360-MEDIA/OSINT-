@@ -25,12 +25,16 @@ import feedparser
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend.auth.auth_middleware import get_current_user
+from backend.auth.auth_middleware import get_current_user, require_page
 from backend.nlp.groq_client import GroqCallFailed, GroqQuotaExhausted, generate
 
 logger = logging.getLogger(__name__)
 
-worldmonitor_router = APIRouter(prefix="/api/worldmonitor", tags=["worldmonitor"])
+worldmonitor_router = APIRouter(
+    prefix="/api/worldmonitor",
+    tags=["worldmonitor"],
+    dependencies=[Depends(require_page("worldmonitor"))],
+)
 
 # ─── config ──────────────────────────────────────────────────────────────
 
@@ -224,10 +228,21 @@ async def _generate_summary(
     news: list[dict[str, Any]],
 ) -> str:
     """LLM-write the one-paragraph briefing. Falls back to a templated line on Groq error."""
+    # D-14 fix — be explicit when ACLED is unavailable. Previously the prompt
+    # treated "events=[]" as "no incidents" and the LLM produced falsely
+    # reassuring text like "Telangana remains stable, no reported incidents".
+    acled_available = bool(ACLED_TOKEN)
+    if acled_available:
+        events_fact = f"ACLED events past 7 days: {len(events)}."
+    else:
+        events_fact = (
+            "ACLED conflict-event data is UNAVAILABLE this run "
+            "(token unset) — do NOT infer absence of incidents."
+        )
     facts = [
         f"Hyderabad temp now {weather.get('temp_c')}°C, today max {weather.get('max_c')}°C.",
         f"AQI {air.get('aqi')} (PM2.5 {air.get('pm25')} µg/m³).",
-        f"ACLED events past 7 days: {len(events)}.",
+        events_fact,
         f"Top news headlines today: " + "; ".join(n["title"] for n in news[:5]) if news else "No fresh headlines.",
     ]
     sys_prompt = (
@@ -235,7 +250,9 @@ async def _generate_summary(
         "Telangana state in India. Write 3-5 sentences. Do NOT use bullet points. "
         "Use a neutral wire-service tone. Lead with the most important signal. "
         "Mention Hyderabad's air quality and weather only when notable. Cite "
-        "concrete numbers. Avoid hedging adverbs. End with one forward-looking sentence."
+        "concrete numbers. Avoid hedging adverbs. End with one forward-looking sentence. "
+        "If a data source is marked UNAVAILABLE, say so plainly — never imply "
+        "absence of data means absence of events."
     )
     user_prompt = "Today's signals:\n" + "\n".join(f"- {f}" for f in facts)
     try:
@@ -252,7 +269,10 @@ async def _generate_summary(
         parts.append(f"Hyderabad AQI {int(air['aqi'])}.")
     if weather.get("max_c") is not None:
         parts.append(f"High of {int(weather['max_c'])}°C forecast.")
-    parts.append(f"{len(events)} ACLED events recorded in the past week.")
+    if ACLED_TOKEN:
+        parts.append(f"{len(events)} ACLED events recorded in the past week.")
+    else:
+        parts.append("ACLED conflict-event data unavailable this run.")
     parts.append(f"{len(news)} fresh headlines in the local press.")
     return " ".join(parts)
 

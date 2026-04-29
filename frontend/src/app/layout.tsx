@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider, themeBootstrapScript } from '@/components/theme/ThemeProvider'
+import { ImpersonationBanner } from '@/components/ImpersonationBanner'
 
 export const metadata: Metadata = {
   title: 'Rig Surveillance',
@@ -20,7 +21,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
       </head>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <ImpersonationBanner />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

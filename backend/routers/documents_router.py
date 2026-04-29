@@ -16,7 +16,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user
+from backend.auth.auth_middleware import get_current_user, require_page
 from backend.database import get_db
 from backend.nlp.groq_client import (
     GroqCallFailed,
@@ -61,6 +61,7 @@ logger = logging.getLogger(__name__)
 documents_router = APIRouter(
     prefix="/api/documents",
     tags=["documents"],
+    dependencies=[Depends(require_page("documents"))],
 )
 
 

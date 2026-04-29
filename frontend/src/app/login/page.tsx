@@ -68,17 +68,32 @@ export default function LoginPage() {
 
     const token = data.session?.access_token
     try {
-      const res = await fetch(`${API}/api/onboarding/status`, {
+      // Use /api/me/access (role-aware) instead of onboarding/status so
+      // super_admins land on /admin instead of being trapped at /onboarding.
+      const res = await fetch(`${API}/api/me/access`, {
         headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       })
       if (!res.ok) {
-        router.push('/brief')
+        // D-07: on backend error, prefer /onboarding (a public route) over
+        // /brief — middleware would bounce a profile-less user back to
+        // /onboarding anyway, so going there directly avoids a visible
+        // redirect flash.
+        router.push('/onboarding')
         return
       }
-      const status = await res.json()
-      router.push(status.has_profile ? '/brief' : '/onboarding')
+      const access = (await res.json()) as {
+        role: 'user' | 'super_admin'
+        has_profile: boolean
+        has_entities: boolean
+      }
+      if (access.role === 'super_admin') {
+        router.push('/admin')
+        return
+      }
+      router.push(access.has_profile && access.has_entities ? '/brief' : '/onboarding')
     } catch {
-      router.push('/brief')
+      router.push('/onboarding')
     }
   }
 

@@ -8,24 +8,39 @@ POST /api/clips/channels — add a channel to monitor
 from __future__ import annotations
 
 import logging
+import re
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user
+from backend.auth.auth_middleware import get_current_user, require_page
 from backend.database import get_db
 
 logger = logging.getLogger(__name__)
 
-clips_router = APIRouter(prefix="/api/clips", tags=["clips"])
+clips_router = APIRouter(
+    prefix="/api/clips",
+    tags=["clips"],
+    dependencies=[Depends(require_page("clips"))],
+)
+
+# YouTube channel IDs are always 24 chars: "UC" + 22 base64url-ish chars.
+_CHANNEL_ID_RE = re.compile(r"^UC[A-Za-z0-9_-]{22}$")
+
+
+class AddChannelRequest(BaseModel):
+    channel_id:   str = Field(..., min_length=24, max_length=24)
+    channel_name: str = Field(..., min_length=1, max_length=200)
 
 
 @clips_router.get("/feed")
 async def get_clips_feed(
     entity:  str = Query(default=""),
     channel: str = Query(default=""),
-    days:    int = Query(default=7),
-    limit:   int = Query(default=20, le=50),
+    days:    int = Query(default=7,  ge=1, le=90),
+    limit:   int = Query(default=20, ge=1, le=50),
     cursor:  str = Query(default=""),
     user:   dict = Depends(get_current_user),
 ) -> dict:
@@ -43,32 +58,47 @@ async def get_clips_feed(
         user_entities = [r.canonical_name for r in entities_result.fetchall()]
 
         if not user_entities:
-            return {"clips": [], "has_more": False, "total": 0, "channels": [], "user_entities": []}
+            return {
+                "clips": [], "has_more": False, "next_cursor": None,
+                "total": 0, "channels": [], "user_entities": [],
+            }
 
-        conditions = [
-            "yc.processed = TRUE",
-            "yc.matched_entity = ANY(:entities)",
-            "yc.collected_at > NOW() - (:days * INTERVAL '1 day')",
+        # Build a shared filter clause used by feed, total, and channels —
+        # so they all reflect the same view (B1, B2 fix).
+        base_conditions = [
+            "matched_entity = ANY(:entities)",
+            "collected_at > NOW() - (:days * INTERVAL '1 day')",
         ]
-        params: dict = {
-            "entities": user_entities,
-            "days":     days,
-            "limit":    limit + 1,
-        }
+        base_params: dict = {"entities": user_entities, "days": days}
 
         if entity:
-            conditions.append("yc.matched_entity = :entity")
-            params["entity"] = entity
+            base_conditions.append("matched_entity = :entity")
+            base_params["entity"] = entity
 
         if channel:
-            conditions.append("yc.channel_id = :channel")
-            params["channel"] = channel
+            base_conditions.append("channel_id = :channel")
+            base_params["channel"] = channel
+
+        # Feed query adds processed=TRUE + cursor + alias prefix.
+        feed_conditions = ["yc.processed = TRUE"] + [
+            f"yc.{c}" for c in base_conditions
+        ]
+        feed_params: dict = dict(base_params, limit=limit + 1)
 
         if cursor:
-            conditions.append("yc.collected_at < :cursor_time::timestamptz")
-            params["cursor_time"] = cursor
+            try:
+                cursor_dt = datetime.fromisoformat(cursor.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=400,
+                    detail="cursor must be an ISO-8601 timestamp",
+                ) from exc
+            feed_conditions.append("yc.collected_at < :cursor_time")
+            feed_params["cursor_time"] = cursor_dt
 
-        where_clause = " AND ".join(conditions)
+        # ents CTE filtered by entities + window so it doesn't scan whole table (B8).
+        ents_where = " AND ".join(base_conditions)
+        feed_where = " AND ".join(feed_conditions)
 
         result = await db.execute(
             text(f"""
@@ -76,6 +106,7 @@ async def get_clips_feed(
                     SELECT video_id, clip_start_seconds,
                            ARRAY_AGG(DISTINCT matched_entity) AS all_entities
                     FROM youtube_clips
+                    WHERE {ents_where}
                     GROUP BY video_id, clip_start_seconds
                 ),
                 ranked AS (
@@ -85,7 +116,7 @@ async def get_clips_feed(
                             ORDER BY COALESCE(yc.relevance_score, 0) DESC, yc.collected_at DESC
                         ) AS rn
                     FROM youtube_clips yc
-                    WHERE {where_clause}
+                    WHERE {feed_where}
                 )
                 SELECT
                     r.id::text             AS clip_id,
@@ -112,12 +143,20 @@ async def get_clips_feed(
                  AND e.clip_start_seconds = r.clip_start_seconds
                 WHERE r.rn = 1
                 ORDER BY
-                    (r.clip_start_seconds > 0) DESC,
+                    -- Recency-day first, then quality preferences. The old
+                    -- order had `(clip_start>0) DESC` as the top key — which
+                    -- floated every caption-source clip above every metadata-
+                    -- only clip regardless of date, so a 17 h-old captioned
+                    -- clip outranked all of today's metadata-only clips on
+                    -- Whisper-failing days. Bucket by day first to avoid that.
+                    DATE_TRUNC('day', r.collected_at) DESC,
                     COALESCE(r.relevance_score, 0) DESC,
-                    r.collected_at DESC
+                    (r.clip_start_seconds > 0) DESC,
+                    r.collected_at DESC,
+                    r.id DESC
                 LIMIT :limit
             """),
-            params,
+            feed_params,
         )
         rows = result.fetchall()
 
@@ -128,31 +167,29 @@ async def get_clips_feed(
             clips_page[-1].collected_at.isoformat() if has_more and clips_page else None
         )
 
-        count_result = await db.execute(
-            text("""
+        # Total + channels share the same base filter (B1, B2 fix).
+        total_result = await db.execute(
+            text(f"""
                 SELECT COUNT(*) AS total
                 FROM youtube_clips
-                WHERE matched_entity = ANY(:entities)
-                  AND collected_at > NOW() - INTERVAL '7 days'
-                  AND processed = TRUE
+                WHERE processed = TRUE AND {ents_where}
             """),
-            {"entities": user_entities},
+            base_params,
         )
-        total = count_result.fetchone().total
+        total = total_result.fetchone().total
 
         channels_result = await db.execute(
-            text("""
+            text(f"""
                 SELECT
                     channel_id,
                     channel_name,
                     COUNT(*) AS clip_count
                 FROM youtube_clips
-                WHERE matched_entity = ANY(:entities)
-                  AND collected_at > NOW() - INTERVAL '7 days'
+                WHERE processed = TRUE AND {ents_where}
                 GROUP BY channel_id, channel_name
                 ORDER BY clip_count DESC
             """),
-            {"entities": user_entities},
+            base_params,
         )
         channels = channels_result.fetchall()
 
@@ -171,9 +208,9 @@ async def get_clips_feed(
                     "transcript_segment":    c.transcript_segment,
                     "transcript_translated": c.transcript_translated,
                     "matched_entity":        c.matched_entity,
-                    "all_entities":          list(c.all_entities or []) if hasattr(c, "all_entities") else [c.matched_entity],
+                    "all_entities":          list(c.all_entities or []),
                     "relevance_score":       float(c.relevance_score) if c.relevance_score is not None else None,
-                    "has_transcript":        bool(c.has_transcript) if hasattr(c, "has_transcript") else (c.clip_start_seconds > 0),
+                    "has_transcript":        bool(c.has_transcript),
                     "transcript_language":   c.transcript_language,
                     "video_published_at":    (
                         c.video_published_at.isoformat() if c.video_published_at else None
@@ -208,11 +245,13 @@ async def list_channels(user: dict = Depends(get_current_user)) -> dict:
                 ch.channel_url,
                 ch.is_active,
                 ch.last_checked_at,
-                (
-                    SELECT COUNT(*) FROM youtube_clips yc
-                    WHERE yc.channel_id = ch.channel_id
-                ) AS total_clips
+                COALESCE(yc_counts.total_clips, 0) AS total_clips
             FROM youtube_channels ch
+            LEFT JOIN (
+                SELECT channel_id, COUNT(*) AS total_clips
+                FROM youtube_clips
+                GROUP BY channel_id
+            ) yc_counts ON yc_counts.channel_id = ch.channel_id
             ORDER BY ch.channel_name
         """))
         channels = result.fetchall()
@@ -235,11 +274,13 @@ async def list_channels(user: dict = Depends(get_current_user)) -> dict:
 
 @clips_router.post("/channels")
 async def add_channel(
-    channel_id:   str,
-    channel_name: str,
-    user:        dict = Depends(get_current_user),
+    payload: AddChannelRequest,
+    user:    dict = Depends(get_current_user),
 ) -> dict:
     """Add or re-enable a YouTube channel to monitor."""
+    if not _CHANNEL_ID_RE.match(payload.channel_id):
+        raise HTTPException(status_code=422, detail="Invalid YouTube channel_id format")
+
     async with get_db() as db:
         await db.execute(
             text("""
@@ -248,10 +289,10 @@ async def add_channel(
                 ON CONFLICT (channel_id) DO UPDATE SET is_active = TRUE
             """),
             {
-                "cid":  channel_id,
-                "name": channel_name,
-                "url":  f"https://youtube.com/channel/{channel_id}",
+                "cid":  payload.channel_id,
+                "name": payload.channel_name,
+                "url":  f"https://youtube.com/channel/{payload.channel_id}",
             },
         )
         await db.commit()
-        return {"success": True, "channel_id": channel_id}
+        return {"success": True, "channel_id": payload.channel_id}

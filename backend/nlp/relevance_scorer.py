@@ -288,7 +288,22 @@ async def compute_stage2_explanation(
     user_profile: dict,
 ) -> dict:
     """
-    Groq generates relevance explanation for articles scoring >= 0.25 in Stage 1.
+    Groq generates a per-user relevance explanation + final score.
+
+    Dispatch gate (in ``tasks/relevance_task.py:213``):
+        Stage 2 runs only when ``stage1_score >= 0.25`` AND ``tier > 0``,
+        i.e. tier-1 (score >= 0.50) and tier-2 (0.25 <= score < 0.50).
+        Tier-3 (0.10 <= score < 0.25) and tier-0 (< 0.10) **do not** call
+        Groq — their ``relevance_explanation`` stays NULL by design. Coverage
+        audit C-5 (2026-04-28) documents this here so a future reader does
+        not try to "fix" the missing tier-3/0 explanations.
+
+    Tier mapping (applied to either Stage 1 or Stage 2 score):
+        score >= 0.50 → tier 1
+        score >= 0.25 → tier 2
+        score >= 0.10 → tier 3
+        else          → tier 0  (suppressed from feed)
+
     Uses FAST_MODEL (llama-3.1-8b-instant) — classification, not generation.
     Returns {score, explanation, sentiment_for_user}.
     """

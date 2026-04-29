@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -10,6 +11,7 @@ from sqlalchemy import text
 from backend.auth.auth_middleware import get_current_user
 from backend.database import get_db
 from backend.nlp.groq_client import FAST_MODEL, call_groq, extract_json
+from backend.rate_limiter import rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +129,22 @@ VALID_ROLE_TYPES = frozenset({"government", "business", "journalist", "security"
 # Valid entity_type values matching DB CHECK constraint
 VALID_ENTITY_TYPES = frozenset({"person", "organisation", "place", "scheme", "project", "topic"})
 
+# Pages every new user gets access to on first profile confirm.
+# Excludes 'admin' — only super_admin sees that. Kept in sync with
+# scripts/migrations/021_rbac_and_impersonation.sql and KNOWN_PAGES in
+# backend.auth.auth_middleware.
+DEFAULT_PAGE_GRANTS: tuple[str, ...] = (
+    "coverage",
+    "clips",
+    "cuttings",
+    "threads",
+    "signals",
+    "documents",
+    "brief",
+    "analyst",
+    "worldmonitor",
+)
+
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
@@ -135,7 +153,10 @@ async def get_questions() -> dict:
     return {"questions": [{"id": q["id"], "text": q["text"]} for q in QUESTIONS]}
 
 
-@onboarding_router.post("/extract")
+@onboarding_router.post(
+    "/extract",
+    dependencies=[Depends(rate_limit("onboarding_extract", max_calls=10))],
+)
 async def extract_profile(
     req: ExtractRequest,
     user: dict = Depends(get_current_user),
@@ -220,8 +241,19 @@ async def confirm_profile(
     geo_primary = req.geo_primary or ""
     role_context = req.role_context or ""
 
+    # Track non-fatal subsystem failures so the frontend can surface a warning
+    # without blocking onboarding completion. (D-03)
+    grants_warning: str | None = None
+
     async with get_db() as db:
-        # Ghost row: satisfy FK constraint for Supabase Auth users
+        # Ghost row: satisfy FK constraint for Supabase Auth users.
+        #
+        # D-10: handle the (rare) case where another row holds this email
+        # under a different Supabase id — e.g. a deleted-and-recreated auth
+        # user. We surface a clean 409 instead of letting a unique-violation
+        # cascade into a confusing 500 mid-onboarding.
+        from sqlalchemy.exc import IntegrityError
+
         try:
             await db.execute(
                 text("""
@@ -231,9 +263,51 @@ async def confirm_profile(
                 """),
                 {"user_id": user["id"], "email": user["email"]},
             )
-        except Exception as e:
-            logger.warning("Ghost row upsert skipped for %s: %s", user["id"], e)
-            # Non-fatal if email unique conflict — row may already exist
+        except IntegrityError as exc:
+            # users.email is UNIQUE; a different id already holds this email.
+            await db.rollback()
+            logger.error(
+                "Onboarding ghost-row email conflict: id=%s email=%s — %s",
+                user["id"], user["email"], exc,
+            )
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "error": "email_already_owned",
+                    "message": (
+                        "This email is associated with a different account. "
+                        "Contact support to resolve."
+                    ),
+                },
+            ) from exc
+
+        # Default page grants — idempotent. (D-03) Failures used to be silently
+        # logged as warnings, which left users with no page access and no
+        # diagnostic trail. Now we log at ERROR, count the failure, and pass
+        # a `warning` field through to the frontend so the user sees a
+        # "contact support" hint instead of a broken-but-silent app.
+        for slug in DEFAULT_PAGE_GRANTS:
+            try:
+                await db.execute(
+                    text("""
+                        INSERT INTO user_page_access (user_id, page_slug)
+                        VALUES (:user_id, :slug)
+                        ON CONFLICT (user_id, page_slug) DO NOTHING
+                    """),
+                    {"user_id": user["id"], "slug": slug},
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.exception(
+                    "Default page grant FAILED for user=%s slug=%s: %s",
+                    user["id"], slug, exc,
+                )
+                grants_warning = (
+                    "Account created, but default page access could not be "
+                    "applied. An administrator will need to grant page access "
+                    "before you can use the app."
+                )
+                # Don't break the loop — try every slug so we set as many as
+                # possible. The warning surfaces to the frontend regardless.
 
         # Upsert user_profiles
         await db.execute(
@@ -325,7 +399,16 @@ async def confirm_profile(
 
         await db.commit()
 
-    # Trigger full relevance backfill (non-fatal, batched)
+    # D-04: bound the post-onboarding relevance backfill to a recent window
+    # and a hard batch ceiling. Previously this enqueued every nlp-processed
+    # article ever ingested — fine for one user, but with N concurrent
+    # signups the `relevance` queue would back up for hours and starve
+    # everyone's brief generation. The window + ceiling means worst-case
+    # impact is bounded regardless of corpus size.
+    BACKFILL_DAYS = int(os.getenv("ONBOARDING_BACKFILL_DAYS", "14"))
+    MAX_BATCHES = int(os.getenv("ONBOARDING_BACKFILL_MAX_BATCHES", "20"))
+    BATCH = 100
+
     try:
         from backend.celery_app import app as celery_app
 
@@ -335,12 +418,14 @@ async def confirm_profile(
                     SELECT id::text FROM articles
                     WHERE nlp_processed = TRUE
                       AND nlp_confidence != 'error'
+                      AND collected_at > NOW() - (:days * INTERVAL '1 day')
                     ORDER BY collected_at DESC
-                """)
+                    LIMIT :hard_cap
+                """),
+                {"days": BACKFILL_DAYS, "hard_cap": MAX_BATCHES * BATCH},
             )
             all_ids = [r[0] for r in backfill_result.fetchall()]
 
-        BATCH = 100
         batches = 0
         for i in range(0, len(all_ids), BATCH):
             celery_app.send_task(
@@ -351,18 +436,21 @@ async def confirm_profile(
             batches += 1
 
         logger.info(
-            "Post-onboarding backfill: %d articles in %d batches for user %s",
+            "Post-onboarding backfill: %d articles (%dd window) in %d/%d batches for user %s",
             len(all_ids),
+            BACKFILL_DAYS,
             batches,
+            MAX_BATCHES,
             user["id"],
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning("Could not trigger relevance backfill: %s", e)
 
     return {
         "success": True,
         "user_id": user["id"],
         "entities_saved": len(req.entities),
+        "warning": grants_warning,  # None on success; string on D-03 partial failure
     }
 
 

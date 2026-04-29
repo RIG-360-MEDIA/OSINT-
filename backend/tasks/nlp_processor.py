@@ -112,10 +112,15 @@ async def _process_batch() -> dict:
             if _is_junk_article(article.title):
                 logger.info("Junk article skipped: %s", repr(article.title)[:80])
                 try:
+                    # Always set topic_category — leaving it NULL would break
+                    # frontend topic filters that assume the column is
+                    # populated post-NLP. C-4 of the coverage audit.
                     await db.execute(
                         text(
                             "UPDATE articles SET nlp_processed = TRUE, "
-                            "nlp_confidence = 'error' WHERE id = :id"
+                            "nlp_confidence = 'error', "
+                            "topic_category = COALESCE(topic_category, 'OTHER') "
+                            "WHERE id = :id"
                         ),
                         {"id": article.id},
                     )
@@ -143,10 +148,15 @@ async def _process_batch() -> dict:
                 # Rollback aborted transaction BEFORE error-recovery UPDATE
                 await db.rollback()
                 try:
+                    # Always set topic_category — leaving it NULL would break
+                    # frontend topic filters that assume the column is
+                    # populated post-NLP. C-4 of the coverage audit.
                     await db.execute(
                         text(
                             "UPDATE articles SET nlp_processed = TRUE, "
-                            "nlp_confidence = 'error' WHERE id = :id"
+                            "nlp_confidence = 'error', "
+                            "topic_category = COALESCE(topic_category, 'OTHER') "
+                            "WHERE id = :id"
                         ),
                         {"id": article.id},
                     )

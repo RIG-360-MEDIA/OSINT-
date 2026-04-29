@@ -5,18 +5,50 @@ All endpoints scoped to the authenticated user's user_article_relevance rows.
 """
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import logging
+from collections import OrderedDict
+from typing import Literal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user
+from backend.auth.auth_middleware import get_current_user, require_page
 from backend.database import get_db
+from backend.middleware.request_id import get_request_id
 from backend.nlp.groq_client import FAST_MODEL, call_groq
 
 logger = logging.getLogger(__name__)
 
-coverage_router = APIRouter(prefix="/api/coverage", tags=["coverage"])
+
+def _hash_uid(user_id: str) -> str:
+    """Short stable hash for log lines so raw UUIDs don't leak to log streams."""
+    return hashlib.blake2s(str(user_id).encode(), digest_size=6).hexdigest()
+
+
+# In-process LRU cache for /summary results, keyed by article_id.
+# Article content is effectively immutable once ingested, so we don't TTL.
+# Cap at 1024 entries to bound memory; oldest entries evicted on overflow.
+_SUMMARY_CACHE: "OrderedDict[str, str]" = OrderedDict()
+_SUMMARY_CACHE_LOCK = asyncio.Lock()
+_SUMMARY_CACHE_MAX = 1024
+
+
+# Per-user sliding-window rate limit for /summary (Groq spend protection).
+# Window = 60 s, max = 15 calls. In-process only — best-effort across workers.
+_SUMMARY_RATE_WINDOW_S = 60.0
+_SUMMARY_RATE_MAX = 15
+_SUMMARY_RATE_BUCKET: dict[str, list[float]] = {}
+_SUMMARY_RATE_LOCK = asyncio.Lock()
+
+
+coverage_router = APIRouter(
+    prefix="/api/coverage",
+    tags=["coverage"],
+    dependencies=[Depends(require_page("coverage"))],
+)
 
 
 # ── Feed endpoint ─────────────────────────────────────────────────────────────
@@ -33,13 +65,15 @@ async def get_feed(
     ),
     days: int = Query(
         default=0,
+        ge=0,
+        le=365,
         description="0=all time, 7=week, 1=today",
     ),
-    sentiment: str = Query(
+    sentiment: Literal["all", "FOR_USER", "AGAINST_USER", "NEUTRAL"] = Query(
         default="all",
         description="all | FOR_USER | AGAINST_USER | NEUTRAL",
     ),
-    sort: str = Query(
+    sort: Literal["relevance", "recency"] = Query(
         default="relevance",
         description="relevance | recency",
     ),
@@ -79,8 +113,11 @@ async def get_feed(
             params["topics"] = topic_list
 
         if days > 0:
+            # make_interval(days => N) takes an int directly — avoids the
+            # text-concat / interval-cast pitfall that broke the TODAY
+            # filter post-restart on 2026-04-28.
             conditions.append(
-                "a.collected_at > NOW() - :days * INTERVAL '1 day'"
+                "a.collected_at > NOW() - make_interval(days => :days)"
             )
             params["days"] = days
 
@@ -91,24 +128,31 @@ async def get_feed(
         if cursor:
             try:
                 parts = cursor.rsplit("_", 1)
+                if len(parts) != 2:
+                    raise ValueError("missing separator")
                 cursor_score = float(parts[0])
-                cursor_id = parts[1]
-                if sort == "relevance":
-                    conditions.append(
-                        "(uar.score_final < :cursor_score OR "
-                        "(uar.score_final = :cursor_score AND "
-                        "uar.article_id::text > :cursor_id))"
-                    )
-                else:
-                    conditions.append(
-                        "a.collected_at < "
-                        "(SELECT collected_at FROM articles "
-                        "WHERE id = CAST(:cursor_id AS uuid))"
-                    )
-                params["cursor_score"] = cursor_score
-                params["cursor_id"] = cursor_id
-            except (ValueError, IndexError):
-                pass
+                # cursor_id must be a valid UUID — otherwise it's an
+                # injection vector against the SQL bind below.
+                cursor_uuid = UUID(parts[1])
+            except (ValueError, IndexError) as exc:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Malformed cursor: {exc}",
+                ) from exc
+            if sort == "relevance":
+                conditions.append(
+                    "(uar.score_final < :cursor_score OR "
+                    "(uar.score_final = :cursor_score AND "
+                    "uar.article_id::text > :cursor_id))"
+                )
+            else:
+                conditions.append(
+                    "a.collected_at < "
+                    "(SELECT collected_at FROM articles "
+                    "WHERE id = :cursor_id)"
+                )
+            params["cursor_score"] = cursor_score
+            params["cursor_id"] = str(cursor_uuid)
 
         where_clause = " AND ".join(conditions)
         order_by = (
@@ -235,6 +279,10 @@ async def search_articles(
             int(t.strip()) for t in tier.split(",") if t.strip().isdigit()
         ] or [1, 2, 3]
 
+        # 'simple' regclass is language-neutral — it does not stem English-
+        # specific suffixes, so Hindi / Telugu / Bangla titles tokenise as
+        # well as English ones. ILIKE on title remains as a fallback for
+        # short queries with no tokens.
         result = await db.execute(
             text("""
                 SELECT
@@ -254,11 +302,11 @@ async def search_articles(
                   uar.sentiment_for_user,
                   ts_rank(
                     to_tsvector(
-                      'english',
+                      'simple',
                       COALESCE(a.title, '') || ' ' ||
                       COALESCE(a.lead_text_translated, '')
                     ),
-                    plainto_tsquery('english', :query)
+                    plainto_tsquery('simple', :query)
                   ) AS text_rank
                 FROM user_article_relevance uar
                 JOIN articles a ON a.id = uar.article_id
@@ -267,10 +315,10 @@ async def search_articles(
                   AND uar.relevance_tier = ANY(:tiers)
                   AND (
                     to_tsvector(
-                      'english',
+                      'simple',
                       COALESCE(a.title, '') || ' ' ||
                       COALESCE(a.lead_text_translated, '')
-                    ) @@ plainto_tsquery('english', :query)
+                    ) @@ plainto_tsquery('simple', :query)
                     OR a.title ILIKE :like_query
                   )
                 ORDER BY uar.score_final DESC, text_rank DESC
@@ -316,15 +364,63 @@ async def search_articles(
 
 # ── Summary endpoint ──────────────────────────────────────────────────────────
 
+async def _check_summary_rate_limit(user_id: str) -> None:
+    """Sliding-window per-user rate limit for /summary. Best-effort in-process."""
+    import time as _time
+    now = _time.monotonic()
+    cutoff = now - _SUMMARY_RATE_WINDOW_S
+    async with _SUMMARY_RATE_LOCK:
+        bucket = _SUMMARY_RATE_BUCKET.setdefault(user_id, [])
+        bucket[:] = [t for t in bucket if t > cutoff]
+        if len(bucket) >= _SUMMARY_RATE_MAX:
+            retry_after = int(_SUMMARY_RATE_WINDOW_S - (now - bucket[0])) + 1
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    f"Rate limit: max {_SUMMARY_RATE_MAX} summaries per "
+                    f"{int(_SUMMARY_RATE_WINDOW_S)}s. Retry in {retry_after}s."
+                ),
+                headers={"Retry-After": str(retry_after)},
+            )
+        bucket.append(now)
+
+
+async def _cache_get_summary(article_id: str) -> str | None:
+    async with _SUMMARY_CACHE_LOCK:
+        if article_id in _SUMMARY_CACHE:
+            _SUMMARY_CACHE.move_to_end(article_id)
+            return _SUMMARY_CACHE[article_id]
+    return None
+
+
+async def _cache_put_summary(article_id: str, summary: str) -> None:
+    async with _SUMMARY_CACHE_LOCK:
+        _SUMMARY_CACHE[article_id] = summary
+        _SUMMARY_CACHE.move_to_end(article_id)
+        while len(_SUMMARY_CACHE) > _SUMMARY_CACHE_MAX:
+            _SUMMARY_CACHE.popitem(last=False)
+
+
 @coverage_router.post("/summary/{article_id}")
 async def generate_summary(
-    article_id: str,
+    article_id: UUID,
     user: dict = Depends(get_current_user),
 ) -> dict:
     """
     On-demand 3–4 sentence summary via Groq FAST_MODEL.
     Only works for articles in the user's scored feed.
+
+    Rate-limited: 15 calls per 60 s per user (Groq spend protection).
+    Cached: subsequent calls for the same article_id reuse the prior result.
     """
+    aid_str = str(article_id)
+    user_id = user["id"]
+    await _check_summary_rate_limit(user_id)
+
+    cached = await _cache_get_summary(aid_str)
+    if cached is not None:
+        return {"summary": cached, "cached": True}
+
     async with get_db() as db:
         check = await db.execute(
             text("""
@@ -338,9 +434,9 @@ async def generate_summary(
                 FROM user_article_relevance uar
                 JOIN articles a ON a.id = uar.article_id
                 WHERE uar.user_id = :user_id
-                  AND a.id = CAST(:article_id AS uuid)
+                  AND a.id = :article_id
             """),
-            {"user_id": user["id"], "article_id": article_id},
+            {"user_id": user_id, "article_id": aid_str},
         )
         article = check.fetchone()
 
@@ -380,9 +476,13 @@ async def generate_summary(
                 task_type="brief_generation",
                 model=FAST_MODEL,
             )
+            await _cache_put_summary(aid_str, summary)
             return {"summary": summary, "cached": False}
         except Exception as exc:
-            logger.error("Summary generation failed: %s", exc)
+            logger.exception(
+                "Summary generation failed (rid=%s, uid=%s, aid=%s): %s",
+                get_request_id(), _hash_uid(user_id), aid_str, exc,
+            )
             raise HTTPException(
                 status_code=500,
                 detail="Summary generation failed",
@@ -393,7 +493,7 @@ async def generate_summary(
 
 @coverage_router.get("/article/{article_id}")
 async def get_article(
-    article_id: str,
+    article_id: UUID,
     user: dict = Depends(get_current_user),
 ) -> dict:
     """Fetch a single article from the user's feed by ID."""
@@ -423,9 +523,9 @@ async def get_article(
                 JOIN articles a ON a.id = uar.article_id
                 JOIN sources s ON a.source_id = s.id
                 WHERE uar.user_id = :user_id
-                  AND a.id = CAST(:article_id AS uuid)
+                  AND a.id = :article_id
             """),
-            {"user_id": user["id"], "article_id": article_id},
+            {"user_id": user["id"], "article_id": str(article_id)},
         )
         row = result.fetchone()
 

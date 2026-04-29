@@ -9,7 +9,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user
+from backend.auth.auth_middleware import get_current_user, require_page
 from backend.database import get_db
 
 
@@ -26,7 +26,11 @@ def _coerce_jsonb(value):
 
 logger = logging.getLogger(__name__)
 
-thread_router = APIRouter(prefix="/api/threads", tags=["threads"])
+thread_router = APIRouter(
+    prefix="/api/threads",
+    tags=["threads"],
+    dependencies=[Depends(require_page("threads"))],
+)
 
 
 @thread_router.get("")

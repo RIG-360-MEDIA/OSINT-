@@ -21,10 +21,20 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-_CLIP_BEFORE = 15  # seconds before entity mention
-_CLIP_AFTER  = 15  # seconds after entity mention
-_MAX_TRANSCRIPT_CHARS = 6000  # chars sent to Groq per analysis call
-_MAX_SEGMENTS_SAMPLED = 250   # max segments sampled per video
+_CLIP_LEAD_IN     = 5    # seconds before mention to give context
+_CLIP_MIN_WINDOW  = 15   # never shorter than this
+_CLIP_MAX_WINDOW  = 120  # never longer than this
+
+# Stage 4A — chunked analysis instead of lossy sampling.
+# Groq sees a 10-minute window of transcript at a time; long videos go in
+# multiple windows so we never skip a mention.
+_CHUNK_SECONDS         = 600   # 10 min per Groq call
+_MAX_CHUNK_CHARS       = 6000  # per chunk
+_MAX_CHUNKS_PER_VIDEO  = 6     # cap total Groq calls per video (1hr)
+
+# Stage 3 — Whisper fallback caps (cheap, free on our 16-key Groq pool).
+_WHISPER_MAX_DURATION_S = 30 * 60   # only transcribe up to 30 min
+_WHISPER_TIER_FLOOR     = "tier_2"  # don't whisper-transcribe tier_3 channels
 
 # Circuit breaker: once we see N consecutive IP blocks, skip transcript path entirely
 _IP_BLOCK_THRESHOLD = 3
@@ -36,6 +46,46 @@ _exhausted_api_keys: set[str] = set()
 
 def _is_quota_error(resp_text: str) -> bool:
     return "quotaExceeded" in resp_text or "quota" in resp_text.lower()
+
+
+# ── Stage 4B — region-agnostic disambiguation ────────────────────────────────
+
+async def load_alias_rules(db, region: str = "telangana") -> str:
+    """Load entity_aliases rows for a region and format as a Groq prompt block.
+
+    Returns an empty string if the table is empty so the prompt stays valid.
+    """
+    from sqlalchemy import text
+
+    try:
+        result = await db.execute(
+            text("""
+                SELECT canonical_name, alias, COALESCE(notes, '') AS notes
+                FROM entity_aliases
+                WHERE region = :region OR region IS NULL
+                ORDER BY canonical_name, alias
+            """),
+            {"region": region},
+        )
+        rows = result.fetchall()
+    except Exception:
+        logger.warning("alias rules load failed — using empty block", exc_info=True)
+        return ""
+
+    if not rows:
+        return ""
+
+    grouped: dict[str, list[tuple[str, str]]] = {}
+    for r in rows:
+        grouped.setdefault(r.canonical_name, []).append((r.alias, r.notes))
+
+    lines = ["CRITICAL ENTITY DISAMBIGUATION (use the EXACT canonical name):"]
+    for canonical, items in grouped.items():
+        aliases = " / ".join(f"'{a}'" for a, _ in items)
+        notes = next((n for _, n in items if n), "")
+        suffix = f" — {notes}" if notes else ""
+        lines.append(f"- {aliases} = {canonical}{suffix}")
+    return "\n".join(lines)
 
 
 def get_api_keys() -> list[str]:
@@ -57,15 +107,27 @@ async def fetch_channel_videos(
     channel_id: str,
     api_key: str | list[str],
     since_days: int = 2,
+    since_dt: datetime | None = None,
+    max_results: int = 10,
+    exclude_shorts: bool = True,
 ) -> list[dict]:
     """
     Fetch recent videos from a channel via YouTube Data API v3.
+
+    Stage 2 upgrades:
+      - `since_dt` (high-water mark) takes precedence over `since_days` so we
+        only ask the API for videos newer than what we last saw on this channel.
+      - `max_results` is now caller-controlled (tier-aware in the task layer).
+      - `exclude_shorts` filters out videos < 60s (`videoDuration=medium|long`).
 
     Accepts either a single key or a list of keys. On HTTP 403 with quotaExceeded
     the current key is marked exhausted for the rest of the process and the next
     key is tried automatically.
     """
-    since = datetime.now(timezone.utc) - timedelta(days=since_days)
+    if since_dt is not None:
+        since = since_dt
+    else:
+        since = datetime.now(timezone.utc) - timedelta(days=since_days)
     published_after = since.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     keys = [api_key] if isinstance(api_key, str) else list(api_key)
@@ -88,17 +150,22 @@ async def fetch_channel_videos(
 
     try:
         async with httpx.AsyncClient() as client:
+            params = {
+                "part":           "snippet",
+                "channelId":      channel_id,
+                "type":           "video",
+                "order":          "date",
+                "publishedAfter": published_after,
+                "maxResults":     max(1, min(max_results, 50)),
+            }
+            if exclude_shorts:
+                # YouTube API: medium = 4-20min, long = >20min. Shorts (<4min) excluded.
+                # We only drop the <60s definition; "short videos" between 4-20min stay.
+                params["videoDuration"] = "medium"
             r = await _get(
                 client,
                 "https://www.googleapis.com/youtube/v3/search",
-                {
-                    "part":           "snippet",
-                    "channelId":      channel_id,
-                    "type":           "video",
-                    "order":          "date",
-                    "publishedAfter": published_after,
-                    "maxResults":     10,
-                },
+                params,
             )
             if r is None or r.status_code != 200:
                 if r is not None:
@@ -395,61 +462,62 @@ def _vtt_time_to_seconds(time_str: str) -> float:
 
 # ── Groq transcript analysis ──────────────────────────────────────────────────
 
-async def analyze_transcript_with_groq(
-    transcript: list[dict],
+def _chunk_transcript(transcript: list[dict]) -> list[list[dict]]:
+    """Split transcript into _CHUNK_SECONDS-second windows so long videos lose
+    no granularity. Each chunk is analysed by Groq independently."""
+    if not transcript:
+        return []
+    chunks: list[list[dict]] = []
+    current: list[dict] = []
+    chunk_start = transcript[0].get("start", 0)
+    for seg in transcript:
+        if seg.get("start", 0) - chunk_start >= _CHUNK_SECONDS and current:
+            chunks.append(current)
+            current = []
+            chunk_start = seg.get("start", 0)
+        current.append(seg)
+    if current:
+        chunks.append(current)
+    return chunks[:_MAX_CHUNKS_PER_VIDEO]
+
+
+async def _analyse_chunk(
+    chunk: list[dict],
     video_title: str,
     channel_name: str,
     user_entities: list[str],
+    alias_block: str,
 ) -> list[dict]:
-    """
-    Send transcript to Groq for entity relevance analysis.
-
-    Samples up to _MAX_SEGMENTS_SAMPLED segments uniformly across the video,
-    formats as timestamped lines, and asks Groq to identify segments where
-    monitored entities are mentioned and assess their intelligence value.
-
-    Returns list of {entity, start_seconds, end_seconds, summary, importance}.
-    Only medium and high importance clips are returned.
-    """
+    """Analyse a single transcript chunk with Groq."""
     from backend.nlp.groq_client import FAST_MODEL, call_groq
 
-    if not transcript or not user_entities:
+    if not chunk:
         return []
 
-    # Sample transcript uniformly to fit within token budget
-    step = max(1, len(transcript) // _MAX_SEGMENTS_SAMPLED)
-    sampled = transcript[::step][:_MAX_SEGMENTS_SAMPLED]
+    lang  = chunk[0].get("language", "en")
+    lines = [f"[{int(seg['start'])}s] {seg['text'].strip()}" for seg in chunk]
+    transcript_text = "\n".join(lines)[:_MAX_CHUNK_CHARS]
+    entities_str    = ", ".join(user_entities)
 
-    lang = transcript[0].get("language", "en")
-    lines = [f"[{int(seg['start'])}s] {seg['text'].strip()}" for seg in sampled]
-    transcript_text = "\n".join(lines)[:_MAX_TRANSCRIPT_CHARS]
-
-    entities_str = ", ".join(user_entities)
-
-    system = (
-        "You are a political intelligence analyst monitoring Telangana, India — "
-        "government policy, politicians, political parties, and governance schemes. "
-        f"Analyze this YouTube transcript from channel '{channel_name}'. "
-        f"Identify any mentions of these monitored entities: {entities_str}. "
+    system_parts = [
+        "You are a political intelligence analyst.",
+        f"Analyze this YouTube transcript chunk from channel '{channel_name}'.",
+        f"Identify any mentions of these monitored entities: {entities_str}.",
         "For each mention, assess whether it contains actionable intelligence "
-        "(policy announcements, controversies, statements, events). "
-        "\n\nCRITICAL ENTITY DISAMBIGUATION (Telugu/English speakers often abbreviate):\n"
-        "- 'KCR' / 'కేసీఆర్' / 'Chandrashekar Rao' / 'KCR garu' = K. Chandrashekar Rao "
-        "(senior — ex-CM, BRS founder). NEVER label as KTR.\n"
-        "- 'KTR' / 'కేటీఆర్' / 'Tarakarama Rao' / 'Rama Rao' (son) = K.T. Rama Rao "
-        "(working president, son of KCR). NEVER label as KCR.\n"
-        "- 'Revanth' / 'రేవంత్' = A. Revanth Reddy (current CM, Congress). NOT KTR or KCR.\n"
-        "- 'Harish' / 'హరీష్ రావు' = T. Harish Rao (BRS, nephew of KCR).\n"
-        "- 'Uttam' = Uttam Kumar Reddy. 'Jagga Reddy' = T. Jagga Reddy.\n"
-        "Use the EXACT canonical name from the entity list — pick ONLY the person actually "
-        "mentioned in the transcript near the timestamp.\n\n"
-        "Respond ONLY with valid JSON — no explanation, no markdown. "
+        "(policy announcements, controversies, statements, events).",
+    ]
+    if alias_block:
+        system_parts.append(alias_block)
+    system_parts.append(
+        "Use the EXACT canonical name from the entity list — pick ONLY the person "
+        "actually mentioned. Respond ONLY with valid JSON — no markdown. "
         'Schema: {"clips": [{"entity": "exact entity name from list", '
         '"start_seconds": 120, "end_seconds": 150, '
         '"summary": "1-2 sentence English summary of what was said", '
         '"importance": "high|medium|low"}]} '
-        "Omit low importance clips. If nothing relevant, return {\"clips\": []}."
+        'Omit low importance clips. If nothing relevant, return {"clips": []}.'
     )
+    system = "\n\n".join(system_parts)
 
     user_msg = (
         f"Video title: {video_title}\n"
@@ -459,45 +527,83 @@ async def analyze_transcript_with_groq(
 
     try:
         raw = await call_groq(
-            system=system,
-            user=user_msg,
+            system=system, user=user_msg,
             task_type="transcript_analysis",
-            model=FAST_MODEL,
-            json_response=True,
+            model=FAST_MODEL, json_response=True,
         )
-
-        data = json.loads(raw) if isinstance(raw, str) else raw
+        data  = json.loads(raw) if isinstance(raw, str) else raw
         clips = data.get("clips", [])
-
-        # Build case-insensitive lookup to reject hallucinated entities
-        entity_lookup = {e.lower(): e for e in user_entities}
-
-        result = []
-        for c in clips:
-            if not all(k in c for k in ("entity", "start_seconds", "summary")):
-                continue
-            if c.get("importance", "medium") == "low":
-                continue
-            canonical = entity_lookup.get(str(c["entity"]).lower())
-            if not canonical:
-                logger.debug("Rejecting hallucinated entity '%s'", c["entity"])
-                continue
-            start = int(c.get("start_seconds", 0))
-            end   = int(c.get("end_seconds", start + 30))
-            result.append({
-                "entity":        canonical,
-                "start_seconds": start,
-                "end_seconds":   end,
-                "summary":       c["summary"],
-                "importance":    c.get("importance", "medium"),
-            })
-        return result
-
     except Exception:
-        logger.warning(
-            "Groq transcript analysis failed for '%s'", video_title, exc_info=True
-        )
+        logger.warning("Groq chunk analysis failed for '%s'", video_title, exc_info=True)
         return []
+
+    entity_lookup = {e.lower(): e for e in user_entities}
+    out: list[dict] = []
+    for c in clips:
+        if not all(k in c for k in ("entity", "start_seconds", "summary")):
+            continue
+        if c.get("importance", "medium") == "low":
+            continue
+        canonical = entity_lookup.get(str(c["entity"]).lower())
+        if not canonical:
+            logger.debug("Rejecting hallucinated entity '%s'", c["entity"])
+            continue
+        start = int(c.get("start_seconds", 0))
+        end   = int(c.get("end_seconds", start + 30))
+        out.append({
+            "entity":        canonical,
+            "start_seconds": start,
+            "end_seconds":   end,
+            "summary":       c["summary"],
+            "importance":    c.get("importance", "medium"),
+        })
+    return out
+
+
+async def analyze_transcript_with_groq(
+    transcript: list[dict],
+    video_title: str,
+    channel_name: str,
+    user_entities: list[str],
+    alias_block: str = "",
+) -> list[dict]:
+    """
+    Stage 4A — chunked, no sampling. The transcript is split into
+    _CHUNK_SECONDS windows and each is sent to Groq independently. Mentions
+    that fall in any chunk are caught.
+
+    Stage 4B — `alias_block` is the disambiguation prompt loaded from
+    `entity_aliases` (region-aware), passed in by the caller. No more
+    hardcoded Telangana names.
+
+    Returns aggregated clips across all chunks.
+    """
+    if not transcript or not user_entities:
+        return []
+
+    chunks = _chunk_transcript(transcript)
+    if not chunks:
+        return []
+
+    coros = [
+        _analyse_chunk(chunk, video_title, channel_name, user_entities, alias_block)
+        for chunk in chunks
+    ]
+    results = await asyncio.gather(*coros, return_exceptions=True)
+
+    out: list[dict] = []
+    for r in results:
+        if isinstance(r, list):
+            out.extend(r)
+    # Deduplicate clips that fall within 5 s of an existing one for the same entity.
+    out.sort(key=lambda c: (c["entity"], c["start_seconds"]))
+    deduped: list[dict] = []
+    for c in out:
+        if deduped and deduped[-1]["entity"] == c["entity"] \
+           and abs(c["start_seconds"] - deduped[-1]["start_seconds"]) <= 5:
+            continue
+        deduped.append(c)
+    return deduped
 
 
 async def analyze_video_metadata_with_groq(
@@ -505,6 +611,7 @@ async def analyze_video_metadata_with_groq(
     description: str,
     channel_name: str,
     user_entities: list[str],
+    alias_block: str = "",
 ) -> list[dict]:
     """
     Fallback when transcript is unavailable (IP block, no captions).
@@ -521,23 +628,23 @@ async def analyze_video_metadata_with_groq(
     content = f"Title: {video_title}\nDescription: {description[:2000]}"
     entities_str = ", ".join(user_entities)
 
-    system = (
-        "You are a political intelligence analyst monitoring Telangana, India. "
-        f"Check if this YouTube video from '{channel_name}' is about any of these entities: {entities_str}. "
+    system_parts = [
+        "You are a political intelligence analyst.",
+        f"Check if this YouTube video from '{channel_name}' is about any of these entities: {entities_str}.",
         "Flag videos where the entity appears in the title OR is a substantive topic in the description. "
-        "Titles in Telugu/Hindi count too — translate mentally. "
-        "\n\nCRITICAL DISAMBIGUATION:\n"
-        "- 'KCR' / 'కేసీఆర్' / 'Chandrashekar Rao' = K. Chandrashekar Rao (ex-CM, BRS founder). NOT KTR.\n"
-        "- 'KTR' / 'కేటీఆర్' / 'Rama Rao' (KCR's son) = K.T. Rama Rao (BRS working president). NOT KCR.\n"
-        "- 'Revanth' / 'రేవంత్' = A. Revanth Reddy (current CM, Congress).\n"
-        "- 'Harish' / 'హరీష్' = T. Harish Rao.\n"
-        "Pick the EXACT canonical name of the person the title/description is actually about.\n\n"
+        "Titles in Telugu/Hindi count too — translate mentally.",
+    ]
+    if alias_block:
+        system_parts.append(alias_block)
+    system_parts.append(
+        "Pick the EXACT canonical name of the person the title/description is actually about. "
         "Respond ONLY with valid JSON. "
         'Schema: {"clips": [{"entity": "exact entity name from my list", "start_seconds": 0, "end_seconds": 30, '
         '"summary": "1-2 sentence English summary of what the video covers about this entity", '
         '"importance": "high|medium|low"}]} '
         'If no relevant entity, return {"clips": []}.'
     )
+    system = "\n\n".join(system_parts)
 
     try:
         raw = await call_groq(
@@ -572,6 +679,91 @@ async def analyze_video_metadata_with_groq(
     except Exception:
         logger.warning("Groq metadata analysis failed for '%s'", video_title, exc_info=True)
         return []
+
+
+# ── Stage 3 — Whisper fallback (free on our 16-key Groq pool) ────────────────
+
+async def _fetch_transcript_via_whisper(video_id: str) -> list[dict] | None:
+    """
+    Last-resort transcript path: download the audio with yt-dlp and transcribe
+    via Groq Whisper. Cheap on our Groq key pool, IP-block-immune (audio is
+    streamed via the same proxy as yt-dlp).
+
+    Returns segmented transcript ({text, start, duration, language}) or None.
+    """
+    try:
+        import tempfile
+
+        import yt_dlp
+
+        url = f"https://www.youtube.com/watch?v={video_id}"
+        cookies_path = _get_cookies_path()
+        proxy_url    = _get_proxy_url()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # NOTE: yt-dlp format selector. YouTube increasingly DASH-muxes
+            # audio so a strict m4a-only selector matches nothing on many
+            # videos. Fall through: prefer m4a → any audio-only stream → any
+            # stream that has audio. Last fallback ensures we never end up
+            # with "Requested format is not available" silently killing the
+            # Whisper pipeline (P1-NEW-A in clips audit 2026-04-28).
+            audio_path = os.path.join(tmpdir, f"{video_id}.m4a")
+            ydl_opts: dict = {
+                "format":      "bestaudio[ext=m4a]/bestaudio/best[acodec!=none]/best",
+                "outtmpl":     audio_path,
+                "quiet":       True,
+                "no_warnings": True,
+                # don't waste bandwidth on huge debates
+                "match_filter": yt_dlp.utils.match_filter_func(f"duration <= {_WHISPER_MAX_DURATION_S}"),
+            }
+            if cookies_path:
+                ydl_opts["cookiefile"] = cookies_path
+            if proxy_url:
+                ydl_opts["proxy"] = proxy_url
+
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    await asyncio.to_thread(ydl.download, [url])
+            except Exception as exc:
+                # Promoted DEBUG → WARNING so silent failures stop hiding.
+                logger.warning(
+                    "Whisper: yt-dlp audio download failed for %s: %s",
+                    video_id, exc,
+                )
+                return None
+
+            if not os.path.exists(audio_path):
+                logger.warning(
+                    "Whisper: yt-dlp produced no audio file for %s", video_id
+                )
+                return None
+            audio_size = os.path.getsize(audio_path)
+            if audio_size < 1024:
+                logger.warning(
+                    "Whisper: audio file for %s too small (%d bytes)",
+                    video_id, audio_size,
+                )
+                return None
+
+            from backend.nlp.groq_client import transcribe_audio_with_whisper
+
+            try:
+                segments = await transcribe_audio_with_whisper(audio_path)
+            except Exception:
+                logger.warning("Whisper transcription failed for %s", video_id, exc_info=True)
+                return None
+
+            if not segments:
+                logger.warning(
+                    "Whisper returned 0 segments for %s", video_id
+                )
+                return None
+            logger.info("Whisper transcribed %s (%d segments)", video_id, len(segments))
+            return segments
+    except Exception:
+        # Promoted DEBUG → WARNING — outer catch must surface to operators.
+        logger.warning("Whisper fallback errored for %s", video_id, exc_info=True)
+        return None
 
 
 def get_transcript_text_at(
@@ -616,13 +808,24 @@ async def process_video(
         logger.debug("Video %s already processed — skipping", video_id)
         return 0
 
+    # Stage 4B — load region-aware disambiguation rules from DB.
+    alias_block = await load_alias_rules(db, region="telangana")
+
     transcript = await fetch_transcript(video_id)
+    transcript_source = "captions" if transcript else None
 
     # If youtube-transcript-api failed (IP block / no captions), try yt-dlp fallback
     if not transcript:
         transcript = await _fetch_transcript_ytdlp(video_id)
         if transcript:
+            transcript_source = "yt_dlp"
             logger.info("yt-dlp transcript fetched for %s (%d segs)", video_id, len(transcript))
+
+    # Stage 3 — Whisper fallback before giving up to metadata-only.
+    if not transcript:
+        transcript = await _fetch_transcript_via_whisper(video_id)
+        if transcript:
+            transcript_source = "whisper"
 
     if transcript:
         clips_from_groq = await analyze_transcript_with_groq(
@@ -630,16 +833,19 @@ async def process_video(
             video_title=video["title"],
             channel_name=video["channel_name"],
             user_entities=user_entities,
+            alias_block=alias_block,
         )
         lang = transcript[0].get("language", "en")
     else:
         # Transcript unavailable (IP block, no captions) — fall back to title+description
+        transcript_source = "metadata"
         logger.info("No transcript for %s — using metadata analysis", video_id)
         clips_from_groq = await analyze_video_metadata_with_groq(
             video_title=video["title"],
             description=video.get("description", ""),
             channel_name=video["channel_name"],
             user_entities=user_entities,
+            alias_block=alias_block,
         )
         lang = "en"
 
@@ -650,24 +856,47 @@ async def process_video(
 
     for clip_info in clips_from_groq:
         mention_time     = clip_info["start_seconds"]
+        groq_end         = clip_info.get("end_seconds", mention_time + 30)
         metadata_only    = clip_info.get("metadata_only", False)
-        clip_start       = max(0, mention_time - _CLIP_BEFORE)
-        clip_end         = mention_time + _CLIP_AFTER
 
         if metadata_only:
-            # No transcript: link to full video (no start/end params)
+            # No real timestamp — keep DB columns and embed_url consistent
+            # by zeroing both. Frontend can detect (start == end == 0) and
+            # treat as "play full video" (P1-2 in clips audit 2026-04-28).
+            clip_start = 0
+            clip_end   = 0
             embed_url = (
                 f"https://www.youtube.com/embed/{video_id}"
                 f"?autoplay=0&rel=0&modestbranding=1"
             )
         else:
+            # Use Groq's end_seconds (it knows how long the relevant segment
+            # is), add a small lead-in for context, clamp to a sane range.
+            clip_start = max(0, mention_time - _CLIP_LEAD_IN)
+            raw_window = max(_CLIP_MIN_WINDOW, int(groq_end) - mention_time + _CLIP_LEAD_IN)
+            clip_end   = clip_start + min(raw_window, _CLIP_MAX_WINDOW)
             embed_url = (
                 f"https://www.youtube.com/embed/{video_id}"
                 f"?start={clip_start}&end={clip_end}"
                 f"&autoplay=0&rel=0&modestbranding=1"
             )
 
-        original_text   = get_transcript_text_at(transcript, mention_time) if transcript else ""
+        original_text = (
+            get_transcript_text_at(transcript, mention_time)
+            if transcript else ""
+        )
+        # P1-3 fix: if the window-extract returned empty (e.g. mention_time
+        # outside the available transcript span) but a transcript exists,
+        # fall back to the first relevant chunk so the card preview is
+        # never blank. For metadata-only paths, fall back to the video
+        # description excerpt where available.
+        if not original_text:
+            if transcript:
+                joined = " ".join(seg.get("text", "") for seg in transcript[:5])
+                original_text = joined.strip()[:500]
+            else:
+                desc = (video.get("description") or "").strip()
+                original_text = desc[:500]
         english_summary = clip_info["summary"]
 
         embedding: list[float] | None = None
@@ -691,23 +920,36 @@ async def process_video(
             except ValueError:
                 published_dt = None
 
+        # Confidence reflects how trustworthy the timestamp is.
+        # Captions/yt-dlp/Whisper = real timestamp; metadata-only = full-video link.
+        source_confidence = {
+            "captions": 0.95,
+            "whisper":  0.85,
+            "yt_dlp":   0.85,
+            "metadata": 0.30,
+        }.get(transcript_source or "metadata", 0.6)
+
+        importance_score = {"high": 0.9, "medium": 0.6, "low": 0.3}.get(
+            clip_info.get("importance", "medium"), 0.6
+        )
+
         params = {
-            "video_id":     video_id,
-            "title":        video["title"],
-            "channel_id":   channel_id,
-            "channel_name": video["channel_name"],
-            "published_at": published_dt,
-            "video_url":    f"https://youtube.com/watch?v={video_id}",
-            "start_secs":   clip_start,
-            "end_secs":     clip_end,
-            "embed_url":    embed_url,
-            "transcript":   original_text,
-            "lang":         lang,
-            "translated":   english_summary,
-            "entity":       clip_info["entity"],
-            "relevance":    {"high": 0.9, "medium": 0.6, "low": 0.3}.get(
-                clip_info.get("importance", "medium"), 0.6
-            ),
+            "video_id":          video_id,
+            "title":             video["title"],
+            "channel_id":        channel_id,
+            "channel_name":      video["channel_name"],
+            "published_at":      published_dt,
+            "video_url":         f"https://youtube.com/watch?v={video_id}",
+            "start_secs":        clip_start,
+            "end_secs":          clip_end,
+            "embed_url":         embed_url,
+            "transcript":        original_text,
+            "lang":              lang,
+            "translated":        english_summary,
+            "entity":            clip_info["entity"],
+            "relevance":         importance_score,
+            "transcript_source": transcript_source or "metadata",
+            "confidence":        source_confidence * importance_score,
         }
         if embedding:
             params["embedding"] = str(embedding)
@@ -721,13 +963,15 @@ async def process_video(
                         video_published_at, video_url,
                         clip_start_seconds, clip_end_seconds, embed_url,
                         transcript_segment, transcript_language, transcript_translated,
-                        matched_entity, labse_embedding, relevance_score, processed
+                        matched_entity, labse_embedding, relevance_score, processed,
+                        transcript_source, confidence
                     ) VALUES (
                         :video_id, :title, :channel_id, :channel_name,
                         :published_at, :video_url,
                         :start_secs, :end_secs, :embed_url,
                         :transcript, :lang, :translated,
-                        :entity, {embedding_literal}, :relevance, TRUE
+                        :entity, {embedding_literal}, :relevance, TRUE,
+                        :transcript_source, :confidence
                     )
                     ON CONFLICT (video_id, clip_start_seconds, matched_entity)
                     DO NOTHING

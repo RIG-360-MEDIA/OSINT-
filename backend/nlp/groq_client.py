@@ -90,7 +90,21 @@ class GroqKeyManager:
 
         self.keys: list[str] = keys
         self._index: int = 0
-        self._exhausted: set[int] = set()
+        # Keys rate-limited by a 429: maps key_index -> unix-ts when the
+        # cooldown ends. A key is "available" iff (i not in _exhausted_until)
+        # or (_exhausted_until[i] <= now). The Celery beat task at 00:05 UTC
+        # still calls reset_exhausted() to clear the whole map at the day
+        # boundary (Groq's daily TPD/RPD limits reset there); per-key
+        # cooldowns handle short-lived RPM/TPM 429s in between so the pool
+        # doesn't get permanently stuck after a burst.
+        self._exhausted_until: dict[int, float] = {}
+        # Cooldown matches Groq's actual rate-limit window (TPM/RPM is a
+        # 60-second rolling window) plus a small buffer. The original 5-minute
+        # cooldown was too conservative — a key that 429'd at second 0 is
+        # actually retryable at second 60, but the longer cooldown locked
+        # out the whole pool when many keys were hit by a burst. The Celery
+        # beat task at 00:05 UTC still resets the daily TPD/RPD counters.
+        self._cooldown_seconds: float = 75.0
         self._clients: dict[int, "groq_sdk.AsyncGroq"] = {}
         self._lock: asyncio.Lock | None = None
 
@@ -123,15 +137,31 @@ class GroqKeyManager:
 
         Raises GroqQuotaExhausted if all keys are exhausted or no keys exist.
         """
+        import time as _time
         async with self._get_lock():
+            now = _time.time()
+            # Lazily evict any keys whose cooldown has elapsed.
+            recovered = [i for i, until in self._exhausted_until.items() if until <= now]
+            for i in recovered:
+                del self._exhausted_until[i]
+            if recovered:
+                logger.info(
+                    "Groq key cooldown elapsed for %d key(s); restored.",
+                    len(recovered),
+                )
+
             available = [
                 i for i in range(len(self.keys))
-                if i not in self._exhausted
+                if i not in self._exhausted_until
             ]
             if not available:
+                # Nearest cooldown end — useful for the error message.
+                soonest = min(self._exhausted_until.values()) if self._exhausted_until else 0
+                eta = max(0, int(soonest - now))
                 raise GroqQuotaExhausted(
                     f"All {len(self.keys)} Groq key(s) exhausted. "
-                    "Resets at 00:05 UTC."
+                    f"Earliest key recovers in ~{eta}s "
+                    f"(daily reset at 00:05 UTC)."
                 )
             # Round-robin within available indices
             position = self._index % len(available)
@@ -140,16 +170,42 @@ class GroqKeyManager:
             return idx, self._get_client(idx)
 
     async def mark_exhausted(self, key_index: int) -> None:
-        """Mark a key as rate-limited. Logs at WARNING — always visible in docker logs."""
+        """
+        Mark a key as rate-limited for the default `_cooldown_seconds` (75s).
+        Use `mark_exhausted_for` to set an explicit cooldown — needed when a
+        per-day limit fires and a much longer hold is appropriate.
+        """
+        await self.mark_exhausted_for(key_index, self._cooldown_seconds)
+
+    async def mark_exhausted_for(self, key_index: int, seconds: float) -> None:
+        """
+        Mark a key as rate-limited for an explicit number of seconds. The
+        key is auto-restored on the next `get_key` call after the cooldown
+        elapses. Used by call_groq to distinguish per-minute (TPM, ~60s) from
+        per-day (TPD, hours) Groq limits.
+
+        When the *last* available key is marked exhausted, emit a CRITICAL
+        log — single high-signal pattern that monitoring should alert on.
+        (Coverage audit C-12, 2026-04-28.)
+        """
+        import time as _time
         async with self._get_lock():
-            self._exhausted.add(key_index)
-            remaining = len(self.keys) - len(self._exhausted)
+            self._exhausted_until[key_index] = _time.time() + seconds
+            remaining = len(self.keys) - len(self._exhausted_until)
             logger.warning(
-                "Groq key [%d] rate limited. %d/%d key(s) remaining.",
+                "Groq key [%d] rate limited; cooldown %.0fs. %d/%d key(s) remaining.",
                 key_index,
+                seconds,
                 remaining,
                 len(self.keys),
             )
+            if remaining == 0:
+                logger.critical(
+                    "GROQ_POOL_EXHAUSTED: all %d key(s) exhausted. "
+                    "Pipeline will stall until earliest cooldown elapses or "
+                    "the daily reset task runs at 00:05 UTC.",
+                    len(self.keys),
+                )
 
     def reset_exhausted(self) -> None:
         """
@@ -157,8 +213,8 @@ class GroqKeyManager:
         Called by Celery Beat task at 00:05 UTC daily.
         Synchronous — safe to call from a Celery task without an event loop.
         """
-        count = len(self._exhausted)
-        self._exhausted.clear()
+        count = len(self._exhausted_until)
+        self._exhausted_until.clear()
         self._index = 0
         logger.info(
             "Groq key pool reset. %d exhausted key(s) restored. %d key(s) available.",
@@ -171,8 +227,8 @@ class GroqKeyManager:
         """For debug dashboard — shows current pool health."""
         return {
             "total_keys": len(self.keys),
-            "exhausted_keys": len(self._exhausted),
-            "available_keys": len(self.keys) - len(self._exhausted),
+            "exhausted_keys": len(self._exhausted_until),
+            "available_keys": len(self.keys) - len(self._exhausted_until),
             "current_index": self._index,
         }
 
@@ -228,8 +284,13 @@ async def call_groq(
         {"role": "user", "content": user},
     ]
 
-    # Try every available key before giving up
-    attempts = max(len(groq_manager.keys), 1)
+    # Cap internal key-rotation retries. The previous policy of trying every
+    # key (up to 16) meant ONE oversize / TPD-exhausted call could burn the
+    # entire pool in seconds, leaving every later call with nothing. With a
+    # cap of 3 the worst-case blast radius is 3 keys per failing call, which
+    # leaves plenty of pool for concurrent sections to succeed and for the
+    # caller's higher-level retry logic to recover.
+    attempts = min(len(groq_manager.keys), 3)
 
     for attempt in range(attempts):
         key_idx, client = await groq_manager.get_key()
@@ -247,13 +308,26 @@ async def call_groq(
             response = await client.chat.completions.create(**kwargs)
             return response.choices[0].message.content.strip()
 
-        except groq_sdk.RateLimitError:
-            await groq_manager.mark_exhausted(key_idx)
+        except groq_sdk.RateLimitError as exc:
+            # Groq returns 429 for both per-minute (TPM/RPM) and per-day
+            # (TPD/RPD) limits. TPM rolls over in 60s; TPD takes until the
+            # daily reset at 00:00 UTC. Holding TPD-exhausted keys back for
+            # 75s is too short — the retry will hit the same TPD wall.
+            # Conversely TPM doesn't deserve a long cooldown. Parse the
+            # message to pick the right cooldown.
+            err_text = str(exc).lower()
+            if "tokens per day" in err_text or "tpd" in err_text or \
+               "requests per day" in err_text or "rpd" in err_text:
+                # Daily quota exhausted — hold key out until midnight UTC.
+                # Use a generously long cooldown so retries don't waste budget.
+                await groq_manager.mark_exhausted_for(key_idx, 4 * 3600)
+            else:
+                # Per-minute limit; the rolling 60s window will clear soon.
+                await groq_manager.mark_exhausted(key_idx)
             if attempt == attempts - 1:
                 raise GroqQuotaExhausted(
-                    "All retry attempts exhausted due to rate limiting."
+                    "Retry attempts exhausted due to rate limiting."
                 )
-            # Try next available key
             continue
 
         except groq_sdk.APIConnectionError:
@@ -289,12 +363,22 @@ async def classify(system: str, user: str) -> str:
 
 
 async def translate(text: str, target_language: str = "English") -> str:
-    """Translate text to the target language, preserving proper nouns."""
+    """Translate text to the target language. Hard ban on transliteration."""
     return await call_groq(
         system=(
-            f"Translate the following text to {target_language}. "
-            "Preserve all proper nouns exactly. "
-            "Output only the translated text, nothing else."
+            f"You are a professional translator. Translate the user's text "
+            f"into natural, fluent {target_language}. CRITICAL RULES:\n"
+            "1. Translate the MEANING — never transliterate. For Telugu "
+            "'మృతదేహం' output 'dead body', NOT 'mrutadeham'.\n"
+            "2. Do NOT echo the source language back — every word in your "
+            f"output must be {target_language}.\n"
+            "3. Render proper nouns in their common Roman/English spelling "
+            "(KCR, Hyderabad, Revanth Reddy, BJP, Modi).\n"
+            "4. Output ONLY the translated text — no quotes, no notes, no "
+            "source script, no romanisation.\n\n"
+            "Example:\n"
+            f"  Input  (Telugu): దొంగల ముఠా అరెస్టు\n"
+            f"  Output ({target_language}): Gang of thieves arrested"
         ),
         user=text[:2000],
         task_type="translation",
@@ -306,13 +390,19 @@ async def generate(
     system: str,
     user: str,
     task_type: str = "brief_generation",
+    model: str | None = None,
 ) -> str:
-    """Quality generation call using QUALITY_MODEL."""
+    """
+    Quality generation call. Defaults to QUALITY_MODEL (llama-3.3-70b);
+    callers can override via `model=` to route a specific call to the fast
+    model (llama-3.1-8b-instant) when its much-higher TPM ceiling matters
+    more than the bigger model's reasoning depth.
+    """
     return await call_groq(
         system=system,
         user=user,
         task_type=task_type,
-        model=QUALITY_MODEL,
+        model=model or QUALITY_MODEL,
     )
 
 

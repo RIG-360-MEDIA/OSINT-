@@ -132,6 +132,34 @@
   --rig-overlay:     rgba(26,19,12,0.06);
   --rig-overlay-2:   rgba(26,19,12,0.03);
 
+  /* ── Pillar palette (parchment) ────────────────────────────────────────
+     Used by Brief / Monitor / Cards components to colour-code the five
+     evidence pillars. Stays close to RIG's editorial palette so the
+     identity tracks. Fully overridden in [data-theme='night'] below. */
+  --rig-pillar-article-fg:     #1A130C;
+  --rig-pillar-article-bg:     rgba(26,19,12,0.07);
+  --rig-pillar-article-accent: #1A130C;
+  --rig-pillar-govt-fg:        #7A1F1F;
+  --rig-pillar-govt-bg:        rgba(122,31,31,0.08);
+  --rig-pillar-govt-accent:    #7A1F1F;
+  --rig-pillar-paper-fg:       #7A5A2E;
+  --rig-pillar-paper-bg:       rgba(122,90,46,0.08);
+  --rig-pillar-paper-accent:   #7A5A2E;
+  --rig-pillar-social-fg:      #1F5A7A;
+  --rig-pillar-social-bg:      rgba(31,90,122,0.08);
+  --rig-pillar-social-accent:  #1F5A7A;
+  --rig-pillar-video-fg:       #5A2E7A;
+  --rig-pillar-video-bg:       rgba(90,46,122,0.08);
+  --rig-pillar-video-accent:   #5A2E7A;
+
+  /* Editorial-card surface — distinct elevation cue without breaking the
+     parchment palette. Brief Wizard's evidence cards use this. */
+  --rig-card:                  #FFFFFF;
+  --rig-card-border:           rgba(26,19,12,0.10);
+
+  /* Pillar link colour — brief evidence "Open post / Watch from ..." */
+  --rig-link:                  #1F5A7A;
+
   --rig-grain-op:    0.32;
   --rig-grain-blend: multiply;
 
@@ -163,6 +191,33 @@
 
   --rig-overlay:     rgba(212,160,84,0.05);
   --rig-overlay-2:   rgba(212,160,84,0.02);
+
+  /* ── Pillar palette (night) ───────────────────────────────────────────
+     Brighter, desaturated cousins of the parchment pillar colours so
+     they remain legible on the near-black --rig-paper background. */
+  --rig-pillar-article-fg:     #F5EAD3;
+  --rig-pillar-article-bg:     rgba(245,234,211,0.10);
+  --rig-pillar-article-accent: #D4A054;
+  --rig-pillar-govt-fg:        #E89B8E;
+  --rig-pillar-govt-bg:        rgba(232,155,142,0.12);
+  --rig-pillar-govt-accent:    #B8635A;
+  --rig-pillar-paper-fg:       #E8C77E;
+  --rig-pillar-paper-bg:       rgba(232,199,126,0.12);
+  --rig-pillar-paper-accent:   #C99848;
+  --rig-pillar-social-fg:      #87C3E0;
+  --rig-pillar-social-bg:      rgba(135,195,224,0.12);
+  --rig-pillar-social-accent:  #5A9BB8;
+  --rig-pillar-video-fg:       #C99CE0;
+  --rig-pillar-video-bg:       rgba(201,156,224,0.12);
+  --rig-pillar-video-accent:   #9268B8;
+
+  /* Cards in night sit one step above --rig-paper for elevation without
+     becoming a blinding white block. */
+  --rig-card:                  #14100C;
+  --rig-card-border:           rgba(212,160,84,0.18);
+
+  /* Pillar link — same hue as social pillar but bumped for legibility. */
+  --rig-link:                  #87C3E0;
 
   --rig-grain-op:    0.55;
   --rig-grain-blend: overlay;
@@ -565,3 +620,18 @@ body::before {
 
 /* Selection */
 ::selection { background: var(--rig-gold); color: var(--rig-paper); }
+
+/* ── Topbar responsive helpers ───────────────────────────────────────────
+   Hide low-priority chips at narrower viewports so the high-signal ones
+   (escalating, brief-ready) and the nav links never overlap. Hide the
+   horizontal scrollbar on the nav element — scroll still works, it just
+   doesn't show a chrome bar. */
+.rig-chip-mq-mid  { display: inline-flex; }
+.rig-chip-mq-wide { display: inline-flex; }
+@media (max-width: 1500px) {
+  .rig-chip-mq-wide { display: none; }
+}
+@media (max-width: 1280px) {
+  .rig-chip-mq-mid  { display: none; }
+}
+header > nav::-webkit-scrollbar { display: none; }

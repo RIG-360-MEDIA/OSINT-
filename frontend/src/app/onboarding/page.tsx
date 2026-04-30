@@ -67,7 +67,7 @@ function Wordmark() {
           lineHeight: 1,
           color:      'var(--rig-ink)',
           marginTop:  '2px',
-        }}>The Surveillance</div>
+        }}>OSINT</div>
       </div>
     </div>
   )

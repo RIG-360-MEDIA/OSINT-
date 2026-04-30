@@ -9,7 +9,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user, require_page
+from backend.auth.auth_middleware import get_current_principal, get_current_user, require_page
 from backend.database import get_db
 
 
@@ -37,7 +37,7 @@ thread_router = APIRouter(
 async def get_threads(
     include_fading: bool = Query(default=True),
     limit: int = Query(default=50, le=100),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """
     Get all active story threads as force-graph nodes + edges.
@@ -149,7 +149,7 @@ async def get_threads(
 @thread_router.get("/{thread_id}")
 async def get_thread_detail(
     thread_id: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """Get thread detail with up to 50 most recent articles."""
     async with get_db() as db:
@@ -230,7 +230,7 @@ async def get_thread_detail(
 @thread_router.post("/{thread_id}/investigate")
 async def investigate_thread(
     thread_id: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """
     Pre-load thread into RAG Analyst.

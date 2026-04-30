@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user
+from backend.auth.auth_middleware import get_current_principal, get_current_user
 from backend.database import get_db
 from backend.nlp.groq_client import FAST_MODEL, call_groq, extract_json
 from backend.rate_limiter import rate_limit
@@ -159,7 +159,7 @@ async def get_questions() -> dict:
 )
 async def extract_profile(
     req: ExtractRequest,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """
     Extract profile data from one answer. Merges with previous_profile.
@@ -226,7 +226,7 @@ async def extract_profile(
 @onboarding_router.post("/confirm")
 async def confirm_profile(
     req: ConfirmRequest,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """
     Save confirmed profile to database. Creates user_profiles and user_entities rows.
@@ -456,7 +456,7 @@ async def confirm_profile(
 
 @onboarding_router.get("/status")
 async def onboarding_status(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """Check if user has completed onboarding."""
     async with get_db() as db:

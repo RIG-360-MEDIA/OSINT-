@@ -24,12 +24,12 @@ function CompassGlyph() {
 
 function Wordmark() {
   return (
-    <Link href="/" className={styles.brand} aria-label="Rig Surveillance">
+    <Link href="/" className={styles.brand} aria-label="Robin OSINT">
       <span className={styles.brandOrnament} aria-hidden="true">
         <CompassGlyph />
       </span>
-      <span className={styles.brandRig}>Rig</span>
-      <span className={styles.brandSurveillance}>Surveillance</span>
+      <span className={styles.brandRig}>Robin</span>
+      <span className={styles.brandSurveillance}>OSINT</span>
       <span className={styles.brandTerminal}>.</span>
     </Link>
   )

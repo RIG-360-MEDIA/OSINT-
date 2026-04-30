@@ -18,7 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user
+from backend.auth.auth_middleware import get_current_principal, get_current_user
 from backend.database import get_db
 from backend.dossier import audit
 from backend.dossier.models import (
@@ -40,7 +40,7 @@ _SENSITIVE_TYPES = {"image"}
 async def run(
     req: DossierRunRequest,
     background: BackgroundTasks,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> DossierOut:
     user_id = user["id"]
 
@@ -98,7 +98,7 @@ async def run(
 
 @dossier_router.get("/", response_model=list[DossierListItem])
 async def list_dossiers(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
     limit: int = 50,
 ) -> list[DossierListItem]:
     user_id = user["id"]
@@ -131,7 +131,7 @@ async def list_dossiers(
 @dossier_router.get("/{dossier_id}", response_model=DossierOut)
 async def get_dossier(
     dossier_id: UUID,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> DossierOut:
     user_id = user["id"]
     async with get_db() as db:
@@ -171,7 +171,7 @@ async def get_dossier(
 async def refresh_dossier(
     dossier_id: UUID,
     background: BackgroundTasks,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> DossierOut:
     user_id = user["id"]
     async with get_db() as db:

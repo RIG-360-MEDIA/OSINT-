@@ -13,7 +13,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user, require_page
+from backend.auth.auth_middleware import get_current_principal, get_current_user, require_page
 from backend.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ async def get_signals_feed(
     days: int = Query(default=3, ge=1, le=30),
     limit: int = Query(default=30, ge=1, le=100),
     cursor: str = Query(default=""),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """
     Unified social signal feed.
@@ -184,7 +184,7 @@ async def get_signals_feed(
 @signals_router.get("/sentiment")
 async def get_sentiment_summary(
     days: int = Query(default=7, ge=1, le=60),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """Per-monitor sentiment aggregation over the last N days."""
     async with get_db() as db:
@@ -236,7 +236,7 @@ async def get_sentiment_summary(
 
 @signals_router.get("/monitors")
 async def get_monitors(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """List every monitor with its current post count.
 
@@ -291,7 +291,7 @@ async def get_monitors(
 @signals_router.get("/briefing")
 async def get_signals_briefing(
     limit: int = Query(default=12, ge=1, le=30),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """Top auto-clustered "stories" for the front-page briefing.
 
@@ -358,7 +358,7 @@ async def get_signals_briefing(
 @signals_router.get("/timeline")
 async def get_signals_timeline(
     hours: int = Query(default=24, ge=1, le=72),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """Hourly volume + sentiment buckets for the timeline strip.
 
@@ -412,7 +412,7 @@ async def get_uncategorised(
     hours: int = Query(default=36, ge=1, le=72),
     limit: int = Query(default=40, ge=1, le=100),
     cursor: str = Query(default=""),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """Posts in the window that are NOT in any cluster — "solo dispatches".
 
@@ -513,7 +513,7 @@ async def get_uncategorised(
 @signals_router.get("/cluster/{cluster_id}/posts")
 async def get_cluster_posts(
     cluster_id: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """Drilldown — every post in a cluster (translated where available)."""
     _require_uuid(cluster_id, "cluster_id")
@@ -590,7 +590,7 @@ async def get_cluster_posts(
 
 @signals_router.get("/summary/latest")
 async def get_latest_summary(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """Return the most recent composed daily summary."""
     async with get_db() as db:
@@ -627,7 +627,7 @@ async def get_latest_summary(
 @signals_router.get("/summary/editions")
 async def get_summary_editions(
     limit: int = Query(default=20, ge=1, le=100),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """List past editions for the navigation rail."""
     async with get_db() as db:
@@ -662,7 +662,7 @@ async def get_summary_editions(
 @signals_router.get("/summary/{summary_id}")
 async def get_summary_by_id(
     summary_id: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """Fetch a specific past edition."""
     _require_uuid(summary_id, "summary_id")
@@ -701,7 +701,7 @@ async def get_summary_by_id(
 async def get_topic(
     kind: str,
     key: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """Drilldown: posts for an entity / cluster / subject.
 
@@ -840,7 +840,7 @@ async def get_topic(
 
 @signals_router.get("/seeds")
 async def get_seeds(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict[str, Any]:
     """Return the geo + topic seed lists (for the seeds editor UI)."""
     async with get_db() as db:

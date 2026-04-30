@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user, require_page
+from backend.auth.auth_middleware import get_current_principal, get_current_user, require_page
 from backend.collectors.newspaper_collector import (
     get_pdf_url_from_careerswave,
 )
@@ -74,7 +74,7 @@ async def get_clippings_feed(
     days: int = Query(default=7),
     limit: int = Query(default=20, ge=1, le=200),
     cursor: str = Query(default=""),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ):
     """Return recent relevant clippings grouped-ready for display.
 
@@ -213,7 +213,7 @@ async def get_clippings_feed(
 @clippings_router.get("/papers")
 async def list_active_papers(
     days: int = Query(default=7, ge=1, le=30),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ):
     """
     List newspapers visible on the Newsstand. A paper appears if EITHER:
@@ -291,7 +291,7 @@ async def list_active_papers(
 @clippings_router.get("/{clipping_id}/image")
 async def get_clipping_image(
     clipping_id: UUID,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ):
     """Return the base64 PNG of the rendered clipping.
 
@@ -333,7 +333,7 @@ async def get_clipping_image(
 @clippings_router.get("/{clipping_id}/full")
 async def get_clipping_full(
     clipping_id: UUID,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ):
     """Return full clipping text (original + translated).
 
@@ -454,7 +454,7 @@ async def _resolve_edition_pdf_url(
 async def stream_edition_pdf(
     newspaper_id: UUID,
     date_str: str = Query(default="", alias="date"),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ):
     """Stream the requested newspaper edition PDF (re-fetched on demand)."""
     if date_str:

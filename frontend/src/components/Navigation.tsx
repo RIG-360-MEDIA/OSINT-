@@ -99,7 +99,7 @@ export default function Navigation() {
       {/* ── Wordmark ────────────────────────────────────────────── */}
       <Link
         href="/brief"
-        aria-label="Rig Surveillance"
+        aria-label="Robin OSINT"
         style={{
           display: 'inline-flex',
           alignItems: 'baseline',
@@ -121,7 +121,7 @@ export default function Navigation() {
             letterSpacing: '0.002em',
           }}
         >
-          <span style={{ fontWeight: 600, color: 'var(--rig-ink)' }}>Rig</span>
+          <span style={{ fontWeight: 600, color: 'var(--rig-ink)' }}>Robin</span>
           <span style={{ fontWeight: 500, color: 'var(--rig-gold)' }}> Surveillance</span>
           <span style={{ color: 'var(--rig-gold)' }}>.</span>
         </span>

@@ -1,10 +1,16 @@
+// Production deployment override - render every page on demand.
+// Required because pages like /brief call backend with auth context that
+// is not available at build time. Set in root layout so it propagates to
+// every child route. See infrastructure/DEPLOYMENT_NOTES.md.
+export const dynamic = "force-dynamic"
+
 import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider, themeBootstrapScript } from '@/components/theme/ThemeProvider'
 import { ImpersonationBanner } from '@/components/ImpersonationBanner'
 
 export const metadata: Metadata = {
-  title: 'Rig Surveillance',
+  title: 'Robin OSINT',
   description: 'A reading room of one — filed by morning.',
 }
 

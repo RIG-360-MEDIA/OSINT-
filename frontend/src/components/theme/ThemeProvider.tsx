@@ -2,7 +2,12 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
-export type Theme = 'parchment' | 'night'
+export type Theme = 'parchment' | 'light' | 'night'
+
+// Cycle order for the toggle button: default `light` → `night` → `parchment` → `light`.
+// Light is the default; the first click flips to dark (the binary most users
+// expect); the second click reveals the brand `parchment` reading-room theme.
+const THEME_CYCLE: readonly Theme[] = ['light', 'night', 'parchment'] as const
 
 interface ThemeContextValue {
   theme: Theme
@@ -13,12 +18,12 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 const STORAGE_KEY = 'rig-theme'
-const DEFAULT_THEME: Theme = 'parchment'
+const DEFAULT_THEME: Theme = 'light'
 
 function readInitialTheme(): Theme {
   if (typeof window === 'undefined') return DEFAULT_THEME
   const fromAttr = document.documentElement.dataset.theme
-  if (fromAttr === 'parchment' || fromAttr === 'night') return fromAttr
+  if (fromAttr === 'parchment' || fromAttr === 'light' || fromAttr === 'night') return fromAttr
   return DEFAULT_THEME
 }
 
@@ -39,7 +44,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const toggleTheme = useCallback(() => {
-    setThemeState((prev) => (prev === 'parchment' ? 'night' : 'parchment'))
+    setThemeState((prev) => {
+      const idx = THEME_CYCLE.indexOf(prev)
+      const next = THEME_CYCLE[(idx + 1) % THEME_CYCLE.length]
+      return next ?? 'parchment'
+    })
   }, [])
 
   return (
@@ -62,7 +71,7 @@ export function useTheme(): ThemeContextValue {
 export const themeBootstrapScript = `
 (function(){try{
   var s=localStorage.getItem('${STORAGE_KEY}');
-  var t=(s==='night'||s==='parchment')?s:'${DEFAULT_THEME}';
+  var t=(s==='night'||s==='parchment'||s==='light')?s:'${DEFAULT_THEME}';
   document.documentElement.dataset.theme=t;
 }catch(e){
   document.documentElement.dataset.theme='${DEFAULT_THEME}';

@@ -399,49 +399,42 @@ async def confirm_profile(
 
         await db.commit()
 
-    # D-04: bound the post-onboarding relevance backfill to a recent window
-    # and a hard batch ceiling. Previously this enqueued every nlp-processed
-    # article ever ingested — fine for one user, but with N concurrent
-    # signups the `relevance` queue would back up for hours and starve
-    # everyone's brief generation. The window + ceiling means worst-case
-    # impact is bounded regardless of corpus size.
-    BACKFILL_DAYS = int(os.getenv("ONBOARDING_BACKFILL_DAYS", "14"))
-    MAX_BATCHES = int(os.getenv("ONBOARDING_BACKFILL_MAX_BATCHES", "20"))
-    BATCH = 100
+    # D-04 (revised 2026-04-30): hand off to the dedicated
+    # `tasks.backfill_user_relevance` task instead of dispatching scoring
+    # batches inline.
+    #
+    # The previous implementation called `score_relevance_batch` (which
+    # iterates ALL users) with a 2,000-article cap. Two consequences:
+    #   1) Every backfill re-scored articles for unrelated users — wasted
+    #      Groq spend that grew O(users x articles).
+    #   2) The 2,000-cap left fresh personas seeing only ~13% of the corpus,
+    #      so onboarded users perceived a frozen feed (root cause of the
+    #      "same articles only" complaint, traced 2026-04-30).
+    #
+    # The new task:
+    #   - Scopes scoring to THIS user only (`user_id=` kwarg into
+    #     score_relevance_batch), eliminating cross-user re-scoring.
+    #   - Walks the full 30-day window (configurable via env), capped at
+    #     a generous 50,000 hard ceiling — enough headroom for any realistic
+    #     ingest rate while still guarding the relevance queue.
+    #
+    # Same handler runs on profile/entity *edits* (this endpoint upserts on
+    # conflict), so re-onboarding automatically re-fans-out scoring against
+    # the user's updated entities/geos.
+    BACKFILL_DAYS = int(os.getenv("ONBOARDING_BACKFILL_DAYS", "30"))
 
     try:
         from backend.celery_app import app as celery_app
 
-        async with get_db() as score_db:
-            backfill_result = await score_db.execute(
-                text("""
-                    SELECT id::text FROM articles
-                    WHERE nlp_processed = TRUE
-                      AND nlp_confidence != 'error'
-                      AND collected_at > NOW() - (:days * INTERVAL '1 day')
-                    ORDER BY collected_at DESC
-                    LIMIT :hard_cap
-                """),
-                {"days": BACKFILL_DAYS, "hard_cap": MAX_BATCHES * BATCH},
-            )
-            all_ids = [r[0] for r in backfill_result.fetchall()]
-
-        batches = 0
-        for i in range(0, len(all_ids), BATCH):
-            celery_app.send_task(
-                "tasks.score_relevance_batch",
-                args=[all_ids[i : i + BATCH]],
-                queue="relevance",
-            )
-            batches += 1
-
+        celery_app.send_task(
+            "tasks.backfill_user_relevance",
+            args=[user["id"]],
+            kwargs={"days": BACKFILL_DAYS},
+            queue="relevance",
+        )
         logger.info(
-            "Post-onboarding backfill: %d articles (%dd window) in %d/%d batches for user %s",
-            len(all_ids),
-            BACKFILL_DAYS,
-            batches,
-            MAX_BATCHES,
-            user["id"],
+            "Post-onboarding backfill enqueued: user=%s window=%dd",
+            user["id"], BACKFILL_DAYS,
         )
     except Exception as e:  # noqa: BLE001
         logger.warning("Could not trigger relevance backfill: %s", e)

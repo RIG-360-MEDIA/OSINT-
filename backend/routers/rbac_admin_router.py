@@ -359,3 +359,70 @@ async def start_impersonation(
         "target_user_id": target_user_id,
         "target_email": target_row.email or "",
     }
+
+
+# ── Per-user relevance backfill ───────────────────────────────────────────────
+#
+# Trigger `tasks.backfill_user_relevance` for an arbitrary user. Used to fix
+# users whose initial onboarding ran under the old 2,000-article cap (so they
+# have UAR rows for only ~13% of the corpus and a feed that feels frozen).
+#
+# Idempotent: re-runs simply re-score the same article window for that user,
+# updating any existing UAR rows in place via the ON CONFLICT clause inside
+# score_relevance_batch.
+
+class BackfillRelevanceRequest(BaseModel):
+    days: int = Field(default=30, ge=1, le=180)
+
+
+@rbac_admin_router.post("/users/{user_id}/relevance/backfill")
+async def trigger_user_relevance_backfill(
+    user_id: str,
+    req: BackfillRelevanceRequest | None = None,
+    principal: dict = Depends(require_super_admin),
+) -> dict:
+    """Enqueue a per-user relevance backfill on the `relevance` queue.
+
+    Returns immediately with the task id; actual scoring runs in the worker.
+    """
+    days = (req.days if req else 30)
+
+    # Verify the user exists and has a profile (otherwise the backfill is a no-op).
+    async with get_db() as db:
+        row = (await db.execute(
+            text("""
+                SELECT
+                    up.user_id,
+                    (SELECT COUNT(*) FROM user_entities ue
+                     WHERE ue.user_id = up.user_id) AS entity_count
+                FROM user_profiles up
+                WHERE up.user_id = :uid
+            """),
+            {"uid": user_id},
+        )).fetchone()
+        if not row:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No user_profile for user_id={user_id} — finish onboarding first.",
+            )
+
+    from backend.celery_app import app as celery_app
+
+    async_result = celery_app.send_task(
+        "tasks.backfill_user_relevance",
+        args=[user_id],
+        kwargs={"days": days},
+        queue="relevance",
+    )
+
+    logger.info(
+        "Admin %s queued relevance backfill: user=%s window=%dd entities=%d task=%s",
+        principal["real_email"], user_id, days, row.entity_count, async_result.id,
+    )
+    return {
+        "success": True,
+        "user_id": user_id,
+        "days": days,
+        "entity_count": row.entity_count,
+        "task_id": async_result.id,
+    }

@@ -85,6 +85,7 @@ app.config_from_object(
             "tasks.process_nlp_batch": {"queue": "nlp"},
             "tasks.score_relevance_batch": {"queue": "relevance"},
             "tasks.score_unscored_articles": {"queue": "relevance"},
+            "tasks.backfill_user_relevance": {"queue": "relevance"},
             "tasks.generate_all_briefs": {"queue": "brief"},
             "tasks.generate_brief_for_user": {"queue": "brief"},
             "tasks.score_brief_quality": {"queue": "brief"},

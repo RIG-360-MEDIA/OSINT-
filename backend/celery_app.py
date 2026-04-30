@@ -38,6 +38,8 @@ app = Celery(
         "backend.tasks.social_briefing_task",
         "backend.tasks.social_intel_task",
         "backend.tasks.newspaper_task",
+        # SearXNG-fallback thumbnail finder (fix for post-deploy og:image gap)
+        "backend.tasks.thumbnail_task",
         # Daily brief auto-generation (P10 / fix-brief-prod-readiness P1.5)
         "backend.tasks.brief_task",
         # Brief quality scorecard cron (fix-brief-prod-readiness P2.10)
@@ -69,6 +71,7 @@ app.config_from_object(
             "tasks.collect_rss": {"queue": "collectors"},
             "tasks.collect_rss_direct": {"queue": "collectors"},
             "tasks.collect_html": {"queue": "collectors"},
+            "tasks.fetch_og_images_batch": {"queue": "collectors"},
             "tasks.collect_youtube": {"queue": "youtube"},
             "tasks.collect_govt_documents": {"queue": "documents"},
             "tasks.govt_collection_doctor": {"queue": "documents"},
@@ -126,6 +129,15 @@ app.config_from_object(
             "collect-html-every-6-hours": {
                 "task": "tasks.collect_html",
                 "schedule": timedelta(hours=6),
+                "options": {"queue": "collectors"},
+            },
+            # Backfill missing og:image thumbnails using Playwright (real
+            # browser bypasses anti-bot rejection of httpx from data-center
+            # IPs). Single batch task per fire — opens 1 Chromium, processes
+            # up to 30 articles, closes. See backend/tasks/thumbnail_task.py.
+            "fetch-og-images-every-10-min": {
+                "task": "tasks.fetch_og_images_batch",
+                "schedule": timedelta(minutes=10),
                 "options": {"queue": "collectors"},
             },
             "process-nlp-every-30-seconds": {

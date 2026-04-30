@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import Navigation from '@/components/Navigation'
@@ -198,12 +198,19 @@ function CuttingsPageInner() {
             body={papersError}
           />
         ) : (
-          <Newsstand
-            papers={papers}
-            langFilter={langFilter}
-            onLangFilterChange={setLangFilter}
-            onPaperClick={handlePaperClick}
-          />
+          <>
+            <TopClippings
+              token={token}
+              papers={papers}
+              onClippingClick={handlePaperClick}
+            />
+            <Newsstand
+              papers={papers}
+              langFilter={langFilter}
+              onLangFilterChange={setLangFilter}
+              onPaperClick={handlePaperClick}
+            />
+          </>
         )}
       </main>
 
@@ -291,6 +298,289 @@ function DeskMemo({ kicker, headline, body }: DeskMemoProps) {
     </div>
   )
 }
+
+// ── Top clippings strip ─────────────────────────────────────────────────────
+//
+// Above-the-fold feed that surfaces the most recent clippings across every
+// masthead, so the reader can browse in-context without first picking a
+// paper. Click on a card opens the same EditionModal as clicking the
+// masthead would, scoped to that clipping's newspaper.
+
+interface TopClippingsProps {
+  token: string | null
+  papers: PaperSummary[]
+  onClippingClick: (paper: PaperSummary) => void
+}
+
+function TopClippings({ token, papers, onClippingClick }: TopClippingsProps) {
+  const [clippings, setClippings] = useState<Clipping[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!token) return
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    const params = new URLSearchParams({ days: '2', limit: '24' })
+    fetch(`${API_BASE}/api/clippings/feed?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
+    })
+      .then(async r => {
+        if (!r.ok) throw new Error(describeFetchFailure(r.status))
+        return r.json() as Promise<FeedResponse>
+      })
+      .then(data => {
+        if (!cancelled) setClippings(data.clippings ?? [])
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load top clippings')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
+  // Map newspaper_name -> PaperSummary so a clipping click can resolve its
+  // owning masthead and reuse the existing modal flow.
+  const paperByName = useMemo<Map<string, PaperSummary>>(() => {
+    const m = new Map<string, PaperSummary>()
+    for (const p of papers) m.set(p.name, p)
+    return m
+  }, [papers])
+
+  if (!loading && !error && clippings.length === 0) return null
+
+  return (
+    <section style={{ margin: '0 0 56px' }}>
+      <SectionKicker
+        label="Top Clippings"
+        sub={`Latest 48 hours · ${clippings.length} pieces`}
+      />
+      {loading ? (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '40px 20px',
+            fontFamily: 'var(--font-serif)',
+            fontStyle: 'italic',
+            color: 'var(--rig-ink-3)',
+          }}
+        >
+          Pulling the freshest cuttings…
+        </div>
+      ) : error ? (
+        <DeskMemo
+          kicker="DESK MEMO"
+          headline="Top clippings are unavailable right now."
+          body={error}
+        />
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: '20px',
+          }}
+        >
+          {clippings.map(c => {
+            const owner = paperByName.get(c.newspaper_name)
+            return (
+              <ClippingCard
+                key={c.clipping_id}
+                clipping={c}
+                onClick={owner ? () => onClippingClick(owner) : undefined}
+              />
+            )
+          })}
+        </div>
+      )}
+    </section>
+  )
+}
+
+interface ClippingCardProps {
+  clipping: Clipping
+  onClick?: () => void
+}
+
+function ClippingCard({ clipping, onClick }: ClippingCardProps) {
+  const headline = clipping.headline_translated || clipping.headline
+  const preview = clipping.translated_preview || clipping.text_preview || ''
+  const dateLabel = clipping.edition_date
+    ? new Date(clipping.edition_date).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+      })
+    : '—'
+
+  const interactive = typeof onClick === 'function'
+  const handleKey = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (!interactive) return
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onClick?.()
+    }
+  }
+
+  return (
+    <article
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : -1}
+      onClick={onClick}
+      onKeyDown={handleKey}
+      style={{
+        cursor: interactive ? 'pointer' : 'default',
+        background: 'var(--rig-card, var(--rig-paper-2))',
+        border: '1px solid var(--rig-card-border, var(--rig-rule))',
+        borderRadius: '4px',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease',
+      }}
+      onMouseEnter={e => {
+        if (!interactive) return
+        e.currentTarget.style.transform = 'translateY(-2px)'
+        e.currentTarget.style.boxShadow = '0 4px 14px color-mix(in srgb, var(--rig-ink) 12%, transparent)'
+        e.currentTarget.style.borderColor = 'var(--rig-gold)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = ''
+        e.currentTarget.style.boxShadow = ''
+        e.currentTarget.style.borderColor = 'var(--rig-card-border, var(--rig-rule))'
+      }}
+    >
+      {clipping.has_image ? (
+        <div
+          style={{
+            width: '100%',
+            aspectRatio: '4 / 3',
+            background: 'var(--rig-paper-3)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Cookie-authenticated same-origin image fetch — no extra header
+              required because the Supabase auth cookie is sent automatically. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`${API_BASE}/api/clippings/${clipping.clipping_id}/image`}
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            loading="lazy"
+            onError={e => {
+              ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+            }}
+          />
+        </div>
+      ) : null}
+
+      <div style={{ padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div
+          style={{
+            fontFamily: 'var(--font-sans-condensed, var(--font-mono))',
+            fontSize: '10px',
+            letterSpacing: '0.22em',
+            textTransform: 'uppercase',
+            color: 'var(--rig-ink-3)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: '8px',
+          }}
+        >
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {clipping.newspaper_name}
+          </span>
+          <span>{dateLabel}</span>
+        </div>
+        <h3
+          style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: '17px',
+            fontWeight: 700,
+            lineHeight: 1.25,
+            margin: 0,
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {headline}
+        </h3>
+        {preview ? (
+          <p
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: '13px',
+              color: 'var(--rig-ink-2)',
+              lineHeight: 1.45,
+              margin: 0,
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {preview}
+          </p>
+        ) : null}
+      </div>
+    </article>
+  )
+}
+
+interface SectionKickerProps {
+  label: string
+  sub?: string
+}
+
+function SectionKicker({ label, sub }: SectionKickerProps) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        gap: '12px',
+        margin: '0 0 16px',
+        paddingBottom: '8px',
+        borderBottom: '1px solid var(--rig-rule)',
+      }}
+    >
+      <div
+        style={{
+          fontFamily: 'var(--font-serif)',
+          fontSize: '22px',
+          fontStyle: 'italic',
+          fontWeight: 700,
+          letterSpacing: '0.01em',
+        }}
+      >
+        {label}
+      </div>
+      {sub ? (
+        <div
+          style={{
+            fontFamily: 'var(--font-sans-condensed, var(--font-mono))',
+            fontSize: '10px',
+            letterSpacing: '0.22em',
+            textTransform: 'uppercase',
+            color: 'var(--rig-ink-3)',
+          }}
+        >
+          {sub}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 
 export default function CuttingsPage() {
   return (

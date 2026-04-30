@@ -7,6 +7,7 @@ import Navigation from '@/components/Navigation'
 import { Dateline } from '@/components/Dateline'
 import { createClient } from '@/lib/supabase/client'
 
+import { ClippingImage } from './ClippingImage'
 import { EditionModal, type Clipping } from './EditionModal'
 import { Newsstand, type PaperSummary } from './Newsstand'
 
@@ -45,6 +46,11 @@ function CuttingsPageInner() {
   const [editionClippings, setEditionClippings] = useState<Clipping[]>([])
   const [editionLoading, setEditionLoading] = useState(false)
   const [editionError, setEditionError] = useState<string | null>(null)
+
+  // When the reader clicks a single TopClipping card, we open the full
+  // detail view for *just that* clipping in a small lightbox — saves them
+  // having to drill through Newspaper -> Edition -> Clipping.
+  const [openTopClipping, setOpenTopClipping] = useState<Clipping | null>(null)
 
   const [langFilter, setLangFilter] = useState<string>('all')
 
@@ -202,7 +208,7 @@ function CuttingsPageInner() {
             <TopClippings
               token={token}
               papers={papers}
-              onClippingClick={handlePaperClick}
+              onClippingClick={setOpenTopClipping}
             />
             <Newsstand
               papers={papers}
@@ -222,6 +228,19 @@ function CuttingsPageInner() {
           error={editionError}
           token={token}
           onClose={handleClose}
+        />
+      ) : null}
+
+      {openTopClipping ? (
+        <SingleClippingModal
+          clipping={openTopClipping}
+          token={token}
+          onClose={() => setOpenTopClipping(null)}
+          onOpenEdition={() => {
+            const owner = papers.find(p => p.name === openTopClipping.newspaper_name)
+            setOpenTopClipping(null)
+            if (owner) handlePaperClick(owner)
+          }}
         />
       ) : null}
     </div>
@@ -309,7 +328,7 @@ function DeskMemo({ kicker, headline, body }: DeskMemoProps) {
 interface TopClippingsProps {
   token: string | null
   papers: PaperSummary[]
-  onClippingClick: (paper: PaperSummary) => void
+  onClippingClick: (clipping: Clipping) => void
 }
 
 function TopClippings({ token, papers, onClippingClick }: TopClippingsProps) {
@@ -345,13 +364,10 @@ function TopClippings({ token, papers, onClippingClick }: TopClippingsProps) {
     }
   }, [token])
 
-  // Map newspaper_name -> PaperSummary so a clipping click can resolve its
-  // owning masthead and reuse the existing modal flow.
-  const paperByName = useMemo<Map<string, PaperSummary>>(() => {
-    const m = new Map<string, PaperSummary>()
-    for (const p of papers) m.set(p.name, p)
-    return m
-  }, [papers])
+  // `papers` is unused inside TopClippings now (we deep-link to the clipping
+  // detail directly), but kept in the props to avoid threading a noop change
+  // through the parent. Suppress lint about unused.
+  void papers
 
   if (!loading && !error && clippings.length === 0) return null
 
@@ -387,17 +403,14 @@ function TopClippings({ token, papers, onClippingClick }: TopClippingsProps) {
             gap: '20px',
           }}
         >
-          {clippings.map(c => {
-            const owner = paperByName.get(c.newspaper_name)
-            return (
-              <ClippingCard
-                key={c.clipping_id}
-                clipping={c}
-                token={token}
-                onClick={owner ? () => onClippingClick(owner) : undefined}
-              />
-            )
-          })}
+          {clippings.map(c => (
+            <ClippingCard
+              key={c.clipping_id}
+              clipping={c}
+              token={token}
+              onClick={() => onClippingClick(c)}
+            />
+          ))}
         </div>
       )}
     </section>
@@ -411,32 +424,10 @@ interface ClippingCardProps {
 }
 
 function ClippingCard({ clipping, token, onClick }: ClippingCardProps) {
-  // The image endpoint requires `Authorization: Bearer <token>` (matches the
-  // pattern in EditionModal). Plain <img src> can't attach that header, so we
-  // fetch as a blob and feed the blob URL into <img>. Same flow EditionModal
-  // uses for PDF previews.
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  useEffect(() => {
-    if (!clipping.has_image || !token) return
-    let blobUrl: string | null = null
-    let cancelled = false
-    fetch(`${API_BASE}/api/clippings/${clipping.clipping_id}/image`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => (r.ok ? r.blob() : Promise.reject(r.status)))
-      .then(blob => {
-        if (cancelled) return
-        blobUrl = URL.createObjectURL(blob)
-        setImageUrl(blobUrl)
-      })
-      .catch(() => {
-        // Silently degrade — card still shows headline + preview.
-      })
-    return () => {
-      cancelled = true
-      if (blobUrl) URL.revokeObjectURL(blobUrl)
-    }
-  }, [clipping.has_image, clipping.clipping_id, token])
+  // Defer all image-loading concerns to the existing <ClippingImage>
+  // component (used by EditionModal). It already handles bearer-auth fetch,
+  // base64 decoding, and graceful fallback to a "newspaper initials" tile
+  // when the asset is missing or fails to load.
 
   const headline = clipping.headline_translated || clipping.headline
   const preview = clipping.translated_preview || clipping.text_preview || ''
@@ -484,28 +475,22 @@ function ClippingCard({ clipping, token, onClick }: ClippingCardProps) {
         e.currentTarget.style.borderColor = 'var(--rig-card-border, var(--rig-rule))'
       }}
     >
-      {clipping.has_image && imageUrl ? (
-        <div
-          style={{
-            width: '100%',
-            aspectRatio: '4 / 3',
-            background: 'var(--rig-paper-3)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            loading="lazy"
-            onError={e => {
-              ;(e.currentTarget as HTMLImageElement).style.display = 'none'
-            }}
-          />
-        </div>
-      ) : null}
+      <div
+        style={{
+          width: '100%',
+          aspectRatio: '4 / 3',
+          background: 'var(--rig-paper-3)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <ClippingImage
+          clippingId={clipping.clipping_id}
+          token={token}
+          hasImage={clipping.has_image}
+          newspaperName={clipping.newspaper_name}
+        />
+      </div>
 
       <div style={{ padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <div
@@ -561,6 +546,259 @@ function ClippingCard({ clipping, token, onClick }: ClippingCardProps) {
     </article>
   )
 }
+
+// ── Single-clipping detail lightbox ─────────────────────────────────────────
+//
+// Shown when a TopClippings card is clicked. Renders just *that* clipping in
+// the same rich layout the EditionModal uses for individual clipping cards
+// — bilingual headline + translated preview + the actual scanned image. Has
+// an "Open full edition" link to drop the reader into the EditionModal for
+// the owning newspaper if they want the surrounding context.
+
+interface SingleClippingModalProps {
+  clipping: Clipping
+  token: string | null
+  onClose: () => void
+  onOpenEdition: () => void
+}
+
+function SingleClippingModal({
+  clipping, token, onClose, onOpenEdition,
+}: SingleClippingModalProps) {
+  // ESC closes.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const isNonEnglish = clipping.newspaper_language !== 'en'
+  const summary =
+    (isNonEnglish ? clipping.translated_preview : clipping.text_preview) ||
+    clipping.text_preview ||
+    ''
+  const dateLabel = clipping.edition_date
+    ? new Date(clipping.edition_date).toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      })
+    : '—'
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'color-mix(in srgb, var(--rig-ink) 56%, transparent)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
+        zIndex: 200,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'var(--rig-paper)',
+          maxWidth: '880px',
+          width: '100%',
+          maxHeight: '92vh',
+          overflow: 'auto',
+          borderRadius: '4px',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
+        }}
+      >
+        {/* Header: newspaper + date + close + open-edition */}
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            gap: '16px',
+            padding: '20px 28px 14px',
+            borderBottom: '1px solid var(--rig-rule)',
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: '22px',
+                fontStyle: 'italic',
+                fontWeight: 700,
+              }}
+            >
+              {clipping.newspaper_name}
+            </div>
+            <div
+              style={{
+                fontFamily: 'var(--font-sans-condensed, var(--font-mono))',
+                fontSize: '11px',
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                color: 'var(--rig-ink-3)',
+                marginTop: '4px',
+              }}
+            >
+              {dateLabel}
+              {clipping.page_number ? ` · Page ${clipping.page_number}` : ''}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={onOpenEdition}
+              style={{
+                fontFamily: 'var(--font-sans-condensed, var(--font-mono))',
+                fontSize: '10px',
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                padding: '6px 12px',
+                background: 'transparent',
+                border: '1px solid var(--rig-rule)',
+                color: 'var(--rig-ink-2)',
+                cursor: 'pointer',
+              }}
+            >
+              Full edition ↗
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '14px',
+                width: '32px',
+                height: '32px',
+                background: 'transparent',
+                border: '1px solid var(--rig-rule)',
+                color: 'var(--rig-ink-2)',
+                cursor: 'pointer',
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </header>
+
+        {/* Body: bigger image + bilingual headlines + summary */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(240px, 320px) 1fr',
+            gap: '24px',
+            padding: '24px 28px 28px',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxHeight: '70vh',
+              overflow: 'hidden',
+              background: 'var(--rig-paper-3)',
+              borderRadius: '3px',
+            }}
+          >
+            <ClippingImage
+              clippingId={clipping.clipping_id}
+              token={token}
+              hasImage={clipping.has_image}
+              newspaperName={clipping.newspaper_name}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }}>
+            {isNonEnglish && clipping.headline ? (
+              <div
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '14px',
+                  color: 'var(--rig-ink-3)',
+                  lineHeight: 1.4,
+                  fontStyle: 'italic',
+                }}
+              >
+                {clipping.headline}
+              </div>
+            ) : null}
+
+            <h2
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: '24px',
+                fontWeight: 700,
+                lineHeight: 1.2,
+                margin: 0,
+              }}
+            >
+              {isNonEnglish
+                ? clipping.headline_translated || clipping.headline
+                : clipping.headline}
+            </h2>
+
+            {summary ? (
+              <p
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '15px',
+                  lineHeight: 1.55,
+                  color: 'var(--rig-ink-2)',
+                  margin: 0,
+                }}
+              >
+                {summary}
+              </p>
+            ) : null}
+
+            {clipping.relevance_explanation ? (
+              <div
+                style={{
+                  marginTop: '8px',
+                  padding: '12px 14px',
+                  background: 'color-mix(in srgb, var(--rig-gold) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--rig-gold) 30%, transparent)',
+                  borderRadius: '3px',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: 'var(--font-sans-condensed, var(--font-mono))',
+                    fontSize: '10px',
+                    letterSpacing: '0.22em',
+                    textTransform: 'uppercase',
+                    color: 'var(--rig-ink-3)',
+                    marginBottom: '6px',
+                  }}
+                >
+                  Why
+                </div>
+                <div
+                  style={{
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: '14px',
+                    color: 'var(--rig-ink-2)',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {clipping.relevance_explanation}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 interface SectionKickerProps {
   label: string

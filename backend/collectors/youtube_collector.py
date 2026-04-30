@@ -103,6 +103,205 @@ def get_api_keys() -> list[str]:
 
 # ── Channel video listing ─────────────────────────────────────────────────────
 
+async def _fetch_channel_videos_rss(
+    channel_id: str,
+    since_dt: datetime | None = None,
+    max_results: int = 10,
+) -> list[dict] | None:
+    """
+    Fetch recent videos from a channel via YouTube's public Atom feed.
+
+    YouTube publishes a free, unauthenticated RSS feed for every channel at
+    ``https://www.youtube.com/feeds/videos.xml?channel_id=<id>``. The feed
+    carries the latest 15 videos with title, video_id, published_at, channel
+    name, and description — exactly the fields we need for downstream NLP
+    and transcript fetching.
+
+    Returns a list of dicts in the same shape as :func:`fetch_channel_videos`,
+    or ``None`` if the fetch / parse failed (caller should fall back to the
+    Data-API path on ``None``; an empty list means "RSS worked, channel just
+    has no new videos since since_dt").
+
+    No API key, no quota, no auth. Adopted to escape the YouTube Data API
+    /search quota wall (100 units per channel per cycle, 86k/day at our
+    fan-out — see DEPLOYMENT_NOTES.md).
+    """
+    import xml.etree.ElementTree as ET
+
+    NS = {
+        "atom": "http://www.w3.org/2005/Atom",
+        "yt": "http://www.youtube.com/xml/schemas/2015",
+        "media": "http://search.yahoo.com/mrss/",
+    }
+    url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(url)
+        if resp.status_code != 200:
+            logger.info(
+                "RSS feed for channel %s returned HTTP %s — will fall back to API",
+                channel_id, resp.status_code,
+            )
+            return None
+        root = ET.fromstring(resp.text)
+    except Exception:
+        logger.info(
+            "RSS feed fetch failed for channel %s — will fall back to API",
+            channel_id, exc_info=True,
+        )
+        return None
+
+    channel_name = (root.findtext("atom:title", default="", namespaces=NS) or "").strip()
+
+    videos: list[dict] = []
+    for entry in root.findall("atom:entry", NS):
+        video_id = (entry.findtext("yt:videoId", default="", namespaces=NS) or "").strip()
+        if not video_id:
+            continue
+        title = (entry.findtext("atom:title", default="", namespaces=NS) or "").strip()
+        published_str = (entry.findtext("atom:published", default="", namespaces=NS) or "").strip()
+
+        description = ""
+        media_group = entry.find("media:group", NS)
+        if media_group is not None:
+            description = (
+                media_group.findtext("media:description", default="", namespaces=NS) or ""
+            ).strip()
+
+        # Filter to the high-water mark.
+        if since_dt is not None and published_str:
+            try:
+                pub_dt = datetime.fromisoformat(published_str.replace("Z", "+00:00"))
+                if pub_dt < since_dt:
+                    continue
+            except Exception:
+                # Don't drop on parse error — let the downstream pipeline decide.
+                pass
+
+        videos.append({
+            "video_id":     video_id,
+            "title":        title,
+            "published_at": published_str,
+            "channel_name": channel_name,
+            "description":  description,
+        })
+        if len(videos) >= max_results:
+            break
+
+    return videos
+
+
+async def _fetch_channel_videos_ytdlp(
+    channel_id: str,
+    since_dt: datetime | None = None,
+    max_results: int = 10,
+) -> list[dict] | None:
+    """
+    Fetch channel videos via yt-dlp. Used when RSS is blocked (YouTube
+    blocks data-center IPs from RSS feeds) and to escape the Data API
+    /search 100-unit quota.
+
+    Reads cookies from YOUTUBE_COOKIES_PATH if set — an authenticated
+    session bypasses the IP blocks YouTube applies to anonymous data-
+    center traffic. Falls through to the Data API (caller-side) if this
+    path returns None.
+
+    Returns the same shape as :func:`fetch_channel_videos`, or ``None``
+    on failure.
+    """
+    import yt_dlp  # type: ignore
+
+    cookies_path = _get_cookies_path()
+    proxy_url = _get_proxy_url()
+
+    ydl_opts: dict = {
+        "extract_flat": "in_playlist",
+        "skip_download": True,
+        "playlistend": max(1, max_results),
+        "quiet": True,
+        "no_warnings": True,
+        "ignoreerrors": True,
+        # Skip yt-dlp's own auth-check probe. Without this, yt-dlp aborts
+        # the channel fetch when it can't confirm a logged-in session has
+        # access — even when the channel is fully public. The cookies we
+        # ship are for IP-block bypass only; we are not trying to access
+        # private content.
+        "extractor_args": {"youtubetab": {"skip": ["authcheck"]}},
+    }
+    if cookies_path:
+        ydl_opts["cookiefile"] = cookies_path
+    if proxy_url:
+        ydl_opts["proxy"] = proxy_url
+
+    url = f"https://www.youtube.com/channel/{channel_id}/videos"
+
+    def _extract():
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                if info is None:
+                    return None
+                return info.get("entries") or []
+        except Exception:
+            logger.info(
+                "yt-dlp channel listing failed for %s — will fall back to API",
+                channel_id, exc_info=True,
+            )
+            return None
+
+    loop = asyncio.get_event_loop()
+    entries = await loop.run_in_executor(None, _extract)
+    if entries is None:
+        return None
+
+    videos: list[dict] = []
+    for entry in entries:
+        if not entry or not entry.get("id"):
+            continue
+        video_id = entry["id"]
+        title = (entry.get("title") or "").strip()
+
+        # Best-effort published_at: yt-dlp may give either a unix timestamp
+        # or upload_date (YYYYMMDD); both are optional in flat extraction.
+        published_at = ""
+        ts = entry.get("timestamp")
+        if ts:
+            try:
+                published_at = datetime.fromtimestamp(int(ts), tz=timezone.utc).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                )
+            except Exception:
+                pass
+        if not published_at and entry.get("upload_date"):
+            try:
+                ud = entry["upload_date"]
+                published_at = f"{ud[0:4]}-{ud[4:6]}-{ud[6:8]}T00:00:00Z"
+            except Exception:
+                pass
+
+        # High-water-mark filter (skip if older than since_dt).
+        if since_dt is not None and published_at:
+            try:
+                pub_dt = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+                if pub_dt < since_dt:
+                    continue
+            except Exception:
+                pass
+
+        videos.append({
+            "video_id":     video_id,
+            "title":        title,
+            "published_at": published_at,
+            "channel_name": (entry.get("channel") or "").strip(),
+            "description":  (entry.get("description") or "").strip(),
+        })
+        if len(videos) >= max_results:
+            break
+
+    return videos
+
+
 async def fetch_channel_videos(
     channel_id: str,
     api_key: str | list[str],
@@ -128,6 +327,38 @@ async def fetch_channel_videos(
         since = since_dt
     else:
         since = datetime.now(timezone.utc) - timedelta(days=since_days)
+
+    # Try the free YouTube RSS feed first. Falls back to the Data API only
+    # if RSS itself failed (HTTP / parse error). An empty RSS result is
+    # treated as success ("channel has no new videos since since"); in that
+    # case we do NOT fall back to the API because the API would return the
+    # same empty set at 100 units / channel.
+    rss_videos = await _fetch_channel_videos_rss(
+        channel_id=channel_id,
+        since_dt=since,
+        max_results=max_results,
+    )
+    if rss_videos is not None:
+        logger.info(
+            "youtube/rss channel=%s returned %d videos",
+            channel_id, len(rss_videos),
+        )
+        return rss_videos
+
+    # Path 2: yt-dlp + cookies. Works when RSS is blocked (data-center IPs)
+    # and bypasses the /search quota wall.
+    ytdlp_videos = await _fetch_channel_videos_ytdlp(
+        channel_id=channel_id,
+        since_dt=since,
+        max_results=max_results,
+    )
+    if ytdlp_videos is not None:
+        logger.info(
+            "youtube/yt-dlp channel=%s returned %d videos",
+            channel_id, len(ytdlp_videos),
+        )
+        return ytdlp_videos
+
     published_after = since.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     keys = [api_key] if isinstance(api_key, str) else list(api_key)
@@ -278,7 +509,15 @@ async def fetch_transcript(video_id: str) -> list[dict] | None:
         api_kwargs["cookies"] = cookies_path
     if proxy_config is not None:
         api_kwargs["proxy_config"] = proxy_config
-    api = YouTubeTranscriptApi(**api_kwargs)
+    try:
+        api = YouTubeTranscriptApi(**api_kwargs)
+    except TypeError:
+        # Older youtube_transcript_api versions reject the 'cookies' kwarg.
+        # Fall back to constructing without it; transcripts may be slightly
+        # less reliable but the rest of the pipeline (yt-dlp video listing,
+        # storage, NLP) keeps working.
+        api_kwargs.pop("cookies", None)
+        api = YouTubeTranscriptApi(**api_kwargs)
 
     try:
         lang = "en"

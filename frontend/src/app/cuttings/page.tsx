@@ -393,6 +393,7 @@ function TopClippings({ token, papers, onClippingClick }: TopClippingsProps) {
               <ClippingCard
                 key={c.clipping_id}
                 clipping={c}
+                token={token}
                 onClick={owner ? () => onClippingClick(owner) : undefined}
               />
             )
@@ -405,10 +406,38 @@ function TopClippings({ token, papers, onClippingClick }: TopClippingsProps) {
 
 interface ClippingCardProps {
   clipping: Clipping
+  token: string | null
   onClick?: () => void
 }
 
-function ClippingCard({ clipping, onClick }: ClippingCardProps) {
+function ClippingCard({ clipping, token, onClick }: ClippingCardProps) {
+  // The image endpoint requires `Authorization: Bearer <token>` (matches the
+  // pattern in EditionModal). Plain <img src> can't attach that header, so we
+  // fetch as a blob and feed the blob URL into <img>. Same flow EditionModal
+  // uses for PDF previews.
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (!clipping.has_image || !token) return
+    let blobUrl: string | null = null
+    let cancelled = false
+    fetch(`${API_BASE}/api/clippings/${clipping.clipping_id}/image`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => (r.ok ? r.blob() : Promise.reject(r.status)))
+      .then(blob => {
+        if (cancelled) return
+        blobUrl = URL.createObjectURL(blob)
+        setImageUrl(blobUrl)
+      })
+      .catch(() => {
+        // Silently degrade — card still shows headline + preview.
+      })
+    return () => {
+      cancelled = true
+      if (blobUrl) URL.revokeObjectURL(blobUrl)
+    }
+  }, [clipping.has_image, clipping.clipping_id, token])
+
   const headline = clipping.headline_translated || clipping.headline
   const preview = clipping.translated_preview || clipping.text_preview || ''
   const dateLabel = clipping.edition_date
@@ -455,7 +484,7 @@ function ClippingCard({ clipping, onClick }: ClippingCardProps) {
         e.currentTarget.style.borderColor = 'var(--rig-card-border, var(--rig-rule))'
       }}
     >
-      {clipping.has_image ? (
+      {clipping.has_image && imageUrl ? (
         <div
           style={{
             width: '100%',
@@ -465,11 +494,9 @@ function ClippingCard({ clipping, onClick }: ClippingCardProps) {
             overflow: 'hidden',
           }}
         >
-          {/* Cookie-authenticated same-origin image fetch — no extra header
-              required because the Supabase auth cookie is sent automatically. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`${API_BASE}/api/clippings/${clipping.clipping_id}/image`}
+            src={imageUrl}
             alt=""
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             loading="lazy"

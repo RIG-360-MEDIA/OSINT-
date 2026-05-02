@@ -48,12 +48,13 @@ export function CMEditorialBrief({ embedded = false }: CMEditorialBriefProps) {
     >
       <div className={styles.frame}>
         <Header />
+        <HeroBanner />
         <div className={styles.body}>
           <div className={styles.demoWatermark} aria-hidden="true">
             <span>DEMO</span>
           </div>
           <TelanganaMap />
-          <RightStack />
+          <CardGrid />
         </div>
         <Ticker />
         <p className={styles.editorsNote}>
@@ -125,10 +126,9 @@ function useClock(): string {
 /* Right column — hero panel + 6 cards.                                */
 /* ------------------------------------------------------------------ */
 
-function RightStack() {
+function CardGrid() {
   return (
     <div className={styles.stack}>
-      <Hero />
       <div className={styles.cards}>
         <NewsCard />
         <OppositionCard />
@@ -141,16 +141,21 @@ function RightStack() {
   )
 }
 
-function Hero() {
+function HeroBanner() {
   return (
-    <article className={styles.heroPanel}>
+    <article className={styles.heroBanner}>
       <div className={styles.heroEyebrow}>{HERO.eyebrow}</div>
-      <h2 className={styles.heroHeadline}>{HERO.headline}</h2>
-      <div className={styles.heroFooter}>
-        <a className={styles.heroLink} href="#source">
-          {HERO.link} →
-        </a>
-        <Sparkline values={[...HERO.sparkline]} className={styles.heroSpark} />
+      <div className={styles.heroBannerInner}>
+        <div>
+          <h2 className={styles.heroBannerHeadline}>{HERO.headline}</h2>
+          <a className={styles.heroLink} href="#source">
+            {HERO.link} →
+          </a>
+        </div>
+        <Sparkline
+          values={[...HERO.sparkline]}
+          className={styles.heroBannerSpark}
+        />
       </div>
     </article>
   )

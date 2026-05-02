@@ -137,8 +137,8 @@ function dp(points, tol) {
 }
 
 const SVG_W = 700
-const SVG_H = 800
-const PAD = 24
+const SVG_H = 640
+const PAD = 8
 /** Tolerance — sub-districts are small, want smooth curves at this zoom. */
 const TOL = 0.0012
 

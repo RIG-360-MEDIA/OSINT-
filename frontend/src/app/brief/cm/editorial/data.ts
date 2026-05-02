@@ -281,6 +281,40 @@ export const FORECAST_POINTS: ReadonlyArray<ForecastPoint> = [
   { day: '08 May', sentiment: -0.37, band: 0.07 },
 ]
 
+export interface Headline {
+  /** Small caps kicker above the headline (where it came from / when). */
+  eyebrow: string
+  /** Body of the lead — one sentence, 25-40 words. */
+  text: string
+}
+
+/* Rotating Lead headlines — cycle on a fixed interval at the top of the
+ * page so the most-pressing signal is always front-and-centre. The first
+ * entry mirrors the original HERO so existing references still feel
+ * familiar. */
+export const HEADLINES: ReadonlyArray<Headline> = [
+  {
+    eyebrow: 'WHAT CHANGED · SINCE 09:00',
+    text: 'Opposition has consolidated around Musi rehab — four of the six most-shared posts in Telangana today are critical of the project, three syndicated by BRS-aligned handles.',
+  },
+  {
+    eyebrow: 'BREAKING · KHAMMAM · 14:18',
+    text: 'Farmer assembly at Khammam district HQ enters its fourth hour — sentiment at –0.72 across 412 mentions, no district-administration response on record yet.',
+  },
+  {
+    eyebrow: 'SCHEDULED · 17:30 · CMO',
+    text: 'Group-1 transparency briefing announced for 17:30 — opposition desks already drafting counter-narratives, expect coordinated push from BRS and BJP within two hours.',
+  },
+  {
+    eyebrow: 'OPPOSITION · KARIMNAGAR · 4 MAY',
+    text: 'BJP confirms Karimnagar rally for Sunday — first major opposition mobilisation in north Telangana since the caste-survey announcement, est. 8,000 attending.',
+  },
+  {
+    eyebrow: 'COURT · HC HYDERABAD · 13:54',
+    text: 'High Court bench questions Hydra demolition policy — orders state to clarify rehabilitation framework within seven days, Telangana Today leads coverage.',
+  },
+]
+
 export interface PulseMetric {
   eyebrow: string
   value: string

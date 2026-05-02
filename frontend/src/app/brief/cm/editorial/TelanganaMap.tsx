@@ -147,6 +147,14 @@ export function TelanganaMap() {
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+          {/* Clip path = union of every district. Used to keep the rivers
+           *  inside the state outline — without this the bezier curves
+           *  drift into empty paper. */}
+          <clipPath id="stateClip">
+            {TELANGANA_DISTRICTS.map((d) => (
+              <path key={d.id} d={d.d} />
+            ))}
+          </clipPath>
         </defs>
 
         {/* District polygons — sepia heatmap fill + ink boundary. The whole
@@ -177,8 +185,10 @@ export function TelanganaMap() {
           })}
         </g>
 
-        {/* Krishna + Godavari rivers — ink-blue, behind labels but above fills. */}
+        {/* Krishna + Godavari rivers — clipped to the state silhouette so
+         *  they cannot drift past the eastern edge into blank paper. */}
         <g
+          clipPath="url(#stateClip)"
           stroke="#1d3557"
           strokeWidth={2.2}
           fill="none"
@@ -188,17 +198,6 @@ export function TelanganaMap() {
         >
           <path d={godavari} />
           <path d={krishna} />
-          {/* Tributaries */}
-          <path
-            d="M 290,200 C 310,260 330,310 360,360"
-            strokeWidth={1.1}
-            opacity={0.7}
-          />
-          <path
-            d="M 470,260 C 480,320 490,380 510,440"
-            strokeWidth={1.0}
-            opacity={0.65}
-          />
         </g>
 
         {/* River labels in italic serif. */}
@@ -245,12 +244,12 @@ export function TelanganaMap() {
           })}
         </g>
 
-        {/* Wax-seal pins — top-to-bottom order, non-crossing tethers. */}
+        {/* Wax-seal pins, top-to-bottom. No tethers — a small italic
+         *  numeral next to each pin pairs it with its margin annotation. */}
         {resolvedPins.map(({ pin, dist }, idx) => {
           const px = dist.cx
           const py = dist.cy
           const annY = ANN_Y_START + idx * ANN_Y_STEP
-          const tetherD = `M ${px},${py} C ${px + 50},${py - 5} ${ANN_X - 70},${annY - 10} ${ANN_X - 6},${annY - 4}`
           const marker = ROMAN[idx] ?? `${idx + 1}`
           return (
             <g key={pin.id}>
@@ -271,16 +270,20 @@ export function TelanganaMap() {
                 stroke="#5a160e"
                 strokeWidth={0.9}
               />
-              {/* tether — pen-drawn arc */}
-              <path
-                d={tetherD}
-                stroke="#3a2a1a"
-                strokeWidth={0.9}
-                fill="none"
-                strokeDasharray="2 2.4"
-                opacity={0.55}
-              />
-              {/* annotation block */}
+              {/* small marker numeral floating up-and-right of the pin */}
+              <text
+                x={px + 9}
+                y={py - 7}
+                fontFamily="'Tiempos Headline','Playfair Display','Georgia',serif"
+                fontStyle="italic"
+                fontSize={12}
+                fill="#9c2b1f"
+                fontWeight={700}
+                pointerEvents="none"
+              >
+                {marker}.
+              </text>
+              {/* margin annotation */}
               <text
                 x={ANN_X}
                 y={annY - 14}

@@ -664,67 +664,52 @@
   }
 }
 
-/* Layer panel ----------------------------------------------------- */
+/* Layer pills (horizontal toggle row) ------------------------------ */
 
-.layerPanel {
-  position: sticky;
-  top: 16px;
-  align-self: start;
-  background: rgba(245, 240, 230, 0.55);
-  border: 1px solid var(--hairline-strong);
-  padding: 14px 14px 16px;
-}
-
-.layerPanelHeader {
+.layerPills {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--hairline);
-  margin-bottom: 8px;
 }
 
-.layerList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.layerRow {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 10px;
+.layerPill {
+  display: inline-flex;
   align-items: center;
-  width: 100%;
-  padding: 8px 6px;
+  gap: 8px;
+  padding: 6px 12px;
   background: transparent;
-  border: 0;
-  border-radius: 2px;
-  cursor: pointer;
-  text-align: left;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 999px;
   font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
-  color: var(--ink);
-  transition: background 0.15s ease;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.layerRow:hover {
+.layerPill:hover {
   background: rgba(58, 42, 26, 0.06);
+  color: var(--ink);
 }
 
-.layerRowActive {
-  background: rgba(156, 43, 31, 0.08);
+.layerPillActive {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
 }
 
-.layerRowLabel {
-  font-size: 13px;
-  letter-spacing: 0.01em;
+.layerPillActive .layerPillCategory {
+  color: rgba(245, 240, 230, 0.6);
+}
+
+.layerPillLabel {
   font-weight: 500;
 }
 
-.layerRowCategory {
+.layerPillCategory {
   font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
   font-size: 9px;
   letter-spacing: 0.18em;
@@ -733,10 +718,10 @@
 }
 
 .layerCategoryDot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  border: 1.5px solid currentColor;
+  background: currentColor;
 }
 
 .layerCat_signal { color: #9c2b1f; }
@@ -745,25 +730,410 @@
 .layerCat_infra { color: #1d3557; }
 .layerCat_composite { color: #3a2a1a; }
 
-.layerRowDescription {
-  margin: 2px 6px 6px 24px;
+/* Layer feed (right side of map, content varies by layer) ---------- */
+
+.layerFeed {
+  background: rgba(245, 240, 230, 0.45);
+  border: 1px solid var(--hairline-strong);
+  padding: 16px 18px 18px;
+  align-self: start;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.layerFeedHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--hairline-strong);
+  margin-bottom: 8px;
+}
+
+.layerFeedEyebrow {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.layerFeedMeta {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.layerFeedDescription {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin: 0 0 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.layerFeedBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Feed list (news, etc) */
+.feedList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feedItem {
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.feedItem:last-child {
+  border-bottom: none;
+}
+
+.feedItemTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.feedItemRank {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 11px;
+  color: var(--wax-red);
+  font-weight: 500;
+}
+
+.feedItemMeta {
+  flex: 1;
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+.feedItemHeadline {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 13.5px;
+  line-height: 1.32;
+  color: var(--ink);
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Feed gauge (sentiment, ACLED, stability hero numbers) */
+.feedGauge {
+  padding: 8px 0 12px;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.feedGaugeLabel {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.feedGaugeValue {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 28px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.feedGaugeRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 8px 0 12px;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.feedGaugeMini .feedGaugeValue {
+  font-size: 18px;
+}
+
+.feedBreakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 11.5px;
+  margin-top: 4px;
+}
+
+.feedBreakdownItem {
+  color: var(--ink-soft);
+}
+
+.feedBreakdownCount {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  color: var(--wax-red);
+  font-weight: 500;
+}
+
+.feedBreakdownLabel {
+  font-style: italic;
+}
+
+.feedSubsection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feedSubHeader {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.feedRanked {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--hairline);
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 12.5px;
+}
+
+.feedRanked:last-child {
+  border-bottom: none;
+}
+
+.feedRankedRank {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 10px;
+  color: var(--wax-red);
+  width: 18px;
+}
+
+.feedRankedLabel {
+  color: var(--ink);
+}
+
+.feedRankedSub {
+  font-style: italic;
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+
+.feedQuote {
+  margin: 0;
+  padding: 8px 10px 10px;
+  border-left: 2px solid var(--wax-red);
+  background: rgba(156, 43, 31, 0.04);
+}
+
+.feedQuote p {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.45;
+  margin: 0 0 4px;
+}
+
+.feedQuote cite {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  font-style: normal;
+  letter-spacing: 0.04em;
+}
+
+.feedEvent {
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.feedEvent:last-child {
+  border-bottom: none;
+}
+
+.feedEventTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.feedEventDate {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 10px;
+  color: var(--ink-faint);
+}
+
+.feedEventDistrict {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 10.5px;
+  color: var(--ink-soft);
+}
+
+.feedEventSummary {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 0;
+}
+
+.feedMandiRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--hairline);
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 12px;
+  align-items: baseline;
+}
+
+.feedMandiRow:last-child {
+  border-bottom: none;
+}
+
+.feedMandiCommodity {
+  color: var(--ink);
+}
+
+.feedMandiPrice {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.feedMandiDelta {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 11px;
+}
+
+.feedMandiMarket {
+  grid-column: 1 / -1;
+  font-style: italic;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+.feedTagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.feedTag {
+  display: inline-block;
+  padding: 3px 9px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 999px;
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.feedScheme {
+  padding: 4px 0 6px;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.feedScheme:last-child {
+  border-bottom: none;
+}
+
+.feedSchemeTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.feedSchemeName {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11.5px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.feedSchemePct {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.feedNote {
   font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
   font-style: italic;
   font-size: 11.5px;
   color: var(--ink-soft);
   line-height: 1.45;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--hairline);
 }
 
-.layerScale {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 4px 6px 4px 24px;
+.feedPowerRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 6px 10px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--hairline);
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 12px;
+  align-items: baseline;
+}
+
+.feedPowerRow:last-child {
+  border-bottom: none;
+}
+
+.feedPowerDistrict {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.feedPowerNumbers {
   font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
-  font-size: 9.5px;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.feedSlash {
   color: var(--ink-faint);
-  margin-bottom: 2px;
+}
+
+.feedPowerNote {
+  grid-column: 1 / -1;
+  font-style: italic;
+  font-size: 10.5px;
+  color: var(--ink-faint);
 }
 
 /* Modal ---------------------------------------------------------- */

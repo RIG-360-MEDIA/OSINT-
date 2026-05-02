@@ -22,9 +22,9 @@ export interface MapPin {
   city: string
   /** District id from telangana-geo.ts — pin renders at that polygon's centroid. */
   districtId: string
-  /** Roman-numeral marker that appears next to the margin annotation. */
-  marker: 'i' | 'ii' | 'iii'
-  /** Italic-serif annotation rendered in the right-margin column. */
+  /** Italic-serif annotation rendered in the right-margin column. The roman
+   *  numeral that prefixes the annotation is assigned in geographic order
+   *  (top to bottom) at render time, so tethers never cross. */
   annotation: string
 }
 
@@ -149,32 +149,30 @@ export const DISTRICTS: ReadonlyArray<DistrictDatum> = [
   { id: 'jogulamba', name: 'JOGULAMBA', volatility: 0.16 },
 ]
 
-/* Pins resolve their (x, y) from the centroid of their district polygon at
- * render time — keeping data and geometry in lockstep. */
+/* Pins resolve (x, y) from the centroid of their district polygon at render
+ * time — keeping data and geometry in lockstep. Roman-numeral markers are
+ * also assigned at render time, in top-to-bottom geographic order. */
 export const PINS: ReadonlyArray<MapPin> = [
   {
-    id: 'khammam-farmer',
-    city: 'Khammam',
-    districtId: 'khammam',
-    marker: 'i',
+    id: 'karimnagar-rally',
+    city: 'Karimnagar',
+    districtId: 'karimnagar',
     annotation:
-      'Farmer assembly · 412 mentions · sentiment –0.72 · since 14:18',
+      'Opposition rally scheduled · 4 May · est. 8,000 attending',
   },
   {
     id: 'hyderabad-musi',
     city: 'Hyderabad',
     districtId: 'hyderabad',
-    marker: 'ii',
     annotation:
       'Musi narrative escalating · 1.2k mentions · four mainstream dailies',
   },
   {
-    id: 'karimnagar-rally',
-    city: 'Karimnagar',
-    districtId: 'karimnagar',
-    marker: 'iii',
+    id: 'khammam-farmer',
+    city: 'Khammam',
+    districtId: 'khammam',
     annotation:
-      'Opposition rally scheduled · 4 May · est. 8,000 attending',
+      'Farmer assembly · 412 mentions · sentiment –0.72 · since 14:18',
   },
 ]
 

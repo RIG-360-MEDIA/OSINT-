@@ -10,17 +10,32 @@ import { TELANGANA_DISTRICTS } from './telangana-geo'
 import styles from './styles.module.css'
 
 /* ------------------------------------------------------------------ */
-/* Editorial Telangana atlas — engraved aesthetic.                     */
+/* Editorial Telangana atlas — engraved aesthetic, 33 districts.       */
 /*                                                                     */
-/* Geometry comes from GADM 4.1 India L2 (10 historical districts that */
-/* cover today's Telangana). Rendered as a sepia-graded heatmap with   */
-/* hand-tuned ink rivers, hatched overlays on high-volatility regions, */
-/* and italic-serif margin annotations tethered to wax-seal pins.      */
+/* Geometry: geoBoundaries gbOpen IND ADM2 (2021), simplified to       */
+/* 0.0012° tolerance, equirectangular-projected into a 700×800 area.   */
+/*                                                                     */
+/* Design rules followed in this rewrite:                              */
+/*   - Pin markers (i, ii, iii) are assigned in top-to-bottom order so */
+/*     tethers never cross.                                            */
+/*   - Districts that already carry a pin do NOT get an in-map label   */
+/*     (their name appears in the margin annotation instead).          */
+/*   - The smallest urban districts (Hyderabad, Medchal) skip labels   */
+/*     entirely — their fill colour + position is enough at this zoom. */
+/*   - Cross-hatching is dialed back to 0.10 opacity so it reads as a  */
+/*     subtle paper texture, not aggressive scratch.                   */
+/*   - Pin halos are tightened from 18 → 11 px so they don't bleed     */
+/*     into adjacent districts.                                        */
+/*   - Rivers follow real Telangana geography rather than horizontal   */
+/*     squiggles: Godavari arcs north-east through the upper half,     */
+/*     Krishna traces the southern silhouette.                         */
 /* ------------------------------------------------------------------ */
 
 const VB_W = 1000
 const VB_H = 820
 const ANN_X = 760
+const ANN_Y_START = 200
+const ANN_Y_STEP = 110
 
 /** Sepia ramp — pale ivory through warm sepia to deep ink. */
 function sepiaForVolatility(v: number): string {
@@ -33,18 +48,17 @@ function sepiaForVolatility(v: number): string {
   return '#5a3613'
 }
 
+/** Tighter shortLabel — keeps text inside small polygons. */
 function shortLabel(name: string): string {
   if (name.length <= 9) return name
   const parts = name.split(' ')
   if (parts.length >= 2) {
-    // Compound names — keep the first word if short, else "X.SECOND".
     if (parts[0].length <= 8) return parts[0]
     return `${parts[0][0]}.${parts[1]}`
   }
   return name.slice(0, 7) + '.'
 }
 
-/** Naive word-wrap to N chars — adequate for short annotations. */
 function wrap(text: string, maxChars: number): string[] {
   const words = text.split(' ')
   const lines: string[] = []
@@ -61,19 +75,40 @@ function wrap(text: string, maxChars: number): string[] {
   return lines
 }
 
+const ROMAN = ['i', 'ii', 'iii', 'iv', 'v'] as const
+
+/** Districts whose name we never draw inside the polygon — either too small
+ *  to fit, or already labeled by a margin annotation. Computed from PINS so
+ *  the two are guaranteed in sync. */
+function buildSkipLabelSet(): Set<string> {
+  const s = new Set<string>(['hyderabad', 'medchal'])
+  for (const p of PINS) s.add(p.districtId)
+  return s
+}
+
 export function TelanganaMap() {
   const volById = new Map<string, number>(
     DISTRICTS.map((d) => [d.id, d.volatility]),
   )
   const districtById = new Map(TELANGANA_DISTRICTS.map((d) => [d.id, d]))
+  const skipLabel = buildSkipLabelSet()
 
-  /* River paths — hand-tuned beziers calibrated to the projected geo
-   * bounds (lon 77.235–81.794, lat 15.827–19.916) inside our 0–700 ×
-   * 0–800 map area. Approximate but visually faithful. */
+  /* Resolve each PIN to its district centroid, then sort by Y so markers
+   * read top-to-bottom and the tethers don't cross. */
+  const resolvedPins = PINS.map((pin) => {
+    const dist = districtById.get(pin.districtId)
+    return dist ? { pin, dist } : null
+  })
+    .filter((x): x is { pin: (typeof PINS)[number]; dist: NonNullable<ReturnType<typeof districtById.get>> } => x !== null)
+    .sort((a, b) => a.dist.cy - b.dist.cy)
+
+  /* Hand-tuned river paths — calibrated to the projected geography of
+   * the 33-district map. Godavari curves NW → NE, then south through
+   * Mahabubabad/Bhadradri border. Krishna traces the southern edge. */
   const godavari =
-    'M 30,165 C 130,158 230,205 340,178 S 520,215 600,195 S 670,180 700,150'
+    'M 60,140 C 150,160 230,150 290,200 S 410,260 470,260 S 540,300 580,360 S 610,440 640,470'
   const krishna =
-    'M 80,700 C 200,710 310,735 405,712 S 545,705 625,718 S 690,720 700,705'
+    'M 30,720 C 130,728 220,738 320,728 S 470,710 580,704 S 660,706 700,690'
 
   return (
     <div className={styles.mapWrap} aria-label="Live intelligence map of Telangana">
@@ -84,33 +119,39 @@ export function TelanganaMap() {
         className={styles.mapSvg}
       >
         <defs>
-          {/* Cross-hatch pattern for high-volatility overlay. */}
+          {/* Cross-hatch — toned down so it reads as engraved texture. */}
           <pattern
             id="hatch"
             patternUnits="userSpaceOnUse"
-            width={5}
-            height={5}
+            width={4.5}
+            height={4.5}
             patternTransform="rotate(45)"
           >
-            <line x1={0} y1={0} x2={0} y2={5} stroke="#3a2a1a" strokeWidth={0.6} opacity={0.22} />
+            <line x1={0} y1={0} x2={0} y2={4.5} stroke="#3a2a1a" strokeWidth={0.55} opacity={0.42} />
           </pattern>
-          {/* Wax-seal red halo behind pins. */}
+          {/* Soft halo behind pins — small, contained. */}
           <radialGradient id="pinHalo" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#9c2b1f" stopOpacity="0.55" />
-            <stop offset="60%" stopColor="#9c2b1f" stopOpacity="0.18" />
+            <stop offset="55%" stopColor="#9c2b1f" stopOpacity="0.18" />
             <stop offset="100%" stopColor="#9c2b1f" stopOpacity="0" />
           </radialGradient>
+          {/* Drop shadow for the entire state silhouette — paper depth. */}
+          <filter id="paperShadow" x="-4%" y="-4%" width="108%" height="108%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="2.4" />
+            <feOffset dx="2" dy="3" result="offsetblur" />
+            <feComponentTransfer>
+              <feFuncA type="linear" slope="0.32" />
+            </feComponentTransfer>
+            <feMerge>
+              <feMergeNode />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
-        {/* Soft underglow shadow giving the state silhouette a sense of paper depth. */}
-        <g opacity={0.22} transform="translate(2.5,3.5)">
-          {TELANGANA_DISTRICTS.map((d) => (
-            <path key={d.id} d={d.d} fill="#3a2a1a" stroke="none" />
-          ))}
-        </g>
-
-        {/* District polygons — sepia heatmap fill + ink boundary. */}
-        <g>
+        {/* District polygons — sepia heatmap fill + ink boundary. The whole
+         *  group gets a soft drop shadow for paper depth. */}
+        <g filter="url(#paperShadow)">
           {TELANGANA_DISTRICTS.map((d) => {
             const vol = volById.get(d.id) ?? 0.3
             return (
@@ -119,57 +160,44 @@ export function TelanganaMap() {
                 d={d.d}
                 fill={sepiaForVolatility(vol)}
                 stroke="#3a2a1a"
-                strokeWidth={1.2}
+                strokeWidth={1.0}
                 strokeLinejoin="round"
+                strokeOpacity={0.85}
               />
             )
           })}
         </g>
 
-        {/* Cross-hatching overlay on volatile districts. */}
+        {/* Cross-hatching overlay on volatile districts — subtle. */}
         <g pointerEvents="none">
           {TELANGANA_DISTRICTS.map((d) => {
             const vol = volById.get(d.id) ?? 0.3
             if (vol < 0.55) return null
-            return <path key={d.id} d={d.d} fill="url(#hatch)" stroke="none" />
+            return <path key={d.id} d={d.d} fill="url(#hatch)" stroke="none" opacity={0.28} />
           })}
         </g>
 
-        {/* State outline — subtle double-stroke to suggest hand-drawing. */}
-        <g pointerEvents="none">
-          {TELANGANA_DISTRICTS.map((d) => (
-            <path
-              key={d.id}
-              d={d.d}
-              fill="none"
-              stroke="#1a1a1a"
-              strokeWidth={0.4}
-              strokeOpacity={0.35}
-              transform="translate(0.6,0.6)"
-            />
-          ))}
-        </g>
-
-        {/* Krishna + Godavari rivers — ink-blue threads. */}
+        {/* Krishna + Godavari rivers — ink-blue, behind labels but above fills. */}
         <g
           stroke="#1d3557"
           strokeWidth={2.2}
           fill="none"
-          opacity={0.78}
           strokeLinecap="round"
           pointerEvents="none"
+          opacity={0.72}
         >
           <path d={godavari} />
           <path d={krishna} />
+          {/* Tributaries */}
           <path
-            d="M 320,180 C 340,250 360,320 380,400"
-            strokeWidth={1.2}
-            opacity={0.55}
+            d="M 290,200 C 310,260 330,310 360,360"
+            strokeWidth={1.1}
+            opacity={0.7}
           />
           <path
-            d="M 540,200 C 560,260 575,330 585,420"
-            strokeWidth={1.1}
-            opacity={0.5}
+            d="M 470,260 C 480,320 490,380 510,440"
+            strokeWidth={1.0}
+            opacity={0.65}
           />
         </g>
 
@@ -182,17 +210,16 @@ export function TelanganaMap() {
           opacity={0.78}
           pointerEvents="none"
         >
-          <text x={130} y={188} transform="rotate(-3 130 188)">
+          <text x={205} y={170} transform="rotate(-8 205 170)">
             Godavari
           </text>
-          <text x={150} y={730} transform="rotate(-1 150 730)">
+          <text x={170} y={744} transform="rotate(-2 170 744)">
             Krishna
           </text>
         </g>
 
         {/* District labels at centroids — sepia-aware contrast.
-         *  9pt for 33 districts; tight letter-spacing keeps the type
-         *  inside the smaller polygons. */}
+         *  Pinned districts and tiny urban ones are skipped. */}
         <g
           fontFamily="'Tiempos Headline','Playfair Display','Georgia',serif"
           fontSize={9}
@@ -200,6 +227,7 @@ export function TelanganaMap() {
           pointerEvents="none"
         >
           {TELANGANA_DISTRICTS.map((d) => {
+            if (skipLabel.has(d.id)) return null
             const vol = volById.get(d.id) ?? 0.3
             const dark = vol >= 0.55
             return (
@@ -217,21 +245,20 @@ export function TelanganaMap() {
           })}
         </g>
 
-        {/* Wax-seal pins + tethers + margin annotations. */}
-        {PINS.map((pin, idx) => {
-          const dist = districtById.get(pin.districtId)
-          if (!dist) return null
+        {/* Wax-seal pins — top-to-bottom order, non-crossing tethers. */}
+        {resolvedPins.map(({ pin, dist }, idx) => {
           const px = dist.cx
           const py = dist.cy
-          const annY = 200 + idx * 110
+          const annY = ANN_Y_START + idx * ANN_Y_STEP
           const tetherD = `M ${px},${py} C ${px + 50},${py - 5} ${ANN_X - 70},${annY - 10} ${ANN_X - 6},${annY - 4}`
+          const marker = ROMAN[idx] ?? `${idx + 1}`
           return (
             <g key={pin.id}>
-              {/* breathing halo */}
+              {/* compact breathing halo */}
               <circle
                 cx={px}
                 cy={py}
-                r={18}
+                r={11}
                 fill="url(#pinHalo)"
                 className={styles.pinPulse}
               />
@@ -239,7 +266,7 @@ export function TelanganaMap() {
               <circle
                 cx={px}
                 cy={py}
-                r={6}
+                r={5}
                 fill="#9c2b1f"
                 stroke="#5a160e"
                 strokeWidth={0.9}
@@ -251,7 +278,7 @@ export function TelanganaMap() {
                 strokeWidth={0.9}
                 fill="none"
                 strokeDasharray="2 2.4"
-                opacity={0.6}
+                opacity={0.55}
               />
               {/* annotation block */}
               <text
@@ -263,10 +290,10 @@ export function TelanganaMap() {
                 fill="#9c2b1f"
                 fontWeight={600}
               >
-                {pin.marker}.
+                {marker}.
               </text>
               <text
-                x={ANN_X + 14}
+                x={ANN_X + 16}
                 y={annY - 14}
                 fontFamily="'Tiempos Headline','Playfair Display','Georgia',serif"
                 fontSize={14}
@@ -296,7 +323,7 @@ export function TelanganaMap() {
         {/* "+ N more events" affordance. */}
         <text
           x={ANN_X}
-          y={200 + PINS.length * 110 + 6}
+          y={ANN_Y_START + resolvedPins.length * ANN_Y_STEP + 6}
           fontFamily="'Tiempos Text','Lora','Georgia',serif"
           fontStyle="italic"
           fontSize={12}
@@ -305,14 +332,14 @@ export function TelanganaMap() {
           {ADDITIONAL_EVENTS_LABEL}
         </text>
 
-        {/* Compass rose. */}
+        {/* Compass rose, tucked into the bottom-left of the map zone. */}
         <g transform="translate(60,740)" stroke="#3a2a1a" strokeWidth={1} fill="none">
-          <circle cx={0} cy={0} r={22} opacity={0.6} />
-          <path d="M 0,-22 L 0,22 M -22,0 L 22,0" opacity={0.4} />
-          <path d="M 0,-22 L 4,0 L 0,22 L -4,0 Z" fill="#3a2a1a" opacity={0.85} />
+          <circle cx={0} cy={0} r={20} opacity={0.55} />
+          <path d="M 0,-20 L 0,20 M -20,0 L 20,0" opacity={0.35} />
+          <path d="M 0,-20 L 4,0 L 0,20 L -4,0 Z" fill="#3a2a1a" opacity={0.85} />
           <text
             x={0}
-            y={-28}
+            y={-26}
             textAnchor="middle"
             fontFamily="'Tiempos Text','Lora','Georgia',serif"
             fontStyle="italic"

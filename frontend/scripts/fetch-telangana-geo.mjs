@@ -139,8 +139,8 @@ function dp(points, tol) {
 const SVG_W = 700
 const SVG_H = 800
 const PAD = 24
-/** Tolerance must be tighter than for 10 districts — sub-districts are smaller. */
-const TOL = 0.0025
+/** Tolerance — sub-districts are small, want smooth curves at this zoom. */
+const TOL = 0.0012
 
 const idify = (s) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')

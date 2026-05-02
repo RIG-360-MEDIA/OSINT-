@@ -20,9 +20,8 @@ export interface MapPin {
   id: string
   /** Display label of the city / district where the pin lands. */
   city: string
-  /** SVG x/y in the TelanganaMap viewBox (1000 × 900). */
-  x: number
-  y: number
+  /** District id from telangana-geo.ts — pin renders at that polygon's centroid. */
+  districtId: string
   /** Roman-numeral marker that appears next to the margin annotation. */
   marker: 'i' | 'ii' | 'iii'
   /** Italic-serif annotation rendered in the right-margin column. */
@@ -105,49 +104,32 @@ export const STATEWIDE_SUMMARY =
 /* Telangana districts — 33 districts with hand-tuned heatmap weights. */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Volatility weights keyed by GADM district id (matches telangana-geo.ts).
+ * The 10-district arrangement comes from GADM 4.1 (state-creation-era
+ * boundaries — the same area today's 33 districts cover, just at a coarser
+ * administrative grain that reads better as an editorial atlas).
+ */
 export const DISTRICTS: ReadonlyArray<DistrictDatum> = [
-  { id: 'adilabad', name: 'ADILABAD', volatility: 0.12 },
-  { id: 'kumram-bheem', name: 'KUMRAM BHEEM', volatility: 0.18 },
-  { id: 'mancherial', name: 'MANCHERIAL', volatility: 0.22 },
-  { id: 'nirmal', name: 'NIRMAL', volatility: 0.16 },
-  { id: 'nizamabad', name: 'NIZAMABAD', volatility: 0.34 },
-  { id: 'jagtial', name: 'JAGTIAL', volatility: 0.28 },
-  { id: 'peddapalli', name: 'PEDDAPALLI', volatility: 0.36 },
-  { id: 'karimnagar', name: 'KARIMNAGAR', volatility: 0.62 },
-  { id: 'rajanna-sircilla', name: 'RAJANNA SIRCILLA', volatility: 0.31 },
-  { id: 'kamareddy', name: 'KAMAREDDY', volatility: 0.24 },
-  { id: 'medak', name: 'MEDAK', volatility: 0.55 },
-  { id: 'sangareddy', name: 'SANGAREDDY', volatility: 0.38 },
-  { id: 'siddipet', name: 'SIDDIPET', volatility: 0.41 },
-  { id: 'jangaon', name: 'JANGAON', volatility: 0.33 },
-  { id: 'hanamkonda', name: 'HANAMKONDA', volatility: 0.58 },
-  { id: 'warangal', name: 'WARANGAL', volatility: 0.71 },
-  { id: 'mahabubabad', name: 'MAHABUBABAD', volatility: 0.42 },
-  { id: 'bhadradri', name: 'BHADRADRI', volatility: 0.39 },
-  { id: 'khammam', name: 'KHAMMAM', volatility: 0.78 },
-  { id: 'suryapet', name: 'SURYAPET', volatility: 0.35 },
-  { id: 'nalgonda', name: 'NALGONDA', volatility: 0.46 },
-  { id: 'yadadri', name: 'YADADRI', volatility: 0.27 },
-  { id: 'medchal', name: 'MEDCHAL', volatility: 0.52 },
+  { id: 'adilabad', name: 'ADILABAD', volatility: 0.18 },
   { id: 'hyderabad', name: 'HYDERABAD', volatility: 0.86 },
+  { id: 'karimnagar', name: 'KARIMNAGAR', volatility: 0.62 },
+  { id: 'khammam', name: 'KHAMMAM', volatility: 0.78 },
+  { id: 'mahbubnagar', name: 'MAHBUBNAGAR', volatility: 0.28 },
+  { id: 'medak', name: 'MEDAK', volatility: 0.55 },
+  { id: 'nalgonda', name: 'NALGONDA', volatility: 0.42 },
+  { id: 'nizamabad', name: 'NIZAMABAD', volatility: 0.34 },
   { id: 'rangareddy', name: 'RANGAREDDY', volatility: 0.64 },
-  { id: 'vikarabad', name: 'VIKARABAD', volatility: 0.21 },
-  { id: 'narayanpet', name: 'NARAYANPET', volatility: 0.18 },
-  { id: 'mahbubnagar', name: 'MAHBUBNAGAR', volatility: 0.32 },
-  { id: 'jogulamba', name: 'JOGULAMBA GADWAL', volatility: 0.14 },
-  { id: 'wanaparthy', name: 'WANAPARTHY', volatility: 0.19 },
-  { id: 'nagarkurnool', name: 'NAGARKURNOOL', volatility: 0.11 },
-  { id: 'jayashankar', name: 'JAYASHANKAR', volatility: 0.26 },
-  { id: 'mulugu', name: 'MULUGU', volatility: 0.23 },
+  { id: 'warangal', name: 'WARANGAL', volatility: 0.65 },
 ]
 
-/* The pins ride on top of the SVG (viewBox 0 0 1000 900). */
+/* Pins resolve their (x, y) from the centroid of their district polygon at
+ * render time — keeping data and geometry in lockstep. */
 export const PINS: ReadonlyArray<MapPin> = [
   {
     id: 'khammam-farmer',
     city: 'Khammam',
-    x: 760,
-    y: 575,
+    districtId: 'khammam',
     marker: 'i',
     annotation:
       'Farmer assembly · 412 mentions · sentiment –0.72 · since 14:18',
@@ -155,8 +137,7 @@ export const PINS: ReadonlyArray<MapPin> = [
   {
     id: 'hyderabad-musi',
     city: 'Hyderabad',
-    x: 470,
-    y: 560,
+    districtId: 'hyderabad',
     marker: 'ii',
     annotation:
       'Musi narrative escalating · 1.2k mentions · four mainstream dailies',
@@ -164,8 +145,7 @@ export const PINS: ReadonlyArray<MapPin> = [
   {
     id: 'karimnagar-rally',
     city: 'Karimnagar',
-    x: 545,
-    y: 250,
+    districtId: 'karimnagar',
     marker: 'iii',
     annotation:
       'Opposition rally scheduled · 4 May · est. 8,000 attending',

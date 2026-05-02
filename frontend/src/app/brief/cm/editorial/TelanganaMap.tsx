@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { STATEWIDE_SUMMARY } from './data'
+import { LayerOverlays } from './LayerOverlays'
 import { DEFAULT_LAYER_ID, getLayer } from './layers'
 import { TELANGANA_DISTRICTS, TELANGANA_VIEWBOX } from './telangana-geo'
 import styles from './styles.module.css'
@@ -167,47 +168,12 @@ export function TelanganaMap({
           </g>
         )}
 
-        {/* Layer-specific overlays — pinned markers (e.g. ACLED counts,
-         *  power-stress flags). */}
-        {layer.overlays && layer.overlays.length > 0 && (
-          <g pointerEvents="none">
-            {layer.overlays.map((o, i) => {
-              const dist = TELANGANA_DISTRICTS.find((x) => x.id === o.districtId)
-              if (!dist) return null
-              const fill =
-                o.tone === 'red'
-                  ? '#9c2b1f'
-                  : o.tone === 'blue'
-                    ? '#1d3557'
-                    : '#3a2a1a'
-              return (
-                <g key={i}>
-                  <circle cx={dist.cx} cy={dist.cy} r={11} fill={fill} fillOpacity={0.18} />
-                  <circle
-                    cx={dist.cx}
-                    cy={dist.cy}
-                    r={7}
-                    fill={fill}
-                    stroke="#f5f0e6"
-                    strokeOpacity={0.55}
-                    strokeWidth={0.9}
-                  />
-                  <text
-                    x={dist.cx}
-                    y={dist.cy + 2.6}
-                    textAnchor="middle"
-                    fontFamily="'Söhne Mono','IBM Plex Mono','Menlo',monospace"
-                    fontSize={7}
-                    fontWeight={700}
-                    fill="#f5f0e6"
-                  >
-                    {o.label}
-                  </text>
-                </g>
-              )
-            })}
-          </g>
-        )}
+        {/* Layer-specific overlays — each layer has its own visual
+         *  language (pulsing rings for News, ▼ glyphs for Sentiment,
+         *  event badges + connector wash for ACLED, commodity
+         *  letter-badges for Mandi, ★/! flags for Welfare, hub-and-
+         *  spoke + ⚡ for Power, composite donuts for Stability). */}
+        <LayerOverlays activeLayerId={activeLayerId} />
 
         {/* District labels at centroids — sepia-aware contrast based on
          *  underlying layer intensity. */}

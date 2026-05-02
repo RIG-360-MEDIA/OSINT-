@@ -1409,6 +1409,176 @@
   margin: 0 auto;
 }
 
+/* Live dot in section header (breathing wax-red). */
+.intelLiveDot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--wax-red);
+  margin-right: 10px;
+  vertical-align: middle;
+  box-shadow: 0 0 0 0 rgba(156, 43, 31, 0.55);
+  animation: breathe 1.8s ease-in-out infinite;
+}
+
+/* Intelligence Feed grid — 3 cols desktop, 2 tablet, 1 mobile. */
+.intelFeedGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px 22px;
+}
+
+@media (max-width: 1100px) {
+  .intelFeedGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .intelFeedGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Single intel card — pure text, restrained. */
+.intelCard {
+  position: relative;
+  padding: 14px 16px 14px 18px;
+  background: rgba(245, 240, 230, 0.5);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid transparent;
+  opacity: 0;
+  animation: intelCardEnter 0.55s ease-out forwards;
+  transition: background 0.4s ease, border-color 0.4s ease, transform 0.3s ease;
+}
+
+@keyframes intelCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Newest indicator — wax-red rail + faint wash. */
+.intelCardNewest {
+  border-left-color: var(--wax-red);
+  background: rgba(156, 43, 31, 0.04);
+}
+
+.intelCardHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+
+.intelTime {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.intelDot {
+  color: var(--ink-faint);
+}
+
+.intelDistrict {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink-soft);
+  letter-spacing: 0;
+}
+
+.intelSpacer {
+  flex: 1;
+}
+
+.intelPriority {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  padding: 2px 7px 3px;
+  border-radius: 2px;
+  border: 1px solid;
+}
+
+.intelPriorityP0 {
+  color: var(--wax-red);
+  border-color: rgba(156, 43, 31, 0.5);
+  background: rgba(156, 43, 31, 0.12);
+}
+
+.intelPriorityP1 {
+  color: #a07a45;
+  border-color: rgba(160, 122, 69, 0.5);
+  background: rgba(160, 122, 69, 0.1);
+}
+
+.intelPriorityP2 {
+  color: var(--ink-blue);
+  border-color: rgba(29, 53, 87, 0.42);
+  background: rgba(29, 53, 87, 0.07);
+}
+
+.intelPriorityInfo {
+  color: var(--ink-faint);
+  border-color: var(--hairline-strong);
+  background: rgba(58, 42, 26, 0.04);
+}
+
+.intelCategory {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.intelCategoryUrgent { color: var(--wax-red); }
+.intelCategoryPolitical { color: var(--ink-blue); }
+.intelCategorySector { color: #7a5224; }
+.intelCategoryMuted { color: var(--ink-faint); }
+
+.intelNewBadge {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  color: var(--wax-red);
+  font-weight: 500;
+  animation: breathe 1.8s ease-in-out infinite;
+}
+
+.intelText {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+
+.intelSource {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  letter-spacing: 0.02em;
+  border-top: 1px dashed var(--hairline);
+  padding-top: 8px;
+}
+
 /* ------------------------------------------------------------------ */
 /* District-Brief view                                                  */
 /* ------------------------------------------------------------------ */

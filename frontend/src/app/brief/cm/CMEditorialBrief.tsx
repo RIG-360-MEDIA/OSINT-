@@ -30,6 +30,7 @@ import {
   VOICE_SHARE,
   WATCHLIST,
 } from './editorial/data'
+import { CMIntelGrid } from './editorial/CMIntelGrid'
 import { DistrictModal } from './editorial/DistrictModal'
 import { IntelFeed } from './editorial/IntelFeed'
 import { LayerFeed } from './editorial/LayerFeed'
@@ -280,13 +281,13 @@ function Intel() {
       <div className={styles.intelInner}>
         <header className={styles.sectionHeader}>
           <span className={styles.sectionEyebrow}>
-            <span className={styles.intelLiveDot} /> The Intelligence Feed · Live
+            <span className={styles.intelLiveDot} /> The Chair&apos;s Folio · Live
           </span>
           <span className={styles.sectionMeta}>
-            streaming · 14:37 IST · 18 incoming · last 6h
+            7 desks · last refresh 14:37 IST
           </span>
         </header>
-        <IntelFeed />
+        <CMIntelGrid />
       </div>
     </section>
   )

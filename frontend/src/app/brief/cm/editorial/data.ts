@@ -105,22 +105,48 @@ export const STATEWIDE_SUMMARY =
 /* ------------------------------------------------------------------ */
 
 /**
- * Volatility weights keyed by GADM district id (matches telangana-geo.ts).
- * The 10-district arrangement comes from GADM 4.1 (state-creation-era
- * boundaries — the same area today's 33 districts cover, just at a coarser
- * administrative grain that reads better as an editorial atlas).
+ * Volatility weights keyed by district id (matches telangana-geo.ts).
+ * Source geometry: geoBoundaries gbOpen IND ADM2 (2021) — the post-2019
+ * 33-district arrangement, exactly what people expect to see when they
+ * look at a map of Telangana today.
  */
 export const DISTRICTS: ReadonlyArray<DistrictDatum> = [
-  { id: 'adilabad', name: 'ADILABAD', volatility: 0.18 },
+  // Hyderabad belt — highest sentiment volatility
   { id: 'hyderabad', name: 'HYDERABAD', volatility: 0.86 },
-  { id: 'karimnagar', name: 'KARIMNAGAR', volatility: 0.62 },
   { id: 'khammam', name: 'KHAMMAM', volatility: 0.78 },
-  { id: 'mahbubnagar', name: 'MAHBUBNAGAR', volatility: 0.28 },
-  { id: 'medak', name: 'MEDAK', volatility: 0.55 },
-  { id: 'nalgonda', name: 'NALGONDA', volatility: 0.42 },
-  { id: 'nizamabad', name: 'NIZAMABAD', volatility: 0.34 },
-  { id: 'rangareddy', name: 'RANGAREDDY', volatility: 0.64 },
   { id: 'warangal', name: 'WARANGAL', volatility: 0.65 },
+  { id: 'rangareddy', name: 'RANGAREDDY', volatility: 0.64 },
+  { id: 'karimnagar', name: 'KARIMNAGAR', volatility: 0.62 },
+  { id: 'hanumakonda', name: 'HANUMAKONDA', volatility: 0.58 },
+  { id: 'medak', name: 'MEDAK', volatility: 0.55 },
+  { id: 'medchal', name: 'MEDCHAL', volatility: 0.52 },
+  // Mid tier
+  { id: 'nalgonda', name: 'NALGONDA', volatility: 0.46 },
+  { id: 'mahabubabad', name: 'MAHABUBABAD', volatility: 0.42 },
+  { id: 'sangareddy', name: 'SANGAREDDY', volatility: 0.42 },
+  { id: 'siddipet', name: 'SIDDIPET', volatility: 0.41 },
+  { id: 'bhadradri', name: 'BHADRADRI', volatility: 0.39 },
+  { id: 'peddapalli', name: 'PEDDAPALLI', volatility: 0.36 },
+  { id: 'suryapet', name: 'SURYAPET', volatility: 0.35 },
+  { id: 'nizamabad', name: 'NIZAMABAD', volatility: 0.34 },
+  { id: 'jangaon', name: 'JANGAON', volatility: 0.33 },
+  { id: 'mahbubnagar', name: 'MAHBUBNAGAR', volatility: 0.32 },
+  { id: 'rajanna-sircilla', name: 'RAJANNA SIRCILLA', volatility: 0.3 },
+  { id: 'jagtial', name: 'JAGTIAL', volatility: 0.28 },
+  { id: 'mulugu', name: 'MULUGU', volatility: 0.28 },
+  { id: 'yadadri', name: 'YADADRI', volatility: 0.27 },
+  { id: 'jayashankar', name: 'JAYASHANKAR', volatility: 0.26 },
+  { id: 'kamareddy', name: 'KAMAREDDY', volatility: 0.24 },
+  // Calmer rural districts
+  { id: 'mancherial', name: 'MANCHERIAL', volatility: 0.22 },
+  { id: 'vikarabad', name: 'VIKARABAD', volatility: 0.21 },
+  { id: 'nirmal', name: 'NIRMAL', volatility: 0.2 },
+  { id: 'nagarkurnool', name: 'NAGARKURNOOL', volatility: 0.2 },
+  { id: 'wanaparthy', name: 'WANAPARTHY', volatility: 0.19 },
+  { id: 'adilabad', name: 'ADILABAD', volatility: 0.18 },
+  { id: 'narayanpet', name: 'NARAYANPET', volatility: 0.18 },
+  { id: 'komaram-bheem', name: 'KUMRAM BHEEM', volatility: 0.18 },
+  { id: 'jogulamba', name: 'JOGULAMBA', volatility: 0.16 },
 ]
 
 /* Pins resolve their (x, y) from the centroid of their district polygon at

@@ -34,10 +34,14 @@ function sepiaForVolatility(v: number): string {
 }
 
 function shortLabel(name: string): string {
-  if (name.length <= 11) return name
+  if (name.length <= 9) return name
   const parts = name.split(' ')
-  if (parts.length === 1) return name.slice(0, 10) + '.'
-  return `${parts[0]}.`
+  if (parts.length >= 2) {
+    // Compound names — keep the first word if short, else "X.SECOND".
+    if (parts[0].length <= 8) return parts[0]
+    return `${parts[0][0]}.${parts[1]}`
+  }
+  return name.slice(0, 7) + '.'
 }
 
 /** Naive word-wrap to N chars — adequate for short annotations. */
@@ -186,11 +190,13 @@ export function TelanganaMap() {
           </text>
         </g>
 
-        {/* District labels at centroids — sepia-aware contrast. */}
+        {/* District labels at centroids — sepia-aware contrast.
+         *  9pt for 33 districts; tight letter-spacing keeps the type
+         *  inside the smaller polygons. */}
         <g
           fontFamily="'Tiempos Headline','Playfair Display','Georgia',serif"
-          fontSize={11}
-          letterSpacing="0.14em"
+          fontSize={9}
+          letterSpacing="0.04em"
           pointerEvents="none"
         >
           {TELANGANA_DISTRICTS.map((d) => {
@@ -200,7 +206,7 @@ export function TelanganaMap() {
               <text
                 key={d.id}
                 x={d.cx}
-                y={d.cy + 4}
+                y={d.cy + 3}
                 textAnchor="middle"
                 fill={dark ? '#f5f0e6' : '#1a1a1a'}
                 fillOpacity={0.92}

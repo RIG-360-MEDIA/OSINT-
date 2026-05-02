@@ -367,6 +367,37 @@
   }
 }
 
+/* Layer-overlay animations — slow breathing for headline / news rings,
+ * inner faster pulse for the second concentric ring. */
+.pulseRingOuter {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: ringExpand 3s ease-out infinite;
+}
+
+.pulseRingInner {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: ringExpand 3s ease-out infinite;
+  animation-delay: 1.5s;
+}
+
+@keyframes ringExpand {
+  0%   { transform: scale(0.6); opacity: 0.65; }
+  100% { transform: scale(1.7); opacity: 0;    }
+}
+
+.pulseSlow {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: pulseSlow 2.6s ease-in-out infinite;
+}
+
+@keyframes pulseSlow {
+  0%, 100% { opacity: 0.18; transform: scale(1); }
+  50%      { opacity: 0.5;  transform: scale(1.15); }
+}
+
 /* ------------------------------------------------------------------ */
 /* Right column — priority stack.                                      */
 /* ------------------------------------------------------------------ */

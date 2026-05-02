@@ -1,7 +1,7 @@
 'use client'
 
 import { DISTRICTS, STATEWIDE_SUMMARY } from './data'
-import { TELANGANA_DISTRICTS } from './telangana-geo'
+import { TELANGANA_DISTRICTS, TELANGANA_VIEWBOX } from './telangana-geo'
 import styles from './styles.module.css'
 
 /* ------------------------------------------------------------------ */
@@ -16,8 +16,8 @@ import styles from './styles.module.css'
 /*   - statewide summary sentence at the foot                         */
 /* ------------------------------------------------------------------ */
 
-const VB_W = 720
-const VB_H = 820
+const VB_W = TELANGANA_VIEWBOX.width
+const VB_H = TELANGANA_VIEWBOX.height
 
 /** Sepia ramp — pale ivory through warm sepia to deep ink. */
 function sepiaForVolatility(v: number): string {
@@ -135,27 +135,10 @@ export function TelanganaMap() {
           })}
         </g>
 
-        {/* Hairline rule + statewide summary line. */}
-        <line
-          x1={20}
-          y1={788}
-          x2={VB_W - 20}
-          y2={788}
-          stroke="#7a6a55"
-          strokeWidth={0.6}
-          opacity={0.55}
-        />
-        <text
-          x={VB_W / 2}
-          y={808}
-          textAnchor="middle"
-          fontFamily="'Tiempos Text','Lora','Georgia',serif"
-          fontSize={14}
-          fill="#1a1a1a"
-        >
-          {STATEWIDE_SUMMARY}
-        </text>
       </svg>
+      {/* Statewide summary now lives as an HTML element below the SVG so
+       *  the SVG itself is just the atlas, with no in-SVG chrome. */}
+      <p className={styles.atlasSummary}>{STATEWIDE_SUMMARY}</p>
     </div>
   )
 }

@@ -19,6 +19,7 @@ import {
   FORECAST_NARRATIVE,
   FORECAST_POINTS,
   HEADER,
+  HEADLINES,
   HERO,
   NEWS_DESK,
   OPPOSITION_DESK,
@@ -135,12 +136,40 @@ function useClock(): string {
 /* wax-red kicker, 50pt serif headline, source link + sparkline of    */
 /* the underlying signal trend.                                        */
 /* ------------------------------------------------------------------ */
+/** Rotation cadence for the Lead headline (ms). */
+const HEADLINE_INTERVAL_MS = 8000
+
 function Lead() {
+  const [idx, setIdx] = useState(0)
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setIdx((i) => (i + 1) % HEADLINES.length)
+    }, HEADLINE_INTERVAL_MS)
+    return () => window.clearInterval(id)
+  }, [])
+  const current = HEADLINES[idx]
   return (
     <section className={styles.lead}>
       <div className={styles.leadInner}>
-        <div className={styles.leadEyebrow}>{HERO.eyebrow}</div>
-        <h1 className={styles.leadHeadline}>{HERO.headline}</h1>
+        {/* `key` forces remount on every rotation so the fade-in
+         *  animation re-runs without manual class swapping. */}
+        <div
+          key={`eyebrow-${idx}`}
+          className={`${styles.leadEyebrow} ${styles.leadEyebrowAnim}`}
+        >
+          {current.eyebrow}
+        </div>
+        <h1 key={`headline-${idx}`} className={styles.leadHeadline}>
+          {current.text}
+        </h1>
+        <div className={styles.leadProgress} aria-hidden="true">
+          {HEADLINES.map((_, i) => (
+            <span
+              key={i}
+              className={`${styles.leadProgressDot} ${i === idx ? styles.leadProgressDotActive : ''}`}
+            />
+          ))}
+        </div>
       </div>
     </section>
   )

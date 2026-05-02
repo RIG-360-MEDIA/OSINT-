@@ -1579,6 +1579,720 @@
   padding-top: 8px;
 }
 
+/* ================================================================== */
+/* CM Intel Grid — 7 themed cards, asymmetric Bento layout.            */
+/* Each card has its own visual treatment.                              */
+/* ================================================================== */
+
+.cmIntelGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-areas:
+    'news    news    actions'
+    'opp     monitor monitor'
+    'threats outlook outlook'
+    'pulse   pulse   pulse';
+  gap: 18px 22px;
+}
+
+@media (max-width: 1100px) {
+  .cmIntelGrid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-areas:
+      'news    news'
+      'actions opp'
+      'monitor monitor'
+      'threats outlook'
+      'pulse   pulse';
+  }
+}
+
+@media (max-width: 700px) {
+  .cmIntelGrid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'news'
+      'actions'
+      'opp'
+      'monitor'
+      'threats'
+      'outlook'
+      'pulse';
+  }
+}
+
+/* Common card chrome — overridden per card. */
+.cmCard {
+  position: relative;
+  padding: 18px 22px 18px;
+  background: var(--paper);
+  border: 1px solid var(--hairline-strong);
+}
+
+.cmCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 14px;
+}
+
+.cmCardEyebrow {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 10.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.cmCardMeta {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ------------------------------------------------------------------ */
+/* 1. NEWS ON CM — newspaper front-page                                */
+/* ------------------------------------------------------------------ */
+
+.cmCardNews {
+  grid-area: news;
+  background: linear-gradient(180deg, var(--paper) 0%, rgba(245, 240, 230, 0.65) 100%);
+}
+
+.cmNewsLead {
+  padding: 4px 0 14px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 14px;
+}
+
+.cmNewsLeadMeta {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-faint);
+  letter-spacing: 0.03em;
+}
+
+.cmNewsLeadHeadline {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 26px;
+  line-height: 1.18;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.012em;
+  margin: 6px 0 0;
+}
+
+.cmNewsDropCap {
+  float: left;
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 56px;
+  line-height: 0.92;
+  font-weight: 700;
+  margin: 4px 8px -2px 0;
+  color: var(--wax-red);
+}
+
+.cmNewsRest {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cmNewsRest li {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: 8px 12px;
+  align-items: baseline;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.cmNewsRest li:last-child {
+  border-bottom: none;
+}
+
+.cmNewsRestSource {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11.5px;
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.cmNewsRestAge {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 10px;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+}
+
+.cmNewsRestText {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 0;
+  grid-column: 3 / 4;
+}
+
+.cmSentimentChip {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 1px 7px 2px;
+  border: 1px solid;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.cmSentimentNeg {
+  color: var(--wax-red);
+  border-color: rgba(156, 43, 31, 0.45);
+  background: rgba(156, 43, 31, 0.1);
+}
+
+.cmSentimentPos {
+  color: var(--ink-blue);
+  border-color: rgba(29, 53, 87, 0.45);
+  background: rgba(29, 53, 87, 0.08);
+}
+
+/* ------------------------------------------------------------------ */
+/* 2. ACTIONS — memo card                                              */
+/* ------------------------------------------------------------------ */
+
+.cmCardMemo {
+  grid-area: actions;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 230, 0.85) 0%, rgba(252, 245, 220, 0.85) 100%);
+  border-color: rgba(160, 122, 69, 0.4);
+}
+
+.cmCardMemo .cmCardEyebrow {
+  color: var(--wax-red);
+  font-style: italic;
+  letter-spacing: 0.22em;
+}
+
+.cmActionList {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cmActionRow {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 10px;
+  align-items: start;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(160, 122, 69, 0.35);
+}
+
+.cmActionRow:last-child {
+  border-bottom: none;
+}
+
+.cmCheckbox {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--ink-soft);
+  display: inline-block;
+  margin-top: 2px;
+}
+
+.cmActionChip {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  padding: 1px 8px 2px;
+  border: 1.5px solid;
+  border-radius: 2px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cmActionChipP0 {
+  color: var(--paper);
+  background: var(--wax-red);
+  border-color: var(--wax-red);
+  transform: rotate(-2deg);
+}
+
+.cmActionChipP1 {
+  color: var(--wax-red);
+  border-color: var(--wax-red);
+}
+
+.cmActionChipP2 {
+  color: var(--ink-soft);
+  border-color: var(--ink-soft);
+}
+
+.cmActionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cmActionText {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.cmActionDeadline {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: var(--wax-red);
+}
+
+.cmMemoFooter {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  text-align: right;
+  border-top: 1px dashed rgba(160, 122, 69, 0.3);
+  padding-top: 8px;
+}
+
+/* ------------------------------------------------------------------ */
+/* 3. OPPOSITION — press-clipping feed with avatars                    */
+/* ------------------------------------------------------------------ */
+
+.cmCardOpp {
+  grid-area: opp;
+}
+
+.cmOppList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cmOppEntry {
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.cmOppEntry:last-child {
+  border-bottom: none;
+}
+
+.cmOppHeader {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.cmOppAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cmOppName {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 13px;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.cmOppParty {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+
+.cmOppMeta {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+.cmOppQuote {
+  margin: 0 0 4px;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--wax-red);
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.cmOppReach {
+  display: inline-block;
+  margin-left: 14px;
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 10px;
+  color: var(--wax-red);
+  letter-spacing: 0.04em;
+}
+
+/* ------------------------------------------------------------------ */
+/* 4. MONITOR — dotted-leader watchlist log                            */
+/* ------------------------------------------------------------------ */
+
+.cmCardMonitor {
+  grid-area: monitor;
+  background: rgba(245, 240, 230, 0.55);
+}
+
+.cmMonitorList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cmMonitorRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.cmMonitorRow:last-child {
+  border-bottom: none;
+}
+
+.cmMonitorLabel {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.cmMonitorLeader {
+  height: 1px;
+  border-bottom: 1px dotted var(--hairline-strong);
+  align-self: end;
+  margin-bottom: 4px;
+  min-width: 40px;
+}
+
+.cmMonitorStatus {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.cmMonitorUp { color: var(--wax-red); }
+.cmMonitorDown { color: var(--ink-blue); }
+.cmMonitorFlat { color: var(--ink-faint); }
+.cmMonitorLive {
+  color: var(--wax-red);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. THREATS — classified dossier                                     */
+/* ------------------------------------------------------------------ */
+
+.cmCardThreat {
+  grid-area: threats;
+  padding-top: 0;
+  border-color: rgba(156, 43, 31, 0.4);
+}
+
+.cmThreatBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--wax-red);
+  color: var(--paper);
+  padding: 8px 14px;
+  margin: 0 -22px 14px;
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cmThreatList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: threat;
+}
+
+.cmThreatRow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.cmThreatRow:last-child {
+  border-bottom: none;
+}
+
+.cmThreatNum {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 14px;
+  color: var(--wax-red);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.cmThreatBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cmThreatLevel {
+  align-self: flex-start;
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  padding: 1px 7px 2px;
+  border: 1.5px solid;
+  border-radius: 2px;
+  font-weight: 700;
+}
+
+.cmThreatLow {
+  color: var(--ink-soft);
+  border-color: var(--ink-soft);
+}
+
+.cmThreatLowMed {
+  color: #a07a45;
+  border-color: rgba(160, 122, 69, 0.6);
+  background: rgba(160, 122, 69, 0.1);
+}
+
+.cmThreatMed {
+  color: var(--paper);
+  background: var(--wax-red);
+  border-color: var(--wax-red);
+}
+
+.cmThreatHigh {
+  color: var(--paper);
+  background: #5a160e;
+  border-color: #5a160e;
+}
+
+.cmThreatText {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink);
+  margin: 0;
+}
+
+.cmThreatPosture {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+/* ------------------------------------------------------------------ */
+/* 6. OUTLOOK — horizontal timeline                                    */
+/* ------------------------------------------------------------------ */
+
+.cmCardOutlook {
+  grid-area: outlook;
+}
+
+.cmTimeline {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding: 24px 0 8px;
+}
+
+.cmTimelineRule {
+  position: absolute;
+  top: 28px;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: var(--hairline-strong);
+}
+
+.cmTimelineEntry {
+  position: relative;
+  padding-top: 12px;
+}
+
+.cmTimelinePeg {
+  position: absolute;
+  top: -8px;
+  left: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+
+.cmTimelineWhen {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wax-red);
+  letter-spacing: 0.02em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.cmTimelineText {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .cmTimeline {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 7. LIVE PULSE — wide ticker tape strip                              */
+/* ------------------------------------------------------------------ */
+
+.cmCardPulse {
+  grid-area: pulse;
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+  padding: 14px 22px 16px;
+}
+
+.cmPulseHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(245, 240, 230, 0.18);
+  margin-bottom: 14px;
+}
+
+.cmCardPulse .cmCardEyebrow {
+  color: #c9a373;
+}
+
+.cmCardPulse .cmCardMeta {
+  color: rgba(245, 240, 230, 0.55);
+  margin-left: auto;
+}
+
+.cmPulseLiveDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wax-red);
+  animation: breathe 1.8s ease-in-out infinite;
+}
+
+.cmPulseStrip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+}
+
+@media (max-width: 1100px) {
+  .cmPulseStrip {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .cmPulseStrip {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cmPulseTile {
+  padding: 4px 18px 4px 18px;
+  border-left: 1px solid rgba(245, 240, 230, 0.22);
+}
+
+.cmPulseTile:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.cmPulseLabel {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 9.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(245, 240, 230, 0.55);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.cmPulseValue {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 22px;
+  color: var(--paper);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.cmPulseDelta {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.cmPulseDeltaUp { color: #f3a89c; }
+.cmPulseDeltaDown { color: #9bb1c5; }
+.cmPulseDeltaFlat { color: rgba(245, 240, 230, 0.5); }
+
 /* ------------------------------------------------------------------ */
 /* District-Brief view                                                  */
 /* ------------------------------------------------------------------ */

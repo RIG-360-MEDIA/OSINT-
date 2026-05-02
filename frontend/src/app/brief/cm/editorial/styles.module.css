@@ -743,6 +743,421 @@
   margin: 0 auto;
 }
 
+/* ------------------------------------------------------------------ */
+/* District-Brief view                                                  */
+/* ------------------------------------------------------------------ */
+
+.breadcrumb {
+  padding: 14px 32px 0;
+  max-width: 1860px;
+  margin: 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.breadcrumbBack {
+  color: var(--ink-blue);
+  border-bottom: 1px solid var(--ink-blue);
+  padding-bottom: 1px;
+}
+
+.breadcrumbSep {
+  color: var(--ink-faint);
+  font-style: normal;
+  letter-spacing: 0.2em;
+}
+
+.breadcrumbCurrent {
+  color: var(--ink-faint);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-style: normal;
+  font-size: 11px;
+}
+
+/* District hero — name + facts + stability dial */
+.districtHero {
+  position: relative;
+  padding: 28px 32px 32px;
+  border-bottom: 1px solid var(--hairline);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(58, 42, 26, 0.05) 0,
+    rgba(58, 42, 26, 0.05) 1px,
+    transparent 1px,
+    transparent 26px
+  );
+}
+
+.districtHeroInner {
+  max-width: 1320px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 36px;
+  align-items: flex-start;
+}
+
+@media (max-width: 900px) {
+  .districtHeroInner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.districtKicker {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--wax-red);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.districtName {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 56px;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+}
+
+.districtOneliner {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink-soft);
+  line-height: 1.45;
+  margin: 0 0 18px;
+  max-width: 760px;
+}
+
+.districtFacts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 24px;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--hairline);
+}
+
+.districtFacts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.factWide {
+  grid-column: 1 / -1;
+}
+
+.districtFacts dt {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 9.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+
+.districtFacts dd {
+  margin: 0;
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.factSub {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 11.5px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.factSubMeta {
+  display: block;
+  max-width: 1320px;
+  margin: 14px auto 0;
+  padding-left: 0;
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-align: left;
+}
+
+@media (max-width: 700px) {
+  .districtFacts {
+    grid-template-columns: 1fr 1fr;
+  }
+  .districtName {
+    font-size: 36px;
+  }
+}
+
+/* Stability dial */
+.stabilityDial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  min-width: 220px;
+}
+
+.stabilityBreakdown {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stabilityRow {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.breakdownBar {
+  height: 5px;
+  background: rgba(58, 42, 26, 0.12);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.breakdownBarFill {
+  height: 100%;
+  background: var(--ink-blue);
+  transition: width 0.5s ease;
+}
+
+/* Counter-narrative banner */
+.counterCard {
+  padding: 18px 32px 22px;
+  border-bottom: 1px solid var(--hairline);
+  background: rgba(156, 43, 31, 0.05);
+}
+
+.counterCardInner {
+  max-width: 1320px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.counterCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.counterCardEyebrow {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 10.5px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--wax-red);
+  font-weight: 700;
+}
+
+.counterCardHeadline {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 22px;
+  line-height: 1.22;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.counterCardDeadline {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 12px;
+  color: var(--wax-red);
+  letter-spacing: 0.06em;
+  font-weight: 500;
+}
+
+/* Welfare card row */
+.welfareRow {
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.welfareRow:last-child {
+  border-bottom: none;
+}
+
+.welfareTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.welfareScheme {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 11.5px;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.welfarePct {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.welfareDetail {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  margin-top: 4px;
+}
+
+/* Power card */
+.powerBlock {
+  padding: 6px 0;
+}
+
+.powerNumbers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 12px;
+  border-bottom: 1px dashed var(--hairline);
+  padding-bottom: 12px;
+}
+
+.powerNumber {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.powerLabel {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 9.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+
+.powerValue {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 22px;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.powerStatus {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-soft);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.powerOk { color: var(--ink-blue); }
+.powerStressed { color: #a07a45; }
+.powerShedding { color: var(--wax-red); }
+
+/* Media row in Live Media card */
+.mediaRow {
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.mediaRow:last-of-type {
+  border-bottom: none;
+}
+
+.mediaRowTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.mediaSnippet {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.channelStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 12px;
+  margin-top: 8px;
+  border-top: 1px solid var(--hairline);
+}
+
+.channelLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 2px;
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--wax-red);
+  background: rgba(156, 43, 31, 0.04);
+  transition: background 0.2s ease;
+}
+
+.channelLink:hover {
+  background: rgba(156, 43, 31, 0.12);
+}
+
+/* Empty state */
+.emptyState {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 4px 6px;
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  line-height: 1.5;
+}
+
+.emptyStateOrnament {
+  font-size: 22px;
+  color: var(--ink-faint);
+  line-height: 0.6;
+  margin-right: 2px;
+  opacity: 0.6;
+}
+
+.emptyState p {
+  margin: 0;
+}
+
 .card {
   position: relative;
   padding: 14px 4px 12px;

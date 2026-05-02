@@ -281,6 +281,48 @@ export const FORECAST_POINTS: ReadonlyArray<ForecastPoint> = [
   { day: '08 May', sentiment: -0.37, band: 0.07 },
 ]
 
+export interface PulseMetric {
+  eyebrow: string
+  value: string
+  delta?: string
+  /** 'up' / 'down' / 'flat' — colours the delta arrow. */
+  trend?: 'up' | 'down' | 'flat'
+}
+
+/* The Pulse — slim live-counter strip above the intel grid. */
+export const PULSE_METRICS: ReadonlyArray<PulseMetric> = [
+  {
+    eyebrow: 'TOTAL MENTIONS · 24H',
+    value: '1,247',
+    delta: '+12%',
+    trend: 'up',
+  },
+  {
+    eyebrow: 'STATEWIDE SENTIMENT',
+    value: '–0.34',
+    delta: '–0.08',
+    trend: 'down',
+  },
+  {
+    eyebrow: 'ACTIVE ALERTS',
+    value: '3',
+    delta: 'P0 · P1 · P1',
+    trend: 'flat',
+  },
+  {
+    eyebrow: 'OPPOSITION VOICE-SHARE',
+    value: 'BRS 41%',
+    delta: '+6 pp',
+    trend: 'up',
+  },
+  {
+    eyebrow: 'LAST REFRESH',
+    value: '14:37',
+    delta: '6h forecast cycle',
+    trend: 'flat',
+  },
+]
+
 export const TICKER_EVENTS: ReadonlyArray<TickerEvent> = [
   { time: '14:31', text: 'KTR post on Musi · –0.7 sentiment · 14k reach' },
   { time: '14:28', text: 'BJP plans Karimnagar rally 4 May' },

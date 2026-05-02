@@ -22,6 +22,7 @@ import {
   HERO,
   NEWS_DESK,
   OPPOSITION_DESK,
+  PULSE_METRICS,
   STATEWIDE_SUMMARY,
   THREATS,
   TICKER_EVENTS,
@@ -48,13 +49,14 @@ export function CMEditorialBrief({ embedded = false }: CMEditorialBriefProps) {
     >
       <div className={styles.frame}>
         <Header />
-        <HeroBanner />
         <div className={styles.body}>
           <div className={styles.demoWatermark} aria-hidden="true">
             <span>DEMO</span>
           </div>
-          <TelanganaMap />
-          <CardGrid />
+          <Lead />
+          <Atlas />
+          <Pulse />
+          <Intel />
         </div>
         <Ticker />
         <p className={styles.editorsNote}>
@@ -126,38 +128,121 @@ function useClock(): string {
 /* Right column — hero panel + 6 cards.                                */
 /* ------------------------------------------------------------------ */
 
-function CardGrid() {
+/* ------------------------------------------------------------------ */
+/* Tier 1 — The Lead                                                   */
+/*                                                                     */
+/* The biggest news of the day, in front-page broadsheet typography:   */
+/* wax-red kicker, 50pt serif headline, source link + sparkline of    */
+/* the underlying signal trend.                                        */
+/* ------------------------------------------------------------------ */
+function Lead() {
   return (
-    <div className={styles.stack}>
-      <div className={styles.cards}>
-        <NewsCard />
-        <OppositionCard />
-        <ActionsCard />
-        <WatchlistCard />
-        <ThreatsCard />
-        <ForecastCard />
-      </div>
-    </div>
-  )
-}
-
-function HeroBanner() {
-  return (
-    <article className={styles.heroBanner}>
-      <div className={styles.heroEyebrow}>{HERO.eyebrow}</div>
-      <div className={styles.heroBannerInner}>
-        <div>
-          <h2 className={styles.heroBannerHeadline}>{HERO.headline}</h2>
+    <section className={styles.lead}>
+      <div className={styles.leadInner}>
+        <div className={styles.leadEyebrow}>{HERO.eyebrow}</div>
+        <h1 className={styles.leadHeadline}>{HERO.headline}</h1>
+        <div className={styles.leadFooter}>
           <a className={styles.heroLink} href="#source">
             {HERO.link} →
           </a>
+          <Sparkline
+            values={[...HERO.sparkline]}
+            className={styles.leadSpark}
+          />
         </div>
-        <Sparkline
-          values={[...HERO.sparkline]}
-          className={styles.heroBannerSpark}
-        />
       </div>
-    </article>
+    </section>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Tier 2 — The Atlas                                                  */
+/*                                                                     */
+/* Full-width section header + the centered Telangana map.             */
+/* ------------------------------------------------------------------ */
+function Atlas() {
+  return (
+    <section className={styles.atlas}>
+      <div className={styles.atlasInner}>
+        <header className={styles.sectionHeader}>
+          <span className={styles.sectionEyebrow}>
+            The Atlas · Sentiment Volatility
+          </span>
+          <span className={styles.sectionMeta}>
+            33 districts · refreshed 14:37
+          </span>
+        </header>
+        <TelanganaMap />
+      </div>
+    </section>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Tier 3 — The Pulse                                                  */
+/*                                                                     */
+/* Slim live-counter strip: total mentions, statewide sentiment,       */
+/* active alerts, opposition voice-share, last refresh.                */
+/* ------------------------------------------------------------------ */
+function Pulse() {
+  return (
+    <section className={styles.pulse}>
+      <div className={styles.pulseStrip}>
+        {PULSE_METRICS.map((m, i) => {
+          const trendCls =
+            m.trend === 'up'
+              ? styles.pulseDeltaUp
+              : m.trend === 'down'
+                ? styles.pulseDeltaDown
+                : styles.pulseDeltaFlat
+          const arrow =
+            m.trend === 'up' ? '▲ ' : m.trend === 'down' ? '▼ ' : ''
+          return (
+            <div key={i} className={styles.pulseTile}>
+              <div className={styles.pulseEyebrow}>{m.eyebrow}</div>
+              <div className={styles.pulseValue}>{m.value}</div>
+              {m.delta && (
+                <div className={`${styles.pulseDelta} ${trendCls}`}>
+                  {arrow}
+                  {m.delta}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Tier 4 — The Intelligence Desk                                      */
+/*                                                                     */
+/* Full-width 3-column card grid: News · Opposition · Actions ·        */
+/* Watchlist · Threats · Forecast.                                     */
+/* ------------------------------------------------------------------ */
+function Intel() {
+  return (
+    <section className={styles.intel}>
+      <div className={styles.intelInner}>
+        <header className={styles.sectionHeader}>
+          <span className={styles.sectionEyebrow}>
+            The Intelligence Desk
+          </span>
+          <span className={styles.sectionMeta}>
+            Saturday · 02 May · 14:37 IST · 6 desks
+          </span>
+        </header>
+        <div className={styles.cards}>
+          <NewsCard />
+          <OppositionCard />
+          <ActionsCard />
+          <WatchlistCard />
+          <ThreatsCard />
+          <ForecastCard />
+        </div>
+      </div>
+    </section>
   )
 }
 

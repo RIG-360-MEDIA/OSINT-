@@ -68,7 +68,7 @@
   z-index: 2;
   max-width: 1860px;
   margin: 0 auto;
-  padding: 0 36px 32px;
+  padding: 0 0 32px;
 }
 
 /* ------------------------------------------------------------------ */
@@ -88,7 +88,6 @@
   color: #f0e8d6;
   border-bottom: 2px solid var(--wax-red);
   position: relative;
-  margin: 0 -36px;
 }
 
 .header::after {
@@ -246,12 +245,56 @@
 /* Body grid — left map column / right intelligence stack.             */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/* Section primitives — every full-width tier shares this rhythm so   */
+/* the page reads as a structured broadsheet, not stacked widgets.    */
+/* ------------------------------------------------------------------ */
+
+.section {
+  position: relative;
+  padding: 56px 32px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.section:last-of-type {
+  border-bottom: none;
+}
+
+.sectionInner {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--hairline-strong);
+  padding-bottom: 10px;
+}
+
+.sectionEyebrow {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.sectionMeta {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* Demo watermark sits behind the body content. */
 .body {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 58%) minmax(0, 42%);
-  gap: 28px;
-  padding: 24px 8px 28px;
 }
 
 /* Demo-mode watermark — sits behind the map + stack at very low opacity. */
@@ -285,6 +328,8 @@
 .mapWrap {
   position: relative;
   width: 100%;
+  max-width: 940px;
+  margin: 0 auto;
   z-index: 1;
 }
 
@@ -447,8 +492,205 @@
 
 .cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px 40px;
+}
+
+@media (max-width: 1100px) {
+  .cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 28px;
+  }
+}
+
+@media (max-width: 700px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* The Lead — page-leading editorial banner.                           */
+/*                                                                     */
+/* The biggest news of the day, in front-page-broadsheet typography.   */
+/* Massive serif headline, kicker eyebrow in wax-red, sparkline of    */
+/* the underlying signal, source link.                                 */
+/* ------------------------------------------------------------------ */
+
+.lead {
+  position: relative;
+  padding: 72px 32px 64px;
+  border-bottom: 1px solid var(--hairline);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(58, 42, 26, 0.05) 0,
+    rgba(58, 42, 26, 0.05) 1px,
+    transparent 1px,
+    transparent 28px
+  );
+}
+
+.leadInner {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.leadEyebrow {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--wax-red);
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.leadHeadline {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 50px;
+  line-height: 1.1;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  margin: 0;
+  max-width: 1080px;
+}
+
+.leadFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 36px;
+  gap: 32px;
+  padding-top: 18px;
+  border-top: 1px solid var(--hairline);
+}
+
+.leadSpark {
+  width: 260px;
+  height: 56px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+  .lead {
+    padding: 48px 24px 40px;
+  }
+  .leadHeadline {
+    font-size: 32px;
+  }
+  .leadFooter {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* The Atlas — full-width map section.                                 */
+/* ------------------------------------------------------------------ */
+
+.atlas {
+  padding: 56px 32px 64px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.atlasInner {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+/* ------------------------------------------------------------------ */
+/* The Pulse — slim live-counter strip.                                */
+/* ------------------------------------------------------------------ */
+
+.pulse {
+  padding: 36px 32px 36px;
+  border-bottom: 1px solid var(--hairline);
+  background: rgba(245, 240, 230, 0.55);
+}
+
+.pulseStrip {
+  max-width: 1320px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+}
+
+.pulseTile {
+  padding: 4px 24px 4px 24px;
+  border-left: 1px solid var(--hairline-strong);
+}
+
+.pulseTile:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.pulseEyebrow {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 9.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.pulseValue {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.pulseDelta {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+
+.pulseDeltaUp { color: var(--wax-red); }
+.pulseDeltaDown { color: var(--ink-blue); }
+.pulseDeltaFlat { color: var(--ink-faint); }
+
+@media (max-width: 1100px) {
+  .pulseStrip {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .pulseTile:nth-child(4) {
+    border-left: none;
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .pulseStrip {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .pulseTile {
+    border-left: none;
+    padding-left: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* The Intelligence Desk — full-width 3-column card grid.              */
+/* ------------------------------------------------------------------ */
+
+.intel {
+  padding: 64px 32px 72px;
+}
+
+.intelInner {
+  max-width: 1500px;
+  margin: 0 auto;
 }
 
 .card {

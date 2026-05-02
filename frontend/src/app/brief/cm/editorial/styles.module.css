@@ -1,0 +1,665 @@
+/* ------------------------------------------------------------------ */
+/* Editorial Intelligence — palette + atmosphere.                      */
+/*                                                                     */
+/* All colours come from this stylesheet; nothing is hardcoded in JSX. */
+/* If the CM picks the ink-blue alternative, swap the four sepia       */
+/* tokens here and the entire page recolours.                          */
+/* ------------------------------------------------------------------ */
+
+.shell {
+  --paper: #faf8f3;
+  --paper-rail: #f0ebe1;
+  --ink: #1a1a1a;
+  --ink-soft: #3a2a1a;
+  --ink-muted: #4a4540;
+  --ink-faint: #7a6a55;
+  --hairline: rgba(58, 42, 26, 0.18);
+  --hairline-strong: rgba(58, 42, 26, 0.42);
+
+  --sepia-1: #f5f0e6;
+  --sepia-2: #ebd9b6;
+  --sepia-3: #c9a373;
+  --sepia-4: #6b3f1d;
+
+  --wax-red: #9c2b1f;
+  --wax-red-soft: rgba(156, 43, 31, 0.85);
+  --ink-blue: #1d3557;
+
+  position: relative;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Tiempos Text', 'Lora', 'Source Serif 4', 'Georgia', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Paper grain — subtle SVG noise overlay. */
+.shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.42  0 0 0 0 0.32  0 0 0 0 0.18  0 0 0 0.18 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 220px 220px;
+  z-index: 0;
+}
+
+/* Deckled left edge — the page reads as a printed broadsheet. */
+.shell::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: linear-gradient(
+    to right,
+    rgba(58, 42, 26, 0.18),
+    rgba(58, 42, 26, 0)
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.frame {
+  position: relative;
+  z-index: 2;
+  max-width: 1860px;
+  margin: 0 auto;
+  padding: 0 36px 32px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Header strip — compact, dignified.                                  */
+/* ------------------------------------------------------------------ */
+
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 14px 8px 12px;
+  border-bottom: 1px solid var(--hairline-strong);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.headerLeft .ornament {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--ink-soft);
+  border-radius: 50%;
+  position: relative;
+}
+.headerLeft .ornament::after {
+  content: 'CM';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7px;
+  letter-spacing: 0;
+  color: var(--ink-soft);
+}
+
+.headerCenter {
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: flex-end;
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+}
+
+.liveStamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 2px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: rgba(245, 240, 230, 0.55);
+}
+
+/* Demo-mode header stamp — sits next to the live stamp, in wax-seal red so it
+ * is unmistakable but still consistent with the editorial chrome. */
+.demoStamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--wax-red);
+  border-radius: 2px;
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--wax-red);
+  background: rgba(156, 43, 31, 0.07);
+}
+
+/* Bottom-of-page demo disclaimer — italic, muted wax-red, single line. */
+.demoDisclaimer {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 10.5px;
+  text-align: center;
+  color: var(--wax-red);
+  opacity: 0.78;
+  padding: 2px 24px 8px;
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wax-red);
+  box-shadow: 0 0 0 0 rgba(156, 43, 31, 0.6);
+  animation: breathe 1.8s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(156, 43, 31, 0.55);
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow: 0 0 0 6px rgba(156, 43, 31, 0);
+  }
+}
+
+.cmName {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.cmAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--sepia-2);
+  border: 1px solid var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 12px;
+  font-style: normal;
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------------------ */
+/* Body grid — left map column / right intelligence stack.             */
+/* ------------------------------------------------------------------ */
+
+.body {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 58%) minmax(0, 42%);
+  gap: 28px;
+  padding: 24px 8px 28px;
+}
+
+/* Demo-mode watermark — sits behind the map + stack at very low opacity. */
+.demoWatermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+.demoWatermark span {
+  transform: rotate(-22deg);
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: clamp(140px, 18vw, 280px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+  opacity: 0.055;
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mapWrap {
+  position: relative;
+  width: 100%;
+  z-index: 1;
+}
+
+.mapSvg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.pinPulse {
+  transform-origin: center;
+  animation: pinHalo 2.4s ease-in-out infinite;
+}
+
+@keyframes pinHalo {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.25);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Right column — priority stack.                                      */
+/* ------------------------------------------------------------------ */
+
+.stack {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.heroPanel {
+  position: relative;
+  padding: 22px 24px 24px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(58, 42, 26, 0.08) 0,
+    rgba(58, 42, 26, 0.08) 1px,
+    transparent 1px,
+    transparent 24px
+  );
+  border-top: 1px solid var(--hairline-strong);
+  border-bottom: 1px solid var(--hairline-strong);
+}
+
+.heroEyebrow {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.heroHeadline {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 28px;
+  line-height: 1.18;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin: 0 0 14px;
+}
+
+.heroFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.heroLink {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-blue);
+  border-bottom: 1px solid var(--ink-blue);
+  padding-bottom: 1px;
+}
+
+.heroSpark {
+  flex: 0 0 180px;
+  height: 36px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Card grid — six editorial sections.                                 */
+/* ------------------------------------------------------------------ */
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 20px;
+}
+
+.card {
+  position: relative;
+  padding: 14px 4px 12px;
+  border-top: 1px solid var(--hairline);
+}
+
+.deskHeader {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.deskMeta {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink-faint);
+}
+
+.row {
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--hairline);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.sourcePill {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  font-style: italic;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.rowBody {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.rowMeta {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 10px;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* Sentiment chip / wax-seal. */
+.chip {
+  display: inline-block;
+  padding: 1px 7px 2px;
+  border-radius: 2px;
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  background: rgba(156, 43, 31, 0.1);
+  color: var(--wax-red);
+  border: 1px solid rgba(156, 43, 31, 0.3);
+}
+
+.chipBlue {
+  background: rgba(29, 53, 87, 0.08);
+  color: var(--ink-blue);
+  border-color: rgba(29, 53, 87, 0.32);
+}
+
+.chipMed {
+  background: rgba(156, 43, 31, 0.18);
+  color: var(--wax-red);
+  border-color: rgba(156, 43, 31, 0.45);
+}
+
+.chipLow {
+  background: rgba(58, 42, 26, 0.08);
+  color: var(--ink-soft);
+  border-color: rgba(58, 42, 26, 0.28);
+}
+
+/* Voice-share stacked bar. */
+.voiceBar {
+  display: flex;
+  height: 10px;
+  margin-top: 12px;
+  border: 1px solid var(--hairline-strong);
+}
+
+.voiceSegment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 9px;
+  color: var(--ink);
+}
+
+.voiceLegend {
+  display: flex;
+  gap: 14px;
+  margin-top: 6px;
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+/* Action items — checkbox list. */
+.checkbox {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--ink-soft);
+  display: inline-block;
+  vertical-align: -1px;
+  margin-right: 8px;
+}
+
+.actionRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--hairline);
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.actionRow:last-child {
+  border-bottom: none;
+}
+
+.priorityChip {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  padding: 1px 6px 2px;
+  border-radius: 2px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.priorityP0 {
+  color: var(--wax-red);
+  border-color: rgba(156, 43, 31, 0.5);
+  background: rgba(156, 43, 31, 0.12);
+}
+
+.priorityP1 {
+  color: var(--ink-blue);
+  border-color: rgba(29, 53, 87, 0.45);
+  background: rgba(29, 53, 87, 0.08);
+}
+
+.priorityP2 {
+  color: var(--ink-soft);
+  border-color: rgba(58, 42, 26, 0.4);
+  background: rgba(58, 42, 26, 0.06);
+}
+
+/* Watchlist. */
+.watchRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--hairline);
+}
+.watchRow:last-child {
+  border-bottom: none;
+}
+
+.watchLabel {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 13px;
+  color: var(--ink-blue);
+}
+
+.watchDelta {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.watchDeltaUp { color: var(--wax-red); }
+.watchDeltaDown { color: var(--ink-blue); }
+.watchDeltaFlat { color: var(--ink-faint); }
+
+/* Threat cartouche. */
+.cartouche {
+  position: relative;
+  padding: 14px 12px 8px;
+  margin-top: 6px;
+  border: 1px solid var(--hairline-strong);
+}
+.cartouche::before,
+.cartouche::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--hairline-strong);
+}
+.cartouche::before { top: -7px; left: -7px; border-right: none; border-bottom: none; }
+.cartouche::after { bottom: -7px; right: -7px; border-left: none; border-top: none; }
+
+.cartoucheCaption {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-top: 6px;
+  text-align: center;
+}
+
+/* Forecast. */
+.forecastNarrative {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 12.5px;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-top: 10px;
+}
+
+.forecastCaption {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  text-align: center;
+  margin-top: 6px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Bottom ticker — single line, slow cross-fade.                       */
+/* ------------------------------------------------------------------ */
+
+.tickerRail {
+  position: relative;
+  margin-top: 8px;
+  border-top: 1px solid var(--hairline-strong);
+  background: var(--paper-rail);
+  padding: 8px 24px;
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink);
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.tickerEvent {
+  opacity: 0;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 1s ease-in-out;
+  white-space: nowrap;
+}
+
+.tickerEventActive {
+  opacity: 1;
+}
+
+.tickerArrow {
+  color: var(--wax-red);
+  margin: 0 10px;
+  font-style: normal;
+}
+
+.tickerTime {
+  font-family: 'Söhne Mono', 'IBM Plex Mono', 'Menlo', monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  margin-right: 8px;
+}
+
+/* Editor's note strip below ticker. */
+.editorsNote {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 10.5px;
+  text-align: center;
+  color: var(--ink-faint);
+  padding: 10px 24px 4px;
+}

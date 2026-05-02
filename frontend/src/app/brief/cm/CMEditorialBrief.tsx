@@ -31,6 +31,7 @@ import {
   WATCHLIST,
 } from './editorial/data'
 import { DistrictModal } from './editorial/DistrictModal'
+import { IntelFeed } from './editorial/IntelFeed'
 import { LayerFeed } from './editorial/LayerFeed'
 import { LayerPanel } from './editorial/LayerPanel'
 import { DEFAULT_LAYER_ID, getLayer } from './editorial/layers'
@@ -279,20 +280,13 @@ function Intel() {
       <div className={styles.intelInner}>
         <header className={styles.sectionHeader}>
           <span className={styles.sectionEyebrow}>
-            The Intelligence Desk
+            <span className={styles.intelLiveDot} /> The Intelligence Feed · Live
           </span>
           <span className={styles.sectionMeta}>
-            Saturday · 02 May · 14:37 IST · 6 desks
+            streaming · 14:37 IST · 18 incoming · last 6h
           </span>
         </header>
-        <div className={styles.cards}>
-          <NewsCard />
-          <OppositionCard />
-          <ActionsCard />
-          <WatchlistCard />
-          <ThreatsCard />
-          <ForecastCard />
-        </div>
+        <IntelFeed />
       </div>
     </section>
   )

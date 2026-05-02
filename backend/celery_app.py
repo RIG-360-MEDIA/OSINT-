@@ -53,6 +53,18 @@ app = Celery(
         "backend.tasks.cm.promise_task",
         "backend.tasks.cm.backfill_newspaper_sentiment_task",
         "backend.tasks.cm.exploitation_index_task",
+        # CM Page v2 — district resolution + LLM auto-publish stack
+        "backend.tasks.cm.backfill_district_geo",
+        "backend.tasks.cm.lead_headline_task",
+        "backend.tasks.cm.analysis_column_task",
+        "backend.tasks.cm.action_queue_task",
+        # CM Page v2 — external-source collectors (atlas layers)
+        "backend.tasks.collectors.mandi_agmarknet_task",
+        "backend.tasks.collectors.cpcb_aqi_task",
+        "backend.tasks.collectors.imd_weather_task",
+        "backend.tasks.collectors.tgspdcl_power_task",
+        "backend.tasks.collectors.welfare_coverage_task",
+        "backend.tasks.collectors.acled_sink_task",
     ],
 )
 
@@ -111,6 +123,22 @@ app.config_from_object(
             "tasks.cm.refresh_voice_share": {"queue": "social"},
             "tasks.cm.refresh_issue_hourly": {"queue": "social"},
             "tasks.cm.refresh_constituency_heatmap": {"queue": "social"},
+            # CM Page v2 — district resolution backfill on `nlp` (gazetteer
+            # match against entities_extracted; no re-NER, low cost).
+            "tasks.cm.backfill_district_geo": {"queue": "nlp"},
+            # CM Page v2 — LLM auto-publish stack on `nlp`.
+            "tasks.cm.lead_headline": {"queue": "nlp"},
+            "tasks.cm.analysis_column": {"queue": "nlp"},
+            "tasks.cm.action_queue": {"queue": "nlp"},
+            # CM Page v2 — external-source collectors. Routed to the
+            # dedicated `collectors` queue so heavy LLM/article NLP work
+            # never blocks them and they never block article ingest.
+            "tasks.collectors.mandi_agmarknet": {"queue": "collectors"},
+            "tasks.collectors.cpcb_aqi":        {"queue": "collectors"},
+            "tasks.collectors.imd_weather":     {"queue": "collectors"},
+            "tasks.collectors.tgspdcl_power":   {"queue": "collectors"},
+            "tasks.collectors.welfare_coverage":{"queue": "collectors"},
+            "tasks.collectors.acled_sink":      {"queue": "collectors"},
         },
         "beat_schedule": {
             "collect-rss-every-15-min": {
@@ -352,6 +380,73 @@ app.config_from_object(
                 "task": "tasks.cm.refresh_constituency_heatmap",
                 "schedule": crontab(hour=2, minute=15),
                 "options": {"queue": "social"},
+            },
+            # ── CM Page v2 — district backfill (resilience) ──
+            #
+            # Nightly catch-up for any articles processed before the
+            # district-resolution NLP step shipped, plus any rows that
+            # got an entities update later. Idempotent ON CONFLICT.
+            "cm-backfill-district-geo-nightly": {
+                "task": "tasks.cm.backfill_district_geo",
+                "schedule": crontab(hour=3, minute=30),
+                "options": {"queue": "nlp"},
+            },
+            # ── CM Page v2 — LLM auto-publish stack ──
+            "cm-lead-headlines-every-5-min": {
+                "task": "tasks.cm.lead_headline",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
+            },
+            "cm-analysis-column-morning": {
+                "task": "tasks.cm.analysis_column",
+                "schedule": crontab(hour=0, minute=30),    # 06:00 IST
+                "options": {"queue": "nlp"},
+            },
+            "cm-analysis-column-noon": {
+                "task": "tasks.cm.analysis_column",
+                "schedule": crontab(hour=6, minute=30),    # 12:00 IST
+                "options": {"queue": "nlp"},
+            },
+            "cm-analysis-column-evening": {
+                "task": "tasks.cm.analysis_column",
+                "schedule": crontab(hour=12, minute=30),   # 18:00 IST
+                "options": {"queue": "nlp"},
+            },
+            "cm-action-queue-every-15-min": {
+                "task": "tasks.cm.action_queue",
+                "schedule": timedelta(minutes=15),
+                "options": {"queue": "nlp"},
+            },
+            # ── CM Page v2 — external scrapers ──
+            "collectors-mandi-agmarknet-every-4h": {
+                "task": "tasks.collectors.mandi_agmarknet",
+                "schedule": timedelta(hours=4),
+                "options": {"queue": "collectors"},
+            },
+            "collectors-cpcb-aqi-every-30-min": {
+                "task": "tasks.collectors.cpcb_aqi",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "collectors"},
+            },
+            "collectors-imd-weather-every-1h": {
+                "task": "tasks.collectors.imd_weather",
+                "schedule": timedelta(hours=1),
+                "options": {"queue": "collectors"},
+            },
+            "collectors-tgspdcl-power-every-30-min": {
+                "task": "tasks.collectors.tgspdcl_power",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "collectors"},
+            },
+            "collectors-welfare-coverage-daily": {
+                "task": "tasks.collectors.welfare_coverage",
+                "schedule": crontab(hour=4, minute=15),
+                "options": {"queue": "collectors"},
+            },
+            "collectors-acled-sink-every-6h": {
+                "task": "tasks.collectors.acled_sink",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "collectors"},
             },
         },
     }

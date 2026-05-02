@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-import { DISTRICTS, STATEWIDE_SUMMARY } from './data'
+import { STATEWIDE_SUMMARY } from './data'
+import { DEFAULT_LAYER_ID, getLayer } from './layers'
 import { TELANGANA_DISTRICTS, TELANGANA_VIEWBOX } from './telangana-geo'
 import styles from './styles.module.css'
 
@@ -53,20 +54,28 @@ interface TelanganaMapProps {
   highlightDistrictId?: string
   /** When true, suppresses click navigation (used inside DistrictBrief). */
   disableNavigation?: boolean
+  /** Active layer id from layers.ts. Defaults to 'news-hotspot'. */
+  activeLayerId?: string
+  /** Override click behaviour — if provided, called instead of router.push. */
+  onDistrictClick?: (districtId: string) => void
 }
 
 export function TelanganaMap({
   highlightDistrictId,
   disableNavigation = false,
+  activeLayerId = DEFAULT_LAYER_ID,
+  onDistrictClick,
 }: TelanganaMapProps = {}) {
   const router = useRouter()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
-  const volById = new Map<string, number>(
-    DISTRICTS.map((d) => [d.id, d.volatility]),
-  )
+  const layer = getLayer(activeLayerId)
 
   const handleClick = (districtId: string) => {
     if (disableNavigation) return
+    if (onDistrictClick) {
+      onDistrictClick(districtId)
+      return
+    }
     router.push(`/brief/cm/preview/${districtId}`)
   }
 
@@ -101,12 +110,13 @@ export function TelanganaMap({
           </filter>
         </defs>
 
-        {/* District polygons — sepia heatmap fill + ink boundary, with a
-         *  soft drop shadow for paper depth. Clickable: each path
-         *  navigates to /brief/cm/preview/<district-id>. */}
+        {/* District polygons — fill driven by the active layer. Click
+         *  either calls onDistrictClick (modal mode) or navigates to
+         *  /brief/cm/preview/<district-id>. */}
         <g filter="url(#paperShadow)">
           {TELANGANA_DISTRICTS.map((d) => {
-            const vol = volById.get(d.id) ?? 0.3
+            const value = layer.valueFor(d.id)
+            const fill = layer.colorFor(value)
             const isHighlighted = highlightDistrictId === d.id
             const isHovered = hoveredId === d.id
             const dimmed =
@@ -115,7 +125,7 @@ export function TelanganaMap({
               <path
                 key={d.id}
                 d={d.d}
-                fill={sepiaForVolatility(vol)}
+                fill={fill}
                 stroke={isHighlighted ? '#9c2b1f' : '#3a2a1a'}
                 strokeWidth={isHighlighted ? 2.4 : isHovered ? 1.8 : 1.0}
                 strokeLinejoin="round"
@@ -126,25 +136,81 @@ export function TelanganaMap({
                 onMouseLeave={() => setHoveredId(null)}
                 style={{
                   cursor: disableNavigation ? 'default' : 'pointer',
-                  transition: 'stroke-width 0.15s ease, opacity 0.2s ease',
+                  transition:
+                    'fill 0.45s ease, stroke-width 0.15s ease, opacity 0.2s ease',
                 }}
               >
-                <title>{d.name}</title>
+                <title>
+                  {d.name} · {layer.label}
+                </title>
               </path>
             )
           })}
         </g>
 
-        {/* Subtle cross-hatch on volatile districts (texture, not noise). */}
-        <g pointerEvents="none">
-          {TELANGANA_DISTRICTS.map((d) => {
-            const vol = volById.get(d.id) ?? 0.3
-            if (vol < 0.55) return null
-            return <path key={d.id} d={d.d} fill="url(#hatch)" stroke="none" opacity={0.28} />
-          })}
-        </g>
+        {/* Cross-hatch only on news-hotspot — other layers use cleaner fills. */}
+        {activeLayerId === 'news-hotspot' && (
+          <g pointerEvents="none">
+            {TELANGANA_DISTRICTS.map((d) => {
+              const v = layer.valueFor(d.id)
+              if (v < 0.55) return null
+              return (
+                <path
+                  key={d.id}
+                  d={d.d}
+                  fill="url(#hatch)"
+                  stroke="none"
+                  opacity={0.28}
+                />
+              )
+            })}
+          </g>
+        )}
 
-        {/* District labels at centroids — sepia-aware contrast. */}
+        {/* Layer-specific overlays — pinned markers (e.g. ACLED counts,
+         *  power-stress flags). */}
+        {layer.overlays && layer.overlays.length > 0 && (
+          <g pointerEvents="none">
+            {layer.overlays.map((o, i) => {
+              const dist = TELANGANA_DISTRICTS.find((x) => x.id === o.districtId)
+              if (!dist) return null
+              const fill =
+                o.tone === 'red'
+                  ? '#9c2b1f'
+                  : o.tone === 'blue'
+                    ? '#1d3557'
+                    : '#3a2a1a'
+              return (
+                <g key={i}>
+                  <circle cx={dist.cx} cy={dist.cy} r={11} fill={fill} fillOpacity={0.18} />
+                  <circle
+                    cx={dist.cx}
+                    cy={dist.cy}
+                    r={7}
+                    fill={fill}
+                    stroke="#f5f0e6"
+                    strokeOpacity={0.55}
+                    strokeWidth={0.9}
+                  />
+                  <text
+                    x={dist.cx}
+                    y={dist.cy + 2.6}
+                    textAnchor="middle"
+                    fontFamily="'Söhne Mono','IBM Plex Mono','Menlo',monospace"
+                    fontSize={7}
+                    fontWeight={700}
+                    fill="#f5f0e6"
+                  >
+                    {o.label}
+                  </text>
+                </g>
+              )
+            })}
+          </g>
+        )}
+
+        {/* District labels at centroids — sepia-aware contrast based on
+         *  underlying layer intensity. */}
         <g
           fontFamily="'Tiempos Headline','Playfair Display','Georgia',serif"
           fontSize={9}
@@ -153,8 +219,8 @@ export function TelanganaMap({
         >
           {TELANGANA_DISTRICTS.map((d) => {
             if (SKIP_LABEL.has(d.id)) return null
-            const vol = volById.get(d.id) ?? 0.3
-            const dark = vol >= 0.55
+            const v = layer.valueFor(d.id)
+            const dark = v >= 0.55
             return (
               <text
                 key={d.id}

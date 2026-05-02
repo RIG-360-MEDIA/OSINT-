@@ -30,6 +30,9 @@ import {
   VOICE_SHARE,
   WATCHLIST,
 } from './editorial/data'
+import { DistrictModal } from './editorial/DistrictModal'
+import { LayerPanel } from './editorial/LayerPanel'
+import { DEFAULT_LAYER_ID, getLayer } from './editorial/layers'
 import { TelanganaMap } from './editorial/TelanganaMap'
 import styles from './editorial/styles.module.css'
 
@@ -43,6 +46,9 @@ interface CMEditorialBriefProps {
 }
 
 export function CMEditorialBrief({ embedded = false }: CMEditorialBriefProps) {
+  const [activeLayerId, setActiveLayerId] = useState<string>(DEFAULT_LAYER_ID)
+  const [openDistrict, setOpenDistrict] = useState<string | null>(null)
+
   return (
     <section
       className={styles.shell}
@@ -55,7 +61,11 @@ export function CMEditorialBrief({ embedded = false }: CMEditorialBriefProps) {
             <span>DEMO</span>
           </div>
           <Lead />
-          <Atlas />
+          <Atlas
+            activeLayerId={activeLayerId}
+            onChangeLayer={setActiveLayerId}
+            onDistrictClick={setOpenDistrict}
+          />
           <Pulse />
           <Intel />
         </div>
@@ -70,6 +80,12 @@ export function CMEditorialBrief({ embedded = false }: CMEditorialBriefProps) {
           layout review · not derived from live intelligence.
         </p>
       </div>
+      {openDistrict && (
+        <DistrictModal
+          districtId={openDistrict}
+          onClose={() => setOpenDistrict(null)}
+        />
+      )}
     </section>
   )
 }
@@ -178,21 +194,35 @@ function Lead() {
 /* ------------------------------------------------------------------ */
 /* Tier 2 — The Atlas                                                  */
 /*                                                                     */
-/* Full-width section header + the centered Telangana map.             */
+/* Full-width section header + the Telangana map with a right-side    */
+/* layer toggle panel. Click any district → district modal opens.     */
 /* ------------------------------------------------------------------ */
-function Atlas() {
+interface AtlasProps {
+  activeLayerId: string
+  onChangeLayer: (id: string) => void
+  onDistrictClick: (id: string) => void
+}
+
+function Atlas({ activeLayerId, onChangeLayer, onDistrictClick }: AtlasProps) {
+  const layer = getLayer(activeLayerId)
   return (
     <section className={styles.atlas}>
       <div className={styles.atlasInner}>
         <header className={styles.sectionHeader}>
           <span className={styles.sectionEyebrow}>
-            The Atlas · Sentiment Volatility
+            The Atlas · {layer.label}
           </span>
           <span className={styles.sectionMeta}>
-            33 districts · refreshed 14:37
+            33 districts · refreshed 14:37 · click any district to focus
           </span>
         </header>
-        <TelanganaMap />
+        <div className={styles.atlasGrid}>
+          <TelanganaMap
+            activeLayerId={activeLayerId}
+            onDistrictClick={onDistrictClick}
+          />
+          <LayerPanel activeLayerId={activeLayerId} onChange={onChangeLayer} />
+        </div>
       </div>
     </section>
   )

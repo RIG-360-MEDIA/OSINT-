@@ -141,15 +141,6 @@ function Lead() {
       <div className={styles.leadInner}>
         <div className={styles.leadEyebrow}>{HERO.eyebrow}</div>
         <h1 className={styles.leadHeadline}>{HERO.headline}</h1>
-        <div className={styles.leadFooter}>
-          <a className={styles.heroLink} href="#source">
-            {HERO.link} →
-          </a>
-          <Sparkline
-            values={[...HERO.sparkline]}
-            className={styles.leadSpark}
-          />
-        </div>
       </div>
     </section>
   )

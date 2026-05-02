@@ -1,5 +1,8 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+
 import { DISTRICTS, STATEWIDE_SUMMARY } from './data'
 import { TELANGANA_DISTRICTS, TELANGANA_VIEWBOX } from './telangana-geo'
 import styles from './styles.module.css'
@@ -45,17 +48,34 @@ function shortLabel(name: string): string {
  *  Medchal sit packed inside Rangareddy and there's no room for type. */
 const SKIP_LABEL = new Set(['hyderabad', 'medchal'])
 
-export function TelanganaMap() {
+interface TelanganaMapProps {
+  /** Highlights a single district with a wax-red ring and dims the rest. */
+  highlightDistrictId?: string
+  /** When true, suppresses click navigation (used inside DistrictBrief). */
+  disableNavigation?: boolean
+}
+
+export function TelanganaMap({
+  highlightDistrictId,
+  disableNavigation = false,
+}: TelanganaMapProps = {}) {
+  const router = useRouter()
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
   const volById = new Map<string, number>(
     DISTRICTS.map((d) => [d.id, d.volatility]),
   )
+
+  const handleClick = (districtId: string) => {
+    if (disableNavigation) return
+    router.push(`/brief/cm/preview/${districtId}`)
+  }
 
   return (
     <div className={styles.mapWrap} aria-label="Live intelligence map of Telangana">
       <svg
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         role="img"
-        aria-label="Telangana sentiment-volatility atlas"
+        aria-label="Telangana sentiment-volatility atlas — click a district to focus"
         className={styles.mapSvg}
       >
         <defs>
@@ -82,20 +102,35 @@ export function TelanganaMap() {
         </defs>
 
         {/* District polygons — sepia heatmap fill + ink boundary, with a
-         *  soft drop shadow for paper depth. */}
+         *  soft drop shadow for paper depth. Clickable: each path
+         *  navigates to /brief/cm/preview/<district-id>. */}
         <g filter="url(#paperShadow)">
           {TELANGANA_DISTRICTS.map((d) => {
             const vol = volById.get(d.id) ?? 0.3
+            const isHighlighted = highlightDistrictId === d.id
+            const isHovered = hoveredId === d.id
+            const dimmed =
+              !!highlightDistrictId && highlightDistrictId !== d.id
             return (
               <path
                 key={d.id}
                 d={d.d}
                 fill={sepiaForVolatility(vol)}
-                stroke="#3a2a1a"
-                strokeWidth={1.0}
+                stroke={isHighlighted ? '#9c2b1f' : '#3a2a1a'}
+                strokeWidth={isHighlighted ? 2.4 : isHovered ? 1.8 : 1.0}
                 strokeLinejoin="round"
-                strokeOpacity={0.85}
-              />
+                strokeOpacity={isHighlighted ? 1 : isHovered ? 1 : 0.85}
+                opacity={dimmed ? 0.45 : 1}
+                onClick={() => handleClick(d.id)}
+                onMouseEnter={() => setHoveredId(d.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                style={{
+                  cursor: disableNavigation ? 'default' : 'pointer',
+                  transition: 'stroke-width 0.15s ease, opacity 0.2s ease',
+                }}
+              >
+                <title>{d.name}</title>
+              </path>
             )
           })}
         </g>

@@ -1588,10 +1588,11 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-areas:
-    'news    news    actions'
-    'opp     monitor monitor'
-    'threats outlook outlook'
-    'pulse   pulse   pulse';
+    'news     news     actions'
+    'analysis analysis analysis'
+    'opp      monitor  monitor'
+    'threats  outlook  outlook'
+    'pulse    pulse    pulse';
   gap: 18px 22px;
 }
 
@@ -1599,11 +1600,12 @@
   .cmIntelGrid {
     grid-template-columns: repeat(2, 1fr);
     grid-template-areas:
-      'news    news'
-      'actions opp'
-      'monitor monitor'
-      'threats outlook'
-      'pulse   pulse';
+      'news     news'
+      'actions  opp'
+      'analysis analysis'
+      'monitor  monitor'
+      'threats  outlook'
+      'pulse    pulse';
   }
 }
 
@@ -1613,6 +1615,7 @@
     grid-template-areas:
       'news'
       'actions'
+      'analysis'
       'opp'
       'monitor'
       'threats'
@@ -2292,6 +2295,156 @@
 .cmPulseDeltaUp { color: #f3a89c; }
 .cmPulseDeltaDown { color: #9bb1c5; }
 .cmPulseDeltaFlat { color: rgba(245, 240, 230, 0.5); }
+
+/* ------------------------------------------------------------------ */
+/* 8. ANALYSIS COLUMN — editorial op-ed spread                         */
+/* ------------------------------------------------------------------ */
+
+.cmCardAnalysis {
+  grid-area: analysis;
+  padding: 32px 56px 28px;
+  background:
+    linear-gradient(180deg, rgba(245, 240, 230, 0.65) 0%, var(--paper) 100%);
+  border-color: var(--ink-soft);
+  position: relative;
+}
+
+.cmCardAnalysis::before,
+.cmCardAnalysis::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: var(--ink);
+}
+.cmCardAnalysis::before { top: 14px; }
+.cmCardAnalysis::after { bottom: 14px; }
+
+.cmAnalysisHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 10.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--wax-red);
+  margin-bottom: 14px;
+}
+
+.cmAnalysisEyebrow {
+  /* eyebrow inherits from header */
+}
+
+.cmAnalysisByline {
+  color: var(--ink-faint);
+  font-style: italic;
+  letter-spacing: 0.18em;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.cmAnalysisHeadline {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 36px;
+  line-height: 1.12;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.018em;
+  margin: 0 0 12px;
+  max-width: 28ch;
+}
+
+.cmAnalysisDeck {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  margin: 0 0 16px;
+  max-width: 70ch;
+}
+
+.cmAnalysisDivider {
+  height: 1px;
+  background: var(--ink);
+  margin: 0 0 18px;
+  width: 80px;
+}
+
+/* Two-column body so the prose reads as a newspaper column. */
+.cmAnalysisBody {
+  column-count: 2;
+  column-gap: 36px;
+  column-rule: 1px solid var(--hairline);
+}
+
+@media (max-width: 900px) {
+  .cmAnalysisBody {
+    column-count: 1;
+  }
+  .cmAnalysisHeadline {
+    font-size: 26px;
+  }
+  .cmCardAnalysis {
+    padding: 24px 24px 22px;
+  }
+}
+
+.cmAnalysisPara {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-size: 14px;
+  line-height: 1.62;
+  color: var(--ink);
+  margin: 0 0 14px;
+  text-align: justify;
+  hyphens: auto;
+  break-inside: avoid-column;
+}
+
+.cmAnalysisPara:last-child {
+  margin-bottom: 0;
+}
+
+.cmAnalysisDropCap {
+  float: left;
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-size: 48px;
+  line-height: 0.92;
+  font-weight: 700;
+  color: var(--wax-red);
+  margin: 4px 8px -4px 0;
+}
+
+.cmAnalysisPullQuote {
+  font-family: 'Tiempos Headline', 'Playfair Display', 'Georgia', serif;
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.32;
+  color: var(--ink);
+  text-align: center;
+  margin: 22px auto;
+  padding: 16px 24px;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  max-width: 40ch;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+.cmAnalysisEndnote {
+  font-family: 'Tiempos Text', 'Lora', 'Georgia', serif;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  text-align: right;
+  margin-top: 22px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--hairline);
+}
 
 /* ------------------------------------------------------------------ */
 /* District-Brief view                                                  */

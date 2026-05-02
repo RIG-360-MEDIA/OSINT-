@@ -17,6 +17,7 @@
 
 import {
   CM_ACTIONS,
+  CM_ANALYSIS,
   CM_NEWS,
   CM_MONITOR,
   CM_OPPOSITION,
@@ -31,6 +32,7 @@ export function CMIntelGrid() {
     <div className={styles.cmIntelGrid}>
       <NewsOnCM />
       <ActionsForChair />
+      <AnalysisColumn />
       <OppositionWatch />
       <MonitorList />
       <ThreatRegister />
@@ -259,6 +261,52 @@ function FutureOutlook() {
           </div>
         ))}
       </div>
+    </article>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* 8. Analysis Column — pure editorial prose, structured op-ed         */
+/* ------------------------------------------------------------------ */
+
+function AnalysisColumn() {
+  const a = CM_ANALYSIS
+  // Split paragraphs around the pull-quote: roughly half before, rest after.
+  const pivot = Math.ceil(a.paragraphs.length / 2)
+  const before = a.paragraphs.slice(0, pivot)
+  const after = a.paragraphs.slice(pivot)
+  return (
+    <article className={`${styles.cmCard} ${styles.cmCardAnalysis}`}>
+      <header className={styles.cmAnalysisHeader}>
+        <span className={styles.cmAnalysisEyebrow}>{a.eyebrow}</span>
+        <span className={styles.cmAnalysisByline}>{a.byline}</span>
+      </header>
+      <h2 className={styles.cmAnalysisHeadline}>{a.headline}</h2>
+      <p className={styles.cmAnalysisDeck}>{a.deck}</p>
+      <div className={styles.cmAnalysisDivider} />
+      <div className={styles.cmAnalysisBody}>
+        {before.map((p, i) => (
+          <p key={`b-${i}`} className={styles.cmAnalysisPara}>
+            {i === 0 ? (
+              <>
+                <span className={styles.cmAnalysisDropCap}>{p.charAt(0)}</span>
+                {p.slice(1)}
+              </>
+            ) : (
+              p
+            )}
+          </p>
+        ))}
+      </div>
+      <blockquote className={styles.cmAnalysisPullQuote}>{a.pullQuote}</blockquote>
+      <div className={styles.cmAnalysisBody}>
+        {after.map((p, i) => (
+          <p key={`a-${i}`} className={styles.cmAnalysisPara}>
+            {p}
+          </p>
+        ))}
+      </div>
+      <div className={styles.cmAnalysisEndnote}>{a.endnote}</div>
     </article>
   )
 }

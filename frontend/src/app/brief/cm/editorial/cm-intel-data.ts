@@ -124,6 +124,43 @@ export interface CmPulseMetric {
   trend?: 'up' | 'down' | 'flat'
 }
 
+/* ------------------------------------------------------------------ */
+/* Analysis column — pure editorial prose, structured like a column.   */
+/* ------------------------------------------------------------------ */
+
+export interface CmAnalysis {
+  /** "Analysis · 14:37 IST" — the kicker. */
+  eyebrow: string
+  /** "By the Strategy Desk" — byline. */
+  byline: string
+  /** Big serif title. */
+  headline: string
+  /** Italic deck (1 line, 12-22 words). */
+  deck: string
+  /** Body paragraphs — 4 to 6 short paragraphs. */
+  paragraphs: ReadonlyArray<string>
+  /** Mid-piece pull-quote. */
+  pullQuote: string
+  /** End-note line at the foot. */
+  endnote: string
+}
+
+export const CM_ANALYSIS: CmAnalysis = {
+  eyebrow: 'Analysis · 14:37 IST',
+  byline: 'By the Strategy Desk',
+  headline: 'The Musi window closes today.',
+  deck: 'Three desks have flagged it; what the next six hours reveal will set the next seven days.',
+  paragraphs: [
+    'The Musi rehabilitation story has been simmering for nearly three weeks. It consolidated overnight, when four of the six most-shared posts in Telangana turned critical of the project, three of them syndicated by BRS-aligned handles. By midday, three mainstream dailies had adopted the framing.',
+    'The sequence matters. BRS desks took the lead, but it is the BJP that found the symbolic opening — not on the project itself but on the absence of a published rehabilitation plan. That gap is the gravitational centre of every critical post the system has surfaced today.',
+    'Counter-narratives die in the absence of evidence. The Group-1 transparency briefing scheduled for 17:30 will read, on its arrival, either as substance or as misdirection. The window for the former closes by 18:00; after that, the day belongs to whoever owns the silence.',
+    'Khammam is not Musi, but in the public imagination both are now in the same ledger. The cotton procurement delays — four weeks running — supply the second beat to a story the opposition has already rehearsed. A field visit this week is no longer optional.',
+    'The eighteen-hundred-hour cliff matters less, ultimately, than the seven days that follow. By Sunday in Karimnagar, the BJP rally will set a new frame for north Telangana. Today’s response is the only lever we still have to bend that arc.',
+  ],
+  pullQuote: 'Counter-narratives die in the absence of evidence. By 18:00, the day belongs to whoever owns the silence.',
+  endnote: 'Filed 14:37 IST · revisable upon CMO release · circulation: principal secretariat',
+}
+
 export const CM_PULSE: ReadonlyArray<CmPulseMetric> = [
   { label: 'Mentions / hour', value: '312', delta: '▲ +14% vs avg', trend: 'up' },
   { label: 'Statewide sentiment', value: '–0.34', delta: '▼ –0.08 since 09:00', trend: 'down' },

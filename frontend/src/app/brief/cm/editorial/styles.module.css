@@ -398,6 +398,63 @@
   50%      { opacity: 0.5;  transform: scale(1.15); }
 }
 
+/* News Hotspot — ink blooms breathe slowly. */
+.bloomBreathe {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: bloomBreathe 4.2s ease-in-out infinite;
+}
+
+@keyframes bloomBreathe {
+  0%, 100% { opacity: 0.55; transform: scale(0.94); }
+  50%      { opacity: 0.92; transform: scale(1.07); }
+}
+
+/* ACLED — bloodstain heartbeat (lub-dub). */
+.heartbeat {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: heartbeat 1.6s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 30%, 60%, 100% { transform: scale(1); }
+  15% { transform: scale(1.06); }
+  45% { transform: scale(1.03); }
+}
+
+/* Mandi — caravan flow along trade routes. */
+.tradeFlow {
+  animation: tradeFlow 1.8s linear infinite;
+}
+
+@keyframes tradeFlow {
+  to { stroke-dashoffset: -12; }
+}
+
+/* Power — grid flow + faster on stressed feeders. */
+.gridFlow {
+  animation: gridFlow 1.6s linear infinite;
+}
+.gridFlowStressed {
+  animation-duration: 0.9s;
+}
+
+@keyframes gridFlow {
+  to { stroke-dashoffset: -22; }
+}
+
+/* Power — flicker on stressed feeders (brown-out feel). */
+.flicker {
+  animation: flicker 1.2s steps(2, end) infinite;
+}
+
+@keyframes flicker {
+  0%, 18%, 22%, 38%, 42%, 100% { opacity: 1; }
+  20% { opacity: 0.55; }
+  40% { opacity: 0.7; }
+}
+
 /* ------------------------------------------------------------------ */
 /* Right column — priority stack.                                      */
 /* ------------------------------------------------------------------ */

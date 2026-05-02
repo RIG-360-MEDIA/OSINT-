@@ -155,7 +155,7 @@ function Breadcrumb() {
 /* District Hero                                                       */
 /* ------------------------------------------------------------------ */
 
-function DistrictHero({ data }: { data: DistrictBriefData }) {
+export function DistrictHero({ data }: { data: DistrictBriefData }) {
   const total =
     data.facts.mlaSplit.brs +
     data.facts.mlaSplit.bjp +
@@ -338,7 +338,7 @@ function DistrictAtlas({
 /* Counter-narrative banner — only when present                        */
 /* ------------------------------------------------------------------ */
 
-function CounterNarrativeCard({ data }: { data: DistrictBriefData }) {
+export function CounterNarrativeCard({ data }: { data: DistrictBriefData }) {
   const cn = data.counterNarrative
   if (!cn) return null
   return (
@@ -371,7 +371,7 @@ function CounterNarrativeCard({ data }: { data: DistrictBriefData }) {
 /* The six priority panels                                             */
 /* ------------------------------------------------------------------ */
 
-function DistrictPanels({ data }: { data: DistrictBriefData }) {
+export function DistrictPanels({ data }: { data: DistrictBriefData }) {
   return (
     <section className={styles.intel}>
       <div className={styles.intelInner}>

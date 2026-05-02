@@ -109,6 +109,55 @@ export function TelanganaMap({
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+
+          {/* Soft Gaussian bleed — wax-red ink soaking into paper. */}
+          <filter id="inkBleed" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" />
+          </filter>
+
+          {/* Turbulence-displaced edges — irregular blot / cloud shapes. */}
+          <filter id="turbulent" x="-30%" y="-30%" width="160%" height="160%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="7" />
+            <feDisplacementMap in="SourceGraphic" scale="11" />
+          </filter>
+          <filter id="turbulentSoft" x="-30%" y="-30%" width="160%" height="160%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="3" />
+            <feDisplacementMap in="SourceGraphic" scale="6" />
+          </filter>
+
+          {/* Bloom gradients. */}
+          <radialGradient id="bloomNews" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#9c2b1f" stopOpacity="0.7" />
+            <stop offset="50%" stopColor="#9c2b1f" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="#9c2b1f" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id="stormCloud" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#5a160e" stopOpacity="0.55" />
+            <stop offset="55%" stopColor="#9c2b1f" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="#9c2b1f" stopOpacity="0" />
+          </radialGradient>
+          <radialGradient id="stabilityStorm" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#9c2b1f" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#5a160e" stopOpacity="0.05" />
+          </radialGradient>
+          <radialGradient id="stabilityCalm" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#c9a373" stopOpacity="0.7" />
+            <stop offset="100%" stopColor="#c9a373" stopOpacity="0" />
+          </radialGradient>
+
+          {/* Welfare fabric patterns. */}
+          <pattern id="weaveDense" patternUnits="userSpaceOnUse" width={4} height={4} patternTransform="rotate(45)">
+            <line x1={0} y1={0} x2={0} y2={4} stroke="#3a2a1a" strokeWidth={0.45} opacity={0.55} />
+            <line x1={0} y1={0} x2={4} y2={0} stroke="#3a2a1a" strokeWidth={0.45} opacity={0.55} />
+          </pattern>
+          <pattern id="weaveSparse" patternUnits="userSpaceOnUse" width={9} height={9} patternTransform="rotate(45)">
+            <line x1={0} y1={0} x2={0} y2={3} stroke="#9c2b1f" strokeWidth={0.6} opacity={0.85} />
+            <line x1={5} y1={5} x2={9} y2={5} stroke="#9c2b1f" strokeWidth={0.6} opacity={0.85} />
+          </pattern>
+          <pattern id="weaveGold" patternUnits="userSpaceOnUse" width={4} height={4} patternTransform="rotate(45)">
+            <line x1={0} y1={0} x2={0} y2={4} stroke="#a07a45" strokeWidth={0.6} opacity={0.95} />
+            <line x1={2} y1={0} x2={2} y2={4} stroke="#c9a373" strokeWidth={0.45} opacity={0.7} />
+          </pattern>
         </defs>
 
         {/* District polygons — fill driven by the active layer. Click

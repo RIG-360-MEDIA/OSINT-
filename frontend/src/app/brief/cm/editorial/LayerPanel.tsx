@@ -9,48 +9,33 @@ interface LayerPanelProps {
 }
 
 /**
- * Right-side toggle panel — radio-style. Active layer drives the map's
- * choropleth fill + overlay markers. Categories are colour-coded so the
- * eye groups Signal, Safety, Economy, Infra, Composite at a glance.
+ * Horizontal pill toggles — World-Monitor inspired layer chooser.
+ * Active pill carries the wax-red wash and the category dot tinted to
+ * match the layer family. Sits above the [map | feed] grid.
  */
 export function LayerPanel({ activeLayerId, onChange }: LayerPanelProps) {
   return (
-    <aside className={styles.layerPanel}>
-      <div className={styles.layerPanelHeader}>
-        <span className={styles.sectionEyebrow}>Atlas Layers</span>
-        <span className={styles.sectionMeta}>{LAYERS.length}</span>
-      </div>
-      <ul className={styles.layerList}>
-        {LAYERS.map((l) => {
-          const active = l.id === activeLayerId
-          return (
-            <li key={l.id}>
-              <button
-                type="button"
-                className={`${styles.layerRow} ${active ? styles.layerRowActive : ''}`}
-                onClick={() => onChange(l.id)}
-              >
-                <span
-                  className={`${styles.layerCategoryDot} ${styles[`layerCat_${l.category}`]}`}
-                  aria-hidden="true"
-                />
-                <span className={styles.layerRowLabel}>{l.label}</span>
-                <span className={styles.layerRowCategory}>{l.category}</span>
-              </button>
-              {active && (
-                <p className={styles.layerRowDescription}>{l.description}</p>
-              )}
-              {active && (
-                <div className={styles.layerScale}>
-                  {l.scale.map((s, i) => (
-                    <span key={i}>{s}</span>
-                  ))}
-                </div>
-              )}
-            </li>
-          )
-        })}
-      </ul>
-    </aside>
+    <div className={styles.layerPills} role="tablist" aria-label="Atlas layers">
+      {LAYERS.map((l) => {
+        const active = l.id === activeLayerId
+        return (
+          <button
+            key={l.id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            className={`${styles.layerPill} ${active ? styles.layerPillActive : ''}`}
+            onClick={() => onChange(l.id)}
+          >
+            <span
+              className={`${styles.layerCategoryDot} ${styles[`layerCat_${l.category}`]}`}
+              aria-hidden="true"
+            />
+            <span className={styles.layerPillLabel}>{l.label}</span>
+            <span className={styles.layerPillCategory}>{l.category}</span>
+          </button>
+        )
+      })}
+    </div>
   )
 }

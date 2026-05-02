@@ -31,6 +31,7 @@ import {
   WATCHLIST,
 } from './editorial/data'
 import { DistrictModal } from './editorial/DistrictModal'
+import { LayerFeed } from './editorial/LayerFeed'
 import { LayerPanel } from './editorial/LayerPanel'
 import { DEFAULT_LAYER_ID, getLayer } from './editorial/layers'
 import { TelanganaMap } from './editorial/TelanganaMap'
@@ -216,12 +217,13 @@ function Atlas({ activeLayerId, onChangeLayer, onDistrictClick }: AtlasProps) {
             33 districts · refreshed 14:37 · click any district to focus
           </span>
         </header>
+        <LayerPanel activeLayerId={activeLayerId} onChange={onChangeLayer} />
         <div className={styles.atlasGrid}>
           <TelanganaMap
             activeLayerId={activeLayerId}
             onDistrictClick={onDistrictClick}
           />
-          <LayerPanel activeLayerId={activeLayerId} onChange={onChangeLayer} />
+          <LayerFeed activeLayerId={activeLayerId} />
         </div>
       </div>
     </section>

@@ -222,6 +222,7 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
     """Run a single article through all 4 NLP steps and persist results."""
     from sqlalchemy import text
 
+    from backend.nlp.cm.geo_district import load_gazetteer, tag_districts
     from backend.nlp.nlp_embedding import check_semantic_duplicate, generate_embedding
     from backend.nlp.nlp_entities import extract_entities
     from backend.nlp.nlp_geo import tag_geography
@@ -255,12 +256,34 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
         lead_text_translated=working_text if has_good_text else None,
     )
 
-    # ── Step 4: Geographic tagging ────────────────────────────────────────────
+    # ── Step 4: Geographic tagging (state-level) ──────────────────────────────
     geo_primary, geo_secondary = await tag_geography(
         title=title,
         lead_text_translated=working_text if has_good_text else None,
         entities_extracted=entities,
     )
+
+    # ── Step 5: District tagging (CM Page v2) ────────────────────────────────
+    # Reuses entities already extracted in Step 2 — no re-NER. Returns
+    # zero or more (district_id, mention_count, confidence, is_primary)
+    # rows. The gazetteer is cached per worker process by load_gazetteer.
+    # If the districts table is empty (fresh deploy, seed not yet
+    # applied), this returns [] and the INSERT loop below is a no-op.
+    try:
+        gazetteer = await load_gazetteer(db)
+        district_matches = tag_districts(
+            title=title,
+            body=working_text if has_good_text else None,
+            entities=entities,
+            gazetteer=gazetteer,
+        )
+    except Exception as exc:  # noqa: BLE001 — district step is best-effort
+        logger.warning(
+            "district tagging failed for article %s — continuing without districts: %s",
+            article.id,
+            exc,
+        )
+        district_matches = []
 
     # ── LaBSE embedding + semantic dedup (full-text only) ────────────────────
     embedding: list[float] | None = None
@@ -316,3 +339,39 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
             "nlp_confidence": nlp_confidence,
         },
     )
+
+    # ── Persist district tags (CM Page v2) ────────────────────────────────────
+    # Wrapped in a savepoint so a per-row failure (e.g. stale gazetteer
+    # mapping a district_id no longer in the districts table) doesn't
+    # abort the surrounding article batch transaction.
+    if district_matches:
+        try:
+            async with db.begin_nested():
+                for m in district_matches:
+                    await db.execute(
+                        text(
+                            """
+                            INSERT INTO article_districts
+                                (article_id, district_id, mention_count, confidence, is_primary)
+                            VALUES
+                                (:aid, :did, :n, :c, :p)
+                            ON CONFLICT (article_id, district_id) DO UPDATE SET
+                                mention_count = EXCLUDED.mention_count,
+                                confidence    = EXCLUDED.confidence,
+                                is_primary    = EXCLUDED.is_primary
+                            """
+                        ),
+                        {
+                            "aid": article.id,
+                            "did": m.district_id,
+                            "n": m.mention_count,
+                            "c": m.confidence,
+                            "p": m.is_primary,
+                        },
+                    )
+        except Exception as exc:  # noqa: BLE001 — district persist is best-effort
+            logger.warning(
+                "article_districts persist failed for article %s: %s",
+                article.id,
+                exc,
+            )

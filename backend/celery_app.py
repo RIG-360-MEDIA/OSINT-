@@ -410,19 +410,13 @@ app.config_from_object(
                 "schedule": timedelta(minutes=5),
                 "options": {"queue": "nlp"},
             },
-            "cm-analysis-column-morning": {
+            "cm-analysis-column-hourly": {
+                # Bumped from 3x/day to hourly per user request — gives
+                # the LLM more chances to land a valid draft if a single
+                # call hits a Groq rate-limit wall. The cite-id gate
+                # still rejects unsubstantiated drafts.
                 "task": "tasks.cm.analysis_column",
-                "schedule": crontab(hour=0, minute=30),    # 06:00 IST
-                "options": {"queue": "nlp"},
-            },
-            "cm-analysis-column-noon": {
-                "task": "tasks.cm.analysis_column",
-                "schedule": crontab(hour=6, minute=30),    # 12:00 IST
-                "options": {"queue": "nlp"},
-            },
-            "cm-analysis-column-evening": {
-                "task": "tasks.cm.analysis_column",
-                "schedule": crontab(hour=12, minute=30),   # 18:00 IST
+                "schedule": timedelta(hours=1),
                 "options": {"queue": "nlp"},
             },
             "cm-action-queue-every-15-min": {

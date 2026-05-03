@@ -35,7 +35,18 @@ from backend.nlp.cm.cite_validate import validate_cite_ids
 logger = logging.getLogger(__name__)
 
 
-CONTEXT_ARTICLE_LIMIT = 30
+CONTEXT_ARTICLE_LIMIT = 12
+
+# Politically-relevant keyword bag for the editorial signals query. An
+# article must hit at least one of these in title or body to be eligible
+# (otherwise sports / lifestyle / film coverage drowns the column).
+POLITICAL_KEYWORDS = (
+    'cm', 'chief minister', 'revanth', 'kcr', 'ktr', 'harish rao',
+    'bandi sanjay', 'kavitha', 'opposition', 'minister', 'governor',
+    'cabinet', 'budget', 'protest', 'rally', 'caste', 'reservation',
+    'farmer', 'congress', 'brs', 'bjp', 'aimim', 'assembly',
+    'high court', 'hydra', 'musi', 'group-1', 'irrigation',
+)
 MIN_VALID_CITES = 4
 
 ANALYSIS_PROMPT = (
@@ -78,18 +89,25 @@ async def _gather_signals(state: str | None) -> list[dict[str, Any]]:
                a.published_at,
                s.name AS source_name
         FROM articles a
-        JOIN article_districts ad ON ad.article_id = a.id AND ad.is_primary = TRUE
+        JOIN article_districts ad ON ad.article_id = a.id
         JOIN districts d ON d.id = ad.district_id
         LEFT JOIN sources s ON s.id = a.source_id
         WHERE a.collected_at > NOW() - INTERVAL '24 hours'
           AND a.nlp_processed = TRUE
           AND a.is_duplicate = FALSE
           AND d.state_code = COALESCE(:state, d.state_code)
+          AND (a.title ILIKE ANY(:kw_patterns)
+            OR COALESCE(a.lead_text_translated, a.lead_text_original, '') ILIKE ANY(:kw_patterns))
+        GROUP BY a.id, s.name
         ORDER BY a.published_at DESC NULLS LAST
         LIMIT :lim
     """
     async with get_db() as db:
-        rows = (await db.execute(text(sql), {"state": state, "lim": CONTEXT_ARTICLE_LIMIT})).all()
+        kw_patterns = [f"%{k}%" for k in POLITICAL_KEYWORDS]
+        rows = (await db.execute(
+            text(sql),
+            {"state": state, "lim": CONTEXT_ARTICLE_LIMIT, "kw_patterns": kw_patterns},
+        )).all()
     return [
         {
             "id": str(r.id),

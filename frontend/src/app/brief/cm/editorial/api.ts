@@ -13,6 +13,8 @@
  * by `require_page("worldmonitor")` server-side.
  */
 
+import { createClient } from '@/lib/supabase/client'
+
 import type {
   CmAction,
   CmAnalysis,
@@ -25,7 +27,32 @@ import type {
 } from './cm-intel-data'
 import type { Headline, TickerEvent } from './data'
 
-const API_BASE = '/api/cm'
+const API_BASE_PROD =
+  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL) || ''
+
+/** Supabase Bearer token getter — mirrors the pattern used elsewhere
+ *  in the brief page (createClient from @/lib/supabase/client → getSession).
+ *  Cached for the lifetime of the page so we don't hit IndexedDB on
+ *  every poll tick. */
+let _cachedToken: string | null = null
+let _tokenExpiry = 0
+async function getAccessToken(): Promise<string | null> {
+  const now = Date.now()
+  if (_cachedToken && now < _tokenExpiry) return _cachedToken
+  try {
+    const supabase = createClient()
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token ?? null
+    if (token) {
+      _cachedToken = token
+      // Token is good for ~1h; we re-fetch a touch sooner.
+      _tokenExpiry = now + 50 * 60_000
+    }
+    return token
+  } catch {
+    return null
+  }
+}
 
 /** Compact wrapper around `fetch` that:
  *   - includes credentials (Supabase cookie) so the require_page gate works
@@ -34,14 +61,18 @@ const API_BASE = '/api/cm'
  *     should respond well within this budget)
  */
 async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const url = `${API_BASE}${path}`
+  const url = `${API_BASE_PROD}/api/cm${path}`
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), 12000)
   const sig = signal ?? ctrl.signal
+  const token = await getAccessToken()
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
   try {
     const resp = await fetch(url, {
+      cache: 'no-store',
       credentials: 'include',
-      headers: { Accept: 'application/json' },
+      headers,
       signal: sig,
     })
     if (!resp.ok) {

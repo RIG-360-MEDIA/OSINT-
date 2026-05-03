@@ -165,7 +165,16 @@ function Lead() {
   // paint. The progress dots and rotation cadence are unchanged.
   const lead = useCMLead()
   const mode = panelMode(lead)
-  const live = lead.data?.headlines ?? []
+  // Server returns LeadHeadline { eyebrow, headline, rank, cite_ids,
+  // generated_at }. The demo Headline interface uses { eyebrow, text }.
+  // Map server → demo so render code stays untouched.
+  const liveRaw = lead.data?.headlines ?? []
+  const live: Array<{ eyebrow: string; text: string }> = liveRaw.map(
+    (h: { eyebrow?: string; headline?: string; text?: string }) => ({
+      eyebrow: h.eyebrow ?? '',
+      text: (h as { headline?: string; text?: string }).headline ?? h.text ?? '',
+    }),
+  )
   const headlines = mode === 'live' && live.length > 0 ? live : HEADLINES
   const degraded = mode === 'degraded'
   const [idx, setIdx] = useState(0)

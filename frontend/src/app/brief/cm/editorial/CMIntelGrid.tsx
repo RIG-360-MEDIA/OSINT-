@@ -84,8 +84,8 @@ function NewsOnCM() {
   // Server CmNewsItem shape is { title, age_label, source, sentiment } —
   // map to the demo's { text, ageLabel, source, sentiment } so the
   // existing JSX renders without `.charAt(0)` blowing up on undefined.
-  const liveRaw = q.data?.items ?? []
-  const liveItems = liveRaw.map((r: Record<string, unknown>) => ({
+  const liveRaw = (q.data?.items ?? []) as unknown as ReadonlyArray<Record<string, unknown>>
+  const liveItems = liveRaw.map((r) => ({
     source: String(r.source ?? ''),
     ageLabel: String(r.age_label ?? r.ageLabel ?? ''),
     text: String(r.title ?? r.text ?? ''),
@@ -184,8 +184,8 @@ function OppositionWatch() {
   const q = useCMOpposition()
   const mode = panelMode(q)
   // Server uses age_label (snake); demo uses ageLabel (camel). Map.
-  const liveRaw = q.data?.items ?? []
-  const liveItems = liveRaw.map((r: Record<string, unknown>) => ({
+  const liveRaw = (q.data?.items ?? []) as unknown as ReadonlyArray<Record<string, unknown>>
+  const liveItems = liveRaw.map((r) => ({
     actor: String(r.actor ?? ''),
     party: (String(r.party ?? 'BRS') as 'BRS' | 'BJP' | 'INC' | 'AIMIM'),
     channel: String(r.channel ?? ''),

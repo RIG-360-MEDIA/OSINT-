@@ -13,8 +13,6 @@
  * by `require_page("worldmonitor")` server-side.
  */
 
-import { createClient } from '@/lib/supabase/client'
-
 import type {
   CmAction,
   CmAnalysis,
@@ -39,13 +37,18 @@ let _tokenExpiry = 0
 async function getAccessToken(): Promise<string | null> {
   const now = Date.now()
   if (_cachedToken && now < _tokenExpiry) return _cachedToken
+  // Browser-only — bail out cleanly during SSR / build.
+  if (typeof window === 'undefined') return null
   try {
-    const supabase = createClient()
+    // Lazy dynamic import — keeps the supabase client out of the
+    // module init path so any error during its load can't crash the
+    // page bundle.
+    const mod = await import('@/lib/supabase/client')
+    const supabase = mod.createClient()
     const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token ?? null
+    const token = data?.session?.access_token ?? null
     if (token) {
       _cachedToken = token
-      // Token is good for ~1h; we re-fetch a touch sooner.
       _tokenExpiry = now + 50 * 60_000
     }
     return token

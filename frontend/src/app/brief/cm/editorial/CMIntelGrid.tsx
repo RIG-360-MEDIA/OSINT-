@@ -81,7 +81,16 @@ export function CMIntelGrid() {
 function NewsOnCM() {
   const q = useCMNewsOnChair()
   const mode = panelMode(q)
-  const liveItems = q.data?.items ?? []
+  // Server CmNewsItem shape is { title, age_label, source, sentiment } —
+  // map to the demo's { text, ageLabel, source, sentiment } so the
+  // existing JSX renders without `.charAt(0)` blowing up on undefined.
+  const liveRaw = q.data?.items ?? []
+  const liveItems = liveRaw.map((r: Record<string, unknown>) => ({
+    source: String(r.source ?? ''),
+    ageLabel: String(r.age_label ?? r.ageLabel ?? ''),
+    text: String(r.title ?? r.text ?? ''),
+    sentiment: typeof r.sentiment === 'number' ? r.sentiment : 0,
+  }))
   const items = mode === 'live' && liveItems.length > 0 ? liveItems : CM_NEWS
   const lead = items[0]
   const rest = items.slice(1)
@@ -174,7 +183,16 @@ function ActionsForChair() {
 function OppositionWatch() {
   const q = useCMOpposition()
   const mode = panelMode(q)
-  const liveItems = q.data?.items ?? []
+  // Server uses age_label (snake); demo uses ageLabel (camel). Map.
+  const liveRaw = q.data?.items ?? []
+  const liveItems = liveRaw.map((r: Record<string, unknown>) => ({
+    actor: String(r.actor ?? ''),
+    party: (String(r.party ?? 'BRS') as 'BRS' | 'BJP' | 'INC' | 'AIMIM'),
+    channel: String(r.channel ?? ''),
+    ageLabel: String(r.age_label ?? r.ageLabel ?? ''),
+    text: String(r.text ?? ''),
+    reach: r.reach ? String(r.reach) : undefined,
+  }))
   const items = mode === 'live' && liveItems.length > 0 ? liveItems : CM_OPPOSITION
   return (
     <article className={`${styles.cmCard} ${styles.cmCardOpp}`}>
@@ -398,7 +416,13 @@ function AnalysisColumn() {
 function LivePulse() {
   const q = useCMLivePulse()
   const mode = panelMode(q)
-  const liveMetrics = q.data?.metrics ?? []
+  // Server returns the array under `tiles`, not `metrics`. Demo type
+  // already matches { label, value, delta, trend } — just rename the
+  // accessor.
+  const liveMetrics =
+    (q.data as unknown as { tiles?: ReadonlyArray<typeof CM_PULSE[number]> } | undefined)?.tiles ??
+    q.data?.metrics ??
+    []
   const metrics = mode === 'live' && liveMetrics.length > 0 ? liveMetrics : CM_PULSE
   return (
     <article className={`${styles.cmCard} ${styles.cmCardPulse}`}>

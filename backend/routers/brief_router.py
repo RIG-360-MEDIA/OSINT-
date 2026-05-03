@@ -74,7 +74,14 @@ async def generate_today_brief(
 async def get_today_brief(
     user: dict = Depends(require_page("brief")),
 ) -> dict:
-    """Get today's brief if it exists. Returns 404 if not yet generated."""
+    """Get today's brief if it exists. Returns 404 if not yet generated.
+
+    Note: server runs UTC but most users are in IST (UTC+5:30), so a
+    brief generated late-evening IST is keyed brief_date=tomorrow-UTC.
+    To avoid the wires-page panel showing yesterday's brief through
+    that 5h30 window we accept any brief from the last 36 hours and
+    pick the newest by brief_date + generated_at.
+    """
     async with get_db() as db:
         result = await db.execute(
             text(
@@ -83,8 +90,8 @@ async def get_today_brief(
                        model_used, source_counts, evidence
                 FROM briefs
                 WHERE user_id = :user_id
-                  AND brief_date = CURRENT_DATE
-                ORDER BY generated_at DESC
+                  AND generated_at > NOW() - INTERVAL '36 hours'
+                ORDER BY brief_date DESC, generated_at DESC
                 LIMIT 1
                 """
             ),

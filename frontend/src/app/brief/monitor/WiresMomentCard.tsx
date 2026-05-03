@@ -260,24 +260,99 @@ export function WiresMomentCard({ stories }: WiresMomentCardProps): React.ReactE
             {story.label}
           </span>
 
-          {/* Headline — second row, spans middle + right */}
-          <h2
-            className="rig-headline"
-            style={{
-              gridColumn: '2 / 4',
-              gridRow: '2 / 3',
+          {/* Headline — second row, spans middle + right.
+           *
+           * Translation rule: if the headline contains non-Latin script
+           * (Telugu, Kannada, Hindi, Tamil, Bengali, Arabic, etc.) and an
+           * English snippet/translation is available, we render BOTH at
+           * the headline font size — original on top, English co-equal
+           * below — so the reader is never asked to squint at a
+           * translation that's smaller than the source. When the headline
+           * is purely Latin we fall back to the original single-line
+           * treatment. */}
+          {(() => {
+            const headline = story.headline || '(untitled)'
+            const hasNonLatin = /[^ -ɏḀ-ỿ]/.test(headline)
+            const englishSnippet = story.snippet?.trim()
+            const headlineStyle = {
+              gridColumn: '2 / 4' as const,
               fontSize: 'clamp(20px, 2vw, 26px)',
               lineHeight: 1.24,
               margin: 0,
               color: 'var(--rig-ink)',
               display: '-webkit-box',
               WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
+              WebkitBoxOrient: 'vertical' as const,
               overflow: 'hidden',
-            }}
-          >
-            {story.headline || '(untitled)'}
-          </h2>
+            }
+            if (hasNonLatin && englishSnippet) {
+              return (
+                <div
+                  style={{
+                    gridColumn: '2 / 4',
+                    gridRow: '2 / 3',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                  }}
+                >
+                  <h2 className="rig-headline" style={{ ...headlineStyle, gridRow: undefined }}>
+                    {headline}
+                  </h2>
+                  <p
+                    className="rig-headline"
+                    aria-label="English translation"
+                    style={{
+                      ...headlineStyle,
+                      gridRow: undefined,
+                      WebkitLineClamp: 3,
+                      color: 'var(--rig-ink-2, #2c2722)',
+                      fontStyle: 'italic',
+                      opacity: 0.92,
+                    }}
+                  >
+                    {englishSnippet}
+                  </p>
+                </div>
+              )
+            }
+            if (hasNonLatin && !englishSnippet) {
+              // Non-Latin headline, no translation available.
+              // Surface a small placeholder so the user knows it's
+              // pending rather than missing.
+              return (
+                <div
+                  style={{
+                    gridColumn: '2 / 4',
+                    gridRow: '2 / 3',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
+                  <h2 className="rig-headline" style={{ ...headlineStyle, gridRow: undefined }}>
+                    {headline}
+                  </h2>
+                  <span
+                    className="rig-byline"
+                    style={{
+                      fontSize: '11px',
+                      fontStyle: 'italic',
+                      color: 'var(--rig-ink-3, #6b6660)',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Translation pending…
+                  </span>
+                </div>
+              )
+            }
+            return (
+              <h2 className="rig-headline" style={{ ...headlineStyle, gridRow: '2 / 3' }}>
+                {headline}
+              </h2>
+            )
+          })()}
 
           {/* Snippet / lead — third row, the new richness layer */}
           <div
@@ -290,7 +365,7 @@ export function WiresMomentCard({ stories }: WiresMomentCardProps): React.ReactE
               minWidth: 0,
             }}
           >
-            {story.snippet && (
+            {story.snippet && !/[^ -ɏḀ-ỿ]/.test(story.headline || '') && (
               <p
                 className="rig-prose"
                 style={{

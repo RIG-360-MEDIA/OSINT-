@@ -124,9 +124,7 @@ async def _generate_summary(slug: str, titles: list[str]) -> str | None:
             system=_SYSTEM_PROMPT,
             user=user_prompt,
             model=FAST_MODEL,
-            task_type="classification",  # cheap path through the router
-            max_tokens=180,
-            temperature=0.4,
+            task_type="classification",  # cheap path: small token budget + low temp via TOKEN_LIMITS / TEMPERATURES
         )
     except GroqQuotaExhausted:
         logger.warning("Groq quota exhausted refreshing %s summary", slug)

@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 038 — coverage_panel_summaries
+-- Migration 040 — coverage_panel_summaries
 -- ============================================================
 -- Single-row-per-slug cache for the LLM-generated 2–3 line
 -- summaries shown on the /coverage hub page panels.

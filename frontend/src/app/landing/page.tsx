@@ -89,12 +89,12 @@ export default function LandingPage() {
 
         <div className={styles.heroInner}>
           <div className={styles.heroHeader}>
-            <Link href="/" className={styles.brand} aria-label="Rig Surveillance">
+            <Link href="/" className={styles.brand} aria-label="Robin OSINT">
               <span className={styles.brandOrnament} aria-hidden="true">
                 <CompassGlyph />
               </span>
-              <span className={styles.brandRig}>Rig</span>
-              <span className={styles.brandSurveillance}>Surveillance</span>
+              <span className={styles.brandRig}>Robin</span>
+              <span className={styles.brandSurveillance}>OSINT</span>
               <span className={styles.brandTerminal}>.</span>
             </Link>
             <div className={styles.heroHud}>
@@ -119,7 +119,7 @@ export default function LandingPage() {
             </h1>
 
             <p className={styles.deck}>
-              A reading room for a world that speaks too fast. Rig listens across
+              A reading room for a world that speaks too fast. Robin listens across
               channels, languages, and rooms — and files a brief by morning.
             </p>
 
@@ -249,7 +249,7 @@ export default function LandingPage() {
 
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
-          <div>© Rig Surveillance · Desk of Record</div>
+          <div>© Robin OSINT · Desk of Record</div>
           <div className={styles.footerMid}>Set in Playfair Display &amp; DM Mono</div>
           <div>End of dispatch —</div>
         </div>

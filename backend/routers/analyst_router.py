@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user, require_page
+from backend.auth.auth_middleware import get_current_principal, get_current_user, require_page
 from backend.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class QueryRequest(BaseModel):
 
 @analyst_router.get("/session")
 async def get_session(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """Get or create the current analyst session for this user."""
     async with get_db() as db:
@@ -89,7 +89,7 @@ async def get_session(
 
 @analyst_router.post("/session/new")
 async def new_session(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """Start a fresh investigation session."""
     async with get_db() as db:
@@ -108,7 +108,7 @@ async def new_session(
 @analyst_router.post("/query")
 async def analyst_query(
     req: QueryRequest,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """
     Core RAG endpoint: embed question → semantic retrieval → Groq analysis.
@@ -505,7 +505,7 @@ async def analyst_query(
 
 @analyst_router.get("/context")
 async def get_context_suggestions(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """Return 3 suggested investigation questions based on the user's top Tier 1 articles."""
     async with get_db() as db:
@@ -543,7 +543,7 @@ async def get_context_suggestions(
 
 @analyst_router.get("/sessions")
 async def list_sessions(
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """List all investigation sessions for this user with summary info."""
     async with get_db() as db:
@@ -587,7 +587,7 @@ async def list_sessions(
 @analyst_router.get("/sessions/{session_id}")
 async def get_session_detail(
     session_id: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """Get all turns for a past session. Verifies user ownership."""
     async with get_db() as db:

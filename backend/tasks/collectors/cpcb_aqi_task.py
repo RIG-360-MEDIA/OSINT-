@@ -84,7 +84,7 @@ async def _run() -> dict[str, int]:
     written = 0
     seen_in_states = 0
     try:
-        async with httpx.AsyncClient(timeout=TIMEOUT_S) as client:
+        async with httpx.AsyncClient(timeout=TIMEOUT_S, follow_redirects=True) as client:
             stations = await _fetch_landing(client)
     except Exception as exc:  # noqa: BLE001
         logger.exception("cpcb landing fetch failed")

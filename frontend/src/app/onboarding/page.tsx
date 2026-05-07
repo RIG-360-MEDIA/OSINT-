@@ -59,7 +59,7 @@ function Wordmark() {
           letterSpacing: '0.2em',
           color:         'var(--rig-ink-3)',
           textTransform: 'uppercase',
-        }}>Rig · Editions</div>
+        }}>Robin · Editions</div>
         <div style={{
           fontFamily: "'Cormorant Garamond', serif",
           fontStyle:  'italic',
@@ -67,7 +67,7 @@ function Wordmark() {
           lineHeight: 1,
           color:      'var(--rig-ink)',
           marginTop:  '2px',
-        }}>The Surveillance</div>
+        }}>OSINT</div>
       </div>
     </div>
   )

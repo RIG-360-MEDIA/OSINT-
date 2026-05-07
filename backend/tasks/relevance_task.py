@@ -24,17 +24,24 @@ logger = logging.getLogger(__name__)
     max_retries=3,
     queue="relevance",
 )
-def score_relevance_batch(self, article_ids: list[str]):  # type: ignore[no-untyped-def]
+def score_relevance_batch(self, article_ids: list[str], user_id: str | None = None):  # type: ignore[no-untyped-def]
     """
-    Score a batch of NLP-processed articles against all active user profiles.
-    Called by process_nlp_batch after each NLP batch completes.
+    Score a batch of NLP-processed articles against user profiles.
+
+    Default (user_id=None): score against ALL active users — used by
+    process_nlp_batch on every fresh-ingest cycle.
+
+    Scoped (user_id="<uuid>"): score only for that single user — used by
+    `backfill_user_relevance` so onboarding/edit backfills don't redundantly
+    re-score the same articles for unrelated users.
     """
     try:
-        result = asyncio.run(_score_batch(article_ids))
+        result = asyncio.run(_score_batch(article_ids, user_id=user_id))
         logger.info(
-            "Relevance scoring complete: %d scores written for %d articles",
+            "Relevance scoring complete: %d scores written for %d articles (user=%s)",
             result["scored"],
             result["articles"],
+            user_id or "ALL",
         )
         return result
     except Exception as exc:
@@ -42,11 +49,15 @@ def score_relevance_batch(self, article_ids: list[str]):  # type: ignore[no-unty
         raise self.retry(exc=exc, countdown=30)
 
 
-async def _score_batch(article_ids: list[str]) -> dict:
+async def _score_batch(article_ids: list[str], user_id: str | None = None) -> dict:
     """
     Core scoring logic.
     For each article × each user: compute Stage 1 score.
     For scores >= 0.25: run Stage 2 Groq in batches of 5 concurrent.
+
+    When ``user_id`` is provided the user-fetch query is scoped to that
+    single profile, so the cost of a large backfill is O(articles) instead
+    of O(articles × users).
     """
     from sqlalchemy import text
 
@@ -81,34 +92,40 @@ async def _score_batch(article_ids: list[str]) -> dict:
         )
         articles = articles_raw.fetchall()
 
-        # ── Fetch all user profiles with their entities ───────────────────
-        users_raw = await db.execute(
-            text(
-                """
-                SELECT
-                    up.user_id,
-                    up.role_type,
-                    up.geo_primary,
-                    up.geo_secondary,
-                    up.signal_priorities,
-                    up.role_context,
-                    COALESCE(
-                        json_agg(
-                            json_build_object(
-                                'canonical_name', ue.canonical_name,
-                                'priority', ue.priority
-                            )
-                        ) FILTER (WHERE ue.id IS NOT NULL),
-                        '[]'::json
-                    ) AS entities
-                FROM user_profiles up
-                LEFT JOIN user_entities ue ON ue.user_id = up.user_id
-                GROUP BY
-                    up.user_id, up.role_type, up.geo_primary,
-                    up.geo_secondary, up.signal_priorities, up.role_context
-                """
+        # ── Fetch user profiles (optionally scoped to one user) ──────────
+        users_sql = """
+            SELECT
+                up.user_id,
+                up.role_type,
+                up.geo_primary,
+                up.geo_secondary,
+                up.signal_priorities,
+                up.role_context,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'canonical_name', ue.canonical_name,
+                            'priority', ue.priority
+                        )
+                    ) FILTER (WHERE ue.id IS NOT NULL),
+                    '[]'::json
+                ) AS entities
+            FROM user_profiles up
+            LEFT JOIN user_entities ue ON ue.user_id = up.user_id
+            {where_clause}
+            GROUP BY
+                up.user_id, up.role_type, up.geo_primary,
+                up.geo_secondary, up.signal_priorities, up.role_context
+        """
+        if user_id:
+            users_raw = await db.execute(
+                text(users_sql.format(where_clause="WHERE up.user_id = :uid")),
+                {"uid": user_id},
             )
-        )
+        else:
+            users_raw = await db.execute(
+                text(users_sql.format(where_clause=""))
+            )
         users = users_raw.fetchall()
 
         if not users:
@@ -295,3 +312,99 @@ async def _run_stage2_batch(queue: list[dict], db) -> None:  # type: ignore[type
             )
 
         await db.commit()
+
+
+# ── Per-user backfill ──────────────────────────────────────────────────────
+#
+# Triggered when a user finishes onboarding or edits their profile/entities.
+# Walks the full N-day article window and dispatches per-user scoring batches.
+#
+# Why a separate task (instead of inlining in onboarding_router):
+#   * Onboarding HTTP request returns immediately; backfill runs async.
+#   * The default `score_relevance_batch` scores against ALL users, which
+#     wastes Groq tokens re-scoring articles for unrelated users. With
+#     `user_id=` set we cleanly scope to the single new/edited profile.
+#   * Removes the 2,000-article cap that left fresh users seeing only ~13%
+#     of the corpus — root cause of the "feed feels static" bug.
+
+BACKFILL_BATCH = 100              # articles per score_relevance_batch dispatch
+BACKFILL_HARD_CAP = 50_000        # absolute ceiling — protects relevance queue
+
+
+@app.task(
+    name="tasks.backfill_user_relevance",
+    bind=True,
+    max_retries=2,
+    queue="relevance",
+)
+def backfill_user_relevance(  # type: ignore[no-untyped-def]
+    self,
+    user_id: str,
+    days: int = 30,
+):
+    """
+    Score every NLP-ready article from the last ``days`` days against ONE user.
+
+    Splits the work into BACKFILL_BATCH-sized chunks, each dispatched as a
+    standalone `score_relevance_batch(article_ids, user_id=user_id)` task on
+    the `relevance` queue — so a slow user doesn't block ingest-event scoring.
+    """
+    try:
+        return asyncio.run(_backfill_for_user(user_id=user_id, days=days))
+    except Exception as exc:  # noqa: BLE001
+        logger.error("backfill_user_relevance failed for user=%s: %s", user_id, exc)
+        raise self.retry(exc=exc, countdown=60)
+
+
+async def _backfill_for_user(user_id: str, days: int) -> dict:
+    """Pull article ids in window, dispatch per-user scoring batches."""
+    from sqlalchemy import text
+
+    from backend.database import get_db
+
+    async with get_db() as db:
+        result = await db.execute(
+            text(
+                """
+                SELECT a.id::text
+                FROM articles a
+                WHERE a.nlp_processed = TRUE
+                  AND a.nlp_confidence <> 'error'
+                  AND a.collected_at > NOW() - (:days * INTERVAL '1 day')
+                ORDER BY a.collected_at DESC
+                LIMIT :hard_cap
+                """
+            ),
+            {"days": days, "hard_cap": BACKFILL_HARD_CAP},
+        )
+        article_ids = [r[0] for r in result.fetchall()]
+
+    if not article_ids:
+        logger.info(
+            "backfill_user_relevance: no eligible articles for user=%s window=%dd",
+            user_id, days,
+        )
+        return {"user_id": user_id, "days": days, "articles": 0, "batches": 0}
+
+    batches = 0
+    for i in range(0, len(article_ids), BACKFILL_BATCH):
+        chunk = article_ids[i : i + BACKFILL_BATCH]
+        app.send_task(
+            "tasks.score_relevance_batch",
+            args=[chunk],
+            kwargs={"user_id": user_id},
+            queue="relevance",
+        )
+        batches += 1
+
+    logger.info(
+        "backfill_user_relevance: queued %d batches (%d articles, %dd window) "
+        "for user=%s",
+        batches, len(article_ids), days, user_id,
+    )
+    return {
+        "user_id": user_id,
+        "days": days,
+        "articles": len(article_ids),
+        "batches": batches,
+    }

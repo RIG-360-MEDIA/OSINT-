@@ -69,25 +69,26 @@ async def fetch_news_on_chair(state: str | None, *, limit: int = 4) -> list[dict
     for the per-district badge list."""
     sql = """
         WITH cm_articles AS (
-            SELECT a.id, a.title, a.url, a.published_at,
+            SELECT DISTINCT a.id, a.title, a.url, a.published_at,
                    a.lead_text_translated, a.lead_text_original,
                    s.name AS source_name,
                    a.entities_extracted,
                    a.geo_primary
             FROM articles a
             LEFT JOIN sources s ON s.id = a.source_id
-            LEFT JOIN cm_political_handles h
-                   ON h.state = COALESCE(:state, h.state)
-                  AND h.person_role IN ('CM','Deputy CM','Minister')
-                  AND h.active = TRUE
+            JOIN article_districts ad ON ad.article_id = a.id
+            JOIN districts d ON d.id = ad.district_id
             WHERE a.nlp_processed = TRUE
               AND a.collected_at > NOW() - INTERVAL '24 hours'
+              AND d.state_code = COALESCE(:state, d.state_code)
               AND (
                 a.entities_extracted::text ILIKE '%revanth%' OR
-                a.entities_extracted::text ILIKE '%' || COALESCE(h.person_name, '') || '%' OR
-                a.title ILIKE '%revanth%'
+                a.title ILIKE '%revanth%' OR
+                a.title ILIKE '%chief minister%' OR
+                a.title ~* '\mCM\M' OR
+                a.lead_text_translated ILIKE '%revanth reddy%' OR
+                a.lead_text_original   ILIKE '%revanth reddy%'
               )
-            GROUP BY a.id, s.name
             ORDER BY a.published_at DESC NULLS LAST
             LIMIT 20
         )
@@ -416,9 +417,10 @@ async def fetch_analysis(state: str | None) -> dict[str, Any] | None:
     """
     async with get_db() as db:
         rows = await _safe_execute(db, sql, {"state": state})
-    if not rows:
+    rows_list = list(rows) if rows else []
+    if not rows_list:
         return None
-    r = rows[0]
+    r = rows_list[0]
     return {
         "eyebrow": r.eyebrow or "ANALYSIS",
         "byline": r.byline or "By the Strategy Desk",

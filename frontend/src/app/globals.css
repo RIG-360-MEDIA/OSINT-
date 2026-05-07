@@ -166,6 +166,65 @@
   color-scheme: light;
 }
 
+/* ── Light theme (brightened modern, classy — Option B) ──────────────────────
+   Brighter / classier alternative to the warm `parchment` reading-room
+   default. Subtle warm-white base, more elevated card surfaces, bolder
+   gold and oxblood accents, visibly stronger borders. Less paper grain so
+   it reads as a clean app surface, not a print page. */
+[data-theme='light'] {
+  /* Pure-white-ish base with warm cream cards for elevation. */
+  --rig-paper:       #FFFFFF;
+  --rig-paper-2:     #FAF6EB;
+  --rig-paper-3:     #F1E9D2;
+  --rig-paper-inset: #FBF7EC;
+
+  --rig-ink:         #14110D;
+  --rig-ink-2:       #2E2820;
+  --rig-ink-3:       #5A4F3D;
+  --rig-ink-4:       #837763;
+
+  /* Bumped saturation: gold + oxblood pop against the bright bg. */
+  --rig-copper:      #B16E2F;
+  --rig-copper-2:    #CE8B40;
+  --rig-gold:        #D4A03A;
+  --rig-gold-2:      #B88323;
+  --rig-oxblood:     #C44035;
+  --rig-oxblood-2:   #9A2E27;
+
+  --rig-rule:        rgba(20,17,13,0.18);
+  --rig-rule-strong: rgba(20,17,13,0.30);
+  --rig-rule-hair:   rgba(20,17,13,0.08);
+
+  --rig-overlay:     rgba(20,17,13,0.04);
+  --rig-overlay-2:   rgba(20,17,13,0.02);
+
+  --rig-pillar-article-fg:     #14110D;
+  --rig-pillar-article-bg:     rgba(20,17,13,0.06);
+  --rig-pillar-article-accent: #14110D;
+  --rig-pillar-govt-fg:        #8E1F1F;
+  --rig-pillar-govt-bg:        rgba(142,31,31,0.08);
+  --rig-pillar-govt-accent:    #8E1F1F;
+  --rig-pillar-paper-fg:       #8E6E2E;
+  --rig-pillar-paper-bg:       rgba(142,110,46,0.08);
+  --rig-pillar-paper-accent:   #8E6E2E;
+  --rig-pillar-social-fg:      #1F6E8E;
+  --rig-pillar-social-bg:      rgba(31,110,142,0.08);
+  --rig-pillar-social-accent:  #1F6E8E;
+  --rig-pillar-video-fg:       #6E2E8E;
+  --rig-pillar-video-bg:       rgba(110,46,142,0.08);
+  --rig-pillar-video-accent:   #6E2E8E;
+
+  --rig-card:                  #FFFFFF;
+  --rig-card-border:           rgba(20,17,13,0.08);
+  --rig-link:                  #1F6E8E;
+
+  --rig-grain-op:    0.10;
+  --rig-grain-blend: multiply;
+
+  color-scheme: light;
+}
+
+
 /* ── Night Desk theme ──────────────────────────────────────────────────────── */
 [data-theme='night'] {
   --rig-paper:       #0A0706;

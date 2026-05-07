@@ -25,7 +25,7 @@ import feedparser
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend.auth.auth_middleware import get_current_user, require_page
+from backend.auth.auth_middleware import get_current_principal, get_current_user, require_page
 from backend.nlp.groq_client import GroqCallFailed, GroqQuotaExhausted, generate
 
 logger = logging.getLogger(__name__)
@@ -281,7 +281,7 @@ async def _generate_summary(
 
 
 @worldmonitor_router.get("/telangana/briefing")
-async def telangana_briefing(user: dict = Depends(get_current_user)) -> dict[str, Any]:
+async def telangana_briefing(user: dict = Depends(get_current_principal)) -> dict[str, Any]:
     """Composite briefing — weather, air, events, news, stability index, summary."""
     cached = _cache_get("telangana:briefing")
     if cached:
@@ -320,7 +320,7 @@ async def telangana_briefing(user: dict = Depends(get_current_user)) -> dict[str
 
 
 @worldmonitor_router.get("/telangana/news")
-async def telangana_news(user: dict = Depends(get_current_user)) -> dict[str, Any]:
+async def telangana_news(user: dict = Depends(get_current_principal)) -> dict[str, Any]:
     """Just the Telugu / Hyderabad RSS items."""
     cached = _cache_get("telangana:news")
     if cached:
@@ -350,7 +350,7 @@ async def _resolve_live_video(client: httpx.AsyncClient, channel_id: str) -> str
 
 
 @worldmonitor_router.get("/telangana/live-channels")
-async def telangana_live_channels(user: dict = Depends(get_current_user)) -> dict[str, Any]:
+async def telangana_live_channels(user: dict = Depends(get_current_principal)) -> dict[str, Any]:
     """Resolve current live video IDs for the configured Telugu news channels.
     Cached for 1 hour — live IDs change ~daily."""
     cached = _cache_get("telangana:live-channels")
@@ -375,7 +375,7 @@ async def telangana_live_channels(user: dict = Depends(get_current_user)) -> dic
 
 
 @worldmonitor_router.get("/telangana/events")
-async def telangana_events(user: dict = Depends(get_current_user)) -> dict[str, Any]:
+async def telangana_events(user: dict = Depends(get_current_principal)) -> dict[str, Any]:
     """ACLED events filtered to Telangana, past 7 days."""
     if not ACLED_TOKEN:
         raise HTTPException(503, "ACLED token not configured (ACLED_ACCESS_TOKEN env)")

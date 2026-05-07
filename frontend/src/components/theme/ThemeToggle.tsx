@@ -4,18 +4,21 @@ import { useTheme } from './ThemeProvider'
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme()
-  const label = theme === 'parchment' ? 'Night desk' : 'Parchment'
+  // Cycle order matches THEME_CYCLE in ThemeProvider: parchment → light → night.
+  // Cycle order matches THEME_CYCLE in ThemeProvider: light → night → parchment.
+  const nextLabel =
+    theme === 'light' ? 'Night desk' : theme === 'night' ? 'Parchment' : 'Light'
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
-      aria-label={`Switch to ${label}`}
-      title={`Switch to ${label}`}
+      aria-label={`Switch to ${nextLabel}`}
+      title={`Switch to ${nextLabel}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '8px',
+        gap: '6px',
         padding: '6px 10px',
         background: 'transparent',
         border: '1px solid var(--rig-rule)',
@@ -36,10 +39,31 @@ export function ThemeToggle() {
         e.currentTarget.style.color = 'var(--rig-ink-2)'
       }}
     >
-      <GlyphSun active={theme === 'parchment'} />
-      <span aria-hidden="true" style={{ opacity: 0.4 }}>/</span>
+      <GlyphScroll active={theme === 'parchment'} />
+      <span aria-hidden="true" style={{ opacity: 0.4 }}>·</span>
+      <GlyphSun active={theme === 'light'} />
+      <span aria-hidden="true" style={{ opacity: 0.4 }}>·</span>
       <GlyphMoon active={theme === 'night'} />
     </button>
+  )
+}
+
+function GlyphScroll({ active }: { active: boolean }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      style={{ opacity: active ? 1 : 0.35, transition: 'opacity 0.2s' }}
+      aria-hidden="true"
+    >
+      <path d="M5 5 h12 a3 3 0 0 1 0 6 H8 v8 a3 3 0 0 1 -3 -3 z" strokeLinejoin="round" />
+      <path d="M19 5 a3 3 0 0 1 0 6" />
+      <path d="M9 13 h7 M9 16 h5" strokeLinecap="round" />
+    </svg>
   )
 }
 

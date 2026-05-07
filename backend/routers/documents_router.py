@@ -16,7 +16,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user, require_page
+from backend.auth.auth_middleware import get_current_principal, get_current_user, require_page
 from backend.database import get_db
 from backend.nlp.groq_client import (
     GroqCallFailed,
@@ -81,7 +81,7 @@ async def get_documents_feed(
     search: str = Query(default=""),
     limit: int = Query(default=20, ge=1, le=50),
     cursor: str = Query(default=""),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ):
     """Ranked government document feed."""
     async with get_db() as db:
@@ -308,7 +308,7 @@ async def get_documents_feed(
 @documents_router.get("/{doc_id}")
 async def get_document_detail(
     doc_id: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ):
     """Return the full document text and metadata."""
     async with get_db() as db:
@@ -366,7 +366,7 @@ async def get_document_detail(
 @documents_router.post("/{doc_id}/summary")
 async def generate_document_summary(
     doc_id: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ):
     """
     Generate a plain-language summary via Groq fast model.

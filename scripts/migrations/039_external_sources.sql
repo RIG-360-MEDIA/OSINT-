@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS mandi_prices (
     arrival_qty   REAL,                            -- quintals
     recorded_at   DATE        NOT NULL,
     inserted_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CONSTRAINT mandi_prices_unique UNIQUE (market, commodity, COALESCE(variety, ''), recorded_at)
+    CONSTRAINT mandi_prices_uniq UNIQUE (market, commodity, recorded_at)
 );
 
 CREATE INDEX IF NOT EXISTS mandi_prices_district_idx

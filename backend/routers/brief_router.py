@@ -83,8 +83,8 @@ async def get_today_brief(
                        model_used, source_counts, evidence
                 FROM briefs
                 WHERE user_id = :user_id
-                  AND brief_date = CURRENT_DATE
-                ORDER BY generated_at DESC
+                  AND generated_at > NOW() - INTERVAL '36 hours'
+                ORDER BY brief_date DESC, generated_at DESC
                 LIMIT 1
                 """
             ),

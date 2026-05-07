@@ -20,7 +20,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 
-from backend.auth.auth_middleware import get_current_user, require_page
+from backend.auth.auth_middleware import get_current_principal, get_current_user, require_page
 from backend.nlp.cm import cache as cm_cache
 from backend.routers import cm_queries as q
 from backend.routers.cm_schemas import (
@@ -84,7 +84,7 @@ def _window(window: str) -> str:
 async def get_pulse(
     state: str | None = Query(default=None),
     window: str = Query(default="24h"),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> PulseResponse:
     state_code = await q.resolve_state(user["id"], state)
     window = _window(window)
@@ -116,7 +116,7 @@ async def get_pulse(
 async def get_issues(
     state: str | None = Query(default=None),
     limit: int = Query(default=8, ge=1, le=20),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> IssuesResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", limit)
@@ -163,7 +163,7 @@ async def get_issues(
 async def get_silence(
     state: str | None = Query(default=None),
     limit: int = Query(default=5, ge=1, le=20),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> SilenceResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", limit)
@@ -191,7 +191,7 @@ async def get_spokespersons(
     state: str | None = Query(default=None),
     mode: str = Query(default="attackers", pattern="^(attackers|on-message)$"),
     limit: int = Query(default=8, ge=1, le=20),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> SpokespersonsResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", mode, limit)
@@ -216,7 +216,7 @@ async def get_spokespersons(
 async def get_cabinet_onmessage(
     state: str | None = Query(default=None),
     limit: int = Query(default=8, ge=1, le=20),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> SpokespersonsResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", "on-message", limit)
@@ -242,7 +242,7 @@ async def get_cabinet_onmessage(
 async def get_dissent(
     state: str | None = Query(default=None),
     confidence: float = Query(default=0.7, ge=0.0, le=1.0),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> DissentResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", round(confidence, 2))
@@ -295,7 +295,7 @@ async def get_dissent(
 async def get_trajectory(
     state: str | None = Query(default=None),
     days: int = Query(default=7, ge=3, le=30),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> TrajectoryResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", days)
@@ -321,7 +321,7 @@ async def get_trajectory(
 @cm_router.get("/heatmap", response_model=HeatmapResponse)
 async def get_heatmap(
     state: str | None = Query(default=None),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> HeatmapResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "")
@@ -346,7 +346,7 @@ async def get_heatmap(
 async def get_promises(
     state: str | None = Query(default=None),
     limit: int = Query(default=12, ge=1, le=50),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> PromisesResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", limit)
@@ -371,7 +371,7 @@ async def get_promises(
 async def get_counter_narratives(
     state: str | None = Query(default=None),
     limit: int = Query(default=3, ge=1, le=10),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> CounterNarrativesResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", limit)
@@ -409,7 +409,7 @@ async def get_counter_narratives(
 async def get_risk_window(
     state: str | None = Query(default=None),
     days: int = Query(default=7, ge=1, le=30),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> RiskWindowResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", days)
@@ -435,7 +435,7 @@ async def get_risk_window(
 async def get_quotes(
     state: str | None = Query(default=None),
     limit: int = Query(default=9, ge=1, le=30),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> QuotesResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", limit)
@@ -460,7 +460,7 @@ async def get_quotes(
 async def get_voice_share(
     state: str | None = Query(default=None),
     limit: int = Query(default=8, ge=1, le=20),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> VoiceShareResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", limit)
@@ -484,7 +484,7 @@ async def get_voice_share(
 @cm_router.get("/divergence/language", response_model=DivergenceResponse)
 async def get_language_divergence(
     state: str | None = Query(default=None),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> DivergenceResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", "language")
@@ -509,7 +509,7 @@ async def get_language_divergence(
 @cm_router.get("/divergence/medium", response_model=DivergenceResponse)
 async def get_medium_divergence(
     state: str | None = Query(default=None),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> DivergenceResponse:
     state_code = await q.resolve_state(user["id"], state)
     key = (user["id"], state_code or "", "medium")
@@ -535,7 +535,7 @@ async def get_medium_divergence(
 async def get_dashboard(
     state: str | None = Query(default=None),
     window: str = Query(default="24h"),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> CMDashboardResponse:
     """Aggregator. Fans out to every section in parallel; one section's
     failure becomes a `section_errors[name] = "..."` entry rather than a

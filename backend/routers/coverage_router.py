@@ -15,7 +15,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user, require_page
+from backend.auth.auth_middleware import get_current_principal, get_current_user, require_page
 from backend.database import get_db
 from backend.middleware.request_id import get_request_id
 from backend.nlp.groq_client import FAST_MODEL, call_groq
@@ -82,7 +82,7 @@ async def get_feed(
         description="Pagination cursor: {score_final:.6f}_{article_id}",
     ),
     limit: int = Query(default=20, ge=1, le=50),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """
     Paginated ranked article feed for the authenticated user.
@@ -268,7 +268,7 @@ async def search_articles(
     q: str = Query(..., min_length=2, description="Search query"),
     tier: str = Query(default="1,2,3"),
     limit: int = Query(default=30, le=50),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """
     Full-text search across article title + translated body.
@@ -404,7 +404,7 @@ async def _cache_put_summary(article_id: str, summary: str) -> None:
 @coverage_router.post("/summary/{article_id}")
 async def generate_summary(
     article_id: UUID,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """
     On-demand 3–4 sentence summary via Groq FAST_MODEL.
@@ -494,7 +494,7 @@ async def generate_summary(
 @coverage_router.get("/article/{article_id}")
 async def get_article(
     article_id: UUID,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
     """Fetch a single article from the user's feed by ID."""
     async with get_db() as db:

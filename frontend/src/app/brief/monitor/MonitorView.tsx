@@ -37,13 +37,15 @@ export function MonitorView({ apiBase, token }: MonitorViewProps) {
   const stripes: StripeConfig[] = [
     {
       pillar: 'articles',
-      // ROOT CAUSE FIX: /api/coverage/feed defaults to sort=relevance
-      // (score DESC), which buries today's freshly-collected articles
-      // under older high-scoring ones. We explicitly request
-      // sort=recency so newest published_at leads the response. Without
-      // this param the shelf showed 1-3 day old items even though 500+
-      // articles were collected in the last 24h.
-      endpoint: `${apiBase}/api/coverage/feed?sort=recency&limit=40`,
+      // sort=recency — coverage feed default is relevance DESC, which
+      // buries today's freshly-collected articles under older high
+      // scorers. Recency makes the shelf actually look "live".
+      // tier=1,2 — the strip header literally reads "Articles · tier 1+2
+      // · live". Without the filter the backend returned everything
+      // including tier-3 (background) clutter, so users saw
+      // entertainment / sports / regulatory boilerplate next to a label
+      // claiming high-relevance only.
+      endpoint: `${apiBase}/api/coverage/feed?sort=recency&tier=1,2&limit=40`,
       staggerOffsetMs: 0,
       normalize: normalizeArticles,
     },

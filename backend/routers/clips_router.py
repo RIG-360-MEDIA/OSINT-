@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_user, require_page
+from backend.auth.auth_middleware import get_current_principal, get_current_user, require_page
 from backend.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ async def get_clips_feed(
     days:    int = Query(default=7,  ge=1, le=90),
     limit:   int = Query(default=20, ge=1, le=50),
     cursor:  str = Query(default=""),
-    user:   dict = Depends(get_current_user),
+    user:   dict = Depends(get_current_principal),
 ) -> dict:
     """Ranked clip feed filtered to the user's tracked entities."""
     async with get_db() as db:
@@ -235,7 +235,7 @@ async def get_clips_feed(
 
 
 @clips_router.get("/channels")
-async def list_channels(user: dict = Depends(get_current_user)) -> dict:
+async def list_channels(user: dict = Depends(get_current_principal)) -> dict:
     """List all monitored YouTube channels."""
     async with get_db() as db:
         result = await db.execute(text("""
@@ -275,7 +275,7 @@ async def list_channels(user: dict = Depends(get_current_user)) -> dict:
 @clips_router.post("/channels")
 async def add_channel(
     payload: AddChannelRequest,
-    user:    dict = Depends(get_current_user),
+    user:    dict = Depends(get_current_principal),
 ) -> dict:
     """Add or re-enable a YouTube channel to monitor."""
     if not _CHANNEL_ID_RE.match(payload.channel_id):

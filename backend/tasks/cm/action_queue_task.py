@@ -129,7 +129,7 @@ async def _rule_dissent_signal(state: str | None) -> list[dict[str, Any]]:
         LEFT JOIN cm_issues i ON i.id = ds.issue_id
         WHERE ds.state = COALESCE(:state, ds.state)
           AND ds.detected_at > NOW() - INTERVAL '6 hours'
-          AND ds.severity >= 0.7
+          AND ds.severity::numeric >= 0.7
         ORDER BY ds.severity DESC
         LIMIT 3
     """

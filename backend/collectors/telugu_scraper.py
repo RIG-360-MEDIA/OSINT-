@@ -146,9 +146,9 @@ PAPERS: tuple[PaperConfig, ...] = (
         date_selectors=("time", "span.publish-date", "div.publish-info time"),
         enabled=True,
     ),
-    # Sakshi and Andhra Jyothy: stubs. They have aggressive bot detection
-    # (Sakshi 405 on direct fetch; AJ 404 across all RSS paths). Wire them
-    # when we have bandwidth for cookie-warmup / fingerprint randomisation.
+    # Sakshi: PERMANENTLY DISABLED. Returns "Human Verification" 405 even
+    # via Playwright (Cloudflare-class challenge). Bypassing this is a
+    # CAPTCHA-evasion problem we deliberately don't solve.
     PaperConfig(
         paper_id="sakshi",
         paper_name="Sakshi",
@@ -159,22 +159,50 @@ PAPERS: tuple[PaperConfig, ...] = (
         date_selectors=("time", "span.created"),
         enabled=False,
     ),
+    # Andhra Jyothy: enabled. Probe (2026-05-07) found:
+    #   - /telangana                 → state landing
+    #   - /telangana/<district>      → per-district landing (12 districts)
+    #   - article URL shape          → /YYYY/telangana/<district>/<slug>.html
     PaperConfig(
         paper_id="andhrajyothy",
         paper_name="Andhra Jyothy",
-        list_urls=("https://www.andhrajyothy.com/telangana",),
-        article_link_pattern=r"^https://www\.andhrajyothy\.com/.+",
-        title_selectors=("h1", "h1.article-title"),
-        body_selectors=("div.article-body", "div.story-detail"),
-        date_selectors=("time", "span.date"),
-        enabled=False,
+        list_urls=(
+            "https://www.andhrajyothy.com/telangana",
+            "https://www.andhrajyothy.com/telangana/hyderabad",
+            "https://www.andhrajyothy.com/telangana/karimnagar",
+            "https://www.andhrajyothy.com/telangana/warangal",
+            "https://www.andhrajyothy.com/telangana/khammam",
+            "https://www.andhrajyothy.com/telangana/nizamabad",
+            "https://www.andhrajyothy.com/telangana/adilabad",
+            "https://www.andhrajyothy.com/telangana/medak",
+            "https://www.andhrajyothy.com/telangana/nalgonda",
+            "https://www.andhrajyothy.com/telangana/mahbubnagar",
+            "https://www.andhrajyothy.com/telangana/rangareddy",
+        ),
+        article_link_pattern=r"^https://www\.andhrajyothy\.com/\d{4}/telangana/[a-z\-]+/[a-z0-9\-]+\.html$",
+        title_selectors=("h1",),
+        body_selectors=("div.category_desc", "div.article-body", "article"),
+        date_selectors=("meta[property='article:published_time']", "time", "span.date"),
+        enabled=True,
     ),
 )
 
 
 def _district_from_url(url: str) -> str | None:
-    """Look at the slug fragment to infer Telangana district. None on miss."""
-    # /telugu-news/districts/<slug>/<sec>/<id>  → slug like "medak-three-youths..."
+    """Look at the slug fragment to infer Telangana district. None on miss.
+
+    Handles both shapes:
+      - Eenadu:  /telugu-news/(telangana|districts)/<slug>/<sec>/<id>
+      - AJ:      /YYYY/telangana/<district>/<slug>.html  (district is a single token)
+    """
+    # AJ: /YYYY/telangana/<district>/...
+    m = re.search(r"/\d{4}/telangana/([a-z\-]+)/", url)
+    if m:
+        district_token = m.group(1).split("-")[0]
+        if district_token in EENADU_SLUG_TO_DISTRICT:
+            return EENADU_SLUG_TO_DISTRICT[district_token]
+
+    # Eenadu: /districts/<slug>/  or /telangana/<slug>/
     m = re.search(r"/(?:districts|telangana)/([a-z\-]+)/", url)
     if not m:
         return None
@@ -274,14 +302,18 @@ async def _first_text(page, selectors: Iterable[str], max_chars: int = 400) -> s
 async def _first_attr_or_text(
     page, selectors: Iterable[str], attr: str, fallback_text: bool = False
 ) -> str | None:
+    """Try each selector; return first non-empty value of `attr`, then `content`,
+    then innerText (if fallback_text). Handles both `<time datetime="...">` and
+    `<meta property="article:published_time" content="...">` patterns."""
     for sel in selectors:
         try:
             el = await page.query_selector(sel)
             if not el:
                 continue
-            v = await el.get_attribute(attr)
-            if v:
-                return v
+            for try_attr in (attr, "content"):  # meta tags use 'content'
+                v = await el.get_attribute(try_attr)
+                if v:
+                    return v
             if fallback_text:
                 t = await el.inner_text()
                 if t:

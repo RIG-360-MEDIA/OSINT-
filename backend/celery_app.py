@@ -55,6 +55,8 @@ app = Celery(
         "backend.tasks.cm.promise_task",
         "backend.tasks.cm.backfill_newspaper_sentiment_task",
         "backend.tasks.cm.exploitation_index_task",
+        # Daily LLM-generated summaries for the /coverage hub panels
+        "backend.tasks.coverage_summary_task",
     ],
 )
 
@@ -100,6 +102,7 @@ app.config_from_object(
             "tasks.auto_promote_subjects": {"queue": "social"},
             "tasks.aggregate_social_sentiment_daily": {"queue": "nlp"},
             "tasks.collect_newspapers": {"queue": "documents"},
+            "tasks.refresh_coverage_summaries": {"queue": "nlp"},
             # CM Page tasks. Heavy LLM work routes to `nlp`; cheap
             # aggregation/refresh work routes to `social` to avoid
             # competing with article NLP for the nlp pool.
@@ -294,6 +297,17 @@ app.config_from_object(
                 # long RSS scrapes) onto `documents` queue (2 workers,
                 # dedicated for heavy I/O like newspapers + govt PDFs).
                 "options": {"queue": "documents"},
+            },
+            "refresh-coverage-summaries-daily-0415-utc": {
+                # Regenerates the 2-3 line summary shown beneath each
+                # panel on the /coverage hub. Five small Groq calls
+                # (FAST_MODEL, ~150 tokens each), all under 30 s.
+                # Slotted at 04:15 UTC so it runs after the night's
+                # collection is settled but before the 04:30 newspaper
+                # window. See backend/tasks/coverage_summary_task.py.
+                "task": "tasks.refresh_coverage_summaries",
+                "schedule": crontab(hour=4, minute=15),
+                "options": {"queue": "nlp"},
             },
             # ── CM Page political-intelligence schedule ──
             #

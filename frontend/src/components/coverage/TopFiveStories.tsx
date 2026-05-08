@@ -208,13 +208,74 @@ export function TopFiveStories({
                   position: 'relative',
                   background: story.thumbnail_url
                     ? `url("${story.thumbnail_url}") center/cover no-repeat`
-                    : `linear-gradient(135deg, hsla(${hue}, 60%, 28%, 0.55) 0%, hsla(${
-                        (hue + 60) % 360
-                      }, 65%, 12%, 0.85) 100%)`,
+                    : `radial-gradient(circle at 30% 30%, hsla(${hue}, 60%, 32%, 0.55) 0%, hsla(${
+                        (hue + 40) % 360
+                      }, 65%, 14%, 0.92) 70%), linear-gradient(135deg, hsla(${hue}, 50%, 22%, 0.6) 0%, hsla(${
+                        (hue + 80) % 360
+                      }, 60%, 8%, 0.95) 100%)`,
                   borderRight: '1px solid rgba(255, 255, 255, 0.05)',
                   minHeight: '180px',
                 }}
               >
+                {/* Source initial (only when no real thumbnail) — gives
+                    each fallback card a strong visual anchor */}
+                {!story.thumbnail_url && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'var(--onyx-display)',
+                        fontSize: '88px',
+                        fontWeight: 600,
+                        letterSpacing: '-0.05em',
+                        color: 'rgba(255, 255, 255, 0.06)',
+                        textShadow: `0 0 24px hsla(${hue}, 70%, 50%, 0.18)`,
+                        userSelect: 'none',
+                      }}
+                    >
+                      {(story.source_name?.[0] || 'R').toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                {/* Crosshair / framing marks (always present) — adds
+                    intentional structure to fallback gradients and
+                    sits on top of real images too as light subtitles */}
+                {!story.thumbnail_url && (
+                  <>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '14px',
+                        right: '14px',
+                        width: '8px',
+                        height: '8px',
+                        borderTop: '1px solid rgba(255, 255, 255, 0.18)',
+                        borderRight: '1px solid rgba(255, 255, 255, 0.18)',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '46px',
+                        right: '14px',
+                        width: '8px',
+                        height: '8px',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.18)',
+                        borderRight: '1px solid rgba(255, 255, 255, 0.18)',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  </>
+                )}
                 {/* Dither overlay */}
                 <div
                   style={{
@@ -312,23 +373,59 @@ export function TopFiveStories({
                   minWidth: 0,
                 }}
               >
-                <h3
-                  style={{
-                    fontFamily: 'var(--onyx-display)',
-                    fontSize: '20px',
-                    lineHeight: 1.25,
-                    fontWeight: 500,
-                    letterSpacing: '-0.008em',
-                    color: 'var(--onyx-bone)',
-                    margin: 0,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {story.display_title || story.title}
-                </h3>
+                {(() => {
+                  // Dual-language: when display_title (English) differs
+                  // from source title (e.g. Telugu/Hindi/Bengali), render
+                  // ORIGINAL primary (full size, bone) then English
+                  // translation below (smaller, dim). When the article
+                  // is already English, render single-line.
+                  const original = story.title
+                  const english = story.display_title
+                  const norm = (s: string) =>
+                    s.toLowerCase().replace(/[\s\p{P}]+/gu, '').trim()
+                  const showBoth =
+                    !!english &&
+                    english.trim().length > 0 &&
+                    norm(english) !== norm(original)
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <h3
+                        style={{
+                          fontFamily: 'var(--onyx-display)',
+                          fontSize: '20px',
+                          lineHeight: 1.25,
+                          fontWeight: 500,
+                          letterSpacing: '-0.008em',
+                          color: 'var(--onyx-bone)',
+                          margin: 0,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {original}
+                      </h3>
+                      {showBoth && (
+                        <p
+                          style={{
+                            margin: 0,
+                            fontFamily: 'var(--onyx-body)',
+                            fontSize: '13px',
+                            lineHeight: 1.45,
+                            color: 'var(--onyx-dim)',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {english}
+                        </p>
+                      )}
+                    </div>
+                  )
+                })()}
 
                 {story.why_matters && (
                   <p

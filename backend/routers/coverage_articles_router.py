@@ -1273,7 +1273,15 @@ async def breaking(
                       -- where actual breaking news lives.
                       AND a.topic_category IS NOT NULL
                       AND a.topic_category NOT IN (
-                        'OTHER', 'SPORTS', 'ENTERTAINMENT', 'TECHNOLOGY'
+                        -- OTHER: catch-all dump.
+                        -- SPORTS / ENTERTAINMENT: not news.
+                        -- TECHNOLOGY: usually product PR.
+                        -- SOCIAL: topic-tagger over-classifies lifestyle
+                        --   (horoscopes, weddings, daily forecasts) as
+                        --   SOCIAL alongside genuine social issues. Until
+                        --   we have a finer-grained signal, exclude.
+                        'OTHER', 'SPORTS', 'ENTERTAINMENT',
+                        'TECHNOLOGY', 'SOCIAL'
                       )
                       -- NOTE: deliberately NOT filtering on is_duplicate.
                       -- Dedup pipeline over-flags legitimate regional

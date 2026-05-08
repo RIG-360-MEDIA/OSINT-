@@ -365,9 +365,9 @@ app.config_from_object(
                 "schedule": crontab(hour=4, minute=30),
                 "options": {"queue": "nlp"},
             },
-            "refresh-top-stories-every-6h": {
+            "refresh-top-stories-every-2h": {
                 "task": "tasks.refresh_top_stories",
-                "schedule": timedelta(hours=6),
+                "schedule": timedelta(hours=2),
                 "options": {"queue": "nlp"},
             },
             "refresh-coverage-gaps-daily-0500-utc": {

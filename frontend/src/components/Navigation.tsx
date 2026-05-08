@@ -17,13 +17,12 @@ interface NavLink {
 // order shown in the nav. The slug *must* match a value in
 // `KNOWN_PAGES` in `backend/auth/auth_middleware.py`.
 const BASE_NAV_LINKS: ReadonlyArray<NavLink> = [
-  { path: '/brief',        label: 'The Brief',       slug: 'brief' },
-  // Coverage hub — consolidated entry for Articles, TV, Newspaper, Social, Govt Docs.
-  // Each pillar reachable via the panels on /coverage.
-  { path: '/coverage',     label: 'Coverage',        slug: 'coverage' },
-  { path: '/threads',      label: 'Threads',         slug: 'threads' },
-  { path: '/analyst',      label: 'Chat System',     slug: 'analyst' },
-  { path: '/worldmonitor', label: 'Live Monitoring', slug: 'worldmonitor' },
+  // Top nav intentionally minimal — Brief is the home, Coverage is the
+  // hub for all five pillars (Articles, TV, Newspaper, Social, Govt Docs).
+  // Other rooms (threads, analyst, worldmonitor) reachable via direct URL
+  // or future entry points; not exposed in the main nav.
+  { path: '/brief',    label: 'The Brief', slug: 'brief' },
+  { path: '/coverage', label: 'Coverage',  slug: 'coverage' },
 ]
 
 // `slug` here is unused for routing (admin is super_admin-only at the

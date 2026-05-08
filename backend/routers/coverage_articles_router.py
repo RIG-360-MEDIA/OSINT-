@@ -341,18 +341,21 @@ async def _persist_turn(
     answer: str,
     article_ids: list[str],
 ) -> None:
+    # analyst_turns has no user_id column — ownership is via the session FK
+    # to analyst_sessions(user_id). user_id arg here is kept for the
+    # signature symmetry but no longer bound into the INSERT.
+    _ = user_id  # silence unused-arg lint
     async with get_db() as db:
         await db.execute(
             text(
                 """
-                INSERT INTO analyst_turns (session_id, user_id, room, question, answer,
+                INSERT INTO analyst_turns (session_id, room, question, answer,
                                            evidence_count, retrieval_ms, confidence)
-                VALUES (:sid, :uid, 'coverage', :q, :a, :ec, 0, 'MEDIUM')
+                VALUES (:sid, 'coverage', :q, :a, :ec, 0, 'MEDIUM')
                 """
             ),
             {
                 "sid": session_id,
-                "uid": user_id,
                 "q": question,
                 "a": answer,
                 "ec": len(article_ids),
@@ -468,14 +471,19 @@ async def get_chat_session(
 ) -> dict:
     """Replay a coverage chat session (used to resume after page reload)."""
     _require_flag("FEATURE_ASK_BAR")
+    # Ownership check via analyst_sessions FK — analyst_turns has no user_id
+    # column, so we join to verify the session belongs to the caller.
     async with get_db() as db:
         result = await db.execute(
             text(
                 """
-                SELECT id::text, question, answer, created_at
-                FROM analyst_turns
-                WHERE session_id = :sid AND user_id = :uid AND room = 'coverage'
-                ORDER BY created_at ASC
+                SELECT t.id::text, t.question, t.answer, t.created_at
+                FROM analyst_turns t
+                JOIN analyst_sessions s ON s.id = t.session_id
+                WHERE t.session_id = :sid
+                  AND s.user_id = :uid
+                  AND t.room = 'coverage'
+                ORDER BY t.created_at ASC
                 """
             ),
             {"sid": str(session_id), "uid": user["id"]},
@@ -514,7 +522,7 @@ async def _user_active_entity_names(user_id: str, db, days: int = 14) -> list[st
             FROM user_article_relevance uar
             WHERE uar.user_id = :uid
               AND uar.matched_entity_names IS NOT NULL
-              AND uar.last_scored_at > NOW() - make_interval(days => :days)
+              AND uar.scored_at > NOW() - make_interval(days => :days)
             LIMIT 80
             """
         ),
@@ -1029,7 +1037,7 @@ async def breaking(
                   AND EXISTS (
                     SELECT 1 FROM user_article_relevance uar
                     WHERE uar.user_id = :uid
-                      AND uar.last_scored_at > NOW() - interval '14 days'
+                      AND uar.scored_at > NOW() - interval '14 days'
                       AND uar.article_id = ANY(bc.member_article_ids)
                   )
                 ORDER BY bc.created_at DESC

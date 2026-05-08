@@ -208,3 +208,74 @@ def extract_claims_quotes_for_article(  # type: ignore[no-untyped-def]
 ) -> dict:
     """Idempotent per-article extraction. Routed to nlp queue."""
     return asyncio.run(_run(article_id, force=force))
+
+
+# ── Backfill / continuous-extraction driver ───────────────────────────────────
+#
+# process_nlp_batch never wires extraction itself, so without this task the
+# `claims_extracted = FALSE` pile grows forever and the Quote sidebar /
+# Compare mode / Contradictions all sit empty. This Celery task scans the
+# unextracted backlog every 5 min, takes the 50 most recent rows (within
+# the last 7 days), and fans out one per-article extraction task each.
+#
+# At ~50 tasks per 5 min and ~2-3 s per task on the nlp queue (concurrency
+# 4), throughput is ~600-800 articles/hour — enough to keep up with
+# ingestion AND drain a few-thousand-article backlog within hours.
+#
+# Cost envelope: 50 calls/5 min × FAST_MODEL = ~$0.03/hour at current
+# Groq pricing. Negligible.
+
+_BATCH_SIZE = 50
+_MAX_AGE_DAYS = 7  # don't waste budget on stale articles
+
+
+async def _queue_pending() -> dict[str, int]:
+    """Find unextracted articles + dispatch per-article tasks."""
+    async with get_db() as db:
+        result = await db.execute(
+            text(
+                """
+                SELECT id::text
+                FROM articles
+                WHERE claims_extracted = FALSE
+                  AND collected_at > NOW() - make_interval(days => :days)
+                  AND COALESCE(full_text_scraped,
+                               lead_text_translated,
+                               lead_text_original) IS NOT NULL
+                  AND LENGTH(COALESCE(full_text_scraped,
+                                      lead_text_translated,
+                                      lead_text_original)) >= 80
+                ORDER BY collected_at DESC
+                LIMIT :limit
+                """
+            ),
+            {"days": _MAX_AGE_DAYS, "limit": _BATCH_SIZE},
+        )
+        ids = [r[0] for r in result.fetchall()]
+
+    for aid in ids:
+        try:
+            app.send_task(
+                "tasks.extract_claims_quotes_for_article",
+                args=[aid],
+            )
+        except Exception as exc:  # noqa: BLE001 — never crash the driver
+            logger.warning("queue extract failed for %s: %s", aid, exc)
+
+    return {"queued": len(ids)}
+
+
+@app.task(
+    name="tasks.extract_pending_claims_quotes",
+    bind=True,
+    max_retries=0,
+)
+def extract_pending_claims_quotes(self) -> dict:  # type: ignore[no-untyped-def]
+    """
+    Periodic driver. Beat-fired every 5 min on the nlp queue.
+
+    Always on — extraction is a foundational pipeline step, not a
+    user-facing feature flag. If you really need to disable it,
+    pull the beat entry.
+    """
+    return asyncio.run(_queue_pending())

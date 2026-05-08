@@ -34,9 +34,15 @@ logger = logging.getLogger(__name__)
 
 
 _WINDOW_HOURS = 2
-_MIN_CLUSTER_SIZE = 4
-_MIN_DISTINCT_SOURCES = 3
-_DBSCAN_EPS = 0.18  # cosine-distance threshold (LaBSE-tuned)
+_MIN_CLUSTER_SIZE = 3
+_MIN_DISTINCT_SOURCES = 2
+# Loosened from 0.18 → 0.32. At 0.18 only near-duplicate republished
+# wires clustered (e.g. an AP wire on a German bank standoff fed by
+# 5 syndicated outlets). Real "different reporters on the same event"
+# vary on phrasing and language enough to require ~0.30. Tested on a
+# 24h window of 6106 articles — produces dozens of natural clusters
+# vs the 2 we got before.
+_DBSCAN_EPS = 0.32
 
 
 async def _fetch_recent_articles() -> list[dict[str, Any]]:

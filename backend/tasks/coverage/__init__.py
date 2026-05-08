@@ -16,4 +16,7 @@ from backend.tasks.coverage.contradictions_task import refresh_contradictions  #
 from backend.tasks.coverage.top_stories_task import refresh_top_stories  # noqa: F401
 from backend.tasks.coverage.coverage_gaps_task import refresh_coverage_gaps  # noqa: F401
 from backend.tasks.coverage.notifications_task import evaluate_notification_rules  # noqa: F401
-from backend.tasks.coverage.claims_quotes_task import extract_claims_quotes_for_article  # noqa: F401
+from backend.tasks.coverage.claims_quotes_task import (  # noqa: F401
+    extract_claims_quotes_for_article,
+    extract_pending_claims_quotes,
+)

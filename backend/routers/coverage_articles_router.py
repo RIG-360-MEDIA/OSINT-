@@ -1211,32 +1211,86 @@ async def breaking(
     scored.sort(key=lambda t: -t[0])
     top = scored[:5]
 
+    cluster_items = [
+        {
+            "kind": "breaking",
+            "id": c.id,
+            "headline": c.headline,
+            "sources_count": c.sources_count,
+            "volume": c.volume,
+            "window_start": c.window_start.isoformat() if c.window_start else None,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+            "event_type": c.event_type,
+            "severity": c.severity,
+            "shared_subject": c.shared_subject,
+            "score": round(score_total, 3),
+            "matched_entities": list(detail.matched_entities),
+            "score_breakdown": {
+                "entity": round(detail.entity, 3),
+                "geo": round(detail.geo, 3),
+                "person": round(detail.person, 3),
+                "velocity": round(detail.velocity, 3),
+                "topic": round(detail.topic, 3),
+            },
+        }
+        for score_total, c, detail in top
+    ]
+
+    # Fallback: when no validated cluster meets the bar, surface the
+    # user's highest-relevance tier-1 article in the last 60 min as a
+    # single "DEVELOPING" item. Single source = lower verification, so
+    # marked distinctly. Regional papers (Mana Telangana, Telangana
+    # Today, Siasat) rarely herd-follow the same event, which means
+    # cluster-based detection misses real local breaking news. This
+    # path catches those.
+    if not cluster_items:
+        async with get_db() as db:
+            dev = await db.execute(
+                text(
+                    """
+                    SELECT a.id::text AS article_id, a.title,
+                           COALESCE(a.lead_text_translated,
+                                    a.lead_text_original) AS lead,
+                           a.published_at, a.thumbnail_url,
+                           s.name AS source_name, s.domain AS source_domain,
+                           uar.score_final
+                    FROM user_article_relevance uar
+                    JOIN articles a ON a.id = uar.article_id
+                    JOIN sources s ON s.id = a.source_id
+                    WHERE uar.user_id = :uid
+                      AND uar.relevance_tier = 1
+                      AND a.published_at > NOW() - INTERVAL '60 minutes'
+                      AND a.is_duplicate IS NOT TRUE
+                    ORDER BY uar.score_final DESC,
+                             a.published_at DESC
+                    LIMIT 1
+                    """
+                ),
+                {"uid": user_id},
+            )
+            dev_row = dev.fetchone()
+        if dev_row:
+            cluster_items.append({
+                "kind": "developing",
+                "id": f"dev-{dev_row.article_id}",
+                "article_id": dev_row.article_id,
+                "headline": dev_row.title,
+                "lead": (dev_row.lead or "")[:240],
+                "source_name": dev_row.source_name,
+                "source_domain": dev_row.source_domain,
+                "thumbnail_url": dev_row.thumbnail_url,
+                "published_at": (
+                    dev_row.published_at.isoformat()
+                    if dev_row.published_at else None
+                ),
+                "score": round(float(dev_row.score_final), 3),
+                "sources_count": 1,
+            })
+
     return {
         "personalised": True,
         "user_geo": profile.geo_primary,
-        "clusters": [
-            {
-                "id": c.id,
-                "headline": c.headline,
-                "sources_count": c.sources_count,
-                "volume": c.volume,
-                "window_start": c.window_start.isoformat() if c.window_start else None,
-                "created_at": c.created_at.isoformat() if c.created_at else None,
-                "event_type": c.event_type,
-                "severity": c.severity,
-                "shared_subject": c.shared_subject,
-                "score": round(score_total, 3),
-                "matched_entities": list(detail.matched_entities),
-                "score_breakdown": {
-                    "entity": round(detail.entity, 3),
-                    "geo": round(detail.geo, 3),
-                    "person": round(detail.person, 3),
-                    "velocity": round(detail.velocity, 3),
-                    "topic": round(detail.topic, 3),
-                },
-            }
-            for score_total, c, detail in top
-        ],
+        "clusters": cluster_items,
     }
 
 

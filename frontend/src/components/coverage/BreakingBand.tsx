@@ -14,6 +14,10 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 interface BreakingCluster {
   id: string
   headline: string
+  // Optional English translation of the headline (for non-English source
+  // articles in the developing path). When present and different from
+  // headline, render below the original.
+  display_title?: string | null
   sources_count: number
   volume?: number
   window_start?: string | null
@@ -109,17 +113,51 @@ export function BreakingBand() {
       >
         {label}
       </span>
-      <span
-        style={{
-          flex: 1,
-          fontFamily: 'var(--onyx-display)',
-          fontSize: '16px',
-          color: 'var(--onyx-bone)',
-          letterSpacing: '-0.005em',
-        }}
-      >
-        {cluster.headline}
-      </span>
+      {(() => {
+        // Dual-line rendering: when display_title is provided AND
+        // differs meaningfully from headline, show original first
+        // (primary, full-size) and the English translation below in
+        // a smaller dimmer line.
+        const norm = (s: string) =>
+          s.toLowerCase().replace(/[\s\p{P}]+/gu, '').trim()
+        const showBoth =
+          !!cluster.display_title &&
+          cluster.display_title.trim().length > 0 &&
+          norm(cluster.display_title) !== norm(cluster.headline)
+        return (
+          <span
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+              minWidth: 0,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--onyx-display)',
+                fontSize: '16px',
+                color: 'var(--onyx-bone)',
+                letterSpacing: '-0.005em',
+              }}
+            >
+              {cluster.headline}
+            </span>
+            {showBoth && (
+              <span
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--onyx-dim)',
+                  letterSpacing: '-0.003em',
+                }}
+              >
+                {cluster.display_title}
+              </span>
+            )}
+          </span>
+        )
+      })()}
       <span
         className="onyx-mono"
         style={{

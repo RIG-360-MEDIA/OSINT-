@@ -513,6 +513,61 @@ async def get_chat_session(
 # ── Top-5 stories ─────────────────────────────────────────────────────────────
 
 
+# ── Inline translation helper (DEVELOPING fallback) ──────────────────────────
+
+
+# Tiny in-process cache so repeated requests for the same article during
+# its 60-min freshness window don't re-call Groq each time. Keyed by the
+# original title string; value is (cached_at_unix, english_title|None).
+_TITLE_TRANSLATE_CACHE: dict[str, tuple[float, str | None]] = {}
+_TITLE_TRANSLATE_TTL = 1800.0  # 30 min
+
+
+async def _translate_title_inline(title: str) -> str | None:
+    """
+    Best-effort translation of a single article headline to natural
+    English. Returns None on Groq failure or when the input already
+    looks like ASCII English (so we don't burn Groq budget on no-op
+    calls). Caller is responsible for falling back to the original
+    headline when this returns None.
+    """
+    import time as _time
+    if not title or not title.strip():
+        return None
+    # Cheap check: if all chars are ASCII, assume already English.
+    if all(ord(ch) < 128 for ch in title):
+        return None
+    cached = _TITLE_TRANSLATE_CACHE.get(title)
+    now = _time.time()
+    if cached and (now - cached[0] < _TITLE_TRANSLATE_TTL):
+        return cached[1]
+    try:
+        from backend.nlp.groq_client import (
+            FAST_MODEL,
+            GroqCallFailed,
+            GroqQuotaExhausted,
+            call_groq,
+        )
+        out = await call_groq(
+            system=(
+                "Translate the news headline to natural English. Return "
+                "only the translation, no quotes, no source attribution, "
+                "no fluff. If the input is already English, return it "
+                "lightly cleaned up."
+            ),
+            user=title,
+            task_type="classification",
+            model=FAST_MODEL,
+        )
+        result = out.strip().replace('"', "")[:240] or None
+    except (GroqQuotaExhausted, GroqCallFailed):
+        result = None
+    except Exception:  # noqa: BLE001
+        result = None
+    _TITLE_TRANSLATE_CACHE[title] = (now, result)
+    return result
+
+
 # ── User-relevance helpers ───────────────────────────────────────────────────
 
 
@@ -1308,11 +1363,16 @@ async def breaking(
             )
             dev_row = dev.fetchone()
         if dev_row:
+            # Translate title to English when source is non-English. Best
+            # effort — on Groq failure we leave display_title=None and the
+            # frontend falls back to the original headline.
+            display_title = await _translate_title_inline(dev_row.title)
             cluster_items.append({
                 "kind": "developing",
                 "id": f"dev-{dev_row.article_id}",
                 "article_id": dev_row.article_id,
                 "headline": dev_row.title,
+                "display_title": display_title,
                 "lead": (dev_row.lead or "")[:240],
                 "source_name": dev_row.source_name,
                 "source_domain": dev_row.source_domain,

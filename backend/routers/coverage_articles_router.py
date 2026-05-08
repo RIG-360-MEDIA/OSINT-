@@ -1119,8 +1119,6 @@ async def breaking(
             )
         )
         clusters = cluster_rows.fetchall()
-        if not clusters:
-            return {"clusters": [], "personalised": True}
 
         # Single batch fetch: entities + geo for all candidate articles.
         all_member_ids: list[str] = []
@@ -1128,21 +1126,25 @@ async def breaking(
             for mid in (c.member_article_ids or []):
                 all_member_ids.append(str(mid))
 
-        if not all_member_ids:
-            return {"clusters": [], "personalised": True}
-
-        article_meta = await db.execute(
-            text(
-                """
-                SELECT id::text AS id, geo_primary, entities_extracted, topic_category
-                FROM articles
-                WHERE id::text = ANY(:ids)
-                """
-            ),
-            {"ids": list(set(all_member_ids))},
-        )
+        # No early return when clusters/member_ids are empty — let the
+        # function fall through to the developing-fallback below, so a
+        # user with no fresh validated cluster still gets their highest-
+        # relevance tier-1/2 article surfaced as a DEVELOPING item.
         meta_by_id: dict[str, dict[str, Any]] = {}
-        for r in article_meta.fetchall():
+        if all_member_ids:
+            article_meta = await db.execute(
+                text(
+                    """
+                    SELECT id::text AS id, geo_primary, entities_extracted, topic_category
+                    FROM articles
+                    WHERE id::text = ANY(:ids)
+                    """
+                ),
+                {"ids": list(set(all_member_ids))},
+            )
+        else:
+            article_meta = None
+        for r in (article_meta.fetchall() if article_meta else []):
             ents: set[str] = set()
             ee = r.entities_extracted
             if isinstance(ee, str):

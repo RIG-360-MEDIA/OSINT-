@@ -387,11 +387,16 @@ async def ask(
             )
 
             if not articles:
-                yield "event: token\ndata: \"No articles match those filters.\"\n\n"
+                # Always frame as {"t": "..."} so the frontend's destructure
+                # never gets undefined and renders the literal "undefined".
+                empty_msg = "No articles match those filters."
+                yield (
+                    "event: token\n"
+                    f"data: {json.dumps({'t': empty_msg})}\n\n"
+                )
                 yield "event: done\ndata: {}\n\n"
                 await _persist_turn(
-                    session_id, user_id, body.question,
-                    "No articles match those filters.", []
+                    session_id, user_id, body.question, empty_msg, []
                 )
                 return
 
@@ -437,9 +442,12 @@ async def ask(
             )
         except Exception as exc:  # noqa: BLE001
             logger.exception("Ask Bar unexpected error: %s", exc)
+            # Surface a short version of the actual error so the frontend
+            # can display something useful (truncated to avoid noise).
+            err_text = (str(exc) or type(exc).__name__)[:160]
             yield (
                 "event: error\n"
-                "data: {\"message\": \"Unexpected error.\"}\n\n"
+                f"data: {json.dumps({'message': f'Could not generate answer: {err_text}'})}\n\n"
             )
 
     return StreamingResponse(
@@ -490,53 +498,73 @@ async def get_chat_session(
 # ── Top-5 stories ─────────────────────────────────────────────────────────────
 
 
+# ── User-relevance helpers ───────────────────────────────────────────────────
+
+
+async def _user_active_entity_names(user_id: str, db, days: int = 14) -> list[str]:
+    """
+    Pull the entity names this user has actually engaged with — derived
+    from their recent user_article_relevance matches. Used to filter
+    Top-5 / Breaking / Quotes / Gaps so the page reflects THIS user.
+    """
+    result = await db.execute(
+        text(
+            """
+            SELECT DISTINCT unnest(uar.matched_entity_names) AS name
+            FROM user_article_relevance uar
+            WHERE uar.user_id = :uid
+              AND uar.matched_entity_names IS NOT NULL
+              AND uar.last_scored_at > NOW() - make_interval(days => :days)
+            LIMIT 80
+            """
+        ),
+        {"uid": user_id, "days": days},
+    )
+    return [r.name for r in result.fetchall() if r.name]
+
+
+async def _user_active_entity_ids(user_id: str, db) -> list[str]:
+    """Map the user's active entity names to entity_dictionary UUIDs."""
+    names = await _user_active_entity_names(user_id, db)
+    if not names:
+        return []
+    result = await db.execute(
+        text(
+            """
+            SELECT id::text FROM entity_dictionary
+            WHERE LOWER(canonical_name) = ANY(:names)
+            """
+        ),
+        {"names": [n.lower() for n in names]},
+    )
+    return [r[0] for r in result.fetchall()]
+
+
 @coverage_articles_router.get("/top-stories")
 async def top_stories(
     days: int = Query(1, ge=1, le=14),
     user: dict = Depends(get_current_principal),
 ) -> dict:
     """
-    Top-5 with chain-of-thought 'why this matters to you' prose.
+    Top-5 stories scoped to THIS user.
 
-    Reads from top_stories_daily cache (refreshed by Celery every 6h).
-    Falls back to a live-computed list (no LLM rationale) if cache is empty.
+    Always live-computed from user_article_relevance for accurate
+    personalisation. Then enriched with cached chain-of-thought
+    'why_matters' rationale when the cache row covers the same
+    article_id. Cache hit is best-effort — we never fall back to
+    global top-5 because that defeats the whole point.
     """
     user_id = user["id"]
 
     async with get_db() as db:
-        # Prefer user-personalised, then global fallback.
-        result = await db.execute(
-            text(
-                """
-                SELECT stories, generated_at
-                FROM top_stories_daily
-                WHERE date = CURRENT_DATE
-                  AND (user_id = :uid OR user_id IS NULL)
-                ORDER BY user_id NULLS LAST
-                LIMIT 1
-                """
-            ),
-            {"uid": user_id},
-        )
-        row = result.fetchone()
-
-        if row:
-            stories = row.stories
-            return {
-                "stories": stories,
-                "generated_at": row.generated_at.isoformat()
-                                if row.generated_at else None,
-                "from_cache": True,
-            }
-
-        # Live fallback — pure relevance order, no rationale.
         live = await db.execute(
             text(
                 """
                 SELECT a.id::text AS article_id, a.title,
                        COALESCE(a.lead_text_translated, a.lead_text_original) AS lead,
                        s.name AS source_name, s.domain AS source_domain,
-                       a.published_at, uar.score_final
+                       a.published_at, a.thumbnail_url,
+                       uar.score_final, uar.relevance_explanation
                 FROM user_article_relevance uar
                 JOIN articles a ON a.id = uar.article_id
                 JOIN sources s ON s.id = a.source_id
@@ -551,6 +579,33 @@ async def top_stories(
         )
         rows = live.fetchall()
 
+        # Best-effort enrichment from today's cache (any article_id match).
+        rationales: dict[str, str] = {}
+        if rows:
+            cache_result = await db.execute(
+                text(
+                    """
+                    SELECT stories
+                    FROM top_stories_daily
+                    WHERE date = CURRENT_DATE
+                      AND (user_id = :uid OR user_id IS NULL)
+                    """
+                ),
+                {"uid": user_id},
+            )
+            for cache_row in cache_result.fetchall():
+                stories_blob = cache_row.stories
+                if isinstance(stories_blob, str):
+                    try:
+                        stories_blob = json.loads(stories_blob)
+                    except json.JSONDecodeError:
+                        continue
+                for s in stories_blob or []:
+                    aid = s.get("article_id")
+                    why = s.get("why_matters")
+                    if aid and why and aid not in rationales:
+                        rationales[aid] = why
+
     return {
         "stories": [
             {
@@ -560,13 +615,16 @@ async def top_stories(
                 "source_name": r.source_name,
                 "source_domain": r.source_domain,
                 "published_at": r.published_at.isoformat() if r.published_at else None,
-                "why_matters": None,  # filled by Celery refresh
+                "thumbnail_url": r.thumbnail_url,
+                # Prefer cached LLM rationale; fall back to relevance_explanation
+                # which is short but at least user-specific.
+                "why_matters": rationales.get(r.article_id) or r.relevance_explanation,
                 "score": float(r.score_final),
             }
             for r in rows
         ],
-        "generated_at": None,
         "from_cache": False,
+        "personalised": True,
     }
 
 
@@ -581,6 +639,9 @@ async def related(
 ) -> dict:
     """Top-k semantic neighbours of an article. Excludes self + dups."""
     async with get_db() as db:
+        # Comma-vs-JOIN bug: `FROM articles a, src JOIN sources s` binds the
+        # JOIN to `src`, not `articles a`. Use explicit CROSS JOIN instead so
+        # the JOIN parses against `articles a` as intended.
         result = await db.execute(
             text(
                 """
@@ -590,7 +651,8 @@ async def related(
                 SELECT a.id::text AS article_id, a.title,
                        s.name AS source_name, s.domain AS source_domain,
                        a.published_at, a.thumbnail_url
-                FROM articles a, src
+                FROM articles a
+                CROSS JOIN src
                 JOIN sources s ON s.id = a.source_id
                 WHERE a.id <> :aid
                   AND a.labse_embedding IS NOT NULL
@@ -671,9 +733,17 @@ async def quotes(
     entity_id: UUID | None = Query(None),
     days: int = Query(30, ge=1, le=365),
     limit: int = Query(20, ge=1, le=100),
-    _user: dict = Depends(get_current_principal),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
-    """Quotes from article_quotes table, filtered by speaker or entity."""
+    """
+    Quotes from article_quotes table.
+
+    Default behaviour (no explicit speaker/entity filter): scope to
+    quotes from articles in the user's relevance feed, OR by speakers
+    that match the user's active entities. Falls back to global
+    if user has no signal yet.
+    """
+    user_id = user["id"]
     async with get_db() as db:
         # Guard: if table doesn't exist yet (pre-043), return empty.
         check = await db.execute(
@@ -687,12 +757,37 @@ async def quotes(
 
         clauses = ["q.extracted_at > NOW() - make_interval(days => :days)"]
         params: dict[str, Any] = {"days": days, "limit": limit}
+        personalised = False
+
         if speaker:
             clauses.append("q.speaker_name ILIKE :speaker")
             params["speaker"] = f"%{speaker}%"
-        if entity_id:
+        elif entity_id:
             clauses.append("q.speaker_entity_id = :entity_id")
             params["entity_id"] = str(entity_id)
+        else:
+            # No explicit filter — scope to user's recent relevance feed.
+            user_entity_ids = await _user_active_entity_ids(user_id, db)
+            user_entity_names = await _user_active_entity_names(user_id, db)
+            if user_entity_ids or user_entity_names:
+                personalised = True
+                # Match either by speaker_entity_id OR speaker_name (LOWER ILIKE)
+                # to catch unresolved entity references.
+                params["uid"] = user_id
+                if user_entity_ids:
+                    params["entity_ids"] = user_entity_ids
+                if user_entity_names:
+                    params["entity_names"] = [n.lower() for n in user_entity_names]
+                conds = []
+                if user_entity_ids:
+                    conds.append("q.speaker_entity_id::text = ANY(:entity_ids)")
+                    conds.append(
+                        "EXISTS (SELECT 1 FROM user_article_relevance uar "
+                        "WHERE uar.user_id = :uid AND uar.article_id = q.article_id)"
+                    )
+                if user_entity_names:
+                    conds.append("LOWER(q.speaker_name) = ANY(:entity_names)")
+                clauses.append(f"({' OR '.join(conds)})")
 
         where_sql = " AND ".join(clauses)
         result = await db.execute(
@@ -899,9 +994,17 @@ async def contradictions(
 
 @coverage_articles_router.get("/breaking")
 async def breaking(
-    _user: dict = Depends(get_current_principal),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
+    """
+    Active breaking clusters, FILTERED by overlap with the user's
+    recently-relevant articles. A cluster surfaces only if at least one
+    of its member articles has shown up in this user's relevance feed
+    in the last 14 days. Falls back to global if user has no signal.
+    """
     _require_flag("FEATURE_BREAKING")
+    user_id = user["id"]
+
     async with get_db() as db:
         check = await db.execute(
             text(
@@ -912,22 +1015,51 @@ async def breaking(
         if not check.fetchone():
             return {"clusters": []}
 
-        result = await db.execute(
+        # Prefer per-user filter: only clusters touching articles the user
+        # has been scored against recently.
+        per_user = await db.execute(
             text(
                 """
-                SELECT id::text, headline, sources_count,
-                       array_length(member_article_ids, 1) AS volume,
-                       window_start, window_end, created_at, top_entities
-                FROM breaking_clusters
-                WHERE is_active = TRUE
-                ORDER BY created_at DESC
+                SELECT DISTINCT bc.id::text AS id, bc.headline, bc.sources_count,
+                       array_length(bc.member_article_ids, 1) AS volume,
+                       bc.window_start, bc.window_end, bc.created_at,
+                       bc.top_entities
+                FROM breaking_clusters bc
+                WHERE bc.is_active = TRUE
+                  AND EXISTS (
+                    SELECT 1 FROM user_article_relevance uar
+                    WHERE uar.user_id = :uid
+                      AND uar.last_scored_at > NOW() - interval '14 days'
+                      AND uar.article_id = ANY(bc.member_article_ids)
+                  )
+                ORDER BY bc.created_at DESC
                 LIMIT 5
                 """
-            )
+            ),
+            {"uid": user_id},
         )
-        rows = result.fetchall()
+        rows = per_user.fetchall()
+        personalised = bool(rows)
+
+        # Fallback to global only if nothing user-relevant.
+        if not rows:
+            result = await db.execute(
+                text(
+                    """
+                    SELECT id::text, headline, sources_count,
+                           array_length(member_article_ids, 1) AS volume,
+                           window_start, window_end, created_at, top_entities
+                    FROM breaking_clusters
+                    WHERE is_active = TRUE
+                    ORDER BY created_at DESC
+                    LIMIT 5
+                    """
+                )
+            )
+            rows = result.fetchall()
 
     return {
+        "personalised": personalised,
         "clusters": [
             {
                 "id": r.id,
@@ -940,7 +1072,7 @@ async def breaking(
                 "top_entities": r.top_entities,
             }
             for r in rows
-        ]
+        ],
     }
 
 
@@ -1365,8 +1497,14 @@ async def list_notifications(
 
 @coverage_articles_router.get("/coverage-gaps")
 async def coverage_gaps(
-    _user: dict = Depends(get_current_principal),
+    user: dict = Depends(get_current_principal),
 ) -> dict:
+    """
+    Under-covered entities. Filters to entities the user actively cares
+    about (per their relevance feed). Falls back to global top-10 if
+    user has no signal.
+    """
+    user_id = user["id"]
     async with get_db() as db:
         check = await db.execute(
             text(
@@ -1377,23 +1515,49 @@ async def coverage_gaps(
         if not check.fetchone():
             return {"gaps": []}
 
-        result = await db.execute(
-            text(
-                """
-                SELECT g.entity_id::text, e.canonical_name,
-                       g.social_volume_7d, g.article_volume_7d,
-                       g.ratio, g.summary, g.detected_at
-                FROM coverage_gaps_daily g
-                JOIN entity_dictionary e ON e.id = g.entity_id
-                WHERE g.detected_for_date = CURRENT_DATE
-                ORDER BY g.ratio DESC
-                LIMIT 10
-                """
+        user_entity_ids = await _user_active_entity_ids(user_id, db)
+        personalised = False
+        rows: list = []
+
+        if user_entity_ids:
+            per_user = await db.execute(
+                text(
+                    """
+                    SELECT g.entity_id::text, e.canonical_name,
+                           g.social_volume_7d, g.article_volume_7d,
+                           g.ratio, g.summary, g.detected_at
+                    FROM coverage_gaps_daily g
+                    JOIN entity_dictionary e ON e.id = g.entity_id
+                    WHERE g.detected_for_date = CURRENT_DATE
+                      AND g.entity_id::text = ANY(:eids)
+                    ORDER BY g.ratio DESC
+                    LIMIT 10
+                    """
+                ),
+                {"eids": user_entity_ids},
             )
-        )
-        rows = result.fetchall()
+            rows = per_user.fetchall()
+            personalised = bool(rows)
+
+        if not rows:
+            result = await db.execute(
+                text(
+                    """
+                    SELECT g.entity_id::text, e.canonical_name,
+                           g.social_volume_7d, g.article_volume_7d,
+                           g.ratio, g.summary, g.detected_at
+                    FROM coverage_gaps_daily g
+                    JOIN entity_dictionary e ON e.id = g.entity_id
+                    WHERE g.detected_for_date = CURRENT_DATE
+                    ORDER BY g.ratio DESC
+                    LIMIT 10
+                    """
+                )
+            )
+            rows = result.fetchall()
 
     return {
+        "personalised": personalised,
         "gaps": [
             {
                 "entity_id": r.entity_id,
@@ -1404,5 +1568,5 @@ async def coverage_gaps(
                 "summary": r.summary,
             }
             for r in rows
-        ]
+        ],
     }

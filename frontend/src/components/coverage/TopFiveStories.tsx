@@ -1,11 +1,19 @@
 /**
- * TopFiveStories — onyx editorial stack of today's top 5.
+ * TopFiveStories — onyx horizontal card rail of today's top 5.
  *
- * Each story renders:
- *   - serif headline (editorial)
- *   - italic chain-of-thought "why this matters" paragraph
- *   - mono row: source name · time ago · DISSENT chip if applicable
- *   - action triplet: Read · Compare · Add to card
+ * Visual language: each story is its own self-contained card, sized
+ * for fast scanning. The rail scrolls horizontally on smaller screens
+ * and lays out as a 5-column flex row on wide screens.
+ *
+ * Card anatomy:
+ *   - Thumbnail strip (16:9) with gradient fallback when image missing.
+ *     Number chip (№01) overlaid in top-left corner.
+ *   - Headline — display_title (English) preferred, original fallback.
+ *   - "Why this matters" — 4-line clamp with ellipsis.
+ *   - Footer — source · time-ago, plus an arrow Read affordance.
+ *
+ * Interaction: hover lifts the card, brightens the cyan border, fades
+ * a subtle glow under it. Click anywhere on the card opens the reader.
  *
  * Server-rendered via /api/coverage/top-stories. Falls back gracefully
  * when the cache is empty (no rationale string).
@@ -21,10 +29,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 interface TopStory {
   article_id: string
   title: string
-  // display_title is an English-translated headline produced by the
-  // top-stories refresh task. Always present when the cache row was
-  // generated; absent on live-fallback rows. Renderer prefers it
-  // over `title` so non-English source articles get readable headlines.
   display_title?: string | null
   lead: string
   source_name: string
@@ -52,8 +56,24 @@ const formatTimeAgo = (iso: string | null): string => {
   return `${Math.floor(seconds / 86400)}d ago`
 }
 
-export function TopFiveStories({ onRead, onAddToCard, onCompareToggle, selectedForCompare }: Props) {
+// Hash source-domain to a stable hue so each outlet's gradient placeholder
+// is consistent across cards. No external dep.
+const hueForDomain = (domain: string): number => {
+  let h = 0
+  for (let i = 0; i < domain.length; i++) {
+    h = (h * 31 + domain.charCodeAt(i)) | 0
+  }
+  return ((h % 360) + 360) % 360
+}
+
+export function TopFiveStories({
+  onRead,
+  onAddToCard,
+  onCompareToggle,
+  selectedForCompare,
+}: Props) {
   const [stories, setStories] = useState<TopStory[] | null>(null)
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -100,62 +120,216 @@ export function TopFiveStories({ onRead, onAddToCard, onCompareToggle, selectedF
   }
 
   return (
-    <section style={{ padding: '48px 0', borderTop: '1px solid var(--onyx-rule-hair)' }}>
-      <header style={{ marginBottom: '32px' }}>
+    <section
+      style={{
+        padding: '48px 0',
+        borderTop: '1px solid var(--onyx-rule-hair)',
+      }}
+    >
+      <header
+        style={{
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: '24px',
+          flexWrap: 'wrap',
+        }}
+      >
+        <div>
+          <div
+            className="onyx-mono"
+            style={{
+              fontSize: '10px',
+              letterSpacing: '0.42em',
+              textTransform: 'uppercase',
+              color: 'var(--onyx-dim)',
+            }}
+          >
+            Top 5 stories today
+          </div>
+        </div>
         <div
           className="onyx-mono"
           style={{
-            fontSize: '10px',
-            letterSpacing: '0.42em',
+            fontSize: '9px',
+            letterSpacing: '0.32em',
             textTransform: 'uppercase',
             color: 'var(--onyx-dim)',
+            opacity: 0.6,
           }}
         >
-          Top 5 stories today
+          Curated · refreshed every 6h
         </div>
-        <hr className="onyx-hairline-dim" style={{ marginTop: '12px' }} />
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: '20px',
+          alignItems: 'stretch',
+        }}
+      >
         {stories.map((story, i) => {
           const isSelected = selectedForCompare?.has(story.article_id) ?? false
+          const isHovered = hoveredId === story.article_id
+          const hue = hueForDomain(story.source_domain || story.source_name)
+
           return (
             <article
               key={story.article_id}
+              onMouseEnter={() => setHoveredId(story.article_id)}
+              onMouseLeave={() => setHoveredId(null)}
+              onClick={() => onRead(story.article_id)}
               style={{
-                display: 'grid',
-                gridTemplateColumns: '40px 1fr',
-                gap: '24px',
-                padding: '24px 0',
-                borderBottom: '1px solid var(--onyx-rule-dim)',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                background:
+                  'linear-gradient(180deg, rgba(15, 15, 17, 0.95) 0%, rgba(8, 8, 10, 0.95) 100%)',
+                border: isHovered
+                  ? '1px solid rgba(0, 194, 255, 0.45)'
+                  : isSelected
+                  ? '1px solid rgba(0, 194, 255, 0.8)'
+                  : '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                overflow: 'hidden',
+                transition:
+                  'transform 0.32s cubic-bezier(0.2, 0.7, 0.3, 1), border-color 0.32s, box-shadow 0.32s',
+                transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
+                boxShadow: isHovered
+                  ? '0 12px 40px rgba(0, 194, 255, 0.12), 0 0 0 1px rgba(0, 194, 255, 0.08) inset'
+                  : isSelected
+                  ? '0 0 0 1px rgba(0, 194, 255, 0.4) inset'
+                  : 'none',
+                animation: `onyx-fade-up 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) ${
+                  i * 80
+                }ms both`,
               }}
             >
+              {/* Thumbnail / gradient header */}
               <div
-                className="onyx-mono"
                 style={{
-                  fontSize: '14px',
-                  color: 'var(--onyx-dim)',
-                  letterSpacing: '0.18em',
-                  paddingTop: '8px',
+                  position: 'relative',
+                  width: '100%',
+                  aspectRatio: '16 / 9',
+                  background: story.thumbnail_url
+                    ? `url("${story.thumbnail_url}") center/cover no-repeat`
+                    : `linear-gradient(135deg, hsla(${hue}, 60%, 28%, 0.55) 0%, hsla(${
+                        (hue + 60) % 360
+                      }, 65%, 12%, 0.85) 100%)`,
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
                 }}
               >
-                №{String(i + 1).padStart(2, '0')}
+                {/* Subtle dither noise overlay (CSS-only, astrodither-inspired) */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    backgroundImage:
+                      'radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)',
+                    backgroundSize: '3px 3px',
+                    pointerEvents: 'none',
+                    opacity: 0.7,
+                  }}
+                />
+                {/* Vignette so headline area stays legible */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background:
+                      'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.7) 100%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+                {/* Number chip — top-left */}
+                <div
+                  className="onyx-mono"
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    left: '12px',
+                    padding: '4px 9px',
+                    fontSize: '9px',
+                    letterSpacing: '0.32em',
+                    textTransform: 'uppercase',
+                    color: isHovered ? 'var(--onyx-cyan)' : 'var(--onyx-bone-2)',
+                    background: 'rgba(0, 0, 0, 0.55)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    backdropFilter: 'blur(6px)',
+                    WebkitBackdropFilter: 'blur(6px)',
+                    transition: 'color 0.32s',
+                  }}
+                >
+                  №{String(i + 1).padStart(2, '0')}
+                </div>
+                {/* Source pill — top-right */}
+                <div
+                  className="onyx-mono"
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    padding: '4px 9px',
+                    fontSize: '8px',
+                    letterSpacing: '0.28em',
+                    textTransform: 'uppercase',
+                    color: 'var(--onyx-bone-2)',
+                    background: 'rgba(0, 0, 0, 0.55)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    backdropFilter: 'blur(6px)',
+                    WebkitBackdropFilter: 'blur(6px)',
+                    maxWidth: '60%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {story.source_name}
+                </div>
+                {/* Hover glow band along the top edge */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '2px',
+                    background:
+                      'linear-gradient(90deg, transparent 0%, var(--onyx-cyan) 50%, transparent 100%)',
+                    opacity: isHovered ? 0.85 : 0,
+                    transition: 'opacity 0.32s',
+                  }}
+                />
               </div>
 
-              <div>
+              {/* Body */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  padding: '18px 18px 16px',
+                  flex: 1,
+                }}
+              >
                 <h3
                   style={{
                     fontFamily: 'var(--onyx-display)',
-                    fontStyle: 'normal',
-                    fontSize: '28px',
-                    lineHeight: 1.2,
+                    fontSize: '17px',
+                    lineHeight: 1.28,
                     fontWeight: 500,
-                    letterSpacing: '-0.012em',
+                    letterSpacing: '-0.005em',
                     color: 'var(--onyx-bone)',
                     margin: 0,
-                    cursor: 'pointer',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
                   }}
-                  onClick={() => onRead(story.article_id)}
                 >
                   {story.display_title || story.title}
                 </h3>
@@ -163,66 +337,87 @@ export function TopFiveStories({ onRead, onAddToCard, onCompareToggle, selectedF
                 {story.why_matters && (
                   <p
                     style={{
-                      marginTop: '16px',
+                      margin: 0,
                       fontFamily: 'var(--onyx-body)',
-                      fontStyle: 'normal',
-                      fontSize: '16px',
-                      lineHeight: 1.65,
+                      fontSize: '12.5px',
+                      lineHeight: 1.55,
                       color: 'var(--onyx-bone-2)',
-                      maxWidth: '70ch',
+                      opacity: 0.78,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
                     }}
                   >
                     {story.why_matters}
                   </p>
                 )}
 
+                <div style={{ flex: 1 }} />
+
                 <div
                   className="onyx-mono"
                   style={{
-                    marginTop: '16px',
-                    fontSize: '10px',
-                    letterSpacing: '0.24em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                    paddingTop: '12px',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.04)',
+                    fontSize: '9px',
+                    letterSpacing: '0.28em',
                     textTransform: 'uppercase',
                     color: 'var(--onyx-dim)',
-                    display: 'flex',
-                    gap: '14px',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
                   }}
                 >
-                  <span>{story.source_name}</span>
-                  <span style={{ opacity: 0.4 }}>·</span>
                   <span>{formatTimeAgo(story.published_at)}</span>
-                  <span style={{ flex: 1 }} />
-                  <button
-                    type="button"
-                    onClick={() => onRead(story.article_id)}
-                    className="onyx-mono"
-                    style={actionButtonStyle()}
+                  <span
+                    style={{
+                      color: isHovered ? 'var(--onyx-cyan)' : 'var(--onyx-dim)',
+                      transition: 'color 0.32s',
+                    }}
                   >
                     Read →
-                  </button>
-                  {onCompareToggle && (
-                    <button
-                      type="button"
-                      onClick={() => onCompareToggle(story.article_id)}
-                      className="onyx-mono"
-                      style={actionButtonStyle(isSelected)}
-                    >
-                      {isSelected ? '✓ Compare' : 'Compare'}
-                    </button>
-                  )}
-                  {onAddToCard && (
-                    <button
-                      type="button"
-                      onClick={() => onAddToCard(story.article_id)}
-                      className="onyx-mono"
-                      style={actionButtonStyle()}
-                    >
-                      + Card
-                    </button>
-                  )}
+                  </span>
                 </div>
+
+                {/* Secondary actions row — only visible if any onCompareToggle/onAddToCard provided */}
+                {(onCompareToggle || onAddToCard) && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '6px',
+                      marginTop: '4px',
+                    }}
+                  >
+                    {onCompareToggle && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onCompareToggle(story.article_id)
+                        }}
+                        className="onyx-mono"
+                        style={chipButtonStyle(isSelected)}
+                      >
+                        {isSelected ? '✓ COMPARE' : 'COMPARE'}
+                      </button>
+                    )}
+                    {onAddToCard && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onAddToCard(story.article_id)
+                        }}
+                        className="onyx-mono"
+                        style={chipButtonStyle()}
+                      >
+                        + CARD
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </article>
           )
@@ -232,16 +427,20 @@ export function TopFiveStories({ onRead, onAddToCard, onCompareToggle, selectedF
   )
 }
 
-function actionButtonStyle(active: boolean = false): React.CSSProperties {
+function chipButtonStyle(active: boolean = false): React.CSSProperties {
   return {
-    background: 'transparent',
-    border: 'none',
+    flex: 1,
+    background: active ? 'rgba(0, 194, 255, 0.08)' : 'transparent',
+    border: active
+      ? '1px solid rgba(0, 194, 255, 0.4)'
+      : '1px solid rgba(255, 255, 255, 0.06)',
     color: active ? 'var(--onyx-cyan)' : 'var(--onyx-dim)',
-    fontSize: '10px',
-    letterSpacing: '0.32em',
+    fontSize: '9px',
+    letterSpacing: '0.28em',
     textTransform: 'uppercase',
-    padding: '6px 0',
+    padding: '6px 8px',
     cursor: 'pointer',
-    transition: 'color 0.3s',
+    transition: 'color 0.3s, border-color 0.3s, background 0.3s',
+    borderRadius: '2px',
   }
 }

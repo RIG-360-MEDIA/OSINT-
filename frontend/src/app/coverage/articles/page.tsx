@@ -505,7 +505,10 @@ function FeedSection({
 
       <FilterBar filters={filters} setFilters={setFilters} />
 
-      {error && (
+      {/* Only show error banner when we have NO articles to render — if a
+          retry succeeded, articles are populated and the stale error is
+          dropped automatically. */}
+      {error && articles.length === 0 && !loading && (
         <div
           className="onyx-mono"
           style={{
@@ -703,6 +706,69 @@ function FilterChip({
 }
 
 
+function ArticleThumbnail({ article }: { article: Article }) {
+  const [broken, setBroken] = useState(false)
+  const hasImage = !!article.thumbnail_url && !broken
+
+  if (hasImage) {
+    return (
+      <div
+        style={{
+          width: '128px',
+          height: '88px',
+          flexShrink: 0,
+          overflow: 'hidden',
+          border: '1px solid var(--onyx-rule-dim)',
+          background: 'var(--onyx-bg-2)',
+          position: 'relative',
+        }}
+      >
+        <img
+          src={article.thumbnail_url ?? ''}
+          alt=""
+          loading="lazy"
+          onError={() => setBroken(true)}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            // Halftone treatment: desaturate + slight grain mood-match.
+            filter: 'grayscale(0.55) contrast(1.05) brightness(0.92)',
+            display: 'block',
+          }}
+        />
+      </div>
+    )
+  }
+
+  // Fallback: source-domain initials, onyx-styled.
+  const initials = (article.source_domain || article.source_name || '??')
+    .replace(/^www\./, '')
+    .slice(0, 2)
+    .toUpperCase()
+  return (
+    <div
+      style={{
+        width: '128px',
+        height: '88px',
+        flexShrink: 0,
+        border: '1px solid var(--onyx-rule-dim)',
+        background: 'var(--onyx-bg-2)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'var(--onyx-italic)',
+        fontStyle: 'italic',
+        fontSize: '24px',
+        color: 'var(--onyx-dim)',
+      }}
+    >
+      {initials}
+    </div>
+  )
+}
+
+
 function ArticleRow({
   article,
   isRead,
@@ -720,15 +786,29 @@ function ArticleRow({
     <li
       style={{
         display: 'grid',
-        gridTemplateColumns: '1fr auto',
-        gap: '16px',
+        gridTemplateColumns: '128px 1fr auto',
+        gap: '20px',
         padding: '20px 0',
         borderBottom: '1px solid var(--onyx-rule-dim)',
         opacity: isRead ? 0.6 : 1,
         transition: 'opacity 0.3s',
       }}
     >
-      <div>
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={article.title}
+        style={{
+          background: 'transparent',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+        }}
+      >
+        <ArticleThumbnail article={article} />
+      </button>
+
+      <div style={{ minWidth: 0 }}>
         <button
           type="button"
           onClick={onOpen}

@@ -104,18 +104,38 @@ export function AskBar({ filters, onCiteClick, initialSessionId = null }: AskBar
             }
           } else if (evt.event === 'token') {
             try {
-              const { t } = JSON.parse(evt.data) as { t: string }
-              setAnswer((prev) => prev + t)
+              const parsed = JSON.parse(evt.data) as unknown
+              if (
+                parsed &&
+                typeof parsed === 'object' &&
+                't' in parsed &&
+                typeof (parsed as { t: unknown }).t === 'string'
+              ) {
+                const t = (parsed as { t: string }).t
+                setAnswer((prev) => prev + t)
+              } else if (typeof parsed === 'string') {
+                // Defensive: server sometimes used to send raw string literals.
+                setAnswer((prev) => prev + parsed)
+              }
+              // else: unknown shape — silently drop so we never render "undefined".
             } catch {
-              setAnswer((prev) => prev + evt.data)
+              // Non-JSON payload — safe to append as-is unless it looks like literal undefined.
+              const raw = evt.data
+              if (raw && raw !== 'undefined') {
+                setAnswer((prev) => prev + raw)
+              }
             }
           } else if (evt.event === 'error') {
+            let message = 'Could not generate an answer.'
             try {
-              const { message } = JSON.parse(evt.data) as { message: string }
-              setError(message)
+              const parsed = JSON.parse(evt.data) as { message?: unknown }
+              if (parsed && typeof parsed.message === 'string' && parsed.message.trim()) {
+                message = parsed.message
+              }
             } catch {
-              setError('Stream error.')
+              /* keep default */
             }
+            setError(message)
           } else if (evt.event === 'done') {
             // no-op; finally block will reset streaming flag
           }

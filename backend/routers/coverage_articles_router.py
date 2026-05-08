@@ -777,25 +777,27 @@ async def quotes(
             # No explicit filter — scope to user's recent relevance feed.
             user_entity_ids = await _user_active_entity_ids(user_id, db)
             user_entity_names = await _user_active_entity_names(user_id, db)
-            if user_entity_ids or user_entity_names:
-                personalised = True
-                # Match either by speaker_entity_id OR speaker_name (LOWER ILIKE)
-                # to catch unresolved entity references.
-                params["uid"] = user_id
-                if user_entity_ids:
-                    params["entity_ids"] = user_entity_ids
-                if user_entity_names:
-                    params["entity_names"] = [n.lower() for n in user_entity_names]
-                conds = []
-                if user_entity_ids:
-                    conds.append("q.speaker_entity_id::text = ANY(:entity_ids)")
-                    conds.append(
-                        "EXISTS (SELECT 1 FROM user_article_relevance uar "
-                        "WHERE uar.user_id = :uid AND uar.article_id = q.article_id)"
-                    )
-                if user_entity_names:
-                    conds.append("LOWER(q.speaker_name) = ANY(:entity_names)")
-                clauses.append(f"({' OR '.join(conds)})")
+
+            if not user_entity_ids and not user_entity_names:
+                # User has no engagement signal yet — return empty rather
+                # than fall through to global quotes (which would surface
+                # speakers irrelevant to the user).
+                return {"quotes": [], "personalised": True}
+
+            personalised = True
+            params["uid"] = user_id
+            conds: list[str] = []
+            if user_entity_ids:
+                params["entity_ids"] = user_entity_ids
+                conds.append("q.speaker_entity_id::text = ANY(:entity_ids)")
+                conds.append(
+                    "EXISTS (SELECT 1 FROM user_article_relevance uar "
+                    "WHERE uar.user_id = :uid AND uar.article_id = q.article_id)"
+                )
+            if user_entity_names:
+                params["entity_names"] = [n.lower() for n in user_entity_names]
+                conds.append("LOWER(q.speaker_name) = ANY(:entity_names)")
+            clauses.append(f"({' OR '.join(conds)})")
 
         where_sql = " AND ".join(clauses)
         result = await db.execute(
@@ -1047,27 +1049,12 @@ async def breaking(
             {"uid": user_id},
         )
         rows = per_user.fetchall()
-        personalised = bool(rows)
 
-        # Fallback to global only if nothing user-relevant.
-        if not rows:
-            result = await db.execute(
-                text(
-                    """
-                    SELECT id::text, headline, sources_count,
-                           array_length(member_article_ids, 1) AS volume,
-                           window_start, window_end, created_at, top_entities
-                    FROM breaking_clusters
-                    WHERE is_active = TRUE
-                    ORDER BY created_at DESC
-                    LIMIT 5
-                    """
-                )
-            )
-            rows = result.fetchall()
-
+    # NO global fallback. If no breaking cluster touches the user's feed,
+    # return an empty list. Showing a generic global story (e.g. a German
+    # bank standoff to an India-focused user) defeats the whole feature.
     return {
-        "personalised": personalised,
+        "personalised": True,
         "clusters": [
             {
                 "id": r.id,
@@ -1524,9 +1511,10 @@ async def coverage_gaps(
             return {"gaps": []}
 
         user_entity_ids = await _user_active_entity_ids(user_id, db)
-        personalised = False
         rows: list = []
 
+        # User-relevance only. No global fallback — showing under-covered
+        # entities the user doesn't track is noise, not signal.
         if user_entity_ids:
             per_user = await db.execute(
                 text(
@@ -1545,27 +1533,9 @@ async def coverage_gaps(
                 {"eids": user_entity_ids},
             )
             rows = per_user.fetchall()
-            personalised = bool(rows)
-
-        if not rows:
-            result = await db.execute(
-                text(
-                    """
-                    SELECT g.entity_id::text, e.canonical_name,
-                           g.social_volume_7d, g.article_volume_7d,
-                           g.ratio, g.summary, g.detected_at
-                    FROM coverage_gaps_daily g
-                    JOIN entity_dictionary e ON e.id = g.entity_id
-                    WHERE g.detected_for_date = CURRENT_DATE
-                    ORDER BY g.ratio DESC
-                    LIMIT 10
-                    """
-                )
-            )
-            rows = result.fetchall()
 
     return {
-        "personalised": personalised,
+        "personalised": True,
         "gaps": [
             {
                 "entity_id": r.entity_id,

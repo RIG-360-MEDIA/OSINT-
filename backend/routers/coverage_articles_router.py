@@ -831,6 +831,7 @@ async def quotes(
             text(
                 f"""
                 SELECT q.id::text AS id, q.speaker_name, q.quote_text,
+                       q.speaker_name_en, q.quote_text_en,
                        q.is_direct, q.extracted_at,
                        a.id::text AS article_id, a.title AS article_title,
                        s.name AS source_name, s.domain AS source_domain
@@ -851,7 +852,9 @@ async def quotes(
             {
                 "id": r.id,
                 "speaker_name": r.speaker_name,
+                "speaker_name_en": r.speaker_name_en,
                 "quote_text": r.quote_text,
+                "quote_text_en": r.quote_text_en,
                 "is_direct": r.is_direct,
                 "article_id": r.article_id,
                 "article_title": r.article_title,

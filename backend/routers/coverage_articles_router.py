@@ -1090,7 +1090,7 @@ async def breaking(
         article_meta = await db.execute(
             text(
                 """
-                SELECT id::text AS id, geo_primary, entities_extracted
+                SELECT id::text AS id, geo_primary, entities_extracted, topic_category
                 FROM articles
                 WHERE id::text = ANY(:ids)
                 """
@@ -1114,6 +1114,7 @@ async def breaking(
             meta_by_id[r.id] = {
                 "geo": r.geo_primary,
                 "entities": ents,
+                "topic": r.topic_category,
             }
 
     # Score every cluster against the profile.
@@ -1123,12 +1124,14 @@ async def breaking(
         ids = [str(m) for m in (c.member_article_ids or [])]
         cluster_entities: set[str] = set()
         cluster_geos: list[str | None] = []
+        cluster_topics: list[str | None] = []
         for mid in ids:
             m = meta_by_id.get(mid)
             if not m:
                 continue
             cluster_entities |= m["entities"]
             cluster_geos.append(m["geo"])
+            cluster_topics.append(m.get("topic"))
 
         # Cluster age in minutes (since cluster's first article).
         if c.window_start:
@@ -1145,6 +1148,7 @@ async def breaking(
             cluster_age_minutes=age_min,
             sources_count=int(c.sources_count or 0),
             profile=profile,
+            cluster_topics=cluster_topics,
         )
         if s.total >= SURFACE_THRESHOLD:
             scored.append((s.total, c, s))
@@ -1170,6 +1174,7 @@ async def breaking(
                     "geo": round(detail.geo, 3),
                     "person": round(detail.person, 3),
                     "velocity": round(detail.velocity, 3),
+                    "topic": round(detail.topic, 3),
                 },
             }
             for score_total, c, detail in top

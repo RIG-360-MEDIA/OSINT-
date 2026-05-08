@@ -49,6 +49,12 @@ class UserInterestProfile:
     person_set: frozenset[str] = field(default_factory=frozenset)
     # most-frequent geo_primary in their tier-1/2 feed
     geo_primary: str | None = None
+    # topic_category -> 0-1 affinity, derived from tier-1/2 engagement rate.
+    # An admin who reads governance / security / politics avidly and almost
+    # never touches sports gets sports ≈ 0.05 and governance ≈ 1.0, so a
+    # cricket-toss cluster can no longer outrank a press-conference cluster
+    # purely on entity match.
+    topic_weights: dict[str, float] = field(default_factory=dict)
 
     def is_empty(self) -> bool:
         return not self.entity_weights
@@ -174,11 +180,44 @@ async def load_user_profile(user_id: str, db) -> UserInterestProfile:
         geo_row = geo_result.fetchone()
         geo_primary = geo_row.geo_primary if geo_row else None
 
+        # ── Topic affinity ──────────────────────────────────────────────
+        # Per-topic strong-engagement rate over the last 14 days. We use
+        # rate (not raw count) so a user who reads ALL of a small topic
+        # area scores it high even if absolute volume is small. Normalised
+        # to 0-1 against the user's own peak rate so shapes vary by user.
+        topic_result = await db.execute(
+            text(
+                """
+                SELECT a.topic_category AS topic,
+                       COUNT(*) FILTER (WHERE uar.relevance_tier IN (1, 2))::float
+                         / NULLIF(COUNT(*), 0)::float AS rate
+                FROM user_article_relevance uar
+                JOIN articles a ON a.id = uar.article_id
+                WHERE uar.user_id = :uid
+                  AND uar.scored_at > NOW() - interval '14 days'
+                  AND a.topic_category IS NOT NULL
+                GROUP BY a.topic_category
+                HAVING COUNT(*) >= 20  -- need a baseline to avoid noise
+                """
+            ),
+            {"uid": user_id},
+        )
+        topic_rows = topic_result.fetchall()
+        if topic_rows:
+            peak = max(r.rate for r in topic_rows if r.rate is not None) or 1.0
+            topic_weights = {
+                r.topic: (r.rate / peak) if r.rate else 0.0
+                for r in topic_rows if r.topic
+            }
+        else:
+            topic_weights = {}
+
         profile = UserInterestProfile(
             user_id=user_id,
             entity_weights=entity_weights,
             person_set=persons,
             geo_primary=geo_primary,
+            topic_weights=topic_weights,
         )
         _PROFILE_CACHE[user_id] = (now, profile)
         return profile
@@ -194,14 +233,18 @@ class ClusterScore:
     geo: float
     person: float
     velocity: float
+    topic: float
     matched_entities: tuple[str, ...]
 
 
-# Weights — tunable. Sum to 1.0 (one signal can max the score).
-_W_ENTITY   = 0.55
+# Weights — tunable. Sum to 1.0 (any single signal can max the score).
+# Topic affinity was added 2026-05-08 after a cricket-toss cluster
+# outranked a Hyderabad CP press conference for a politics-focused admin.
+_W_ENTITY   = 0.45
 _W_GEO      = 0.20
-_W_PERSON   = 0.15
+_W_PERSON   = 0.10
 _W_VELOCITY = 0.10
+_W_TOPIC    = 0.15
 
 # Surface threshold — clusters below this score are hidden entirely.
 SURFACE_THRESHOLD = 0.25
@@ -214,6 +257,7 @@ def score_cluster(
     cluster_age_minutes: float,
     sources_count: int,
     profile: UserInterestProfile,
+    cluster_topics: list[str | None] | None = None,  # topic_category of each member article
 ) -> ClusterScore:
     """
     Score a single breaking cluster against a user profile. 0-1 range.
@@ -223,9 +267,13 @@ def score_cluster(
       geo      — proximity of any cluster geo to user's primary geo
       person   — bonus when cluster mentions someone the user tracks
       velocity — how fast sources are joining (real bursts vs slow burns)
+      topic    — affinity of cluster's topic_category with user's history.
+                 SPORTS for a politics-focused admin → low. POLITICS for
+                 the same admin → high. Prevents cricket-toss clusters
+                 from outranking civic events on entity match alone.
     """
     if profile.is_empty():
-        return ClusterScore(0.0, 0.0, 0.0, 0.0, 0.0, ())
+        return ClusterScore(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, ())
 
     # ── Entity overlap (count AND weight, take the stronger signal) ─────
     matched: list[tuple[str, float]] = []
@@ -264,11 +312,27 @@ def score_cluster(
     else:
         velocity_score = 0.5
 
+    # ── Topic affinity ──────────────────────────────────────────────────
+    # Take the strongest topic_weight across the cluster's member articles
+    # (i.e. give the cluster credit for whichever member best matches the
+    # user's reading habits). If no topic data, fall back to neutral 0.5
+    # rather than 0 so untagged clusters aren't unfairly penalised.
+    topic_score = 0.0
+    if profile.topic_weights and cluster_topics:
+        best = max(
+            (profile.topic_weights.get(t or "", 0.0) for t in cluster_topics),
+            default=0.0,
+        )
+        topic_score = best
+    elif not profile.topic_weights:
+        topic_score = 0.5  # user has no topic signal yet — be neutral
+
     total = (
         _W_ENTITY   * entity_score
         + _W_GEO      * geo_score
         + _W_PERSON   * person_score
         + _W_VELOCITY * velocity_score
+        + _W_TOPIC    * topic_score
     )
 
     matched_names = tuple(name for name, _ in sorted(matched, key=lambda t: -t[1])[:5])
@@ -279,6 +343,7 @@ def score_cluster(
         geo=geo_score,
         person=person_score,
         velocity=velocity_score,
+        topic=topic_score,
         matched_entities=matched_names,
     )
 

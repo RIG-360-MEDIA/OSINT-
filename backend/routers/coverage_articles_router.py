@@ -1077,6 +1077,13 @@ async def breaking(
                        bc.event_type, bc.severity, bc.shared_subject
                 FROM breaking_clusters bc
                 WHERE bc.is_active = TRUE
+                  -- Recency: a "BREAKING" surface should feel live.
+                  -- Older validated events stay in the DB (used by other
+                  -- surfaces, e.g. Today's Stories) but drop off the band.
+                  -- 60 min lines up with the detector's 15-min cadence:
+                  -- there are typically 1-4 fresh validated clusters in
+                  -- this window at any time.
+                  AND bc.created_at > NOW() - INTERVAL '60 minutes'
                   AND (
                     -- Validated rows: keep only real events at
                     -- non-trivial severity + non-trivial event_type.

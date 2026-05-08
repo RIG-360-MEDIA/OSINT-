@@ -315,3 +315,91 @@ def refresh_user_cards(  # type: ignore[no-untyped-def]
 def _flag(name: str) -> bool:
     raw = os.getenv(name, "").strip().lower()
     return raw in ("1", "true", "yes", "on")
+
+
+# ── Fast-retry driver: populate cards that haven't been summarised yet ────
+
+
+_FAST_RETRY_LIMIT = 5  # cards processed per fire — bounds Groq spend
+_RETRY_AGE_HOURS = 12  # ignore cards older than this; daily refresh handles
+
+
+async def _retry_unrefreshed_run() -> dict[str, Any]:
+    """
+    Find recently-created cards that have NO summary row yet (Groq was
+    starved when they were created), and run the same per-definition
+    refresh logic that the daily task uses. Capped at _FAST_RETRY_LIMIT
+    per fire so a burst of card creations doesn't blow Groq budget.
+
+    Why this exists: refresh_user_cards bails on GroqQuotaExhausted and
+    marks the definition 'skipped'. The next periodic fire is daily.
+    Without this fast-retry driver, a card created during a quota dip
+    sits in 'Refreshing…' purgatory for hours.
+    """
+    async with get_db() as db:
+        result = await db.execute(
+            text(
+                """
+                SELECT DISTINCT ON (uc.definition_hash)
+                    uc.definition_hash, uc.label, uc.user_intent,
+                    uc.entity_refs, uc.topic_filters, uc.geo_filter
+                FROM user_cards uc
+                LEFT JOIN user_card_summaries ucs
+                  ON ucs.card_id = uc.id
+                WHERE ucs.card_id IS NULL  -- no summary row yet
+                  AND uc.created_at > NOW() - make_interval(
+                    hours => :max_age_h
+                  )
+                ORDER BY uc.definition_hash, uc.created_at ASC
+                LIMIT :lim
+                """
+            ),
+            {"max_age_h": _RETRY_AGE_HOURS, "lim": _FAST_RETRY_LIMIT},
+        )
+        rows = result.fetchall()
+
+    statuses: dict[str, str] = {}
+    for row in rows:
+        try:
+            entity_refs = row.entity_refs or []
+            if isinstance(entity_refs, str):
+                entity_refs = json.loads(entity_refs)
+            topic_filters = row.topic_filters or []
+            if isinstance(topic_filters, str):
+                topic_filters = json.loads(topic_filters)
+            geo_filter = row.geo_filter or []
+            if isinstance(geo_filter, str):
+                geo_filter = json.loads(geo_filter)
+
+            statuses[row.definition_hash] = await _refresh_for_hash(
+                row.definition_hash,
+                row.label,
+                row.user_intent,
+                list(entity_refs),
+                list(topic_filters),
+                list(geo_filter),
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.exception(
+                "fast-retry user_cards failed for %s: %s",
+                row.definition_hash, exc,
+            )
+            statuses[row.definition_hash] = f"error: {type(exc).__name__}"
+
+    return {"scanned": len(rows), "results": statuses}
+
+
+@app.task(
+    name="tasks.retry_unrefreshed_cards",
+    bind=True,
+    max_retries=0,
+)
+def retry_unrefreshed_cards(self) -> dict:  # type: ignore[no-untyped-def]
+    """
+    Periodic driver. Beat-fired every 5 min on the nlp queue. Scans
+    user_cards rows whose summary row is missing and tries to populate
+    them. Capped at 5 cards per fire.
+    """
+    if not _flag("FEATURE_CARDS"):
+        return {"skipped": "feature flag off"}
+    return asyncio.run(_retry_unrefreshed_run())

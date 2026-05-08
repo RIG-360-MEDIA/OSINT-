@@ -10,7 +10,10 @@ Tasks:
     evaluate_notification_rules (every 15 min)
     extract_claims_quotes_for_article (incremental, fired by NLP batch)
 """
-from backend.tasks.coverage.user_cards_task import refresh_user_cards  # noqa: F401
+from backend.tasks.coverage.user_cards_task import (  # noqa: F401
+    refresh_user_cards,
+    retry_unrefreshed_cards,
+)
 from backend.tasks.coverage.breaking_task import (  # noqa: F401
     detect_breaking_events,
     classify_pending_breaking_clusters,

@@ -334,10 +334,10 @@ const Label = ({ children }: { children: React.ReactNode }) => (
 const Italic = ({ children, small = true }: { children: React.ReactNode; small?: boolean }) => (
   <p
     style={{
-      fontFamily: 'var(--onyx-italic)',
-      fontStyle: 'italic',
-      fontSize: small ? '14px' : '14px',
-      lineHeight: 1.55,
+      fontFamily: 'var(--onyx-body)',
+      fontStyle: 'normal',
+      fontSize: small ? '14px' : '15px',
+      lineHeight: 1.65,
       color: 'var(--onyx-bone-2)',
       margin: 0,
     }}
@@ -361,10 +361,10 @@ const Bullets = ({ items }: { items: string[] }) => (
       <li
         key={i}
         style={{
-          fontFamily: 'var(--onyx-italic)',
+          fontFamily: 'var(--onyx-body)',
           fontStyle: 'normal',
-          fontSize: '13.5px',
-          lineHeight: 1.5,
+          fontSize: '14px',
+          lineHeight: 1.6,
           color: 'var(--onyx-bone-2)',
           paddingLeft: '14px',
           position: 'relative',

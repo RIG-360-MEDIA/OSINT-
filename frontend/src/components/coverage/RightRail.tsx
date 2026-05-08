@@ -370,10 +370,10 @@ function CoverageGapsPanel() {
           {g.summary && (
             <div
               style={{
-                fontFamily: 'var(--onyx-italic)',
-                fontStyle: 'italic',
-                fontSize: '12px',
-                lineHeight: 1.5,
+                fontFamily: 'var(--onyx-body)',
+                fontStyle: 'normal',
+                fontSize: '12.5px',
+                lineHeight: 1.55,
                 color: 'var(--onyx-bone-2)',
               }}
             >

@@ -140,11 +140,12 @@ export function TopFiveStories({ onRead, onAddToCard, onCompareToggle, selectedF
               <div>
                 <h3
                   style={{
-                    fontFamily: 'var(--onyx-italic)',
+                    fontFamily: 'var(--onyx-display)',
                     fontStyle: 'normal',
-                    fontSize: '32px',
-                    lineHeight: 1.1,
-                    fontWeight: 400,
+                    fontSize: '28px',
+                    lineHeight: 1.2,
+                    fontWeight: 500,
+                    letterSpacing: '-0.012em',
                     color: 'var(--onyx-bone)',
                     margin: 0,
                     cursor: 'pointer',
@@ -159,10 +160,10 @@ export function TopFiveStories({ onRead, onAddToCard, onCompareToggle, selectedF
                   <p
                     style={{
                       marginTop: '16px',
-                      fontFamily: 'var(--onyx-italic)',
-                      fontStyle: 'italic',
-                      fontSize: '17px',
-                      lineHeight: 1.6,
+                      fontFamily: 'var(--onyx-body)',
+                      fontStyle: 'normal',
+                      fontSize: '16px',
+                      lineHeight: 1.65,
                       color: 'var(--onyx-bone-2)',
                       maxWidth: '70ch',
                     }}

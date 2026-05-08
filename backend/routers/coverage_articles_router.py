@@ -1258,7 +1258,7 @@ async def breaking(
                     JOIN articles a ON a.id = uar.article_id
                     JOIN sources s ON s.id = a.source_id
                     WHERE uar.user_id = :uid
-                      AND uar.relevance_tier = 1
+                      AND uar.relevance_tier IN (1, 2)
                       AND a.published_at > NOW() - INTERVAL '60 minutes'
                       AND a.is_duplicate IS NOT TRUE
                     ORDER BY uar.score_final DESC,

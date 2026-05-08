@@ -182,7 +182,19 @@ async def _select_user_top_5(user_id: str) -> list[dict[str, Any]]:
                   -- should not appear in Top Stories Today.
                   AND a.published_at > NOW() - interval '24 hours'
                   AND a.is_duplicate IS NOT TRUE
-                ORDER BY uar.score_final DESC
+                -- Recency-weighted score: multiply score_final by a
+                -- linear decay multiplier that goes from 1.0 at age=0
+                -- down to 0.4 at age=24h. Without this, an article
+                -- scored 0.8 yesterday beats an article scored 0.5
+                -- published 5 minutes ago — fighting the "today" intent
+                -- of the surface. With it, the freshest content of
+                -- comparable relevance wins.
+                ORDER BY
+                  uar.score_final * GREATEST(0.4,
+                    1.0 - 0.6 * EXTRACT(EPOCH FROM (NOW() - a.published_at))
+                                / 86400.0
+                  ) DESC,
+                  a.published_at DESC
                 LIMIT 5
                 """
             ),

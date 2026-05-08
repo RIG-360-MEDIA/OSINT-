@@ -17,7 +17,6 @@ import { createClient } from '@/lib/supabase/client'
 import { OnyxTopBar } from '@/components/coverage/OnyxTopBar'
 import { CoveragePanel, type CoveragePanelData } from '@/components/coverage/CoveragePanel'
 import { LiveTicker } from '@/components/coverage/LiveTicker'
-import { LiveClock } from '@/components/coverage/LiveClock'
 import { ParticleField } from '@/components/coverage/ParticleField'
 import { GrainOverlay } from '@/components/coverage/GrainOverlay'
 import type { CoverageSlug } from '@/components/coverage/thumbnails'
@@ -140,26 +139,6 @@ export default function CoveragePage() {
     >
       <ParticleField />
       <GrainOverlay />
-
-      {/* ── Top bar ──────────────────────────────────────────────────── */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 10,
-          padding: '20px 48px 0',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <span
-          className="onyx-mono"
-          style={{ fontSize: '11px', letterSpacing: '0.32em', textTransform: 'uppercase' }}
-        >
-          / coverage
-        </span>
-        <LiveClock />
-      </div>
 
       {/* ── Header ───────────────────────────────────────────────────── */}
       <div

@@ -120,29 +120,45 @@ async def _generate_rationale(
         user_prompt_parts.append(user_context)
     user_prompt_parts.append("\nReturn the JSON object.")
     user_prompt = "\n".join(user_prompt_parts)
-    try:
-        out = await call_groq(
-            system=_RATIONALE_SYSTEM,
-            user=user_prompt,
-            task_type="rag_response",
-            model=QUALITY_MODEL,
-            json_response=True,
-        )
-        parsed = json.loads(out)
-        if not isinstance(parsed, dict):
+
+    # Retry once on parse failure / empty fields. The QUALITY_MODEL
+    # occasionally returns malformed JSON for short non-English headlines
+    # (the response gets truncated mid-string). One retry usually fixes
+    # it, and on second failure we fall back to FAST_MODEL — which is
+    # less prone to that specific failure mode.
+    for attempt in range(2):
+        try:
+            model = QUALITY_MODEL if attempt == 0 else FAST_MODEL
+            out = await call_groq(
+                system=_RATIONALE_SYSTEM,
+                user=user_prompt,
+                task_type="rag_response",
+                model=model,
+                json_response=True,
+            )
+            parsed = json.loads(out)
+            if not isinstance(parsed, dict):
+                continue
+            display_title = str(parsed.get("display_title", "")).strip().replace('"', "")[:240]
+            why_matters = str(parsed.get("why_matters", "")).strip()[:600]
+            # Both fields must be non-empty to count as a successful pass.
+            # An empty display_title or why_matters means the model
+            # hallucinated a partial response — retry rather than persist.
+            if display_title and why_matters:
+                return {"display_title": display_title, "why_matters": why_matters}
+        except (GroqQuotaExhausted, GroqCallFailed) as exc:
+            logger.warning(
+                "top_stories rationale failed (attempt %d): %s", attempt + 1, exc
+            )
+            if attempt == 0:
+                continue
             return {"display_title": "", "why_matters": ""}
-        return {
-            "display_title": str(parsed.get("display_title", ""))
-                .strip().replace('"', "")[:240],
-            "why_matters": str(parsed.get("why_matters", ""))
-                .strip()[:600],
-        }
-    except (GroqQuotaExhausted, GroqCallFailed) as exc:
-        logger.warning("top_stories rationale failed: %s", exc)
-        return {"display_title": "", "why_matters": ""}
-    except json.JSONDecodeError:
-        logger.warning("top_stories rationale returned non-JSON")
-        return {"display_title": "", "why_matters": ""}
+        except json.JSONDecodeError:
+            logger.warning(
+                "top_stories rationale returned non-JSON (attempt %d)", attempt + 1
+            )
+            continue
+    return {"display_title": "", "why_matters": ""}
 
 
 async def _select_user_top_5(user_id: str) -> list[dict[str, Any]]:

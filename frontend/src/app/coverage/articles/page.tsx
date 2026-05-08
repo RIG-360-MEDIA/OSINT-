@@ -1,13 +1,52 @@
+/**
+ * /coverage/articles — RAG-integrated analyst surface, onyx theme.
+ *
+ * Composition (top to bottom):
+ *   - OnyxTopBar (radar glyph + Brief/Coverage nav + live readouts)
+ *   - BreakingBand (when active)
+ *   - AskBar (filter-aware streamed RAG)
+ *   - CustomCardsRow (user trackers with 4-section LLM summaries)
+ *   - TopFiveStories (chain-of-thought "why this matters")
+ *   - All-articles feed (filterable, paginated — uses existing /feed)
+ *   - Article reader slide-over (uses existing /article + /summary)
+ *   - RightRail (sticky watchlist + quotes + time travel + gaps)
+ *   - ContradictionsDrawer (toggleable from rail pill)
+ *   - CreateCardModal (toggleable from CustomCardsRow + button)
+ *   - ParticleField + GrainOverlay (atmosphere)
+ *
+ * Existing /api/coverage/feed, /search, /summary, /article endpoints stay
+ * intact. New endpoints under coverage_articles_router add the surfaces
+ * above. Each new feature is gated by a per-feature env flag so disabling
+ * one doesn't block the page.
+ */
+
 'use client'
 
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import Navigation from '@/components/Navigation'
-import { Dateline } from '@/components/Dateline'
-import { domainColor, formatTimeAgo } from '@/lib/domainColor'
+import { OnyxTopBar } from '@/components/coverage/OnyxTopBar'
+import { ParticleField } from '@/components/coverage/ParticleField'
+import { GrainOverlay } from '@/components/coverage/GrainOverlay'
+import { AskBar } from '@/components/coverage/AskBar'
+import { BreakingBand } from '@/components/coverage/BreakingBand'
+import { CustomCardsRow } from '@/components/coverage/CustomCardsRow'
+import { CreateCardModal } from '@/components/coverage/CreateCardModal'
+import { TopFiveStories } from '@/components/coverage/TopFiveStories'
+import { RightRail } from '@/components/coverage/RightRail'
+import { ContradictionsDrawer } from '@/components/coverage/ContradictionsDrawer'
+import {
+  DEFAULT_FILTERS,
+  type ArticleFilters,
+} from '@/lib/articleFilters'
 
-/* ── Types ────────────────────────────────────────────────────────────────── */
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface Article {
   article_id: string
@@ -30,710 +69,632 @@ interface Article {
   sentiment_for_user: 'FOR_USER' | 'AGAINST_USER' | 'NEUTRAL'
 }
 
-interface Totals { total: number; tier1: number; tier2: number; tier3: number }
 interface FeedResponse {
   articles: Article[]
   pagination: { has_more: boolean; next_cursor: string | null; returned: number }
-  totals: Totals
-}
-interface SearchResponse { query: string; count: number; articles: Article[] }
-
-type TierFilter      = 'all' | '1' | '1,2'
-type SortOption      = 'relevance' | 'recency'
-
-/* ── Constants ────────────────────────────────────────────────────────────── */
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
-const TOPICS = [
-  'POLITICS', 'ECONOMICS', 'BUSINESS', 'TECHNOLOGY',
-  'HEALTH', 'SCIENCE', 'ENVIRONMENT', 'SECURITY',
-  'LEGAL', 'SOCIAL', 'INFRASTRUCTURE', 'AGRICULTURE',
-  'EDUCATION', 'SPORTS', 'INTERNATIONAL',
-]
-
-const TIER_LABEL: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III' }
-const TIER_NAME: Record<number, string>  = { 1: 'Lead', 2: 'Notable', 3: 'Background' }
-
-// Sentiment → left border on clipping
-const SENTIMENT_BORDER: Record<string, string> = {
-  FOR_USER:     'var(--rig-gold)',
-  AGAINST_USER: 'var(--rig-oxblood)',
-  NEUTRAL:      'transparent',
+  totals: { total: number; tier1: number; tier2: number; tier3: number }
 }
 
-/* ── Clipping card ────────────────────────────────────────────────────────── */
+const formatTimeAgo = (iso: string | null): string => {
+  if (!iso) return ''
+  const then = new Date(iso).getTime()
+  if (Number.isNaN(then)) return ''
+  const seconds = Math.max(0, Math.floor((Date.now() - then) / 1000))
+  if (seconds < 60) return `${seconds}s ago`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
+  return `${Math.floor(seconds / 86400)}d ago`
+}
 
-function Clipping({ article, onClick }: { article: Article; onClick: () => void }) {
-  const brandColor = domainColor(article.source_domain || article.source_name)
-  const timeAgo    = formatTimeAgo(article.collected_at)
-  const [imgBroken, setImgBroken] = useState(false)
-  const hasImage   = !!article.thumbnail_url && !imgBroken
-  const sentBorder = SENTIMENT_BORDER[article.sentiment_for_user] ?? 'transparent'
-  const tierLabel  = TIER_LABEL[article.relevance_tier] ?? 'III'
 
+export default function CoverageArticlesPage() {
   return (
-    <article
-      onClick={onClick}
-      className="card-lift"
-      style={{
-        background: 'var(--rig-paper-2)',
-        border: '1px solid var(--rig-rule)',
-        borderLeft: sentBorder !== 'transparent'
-          ? `2px solid ${sentBorder}`
-          : '1px solid var(--rig-rule)',
-        cursor: 'pointer',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'border-color 0.2s',
-      }}
-    >
-      {/* Thumbnail / Fallback */}
-      <div style={{ height: '140px', position: 'relative', flexShrink: 0, overflow: 'hidden' }}>
-        {hasImage ? (
-          <img
-            src={article.thumbnail_url as string}
-            alt=""
-            onError={() => setImgBroken(true)}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              display: 'block',
-              filter: 'saturate(0.92) contrast(1.04)',
-            }}
-          />
-        ) : (
-          <div style={{
-            width: '100%', height: '100%',
-            backgroundColor: brandColor,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            filter: 'saturate(0.5) brightness(0.9)',
-          }}>
-            <span style={{
-              fontFamily: 'var(--font-serif)',
-              fontStyle: 'italic',
-              fontSize: '44px',
-              color: 'var(--rig-paper)',
-            }}>
-              {article.source_name.slice(0, 2).toUpperCase()}
-            </span>
-          </div>
-        )}
-        {/* Tier numeral overlay */}
-        <span
-          className="rig-kicker"
-          style={{
-            position: 'absolute',
-            top: '10px',
-            right: '12px',
-            background: 'var(--rig-paper)',
-            padding: '3px 9px',
-            border: '1px solid var(--rig-rule)',
-            fontSize: '9px',
-            letterSpacing: '0.28em',
-            color: 'var(--rig-ink)',
-          }}
-        >
-          T · {tierLabel}
-        </span>
-      </div>
-
-      {/* Body */}
-      <div style={{ padding: '16px 18px 18px', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {/* Byline */}
-        <div className="rig-byline" style={{ fontSize: '9px' }}>
-          <span>{article.source_name}</span>
-          {timeAgo && (<><span className="sep">·</span><span>{timeAgo}</span></>)}
-        </div>
-
-        {/* Title */}
-        <h3
-          className="rig-headline"
-          style={{
-            fontSize: '18px',
-            lineHeight: 1.18,
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {article.title}
-        </h3>
-
-        {/* Relevance */}
-        <p
-          className="rig-prose"
-          style={{
-            fontSize: '13px',
-            color: 'var(--rig-ink-3)',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            fontStyle: 'italic',
-            fontFamily: 'var(--font-serif)',
-            lineHeight: 1.45,
-          }}
-        >
-          {article.relevance_explanation || 'Relevant to your monitored geography and topics.'}
-        </p>
-
-        {/* Footer */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginTop: 'auto',
-            paddingTop: '10px',
-            borderTop: '1px solid var(--rig-rule-hair)',
-          }}
-        >
-          <div className="rig-byline" style={{ fontSize: '9px', gap: '8px' }}>
-            {article.topic_category && <span>{article.topic_category}</span>}
-            {article.topic_category && article.geo_primary && <span className="sep">·</span>}
-            {article.geo_primary && <span>{article.geo_primary}</span>}
-          </div>
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              color: 'var(--rig-gold)',
-              letterSpacing: '0.06em',
-            }}
-          >
-            {article.score_final.toFixed(2)}
-          </span>
-        </div>
-      </div>
-    </article>
+    <Suspense fallback={null}>
+      <ArticlesInner />
+    </Suspense>
   )
 }
 
-/* ── Tier separator ───────────────────────────────────────────────────────── */
 
-function TierSeparator({ numeral, name }: { numeral: string; name: string }) {
-  return (
-    <div style={{
-      gridColumn: '1 / -1',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '16px',
-      padding: '22px 0 8px',
-    }}>
-      <span
-        style={{
-          fontFamily: 'var(--font-serif)',
-          fontStyle: 'italic',
-          fontSize: '24px',
-          color: 'var(--rig-copper)',
-          lineHeight: 1,
-        }}
-      >
-        {numeral}.
-      </span>
-      <span
-        className="rig-kicker"
-        style={{ fontSize: '10px' }}
-      >
-        Tier {numeral} — {name}
-      </span>
-      <div style={{ flex: 1, height: '1px', background: 'var(--rig-rule)' }} />
-    </div>
-  )
-}
+function ArticlesInner() {
+  const router = useRouter()
+  const params = useSearchParams()
 
-/* ── Article dialog (slide-in panel) ──────────────────────────────────────── */
+  // ── Filter state ──────────────────────────────────────────────
+  const [filters, setFilters] = useState<ArticleFilters>(() => ({
+    ...DEFAULT_FILTERS,
+    tier: (params.get('tier') as string | null) || DEFAULT_FILTERS.tier,
+    days: parseInt(params.get('days') || '0', 10) || DEFAULT_FILTERS.days,
+    sort: (params.get('sort') as 'relevance' | 'recency' | null) || DEFAULT_FILTERS.sort,
+  }))
 
-function ArticleDialog({
-  article, summary, summaryLoading, summaryError,
-  onClose, onGenerateSummary,
-}: {
-  article: Article
-  summary: string | null
-  summaryLoading: boolean
-  summaryError: string | null
-  onClose: () => void
-  onGenerateSummary: () => void
-}) {
-  const brandColor = domainColor(article.source_domain || article.source_name)
-  const [imgBroken, setImgBroken] = useState(false)
-  const hasImage   = !!article.thumbnail_url && !imgBroken
-  const tierLabel  = TIER_LABEL[article.relevance_tier] ?? 'III'
-  const panelRef = useRef<HTMLDivElement | null>(null)
+  // ── Feed state ────────────────────────────────────────────────
+  const [articles, setArticles] = useState<Article[]>([])
+  const [hasMore, setHasMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
-  useEffect(() => {
-    const html = document.documentElement
-    const body = document.body
-    const scrollY = window.scrollY
-    const scrollbarWidth = window.innerWidth - html.clientWidth
-
-    const prev = {
-      htmlOverflow: html.style.overflow,
-      bodyOverflow: body.style.overflow,
-      bodyPosition: body.style.position,
-      bodyTop: body.style.top,
-      bodyWidth: body.style.width,
-      bodyPaddingRight: body.style.paddingRight,
+  // ── Reader / modal state ──────────────────────────────────────
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null)
+  const [readArticleIds, setReadArticleIds] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    try {
+      const raw = localStorage.getItem('coverage_read_state')
+      return new Set(raw ? (JSON.parse(raw) as string[]) : [])
+    } catch {
+      return new Set()
     }
+  })
 
-    html.style.overflow = 'hidden'
-    body.style.overflow = 'hidden'
-    body.style.position = 'fixed'
-    body.style.top = `-${scrollY}px`
-    body.style.width = '100%'
-    if (scrollbarWidth > 0) {
-      body.style.paddingRight = `${scrollbarWidth}px`
+  // ── Compare state ─────────────────────────────────────────────
+  const [compareIds, setCompareIds] = useState<Set<string>>(new Set())
+  const [compareOpen, setCompareOpen] = useState(false)
+
+  // ── Drawers ───────────────────────────────────────────────────
+  const [contradictionsOpen, setContradictionsOpen] = useState(false)
+  const [createCardOpen, setCreateCardOpen] = useState(false)
+  const [cardsRefreshTick, setCardsRefreshTick] = useState(0)
+
+  // ── Auth helper ───────────────────────────────────────────────
+  const getToken = useCallback(async (): Promise<string | null> => {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      router.push('/login')
+      return null
     }
+    return session.access_token
+  }, [router])
 
-    const blockOutside = (e: Event) => {
-      const panel = panelRef.current
-      if (!panel) { e.preventDefault(); return }
-      const target = e.target as Node | null
-      if (!target || !panel.contains(target)) {
-        e.preventDefault()
+  // ── Feed fetcher ──────────────────────────────────────────────
+  const fetchFeed = useCallback(
+    async (cursor: string = '', append = false) => {
+      const token = await getToken()
+      if (!token) return
+
+      const ctrl = new AbortController()
+      abortRef.current?.abort()
+      abortRef.current = ctrl
+
+      if (append) setLoadingMore(true)
+      else setLoading(true)
+      setError(null)
+
+      const qs = new URLSearchParams()
+      qs.set('tier', filters.tier)
+      if (filters.topics.length > 0) qs.set('topic', filters.topics.join(','))
+      if (filters.days > 0) qs.set('days', String(filters.days))
+      qs.set('sort', filters.sort)
+      qs.set('limit', '20')
+      if (cursor) qs.set('cursor', cursor)
+
+      try {
+        const res = await fetch(`${API_BASE}/api/coverage/feed?${qs}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: ctrl.signal,
+        })
+        if (!res.ok) {
+          if (res.status === 401) router.push('/login')
+          throw new Error(`HTTP ${res.status}`)
+        }
+        const data = (await res.json()) as FeedResponse
+        setArticles((prev) =>
+          append ? [...prev, ...data.articles] : data.articles
+        )
+        setHasMore(data.pagination.has_more)
+        setNextCursor(data.pagination.next_cursor)
+      } catch (err: unknown) {
+        if (ctrl.signal.aborted) return
+        setError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        if (append) setLoadingMore(false)
+        else setLoading(false)
       }
-    }
-    window.addEventListener('wheel', blockOutside, { passive: false })
-    window.addEventListener('touchmove', blockOutside, { passive: false })
+    },
+    [filters, getToken, router]
+  )
 
+  // Refetch when filters change
+  useEffect(() => {
+    void fetchFeed('', false)
+  }, [fetchFeed])
+
+  // ── Reader open / close ───────────────────────────────────────
+  const openArticle = useCallback((articleId: string) => {
+    const found = articles.find((a) => a.article_id === articleId)
+    if (found) {
+      setSelectedArticle(found)
+      // Mark as read in localStorage.
+      setReadArticleIds((prev) => {
+        if (prev.has(articleId)) return prev
+        const next = new Set(prev)
+        next.add(articleId)
+        try {
+          localStorage.setItem(
+            'coverage_read_state',
+            JSON.stringify(Array.from(next))
+          )
+        } catch {
+          /* ignore */
+        }
+        return next
+      })
+      return
+    }
+    // Article not in current feed — fetch on demand.
+    void (async () => {
+      const token = await getToken()
+      if (!token) return
+      try {
+        const res = await fetch(`${API_BASE}/api/coverage/article/${articleId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const a = (await res.json()) as Article
+          setSelectedArticle(a)
+        }
+      } catch {
+        /* silent */
+      }
+    })()
+  }, [articles, getToken])
+
+  const closeArticle = useCallback(() => setSelectedArticle(null), [])
+
+  // ── Compare toggle ────────────────────────────────────────────
+  const toggleCompare = useCallback((articleId: string) => {
+    setCompareIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(articleId)) next.delete(articleId)
+      else if (next.size < 3) next.add(articleId)
+      return next
+    })
+  }, [])
+
+  // Body scroll lock when reader open
+  useEffect(() => {
+    if (selectedArticle) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [selectedArticle])
+
+  // Escape closes whichever overlay is on top
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key !== 'Escape') return
+      if (compareOpen) setCompareOpen(false)
+      else if (selectedArticle) closeArticle()
+      else if (contradictionsOpen) setContradictionsOpen(false)
+      else if (createCardOpen) setCreateCardOpen(false)
     }
     window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedArticle, contradictionsOpen, createCardOpen, compareOpen, closeArticle])
 
-    return () => {
-      html.style.overflow = prev.htmlOverflow
-      body.style.overflow = prev.bodyOverflow
-      body.style.position = prev.bodyPosition
-      body.style.top = prev.bodyTop
-      body.style.width = prev.bodyWidth
-      body.style.paddingRight = prev.bodyPaddingRight
-      window.removeEventListener('wheel', blockOutside)
-      window.removeEventListener('touchmove', blockOutside)
-      window.removeEventListener('keydown', onKey)
-      window.scrollTo(0, scrollY)
-    }
-  }, [onClose])
-
+  // ── Render ────────────────────────────────────────────────────
   return (
     <div
-      onClick={onClose}
+      data-theme="onyx"
       style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'color-mix(in srgb, var(--rig-ink) 50%, transparent)',
-        backdropFilter: 'blur(6px)',
-        zIndex: 300,
-        overscrollBehavior: 'contain',
+        position: 'relative',
+        minHeight: '100vh',
+        paddingTop: 'var(--topbar-h)',
+        background: 'var(--onyx-bg)',
+        color: 'var(--onyx-bone)',
+        fontFamily: 'var(--onyx-display)',
+        overflow: 'hidden',
       }}
     >
-      <div
-        ref={panelRef}
-        onClick={(e) => e.stopPropagation()}
-        className="anim-slide-right"
+      <ParticleField />
+      <GrainOverlay />
+      <OnyxTopBar />
+
+      <main
+        className="coverage-articles-grid"
         style={{
-          position: 'fixed',
-          top: 'var(--topbar-h, 0px)',
-          right: 0,
-          bottom: 0,
-          width: '560px',
-          maxWidth: '100vw',
-          background: 'var(--rig-paper)',
-          borderLeft: '1px solid var(--rig-rule)',
-          overflowY: 'auto',
-          overscrollBehavior: 'contain',
-          WebkitOverflowScrolling: 'touch',
+          position: 'relative',
+          zIndex: 5,
+          maxWidth: '1480px',
+          margin: '0 auto',
+          padding: '0 56px 96px',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 320px',
+          gap: '64px',
+          alignItems: 'start',
         }}
       >
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          style={{
-            position: 'absolute',
-            top: '16px',
-            right: '16px',
-            width: '32px',
-            height: '32px',
-            background: 'var(--rig-paper-2)',
-            border: '1px solid var(--rig-rule)',
-            color: 'var(--rig-ink-2)',
-            cursor: 'pointer',
-            fontSize: '18px',
-            zIndex: 1,
-            fontFamily: 'var(--font-serif)',
-            lineHeight: 1,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--rig-gold)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--rig-rule)' }}
-        >
-          ×
-        </button>
+        {/* Center column */}
+        <div style={{ minWidth: 0 }}>
+          <BreakingBand />
 
-        {/* Hero */}
-        {hasImage ? (
-          <img
-            src={article.thumbnail_url as string}
-            alt=""
-            onError={() => setImgBroken(true)}
-            style={{
-              width: '100%',
-              height: '220px',
-              objectFit: 'cover',
-              display: 'block',
-              filter: 'saturate(0.9) contrast(1.04)',
-            }}
+          <AskBar filters={filters} onCiteClick={openArticle} />
+
+          <CustomCardsRow
+            onOpenCreate={() => setCreateCardOpen(true)}
+            refreshTick={cardsRefreshTick}
           />
-        ) : (
-          <div style={{
-            width: '100%',
-            height: '220px',
-            backgroundColor: brandColor,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            filter: 'saturate(0.45) brightness(0.88)',
-          }}>
-            <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '72px', color: 'var(--rig-paper)' }}>
-              {article.source_name.slice(0, 2).toUpperCase()}
-            </span>
-          </div>
-        )}
 
-        <div style={{ padding: '32px 36px 56px' }}>
-          {/* Kicker */}
-          <div className="rig-kicker rig-kicker-gold" style={{ marginBottom: '18px' }}>
-            <span style={{ width: '28px', height: '1px', background: 'var(--rig-gold)', opacity: 0.7 }} />
-            Tier {tierLabel} · {TIER_NAME[article.relevance_tier] ?? 'Background'}
-          </div>
+          <TopFiveStories
+            onRead={openArticle}
+            onCompareToggle={toggleCompare}
+            selectedForCompare={compareIds}
+          />
 
-          {/* Title */}
-          <h2
-            className="rig-headline"
-            style={{ fontSize: '32px', lineHeight: 1.1, marginBottom: '18px' }}
-          >
-            {article.title}
-          </h2>
-
-          {/* Byline */}
-          <div className="rig-byline" style={{ marginBottom: '28px' }}>
-            <span>{article.source_name}</span>
-            {article.collected_at && (<><span className="sep">·</span><span>{formatTimeAgo(article.collected_at)}</span></>)}
-            {article.author_name && (<><span className="sep">·</span><span>{article.author_name}</span></>)}
-          </div>
-
-          {/* Why this matters */}
-          <div
-            style={{
-              padding: '18px 20px',
-              borderLeft: '2px solid var(--rig-gold)',
-              background: 'var(--rig-overlay)',
-              marginBottom: '28px',
-            }}
-          >
-            <div className="rig-kicker rig-kicker-gold" style={{ fontSize: '9px', marginBottom: '8px' }}>
-              Why this matters
-            </div>
-            <p
-              className="rig-serif-body"
-              style={{ fontSize: '17px', color: 'var(--rig-ink)' }}
-            >
-              {article.relevance_explanation || 'Relevant to your monitored geography and topics.'}
-            </p>
-          </div>
-
-          {/* Summary */}
-          {!summary && !summaryLoading && !summaryError && (
-            <button onClick={onGenerateSummary} className="rig-btn-ghost" style={{ marginBottom: '24px' }}>
-              ✦ Generate summary
-            </button>
-          )}
-          {summaryLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <div style={{
-                width: '14px', height: '14px', borderRadius: '50%',
-                border: '1.5px solid var(--rig-rule)',
-                borderTopColor: 'var(--rig-gold)',
-                animation: 'spin 0.8s linear infinite',
-              }} />
-              <span className="rig-byline">Filing summary…</span>
-            </div>
-          )}
-          {summaryError && !summaryLoading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-              <span className="rig-byline" style={{ color: 'var(--rig-oxblood)' }}>{summaryError}</span>
-              <button onClick={onGenerateSummary} className="rig-btn-ghost">
-                Retry
-              </button>
-            </div>
-          )}
-          {summary && (
-            <div style={{
-              padding: '18px 20px',
-              border: '1px solid var(--rig-rule)',
-              background: 'var(--rig-paper-2)',
-              marginBottom: '28px',
-            }}>
-              <div className="rig-kicker" style={{ fontSize: '9px', marginBottom: '10px' }}>
-                Summary
-              </div>
-              <p className="rig-serif-body" style={{ fontSize: '16px' }}>{summary}</p>
-            </div>
-          )}
-
-          {/* Matched entities */}
-          {article.matched_entity_names.length > 0 && (
-            <div style={{ marginBottom: '28px' }}>
-              <div className="rig-kicker" style={{ fontSize: '9px', marginBottom: '12px' }}>
-                Matched entities
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {article.matched_entity_names.map((e) => (
-                  <span
-                    key={e}
-                    style={{
-                      padding: '4px 12px',
-                      border: '1px solid var(--rig-rule)',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '10px',
-                      letterSpacing: '0.16em',
-                      textTransform: 'uppercase',
-                      color: 'var(--rig-ink-2)',
-                    }}
-                  >
-                    {e}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Meta row */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              flexWrap: 'wrap',
-              padding: '16px 0',
-              borderTop: '1px solid var(--rig-rule-hair)',
-              borderBottom: '1px solid var(--rig-rule-hair)',
-              marginBottom: '24px',
-            }}
-          >
-            <span className="rig-byline">
-              {article.topic_category && <span>{article.topic_category}</span>}
-              {article.topic_category && article.geo_primary && <span className="sep">·</span>}
-              {article.geo_primary && <span>{article.geo_primary}</span>}
-            </span>
-            <span
-              style={{
-                marginLeft: 'auto',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '12px',
-                color: 'var(--rig-gold)',
-                letterSpacing: '0.1em',
-              }}
-            >
-              Score {article.score_final.toFixed(2)}
-            </span>
-          </div>
-
-          {/* Actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-            <span className="rig-byline" style={{ color: 'var(--rig-ink-4)', cursor: 'default' }}>
-              ♦ Save to collection
-            </span>
-            <a
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rig-btn-primary"
-              style={{ padding: '12px 20px', fontSize: '10px', gap: '12px', textDecoration: 'none' }}
-            >
-              Read original
-              <span className="arrow">→</span>
-            </a>
-          </div>
+          <FeedSection
+            articles={articles}
+            filters={filters}
+            setFilters={setFilters}
+            loading={loading}
+            loadingMore={loadingMore}
+            hasMore={hasMore}
+            error={error}
+            readArticleIds={readArticleIds}
+            compareIds={compareIds}
+            onCompareToggle={toggleCompare}
+            onOpenArticle={openArticle}
+            onLoadMore={() => nextCursor && fetchFeed(nextCursor, true)}
+          />
         </div>
-      </div>
-    </div>
-  )
-}
 
-/* ── Filter bar ───────────────────────────────────────────────────────────── */
+        {/* Right rail */}
+        <RightRail
+          onContradictionsClick={() => setContradictionsOpen(true)}
+          onArticleClick={openArticle}
+        />
+      </main>
 
-function FilterBar(props: {
-  selectedTopics: string[]
-  onToggleTopic: (t: string) => void
-  selectedTier: TierFilter
-  onTierChange: (t: TierFilter) => void
-  selectedDays: number
-  onDaysChange: (d: number) => void
-  sortBy: SortOption
-  onSortChange: (s: SortOption) => void
-  onClearFilters: () => void
-}) {
-  const [topicsOpen, setTopicsOpen] = useState(false)
-  const activeFilters =
-    props.selectedTopics.length > 0 ||
-    props.selectedTier !== 'all' ||
-    props.selectedDays !== 0
-
-  return (
-    <div
-      style={{
-        position: 'sticky',
-        top: 'var(--topbar-h)',
-        zIndex: 100,
-        background: 'var(--rig-paper-2)',
-        borderBottom: '1px solid var(--rig-rule)',
-        padding: '12px 40px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        flexWrap: 'wrap',
-      }}
-    >
-      {/* Topics */}
-      <div style={{ position: 'relative' }}>
-        <FilterPill active={props.selectedTopics.length > 0} onClick={() => setTopicsOpen((v) => !v)}>
-          Topics
-          {props.selectedTopics.length > 0 && (
-            <span style={{
-              marginLeft: '4px',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--rig-gold)',
-            }}>{props.selectedTopics.length}</span>
-          )}
-          <span aria-hidden="true" style={{ marginLeft: '4px', fontSize: '8px', opacity: 0.6 }}>
-            {topicsOpen ? '▲' : '▼'}
-          </span>
-        </FilterPill>
-
-        {topicsOpen && (
-          <div
+      {/* Floating Compare action */}
+      {compareIds.size >= 2 && !compareOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '32px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 800,
+            display: 'flex',
+            gap: '12px',
+            padding: '12px 18px',
+            background: 'var(--onyx-bg)',
+            border: '1px solid var(--onyx-cyan)',
+            boxShadow: '0 0 24px var(--onyx-cyan-glow)',
+            animation: 'onyx-fade-up 0.3s ease both',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setCompareIds(new Set())}
+            className="onyx-mono"
             style={{
-              position: 'absolute',
-              top: 'calc(100% + 10px)',
-              left: 0,
-              background: 'var(--rig-paper)',
-              border: '1px solid var(--rig-rule)',
-              padding: '12px',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '4px',
-              minWidth: '360px',
-              zIndex: 200,
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--onyx-dim)',
+              fontSize: '10px',
+              letterSpacing: '0.32em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              padding: '4px 10px',
             }}
           >
-            {TOPICS.map((t) => {
-              const active = props.selectedTopics.includes(t)
-              return (
-                <button
-                  key={t}
-                  onClick={() => props.onToggleTopic(t)}
-                  style={{
-                    padding: '6px 10px',
-                    background: active ? 'var(--rig-overlay)' : 'transparent',
-                    border: 'none',
-                    color: active ? 'var(--rig-gold)' : 'var(--rig-ink-3)',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '10px',
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'color 0.15s',
-                  }}
-                >
-                  {t}
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      <FilterDivider />
-
-      {([
-        ['all', 'All tiers'],
-        ['1', 'Tier I'],
-        ['1,2', 'T I+II'],
-      ] as const).map(([v, lbl]) => (
-        <FilterPill key={v} active={props.selectedTier === v} onClick={() => props.onTierChange(v)}>
-          {lbl}
-        </FilterPill>
-      ))}
-
-      <FilterDivider />
-
-      {([[0, 'All time'], [7, 'This week'], [1, 'Today']] as const).map(([v, lbl]) => (
-        <FilterPill key={v} active={props.selectedDays === v} onClick={() => props.onDaysChange(v)}>
-          {lbl}
-        </FilterPill>
-      ))}
-
-      <FilterDivider />
-
-      {([
-        ['relevance', 'By weight'],
-        ['recency', 'By wire'],
-      ] as const).map(([v, lbl]) => (
-        <FilterPill key={v} active={props.sortBy === v} onClick={() => props.onSortChange(v)}>
-          {lbl}
-        </FilterPill>
-      ))}
-
-      {activeFilters && (
-        <>
-          <FilterDivider />
+            Clear ({compareIds.size})
+          </button>
           <button
-            onClick={props.onClearFilters}
+            type="button"
+            onClick={() => setCompareOpen(true)}
+            className="onyx-mono"
             style={{
-              padding: '5px 12px',
               background: 'transparent',
-              border: '1px solid color-mix(in srgb, var(--rig-oxblood) 50%, transparent)',
-              color: 'var(--rig-oxblood)',
-              fontFamily: 'var(--font-mono)',
+              border: '1px solid var(--onyx-cyan)',
+              color: 'var(--onyx-cyan)',
               fontSize: '10px',
-              letterSpacing: '0.2em',
+              letterSpacing: '0.32em',
               textTransform: 'uppercase',
+              padding: '8px 18px',
               cursor: 'pointer',
             }}
           >
-            × Clear
+            Compare {compareIds.size} →
           </button>
-        </>
+        </div>
       )}
+
+      {/* Reader */}
+      {selectedArticle && (
+        <ArticleReader
+          article={selectedArticle}
+          onClose={closeArticle}
+          getToken={getToken}
+        />
+      )}
+
+      {/* Drawers / modals */}
+      <ContradictionsDrawer
+        open={contradictionsOpen}
+        onClose={() => setContradictionsOpen(false)}
+        onArticleClick={(id) => {
+          setContradictionsOpen(false)
+          openArticle(id)
+        }}
+      />
+      <CreateCardModal
+        open={createCardOpen}
+        onClose={() => setCreateCardOpen(false)}
+        onCreated={() => setCardsRefreshTick((n) => n + 1)}
+      />
+      {compareOpen && (
+        <CompareOverlay
+          articleIds={Array.from(compareIds)}
+          onClose={() => setCompareOpen(false)}
+          getToken={getToken}
+        />
+      )}
+
+      {/* Mobile: collapse right rail */}
+      <style>{`
+        @media (max-width: 1100px) {
+          .coverage-articles-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .coverage-articles-grid > aside {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   )
 }
 
-function FilterPill({ active, onClick, children }: {
+
+/* ───────────────────────────────────────────────────────────────
+   FeedSection — filterable article list (uses existing /feed)
+   ─────────────────────────────────────────────────────────────── */
+
+interface FeedSectionProps {
+  articles: Article[]
+  filters: ArticleFilters
+  setFilters: (f: ArticleFilters) => void
+  loading: boolean
+  loadingMore: boolean
+  hasMore: boolean
+  error: string | null
+  readArticleIds: Set<string>
+  compareIds: Set<string>
+  onCompareToggle: (id: string) => void
+  onOpenArticle: (id: string) => void
+  onLoadMore: () => void
+}
+
+function FeedSection({
+  articles,
+  filters,
+  setFilters,
+  loading,
+  loadingMore,
+  hasMore,
+  error,
+  readArticleIds,
+  compareIds,
+  onCompareToggle,
+  onOpenArticle,
+  onLoadMore,
+}: FeedSectionProps) {
+  return (
+    <section style={{ padding: '48px 0 32px' }}>
+      <header style={{ marginBottom: '24px' }}>
+        <div
+          className="onyx-mono"
+          style={{
+            fontSize: '10px',
+            letterSpacing: '0.42em',
+            textTransform: 'uppercase',
+            color: 'var(--onyx-dim)',
+          }}
+        >
+          All articles ({articles.length})
+        </div>
+        <hr className="onyx-hairline-dim" style={{ marginTop: '12px' }} />
+      </header>
+
+      <FilterBar filters={filters} setFilters={setFilters} />
+
+      {error && (
+        <div
+          className="onyx-mono"
+          style={{
+            fontSize: '11px',
+            color: 'var(--onyx-red)',
+            letterSpacing: '0.24em',
+            padding: '12px 0',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <div
+          className="onyx-mono"
+          style={{
+            fontSize: '11px',
+            letterSpacing: '0.32em',
+            color: 'var(--onyx-dim)',
+            padding: '40px 0',
+          }}
+        >
+          Loading…
+        </div>
+      )}
+
+      {!loading && articles.length === 0 && (
+        <div
+          className="onyx-italic"
+          style={{
+            fontStyle: 'italic',
+            fontSize: '15px',
+            color: 'var(--onyx-bone-2)',
+            padding: '40px 0',
+          }}
+        >
+          No articles match those filters.
+        </div>
+      )}
+
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {articles.map((a) => (
+          <ArticleRow
+            key={a.article_id}
+            article={a}
+            isRead={readArticleIds.has(a.article_id)}
+            isInCompare={compareIds.has(a.article_id)}
+            onOpen={() => onOpenArticle(a.article_id)}
+            onCompareToggle={() => onCompareToggle(a.article_id)}
+          />
+        ))}
+      </ul>
+
+      {hasMore && (
+        <div style={{ textAlign: 'center', padding: '32px 0' }}>
+          <button
+            type="button"
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="onyx-mono"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--onyx-rule-hair)',
+              color: 'var(--onyx-bone-2)',
+              fontSize: '10px',
+              letterSpacing: '0.32em',
+              textTransform: 'uppercase',
+              padding: '14px 32px',
+              cursor: loadingMore ? 'not-allowed' : 'pointer',
+              transition: 'border-color 0.3s, color 0.3s',
+            }}
+          >
+            {loadingMore ? 'Loading…' : 'Load more →'}
+          </button>
+        </div>
+      )}
+    </section>
+  )
+}
+
+
+function FilterBar({
+  filters,
+  setFilters,
+}: {
+  filters: ArticleFilters
+  setFilters: (f: ArticleFilters) => void
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: '20px',
+        flexWrap: 'wrap',
+        padding: '16px 0',
+        marginBottom: '24px',
+        borderBottom: '1px solid var(--onyx-rule-dim)',
+      }}
+    >
+      <FilterGroup label="Tier">
+        {(['1', '1,2', '1,2,3'] as const).map((t) => (
+          <FilterChip
+            key={t}
+            active={filters.tier === t}
+            onClick={() => setFilters({ ...filters, tier: t })}
+          >
+            {t === '1' ? 'I' : t === '1,2' ? 'I-II' : 'All'}
+          </FilterChip>
+        ))}
+      </FilterGroup>
+
+      <FilterGroup label="Window">
+        {[
+          { v: 0, l: 'All' },
+          { v: 1, l: 'Today' },
+          { v: 7, l: 'Week' },
+          { v: 30, l: 'Month' },
+        ].map((d) => (
+          <FilterChip
+            key={d.v}
+            active={filters.days === d.v}
+            onClick={() => setFilters({ ...filters, days: d.v })}
+          >
+            {d.l}
+          </FilterChip>
+        ))}
+      </FilterGroup>
+
+      <FilterGroup label="Sort">
+        {(['relevance', 'recency'] as const).map((s) => (
+          <FilterChip
+            key={s}
+            active={filters.sort === s}
+            onClick={() => setFilters({ ...filters, sort: s })}
+          >
+            {s}
+          </FilterChip>
+        ))}
+      </FilterGroup>
+    </div>
+  )
+}
+
+
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <span
+        className="onyx-mono"
+        style={{
+          fontSize: '9px',
+          letterSpacing: '0.32em',
+          textTransform: 'uppercase',
+          color: 'var(--onyx-dim)',
+        }}
+      >
+        {label}
+      </span>
+      <div style={{ display: 'flex', gap: '6px' }}>{children}</div>
+    </div>
+  )
+}
+
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
   active: boolean
   onClick: () => void
   children: React.ReactNode
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
+      className="onyx-mono"
       style={{
-        padding: '5px 12px',
-        border: `1px solid ${active ? 'var(--rig-gold)' : 'var(--rig-rule)'}`,
-        background: active ? 'var(--rig-overlay)' : 'transparent',
-        color: active ? 'var(--rig-gold)' : 'var(--rig-ink-3)',
-        fontFamily: 'var(--font-mono)',
+        background: 'transparent',
+        border: `1px solid ${active ? 'var(--onyx-cyan)' : 'var(--onyx-rule-dim)'}`,
+        color: active ? 'var(--onyx-cyan)' : 'var(--onyx-bone-2)',
         fontSize: '10px',
-        letterSpacing: '0.2em',
+        letterSpacing: '0.24em',
         textTransform: 'uppercase',
+        padding: '6px 12px',
         cursor: 'pointer',
-        transition: 'color 0.15s, border-color 0.15s, background 0.15s',
-        whiteSpace: 'nowrap',
+        transition: 'all 0.3s',
       }}
     >
       {children}
@@ -741,448 +702,760 @@ function FilterPill({ active, onClick, children }: {
   )
 }
 
-function FilterDivider() {
+
+function ArticleRow({
+  article,
+  isRead,
+  isInCompare,
+  onOpen,
+  onCompareToggle,
+}: {
+  article: Article
+  isRead: boolean
+  isInCompare: boolean
+  onOpen: () => void
+  onCompareToggle: () => void
+}) {
   return (
-    <div
-      aria-hidden="true"
+    <li
       style={{
-        width: '1px',
-        height: '16px',
-        background: 'var(--rig-rule)',
-        flexShrink: 0,
+        display: 'grid',
+        gridTemplateColumns: '1fr auto',
+        gap: '16px',
+        padding: '20px 0',
+        borderBottom: '1px solid var(--onyx-rule-dim)',
+        opacity: isRead ? 0.6 : 1,
+        transition: 'opacity 0.3s',
       }}
-    />
-  )
-}
+    >
+      <div>
+        <button
+          type="button"
+          onClick={onOpen}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--onyx-bone)',
+            fontFamily: 'var(--onyx-italic)',
+            fontStyle: 'normal',
+            fontSize: '20px',
+            lineHeight: 1.25,
+            textAlign: 'left',
+            padding: 0,
+            cursor: 'pointer',
+            display: 'block',
+          }}
+        >
+          {article.title}
+        </button>
 
-/* ── Skeleton ─────────────────────────────────────────────────────────────── */
+        {article.relevance_explanation && (
+          <p
+            style={{
+              fontFamily: 'var(--onyx-italic)',
+              fontStyle: 'italic',
+              fontSize: '13.5px',
+              lineHeight: 1.55,
+              color: 'var(--onyx-bone-2)',
+              margin: '8px 0 0',
+              maxWidth: '70ch',
+            }}
+          >
+            {article.relevance_explanation}
+          </p>
+        )}
 
-function SkeletonClipping() {
-  return (
-    <div style={{ background: 'var(--rig-paper-2)', border: '1px solid var(--rig-rule)', overflow: 'hidden' }}>
-      <div className="skeleton" style={{ height: '140px' }} />
-      <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div className="skeleton" style={{ height: '10px', width: '50%' }} />
-        <div className="skeleton" style={{ height: '16px', width: '95%' }} />
-        <div className="skeleton" style={{ height: '14px', width: '80%' }} />
-        <div className="skeleton" style={{ height: '10px', width: '40%' }} />
+        <div
+          className="onyx-mono"
+          style={{
+            marginTop: '10px',
+            fontSize: '9px',
+            letterSpacing: '0.28em',
+            textTransform: 'uppercase',
+            color: 'var(--onyx-dim)',
+            display: 'flex',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <span>{article.source_name}</span>
+          {article.topic_category && (
+            <>
+              <span style={{ opacity: 0.4 }}>·</span>
+              <span>{article.topic_category}</span>
+            </>
+          )}
+          {article.geo_primary && (
+            <>
+              <span style={{ opacity: 0.4 }}>·</span>
+              <span>{article.geo_primary}</span>
+            </>
+          )}
+          <span style={{ opacity: 0.4 }}>·</span>
+          <span>{formatTimeAgo(article.collected_at)}</span>
+          <span style={{ opacity: 0.4 }}>·</span>
+          <span>Tier {article.relevance_tier}</span>
+        </div>
       </div>
-    </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="onyx-mono"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--onyx-dim)',
+            fontSize: '10px',
+            letterSpacing: '0.32em',
+            textTransform: 'uppercase',
+            padding: 0,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Read →
+        </button>
+        <button
+          type="button"
+          onClick={onCompareToggle}
+          className="onyx-mono"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: isInCompare ? 'var(--onyx-cyan)' : 'var(--onyx-dim)',
+            fontSize: '10px',
+            letterSpacing: '0.32em',
+            textTransform: 'uppercase',
+            padding: 0,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {isInCompare ? '✓ Compare' : 'Compare'}
+        </button>
+      </div>
+    </li>
   )
 }
 
-/* ── Stats badge ──────────────────────────────────────────────────────────── */
 
-function StatBadge({ value, label, tone }: { value: string; label: string; tone?: 'gold' | 'copper' | 'default' }) {
-  const color =
-    tone === 'gold' ? 'var(--rig-gold)' :
-    tone === 'copper' ? 'var(--rig-copper)' :
-    'var(--rig-ink-2)'
-  return (
-    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px' }}>
-      <span style={{
-        fontFamily: 'var(--font-serif)',
-        fontSize: '22px',
-        color,
-        lineHeight: 1,
-      }}>{value}</span>
-      <span
-        className="rig-byline"
-        style={{ fontSize: '9px' }}
-      >{label}</span>
-    </div>
-  )
-}
+/* ───────────────────────────────────────────────────────────────
+   ArticleReader — slide-in right panel
+   ─────────────────────────────────────────────────────────────── */
 
-/* ── Main page ────────────────────────────────────────────────────────────── */
+function ArticleReader({
+  article,
+  onClose,
+  getToken,
+}: {
+  article: Article
+  onClose: () => void
+  getToken: () => Promise<string | null>
+}) {
+  const [summary, setSummary] = useState<string | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
 
-// Next 15 prerender requires useSearchParams() to be inside a Suspense boundary.
-export default function CoveragePage() {
-  return (
-    <Suspense fallback={null}>
-      <CoveragePageInner />
-    </Suspense>
-  )
-}
-
-function CoveragePageInner() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-
-  const getToken = useCallback(async (): Promise<string | null> => {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { router.push('/login'); return null }
-    return session.access_token
-  }, [router])
-
-  const [loading, setLoading]           = useState(true)
-  const [loadingMore, setLoadingMore]   = useState(false)
-  const [articles, setArticles]         = useState<Article[]>([])
-  const [hasMore, setHasMore]           = useState(false)
-  const [nextCursor, setNextCursor]     = useState<string>('')
-  const [totals, setTotals]             = useState<Totals>({ total: 0, tier1: 0, tier2: 0, tier3: 0 })
-  const [errorMsg, setErrorMsg]         = useState<string>('')
-
-  const [selectedTopics, setSelectedTopics]       = useState<string[]>([])
-  const [selectedTier, setSelectedTier]           = useState<TierFilter>('all')
-  const [selectedDays, setSelectedDays]           = useState<number>(0)
-  const [sortBy, setSortBy]                       = useState<SortOption>('relevance')
-
-  const [searchQuery, setSearchQuery]     = useState('')
-  const [searchResults, setSearchResults] = useState<Article[] | null>(null)
-  const [isSearching, setIsSearching]     = useState(false)
-
-  const [selectedArticle, setSelectedArticle]   = useState<Article | null>(null)
-  const [summariesById, setSummariesById]       = useState<Record<string, string>>({})
-  const [summaryLoading, setSummaryLoading]     = useState(false)
-  const [summaryError, setSummaryError]         = useState<string | null>(null)
-
-  const buildFeedUrl = useCallback((cursor: string = '') => {
-    const params = new URLSearchParams()
-    const tierParam = selectedTier === 'all' ? '1,2,3' : selectedTier
-    params.set('tier', tierParam)
-    if (selectedTopics.length > 0) params.set('topic', selectedTopics.join(','))
-    if (selectedDays > 0) params.set('days', String(selectedDays))
-    params.set('sort', sortBy)
-    if (cursor) params.set('cursor', cursor)
-    params.set('limit', '20')
-    return `${API_BASE}/api/coverage/feed?${params.toString()}`
-  }, [selectedTier, selectedTopics, selectedDays, sortBy])
-
-  const inflightRef = useRef<AbortController | null>(null)
-  const fetchFeed = useCallback(async (cursor: string = '', append = false) => {
-    const token = await getToken()
-    if (!token) return
-    inflightRef.current?.abort()
-    const ctrl = new AbortController()
-    inflightRef.current = ctrl
-    append ? setLoadingMore(true) : setLoading(true)
-    setErrorMsg('')
-    try {
-      const res = await fetch(buildFeedUrl(cursor), { headers: { Authorization: `Bearer ${token}` }, signal: ctrl.signal })
-      if (!res.ok) { setErrorMsg(`Feed request failed (${res.status})`); return }
-      const data: FeedResponse = await res.json()
-      setArticles((prev) => append ? [...prev, ...data.articles] : data.articles)
-      setHasMore(data.pagination.has_more)
-      setNextCursor(data.pagination.next_cursor ?? '')
-      setTotals(data.totals)
-    } catch (e) {
-      if (ctrl.signal.aborted) return
-      setErrorMsg(e instanceof Error ? e.message : 'Network error')
-    } finally {
-      if (inflightRef.current === ctrl) inflightRef.current = null
-      if (!ctrl.signal.aborted) {
-        setLoading(false)
-        setLoadingMore(false)
-      }
-    }
-  }, [buildFeedUrl, getToken])
-
-  useEffect(() => { void fetchFeed('', false) }, []) // eslint-disable-line
-
-  useEffect(() => {
-    const articleParam = searchParams.get('article')
-    if (!articleParam) return
-    let cancelled = false
-    const open = async () => {
-      const token = await getToken()
-      if (!token || cancelled) return
-      try {
-        const res = await fetch(`${API_BASE}/api/coverage/article/${articleParam}`, { headers: { Authorization: `Bearer ${token}` } })
-        if (!res.ok || cancelled) return
-        const article: Article = await res.json()
-        if (!cancelled) handleOpenArticle(article)
-      } catch { /* silent */ }
-    }
-    void open()
-    return () => { cancelled = true }
-    // eslint-disable-next-line
-  }, [searchParams])
-
-  const filtersKey = `${selectedTier}|${selectedTopics.join(',')}|${selectedDays}|${sortBy}`
-  const didMountRef = useRef(false)
-  useEffect(() => {
-    if (!didMountRef.current) { didMountRef.current = true; return }
-    void fetchFeed('', false)
-    // eslint-disable-next-line
-  }, [filtersKey])
-
-  const handleSearchEnter = async () => {
-    if (searchQuery.trim().length < 2) return
-    const token = await getToken()
-    if (!token) return
-    setIsSearching(true)
-    try {
-      const params = new URLSearchParams({ q: searchQuery.trim(), tier: selectedTier === 'all' ? '1,2,3' : selectedTier })
-      const res = await fetch(`${API_BASE}/api/coverage/search?${params}`, { headers: { Authorization: `Bearer ${token}` } })
-      if (res.ok) { const data: SearchResponse = await res.json(); setSearchResults(data.articles) }
-    } catch { /* ignore */ } finally { setIsSearching(false) }
-  }
-
-  const clearSearch     = () => { setSearchQuery(''); setSearchResults(null) }
-  const handleToggleTopic = (t: string) => setSelectedTopics((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t])
-  const clearFilters    = () => { setSelectedTopics([]); setSelectedTier('all'); setSelectedDays(0); setSortBy('relevance') }
-  const handleOpenArticle = (a: Article) => { setSelectedArticle(a); setSummaryError(null) }
-  const handleCloseDialog = () => { setSelectedArticle(null); setSummaryError(null) }
-
-  const handleGenerateSummary = async () => {
-    if (!selectedArticle) return
-    const id = selectedArticle.article_id
-    if (summariesById[id]) return
+  const generateSummary = useCallback(async () => {
+    if (summary || summaryLoading) return
     const token = await getToken()
     if (!token) return
     setSummaryLoading(true)
     setSummaryError(null)
     try {
-      const res = await fetch(`${API_BASE}/api/coverage/summary/${id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) { setSummaryError('Summary generation failed'); return }
-      const data: { summary: string } = await res.json()
-      setSummariesById((prev) => ({ ...prev, [id]: data.summary }))
-    } catch { setSummaryError('Network error — check connection') }
-    finally { setSummaryLoading(false) }
-  }
-
-  const serverSearchActive  = searchResults !== null
-  const clientFilterActive  = !serverSearchActive && searchQuery.trim().length >= 2
-  const visibleArticles     = serverSearchActive
-    ? (searchResults as Article[])
-    : clientFilterActive
-      ? articles.filter((a) => a.title.toLowerCase().includes(searchQuery.trim().toLowerCase()))
-      : articles
-
-  const renderGrid = () => {
-    const nodes: React.ReactNode[] = []
-    let lastTier = 0
-    visibleArticles.forEach((a) => {
-      if (!serverSearchActive && !clientFilterActive && sortBy === 'relevance' && a.relevance_tier !== lastTier) {
-        if (a.relevance_tier === 2) nodes.push(<TierSeparator key="sep-t2" numeral="II" name="Notable" />)
-        else if (a.relevance_tier === 3) nodes.push(<TierSeparator key="sep-t3" numeral="III" name="Background" />)
-        lastTier = a.relevance_tier
-      }
-      nodes.push(<Clipping key={a.article_id} article={a} onClick={() => handleOpenArticle(a)} />)
-    })
-    return nodes
-  }
+      const res = await fetch(
+        `${API_BASE}/api/coverage/summary/${article.article_id}`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = (await res.json()) as { summary: string }
+      setSummary(data.summary)
+    } catch (err: unknown) {
+      setSummaryError(err instanceof Error ? err.message : 'Failed')
+    } finally {
+      setSummaryLoading(false)
+    }
+  }, [article.article_id, summary, summaryLoading, getToken])
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--rig-paper)', position: 'relative', zIndex: 0 }}>
-      <Navigation />
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0, 0, 0, 0.65)',
+        backdropFilter: 'blur(4px)',
+        zIndex: 950,
+        display: 'flex',
+        justifyContent: 'flex-end',
+        animation: 'onyx-fade-up 0.3s ease both',
+      }}
+    >
+      <article
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 'min(720px, 100vw)',
+          height: '100vh',
+          background: 'var(--onyx-bg)',
+          borderLeft: '1px solid var(--onyx-red-hair)',
+          padding: '32px 48px 64px',
+          overflowY: 'auto',
+        }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="onyx-mono"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--onyx-dim)',
+            fontSize: '10px',
+            letterSpacing: '0.32em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            padding: 0,
+            marginBottom: '24px',
+          }}
+        >
+          ← Close
+        </button>
 
-      <main style={{ paddingTop: 'var(--topbar-h)', position: 'relative', zIndex: 2 }}>
-        <Dateline
-          issueNumber="Articles"
-          sources={totals.total > 0 ? totals.total : undefined}
-        />
-
-        {/* ── Section head ────────────────────────────────── */}
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '40px 40px 28px' }}>
-          <div className="rig-kicker rig-kicker-gold" style={{ marginBottom: '18px' }}>
-            <span style={{ width: '28px', height: '1px', background: 'var(--rig-gold)', opacity: 0.7 }} />
-            Articles
-          </div>
-          <h1 className="rig-headline" style={{ fontSize: 'clamp(38px, 4.6vw, 56px)', marginBottom: '20px' }}>
-            Who is saying what, and <em>who is silent.</em>
-          </h1>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '32px', flexWrap: 'wrap' }}>
-            <StatBadge value={totals.total.toLocaleString()} label="Articles in view" />
-            <StatBadge value={String(totals.tier1)} label="Tier I" tone="gold" />
-            <StatBadge value={String(totals.tier2)} label="Tier II" tone="copper" />
-            <StatBadge value={String(totals.tier3)} label="Tier III" />
-          </div>
+        <div
+          className="onyx-mono"
+          style={{
+            fontSize: '10px',
+            letterSpacing: '0.32em',
+            textTransform: 'uppercase',
+            color: 'var(--onyx-dim)',
+            marginBottom: '8px',
+            display: 'flex',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <span>{article.source_name}</span>
+          {article.topic_category && <span style={{ opacity: 0.4 }}>· {article.topic_category}</span>}
+          <span style={{ opacity: 0.4 }}>· {formatTimeAgo(article.collected_at)}</span>
+          <span style={{ opacity: 0.4 }}>· Tier {article.relevance_tier}</span>
         </div>
 
-        <FilterBar
-          selectedTopics={selectedTopics}
-          onToggleTopic={handleToggleTopic}
-          selectedTier={selectedTier}
-          onTierChange={setSelectedTier}
-          selectedDays={selectedDays}
-          onDaysChange={setSelectedDays}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          onClearFilters={clearFilters}
-        />
+        <h1
+          style={{
+            fontFamily: 'var(--onyx-italic)',
+            fontStyle: 'normal',
+            fontSize: '36px',
+            lineHeight: 1.1,
+            fontWeight: 400,
+            color: 'var(--onyx-bone)',
+            letterSpacing: '-0.012em',
+            margin: '0 0 16px',
+          }}
+        >
+          {article.title}
+        </h1>
 
-        {/* ── Search strip ────────────────────────────────── */}
-        <div style={{
-          maxWidth: '1280px',
-          margin: '0 auto',
-          padding: '20px 40px 4px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
-          flexWrap: 'wrap',
-        }}>
-          <div style={{ flex: 1, minWidth: '260px', position: 'relative' }}>
-            <span style={{
-              position: 'absolute',
-              left: 0,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'var(--rig-ink-4)',
-              fontFamily: 'var(--font-serif)',
-              fontSize: '18px',
-              pointerEvents: 'none',
-            }}>⌕</span>
-            <input
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); if (searchResults) setSearchResults(null) }}
-              onKeyDown={(e) => { if (e.key === 'Enter') void handleSearchEnter() }}
-              placeholder="Search the room… press enter for full search"
-              className="rig-input"
-              style={{ paddingLeft: '28px', paddingRight: searchQuery ? '28px' : '0' }}
-            />
-            {searchQuery && (
-              <button
-                onClick={clearSearch}
-                aria-label="Clear search"
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--rig-ink-4)',
-                  fontSize: '18px',
-                  fontFamily: 'var(--font-serif)',
-                  cursor: 'pointer',
-                  lineHeight: 1,
-                }}
-              >×</button>
-            )}
-          </div>
+        {article.relevance_explanation && (
+          <p
+            style={{
+              fontFamily: 'var(--onyx-italic)',
+              fontStyle: 'italic',
+              fontSize: '17px',
+              lineHeight: 1.6,
+              color: 'var(--onyx-bone-2)',
+              marginBottom: '24px',
+            }}
+          >
+            {article.relevance_explanation}
+          </p>
+        )}
 
-          {isSearching && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
-                width: '14px', height: '14px', borderRadius: '50%',
-                border: '1.5px solid var(--rig-rule)',
-                borderTopColor: 'var(--rig-gold)',
-                animation: 'spin 0.8s linear infinite',
-              }} />
-              <span className="rig-byline">Searching</span>
-            </div>
-          )}
-
-          {serverSearchActive && (
-            <span className="rig-byline">
-              {(searchResults as Article[]).length} results — &ldquo;{searchQuery}&rdquo;
-            </span>
-          )}
-          {clientFilterActive && (
-            <span className="rig-byline">
-              {visibleArticles.length} of {articles.length} · enter to search all
-            </span>
-          )}
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }}>
+          <a
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="onyx-mono"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--onyx-rule-hair)',
+              color: 'var(--onyx-bone-2)',
+              fontSize: '10px',
+              letterSpacing: '0.32em',
+              textTransform: 'uppercase',
+              padding: '10px 18px',
+              textDecoration: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Open original →
+          </a>
+          <button
+            type="button"
+            onClick={generateSummary}
+            disabled={summaryLoading || !!summary}
+            className="onyx-mono"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--onyx-cyan)',
+              color: summary ? 'var(--onyx-dim)' : 'var(--onyx-cyan)',
+              fontSize: '10px',
+              letterSpacing: '0.32em',
+              textTransform: 'uppercase',
+              padding: '10px 18px',
+              cursor: summary ? 'default' : 'pointer',
+            }}
+          >
+            {summaryLoading ? '…' : summary ? '✓ Summarised' : 'Generate summary'}
+          </button>
         </div>
 
-        {/* ── Grid ────────────────────────────────────────── */}
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '28px 40px 120px' }}>
-          {loading && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '20px',
-            }}>
-              {Array.from({ length: 9 }).map((_, i) => <SkeletonClipping key={i} />)}
-            </div>
-          )}
+        {summaryError && (
+          <div
+            className="onyx-mono"
+            style={{
+              fontSize: '10px',
+              color: 'var(--onyx-red)',
+              letterSpacing: '0.24em',
+              marginBottom: '16px',
+            }}
+          >
+            {summaryError}
+          </div>
+        )}
 
-          {errorMsg && !loading && (
+        {summary && (
+          <div
+            style={{
+              padding: '20px 22px',
+              border: '1px solid var(--onyx-rule-hair)',
+              marginBottom: '32px',
+            }}
+          >
             <div
+              className="onyx-mono"
               style={{
-                padding: '24px',
-                border: '1px solid color-mix(in srgb, var(--rig-oxblood) 50%, transparent)',
-                background: 'var(--rig-overlay)',
+                fontSize: '9px',
+                letterSpacing: '0.32em',
+                textTransform: 'uppercase',
+                color: 'var(--onyx-dim)',
+                marginBottom: '10px',
               }}
             >
-              <div className="rig-kicker" style={{ color: 'var(--rig-oxblood)', marginBottom: '8px' }}>Desk Memo · Error</div>
-              <p className="rig-serif-body" style={{ fontStyle: 'italic', color: 'var(--rig-oxblood)' }}>
-                {errorMsg}
-              </p>
+              Summary
             </div>
-          )}
+            <p
+              style={{
+                fontFamily: 'var(--onyx-italic)',
+                fontStyle: 'italic',
+                fontSize: '15px',
+                lineHeight: 1.65,
+                color: 'var(--onyx-bone-2)',
+                margin: 0,
+              }}
+            >
+              {summary}
+            </p>
+          </div>
+        )}
 
-          {!loading && !errorMsg && visibleArticles.length === 0 && (
-            <div style={{ textAlign: 'left', padding: '80px 0', maxWidth: '620px' }}>
-              <div className="rig-kicker" style={{ marginBottom: '18px' }}>Desk Memo</div>
-              <h3 className="rig-headline" style={{ fontSize: '30px', marginBottom: '12px' }}>
-                No clippings match <em>the filters you set.</em>
-              </h3>
-              <p className="rig-lede">
-                Try loosening the tier, widening the window, or clearing topic filters.
-              </p>
+        <RelatedStrip articleId={article.article_id} />
+      </article>
+    </div>
+  )
+}
+
+
+/* ───────────────────────────────────────────────────────────────
+   RelatedStrip — bottom of reader, top-5 semantic neighbours
+   ─────────────────────────────────────────────────────────────── */
+
+interface RelatedItem {
+  article_id: string
+  title: string
+  source_name: string
+  source_domain: string
+  published_at: string | null
+}
+
+function RelatedStrip({ articleId }: { articleId: string }) {
+  const [items, setItems] = useState<RelatedItem[] | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) return
+      const res = await fetch(
+        `${API_BASE}/api/coverage/related/${articleId}?k=5`,
+        { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }
+      )
+      if (!res.ok || cancelled) return
+      const json = (await res.json()) as { related: RelatedItem[] }
+      if (!cancelled) setItems(json.related || [])
+    })()
+    return () => { cancelled = true }
+  }, [articleId])
+
+  if (!items || items.length === 0) return null
+
+  return (
+    <section style={{ borderTop: '1px solid var(--onyx-rule-dim)', paddingTop: '24px' }}>
+      <div
+        className="onyx-mono"
+        style={{
+          fontSize: '9px',
+          letterSpacing: '0.42em',
+          textTransform: 'uppercase',
+          color: 'var(--onyx-dim)',
+          marginBottom: '16px',
+        }}
+      >
+        Related
+      </div>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {items.map((r) => (
+          <li key={r.article_id}>
+            <div
+              style={{
+                fontFamily: 'var(--onyx-italic)',
+                fontStyle: 'normal',
+                fontSize: '14px',
+                color: 'var(--onyx-bone-2)',
+                marginBottom: '4px',
+              }}
+            >
+              {r.title}
             </div>
-          )}
-
-          {!loading && visibleArticles.length > 0 && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '20px',
-            }}>
-              {renderGrid()}
+            <div
+              className="onyx-mono"
+              style={{
+                fontSize: '9px',
+                letterSpacing: '0.28em',
+                textTransform: 'uppercase',
+                color: 'var(--onyx-dim)',
+              }}
+            >
+              {r.source_name} · {formatTimeAgo(r.published_at)}
             </div>
-          )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
 
-          {!loading && !serverSearchActive && !clientFilterActive && hasMore && (
-            <div style={{ textAlign: 'center', marginTop: '48px' }}>
-              <button
-                onClick={() => { if (!loadingMore && nextCursor) void fetchFeed(nextCursor, true) }}
-                disabled={loadingMore}
-                className="rig-btn-ghost"
-              >
-                {loadingMore ? (
-                  <>
-                    <div style={{
-                      width: '12px', height: '12px', borderRadius: '50%',
-                      border: '1.5px solid var(--rig-rule)',
-                      borderTopColor: 'var(--rig-gold)',
-                      animation: 'spin 0.8s linear infinite',
-                    }} />
-                    Loading
-                  </>
-                ) : 'File more clippings'}
-              </button>
+
+/* ───────────────────────────────────────────────────────────────
+   CompareOverlay — side-by-side claim alignment via /api/compare
+   ─────────────────────────────────────────────────────────────── */
+
+interface CompareArticle {
+  article_id: string
+  title: string
+  body: string
+  source_name: string
+  source_domain: string
+}
+
+interface CompareDispute {
+  a_says: string
+  b_says: string
+  topic: string
+}
+
+interface CompareAnalysis {
+  synthesis: string
+  agreements: string[]
+  partials: string[]
+  disputes: CompareDispute[]
+}
+
+function CompareOverlay({
+  articleIds,
+  onClose,
+  getToken,
+}: {
+  articleIds: string[]
+  onClose: () => void
+  getToken: () => Promise<string | null>
+}) {
+  const [data, setData] = useState<{
+    articles: CompareArticle[]
+    analysis: CompareAnalysis
+  } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const token = await getToken()
+      if (!token) return
+      try {
+        const res = await fetch(`${API_BASE}/api/coverage/compare`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ article_ids: articleIds }),
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const json = await res.json() as {
+          articles: CompareArticle[]
+          analysis: CompareAnalysis
+        }
+        if (!cancelled) setData(json)
+      } catch (err: unknown) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [articleIds, getToken])
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0, 0, 0, 0.85)',
+        backdropFilter: 'blur(8px)',
+        zIndex: 1100,
+        animation: 'onyx-fade-up 0.3s ease both',
+        overflowY: 'auto',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          maxWidth: '1280px',
+          margin: '32px auto',
+          padding: '40px',
+          background: 'var(--onyx-bg)',
+          border: '1px solid var(--onyx-cyan)',
+          minHeight: 'calc(100vh - 64px)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="onyx-mono"
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--onyx-dim)',
+            fontSize: '10px',
+            letterSpacing: '0.32em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            padding: 0,
+            marginBottom: '32px',
+          }}
+        >
+          ← Close
+        </button>
+
+        <h2
+          style={{
+            fontFamily: 'var(--onyx-display)',
+            fontWeight: 500,
+            fontSize: '28px',
+            color: 'var(--onyx-bone)',
+            margin: 0,
+            marginBottom: '24px',
+          }}
+        >
+          Compare ({articleIds.length})
+        </h2>
+
+        {loading && <div className="onyx-mono" style={{ color: 'var(--onyx-dim)' }}>Aligning claims…</div>}
+
+        {error && <div style={{ color: 'var(--onyx-red)' }}>{error}</div>}
+
+        {data && (
+          <>
+            <p
+              style={{
+                fontFamily: 'var(--onyx-italic)',
+                fontStyle: 'italic',
+                fontSize: '18px',
+                lineHeight: 1.6,
+                color: 'var(--onyx-bone)',
+                marginBottom: '40px',
+                padding: '20px 24px',
+                background: 'rgba(0, 194, 255, 0.04)',
+                borderLeft: '2px solid var(--onyx-cyan)',
+              }}
+            >
+              {data.analysis.synthesis}
+            </p>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${data.articles.length}, 1fr)`,
+                gap: '32px',
+                marginBottom: '40px',
+              }}
+            >
+              {data.articles.map((a, i) => (
+                <article key={a.article_id}>
+                  <div
+                    className="onyx-mono"
+                    style={{
+                      fontSize: '10px',
+                      letterSpacing: '0.42em',
+                      textTransform: 'uppercase',
+                      color: 'var(--onyx-cyan)',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    {String.fromCharCode(65 + i)} · {a.source_name}
+                  </div>
+                  <h3
+                    style={{
+                      fontFamily: 'var(--onyx-italic)',
+                      fontStyle: 'normal',
+                      fontSize: '20px',
+                      lineHeight: 1.25,
+                      color: 'var(--onyx-bone)',
+                      margin: '0 0 12px',
+                    }}
+                  >
+                    {a.title}
+                  </h3>
+                  <p
+                    style={{
+                      fontFamily: 'var(--onyx-italic)',
+                      fontStyle: 'italic',
+                      fontSize: '14px',
+                      lineHeight: 1.55,
+                      color: 'var(--onyx-bone-2)',
+                    }}
+                  >
+                    {a.body.slice(0, 500)}
+                    {a.body.length > 500 ? '…' : ''}
+                  </p>
+                </article>
+              ))}
             </div>
-          )}
 
-          {serverSearchActive && (
-            <div style={{ marginTop: '40px', textAlign: 'center' }}>
-              <span className="rig-byline">
-                Want deeper analysis?{' '}
-                <button
-                  onClick={() => router.push('/analyst')}
-                  className="rig-link"
+            <ClaimsBlock title="Both agree" tone="cyan" items={data.analysis.agreements} />
+            <ClaimsBlock title="Only one mentions" tone="dim" items={data.analysis.partials} />
+            {data.analysis.disputes.length > 0 && (
+              <section style={{ marginTop: '32px' }}>
+                <div
+                  className="onyx-mono"
                   style={{
-                    background: 'none',
-                    padding: 0,
-                    fontFamily: 'inherit',
-                    fontSize: 'inherit',
-                    letterSpacing: 'inherit',
-                    cursor: 'pointer',
+                    fontSize: '10px',
+                    letterSpacing: '0.42em',
+                    textTransform: 'uppercase',
+                    color: 'var(--onyx-red)',
+                    marginBottom: '16px',
                   }}
                 >
-                  Ask the Analyst →
-                </button>
-              </span>
-            </div>
-          )}
-        </div>
-      </main>
-
-      {selectedArticle && (
-        <ArticleDialog
-          article={selectedArticle}
-          summary={summariesById[selectedArticle.article_id] ?? null}
-          summaryLoading={summaryLoading}
-          summaryError={summaryError}
-          onClose={handleCloseDialog}
-          onGenerateSummary={handleGenerateSummary}
-        />
-      )}
+                  They disagree
+                </div>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {data.analysis.disputes.map((d, i) => (
+                    <li key={i} style={{ borderLeft: '2px solid var(--onyx-red)', paddingLeft: '16px' }}>
+                      <div
+                        className="onyx-mono"
+                        style={{
+                          fontSize: '9px',
+                          letterSpacing: '0.32em',
+                          textTransform: 'uppercase',
+                          color: 'var(--onyx-dim)',
+                          marginBottom: '6px',
+                        }}
+                      >
+                        {d.topic}
+                      </div>
+                      <div style={{ fontFamily: 'var(--onyx-italic)', fontStyle: 'italic', fontSize: '14px', color: 'var(--onyx-bone-2)', marginBottom: '4px' }}>
+                        <strong style={{ fontStyle: 'normal' }}>A:</strong> {d.a_says}
+                      </div>
+                      <div style={{ fontFamily: 'var(--onyx-italic)', fontStyle: 'italic', fontSize: '14px', color: 'var(--onyx-bone-2)' }}>
+                        <strong style={{ fontStyle: 'normal' }}>B:</strong> {d.b_says}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </>
+        )}
+      </div>
     </div>
+  )
+}
+
+
+function ClaimsBlock({
+  title,
+  tone,
+  items,
+}: {
+  title: string
+  tone: 'cyan' | 'dim'
+  items: string[]
+}) {
+  if (items.length === 0) return null
+  return (
+    <section style={{ marginTop: '32px' }}>
+      <div
+        className="onyx-mono"
+        style={{
+          fontSize: '10px',
+          letterSpacing: '0.42em',
+          textTransform: 'uppercase',
+          color: tone === 'cyan' ? 'var(--onyx-cyan)' : 'var(--onyx-dim)',
+          marginBottom: '12px',
+        }}
+      >
+        {title}
+      </div>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {items.map((it, i) => (
+          <li
+            key={i}
+            style={{
+              fontFamily: 'var(--onyx-italic)',
+              fontStyle: 'italic',
+              fontSize: '15px',
+              lineHeight: 1.5,
+              color: 'var(--onyx-bone-2)',
+              paddingLeft: '14px',
+              position: 'relative',
+            }}
+          >
+            <span
+              style={{
+                position: 'absolute',
+                left: 0,
+                color: tone === 'cyan' ? 'var(--onyx-cyan)' : 'var(--onyx-dim)',
+              }}
+            >
+              ·
+            </span>
+            {it}
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

@@ -71,6 +71,15 @@ app = Celery(
         "backend.tasks.collectors.acled_sink_task",
         # Daily LLM-generated summaries for the /coverage hub panels
         "backend.tasks.coverage_summary_task",
+        # /coverage/articles rebuild — RAG-integrated analyst surface tasks
+        "backend.tasks.coverage",
+        "backend.tasks.coverage.user_cards_task",
+        "backend.tasks.coverage.breaking_task",
+        "backend.tasks.coverage.contradictions_task",
+        "backend.tasks.coverage.top_stories_task",
+        "backend.tasks.coverage.coverage_gaps_task",
+        "backend.tasks.coverage.notifications_task",
+        "backend.tasks.coverage.claims_quotes_task",
     ],
 )
 
@@ -117,6 +126,14 @@ app.config_from_object(
             "tasks.aggregate_social_sentiment_daily": {"queue": "nlp"},
             "tasks.collect_newspapers": {"queue": "documents"},
             "tasks.refresh_coverage_summaries": {"queue": "nlp"},
+            # /coverage/articles rebuild
+            "tasks.refresh_user_cards": {"queue": "nlp"},
+            "tasks.detect_breaking_events": {"queue": "nlp"},
+            "tasks.refresh_contradictions": {"queue": "nlp"},
+            "tasks.refresh_top_stories": {"queue": "nlp"},
+            "tasks.refresh_coverage_gaps": {"queue": "nlp"},
+            "tasks.evaluate_notification_rules": {"queue": "nlp"},
+            "tasks.extract_claims_quotes_for_article": {"queue": "nlp"},
             # CM Page tasks. Heavy LLM work routes to `nlp`; cheap
             # aggregation/refresh work routes to `social` to avoid
             # competing with article NLP for the nlp pool.
@@ -342,6 +359,39 @@ app.config_from_object(
                 # window. See backend/tasks/coverage_summary_task.py.
                 "task": "tasks.refresh_coverage_summaries",
                 "schedule": crontab(hour=4, minute=15),
+                "options": {"queue": "nlp"},
+            },
+            # ── /coverage/articles rebuild — analytics tasks ──
+            # All gated by per-task FEATURE_* env flags so disabling
+            # is a config flip, no beat reload needed.
+            "refresh-user-cards-daily-0130-utc": {
+                "task": "tasks.refresh_user_cards",
+                "schedule": crontab(hour=1, minute=30),
+                "options": {"queue": "nlp"},
+            },
+            "detect-breaking-events-every-15-min": {
+                "task": "tasks.detect_breaking_events",
+                "schedule": timedelta(minutes=15),
+                "options": {"queue": "nlp"},
+            },
+            "refresh-contradictions-daily-0430-utc": {
+                "task": "tasks.refresh_contradictions",
+                "schedule": crontab(hour=4, minute=30),
+                "options": {"queue": "nlp"},
+            },
+            "refresh-top-stories-every-6h": {
+                "task": "tasks.refresh_top_stories",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "nlp"},
+            },
+            "refresh-coverage-gaps-daily-0500-utc": {
+                "task": "tasks.refresh_coverage_gaps",
+                "schedule": crontab(hour=5, minute=0),
+                "options": {"queue": "nlp"},
+            },
+            "evaluate-notification-rules-every-15-min": {
+                "task": "tasks.evaluate_notification_rules",
+                "schedule": timedelta(minutes=15),
                 "options": {"queue": "nlp"},
             },
             # ── CM Page political-intelligence schedule ──

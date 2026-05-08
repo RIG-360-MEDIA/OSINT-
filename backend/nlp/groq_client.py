@@ -346,6 +346,107 @@ async def call_groq(
     raise GroqCallFailed("call_groq exhausted all attempts without a result")
 
 
+# ── Streaming variant ─────────────────────────────────────────────────────────
+
+
+async def call_groq_stream(  # type: ignore[no-untyped-def]
+    system: str,
+    user: str,
+    task_type: str = "rag_response",
+    model: str | None = None,
+):
+    """
+    Streaming version of call_groq. Yields content chunks as they arrive
+    from Groq. Caller is expected to forward chunks to an SSE response.
+
+    Yields:
+        str chunks. Empty string at end-of-stream is NOT emitted; caller
+        decides how to signal completion (typically `event: done`).
+
+    Raises:
+        GroqQuotaExhausted: All keys are rate limited.
+        GroqCallFailed:     Non-quota API error or unexpected failure.
+
+    Notes:
+        - Uses the same key-rotation + cooldown logic as call_groq.
+        - Token budget and temperature are inferred from task_type via
+          TOKEN_LIMITS / TEMPERATURES, identical to call_groq.
+        - Does NOT support json_response (no use case for streaming JSON yet).
+    """
+    max_tokens = TOKEN_LIMITS.get(task_type, 1000)
+
+    if model is None:
+        model = FAST_MODEL if task_type in _FAST_TASK_TYPES else QUALITY_MODEL
+
+    temperature = TEMPERATURES.get(task_type, TEMPERATURES["generation"])
+
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user},
+    ]
+
+    attempts = min(len(groq_manager.keys), 3)
+
+    last_exc: Exception | None = None
+
+    for attempt in range(attempts):
+        key_idx, client = await groq_manager.get_key()
+
+        try:
+            stream = await client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                # Groq SDK chunks have .choices[0].delta.content
+                # which is None on role-frame chunks; skip those.
+                if not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta
+                content = getattr(delta, "content", None)
+                if content:
+                    yield content
+            return  # success — exit the retry loop
+
+        except groq_sdk.RateLimitError as exc:
+            err_text = str(exc).lower()
+            if (
+                "tokens per day" in err_text
+                or "tpd" in err_text
+                or "requests per day" in err_text
+                or "rpd" in err_text
+            ):
+                await groq_manager.mark_exhausted_for(key_idx, 4 * 3600)
+            else:
+                await groq_manager.mark_exhausted(key_idx)
+            last_exc = exc
+            if attempt == attempts - 1:
+                raise GroqQuotaExhausted(
+                    "Retry attempts exhausted due to rate limiting."
+                ) from exc
+            continue
+
+        except groq_sdk.APIConnectionError as exc:
+            last_exc = exc
+            if attempt < attempts - 1:
+                continue
+            raise GroqCallFailed("Groq connection error on all attempts") from exc
+
+        except groq_sdk.APIError as exc:
+            raise GroqCallFailed(f"Groq API error: {exc}") from exc
+
+        except Exception as exc:
+            raise GroqCallFailed(f"Unexpected error streaming from Groq: {exc}") from exc
+
+    raise GroqCallFailed(
+        f"call_groq_stream exhausted all attempts: {last_exc}"
+    )
+
+
 # ── Convenience wrappers ───────────────────────────────────────────────────────
 
 async def classify(system: str, user: str) -> str:

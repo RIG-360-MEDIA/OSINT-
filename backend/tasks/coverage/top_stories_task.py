@@ -37,15 +37,21 @@ logger = logging.getLogger(__name__)
 
 
 _RATIONALE_SYSTEM = (
-    "You write a single 2-3 sentence editorial paragraph called "
-    "'why this matters' for an intelligence dashboard. Plain prose, "
-    "no headings, no bullets. Open with the implication, not a "
-    "summary of the headline. Maximum 60 words. The dashboard belongs "
-    "to a specific analyst — when the user-context block is provided, "
-    "tie the implication to their tracked interests (entities, geo, "
-    "topics) WITHOUT addressing them in second person and WITHOUT "
-    "mentioning that you were given context. Just write as if you "
-    "knew the analyst's beat."
+    "You produce STRICT JSON for an intelligence dashboard. Return: "
+    "{\"display_title\": string, \"why_matters\": string}. No prose "
+    "outside the JSON, no fences.\n"
+    "- display_title: a short English headline (max 18 words). If the "
+    "article's headline is already in natural English, return it "
+    "lightly cleaned. If it is in any other language or script "
+    "(Telugu, Tamil, Bengali, Hindi, etc.), translate it to natural "
+    "English capturing the same news event. No quotes, no source "
+    "names, no '|' separators, no fluff.\n"
+    "- why_matters: a 2-3 sentence editorial paragraph (max 60 words). "
+    "Plain prose. Open with the implication, not a summary. The "
+    "dashboard belongs to a specific analyst — when the user-context "
+    "block is provided, tie the implication to their tracked interests "
+    "(entities, geo, topics) WITHOUT addressing them in second person "
+    "and WITHOUT mentioning that you were given context."
 )
 
 
@@ -94,12 +100,15 @@ async def _select_global_top_5() -> list[dict[str, Any]]:
 async def _generate_rationale(
     article: dict[str, Any],
     user_context: str | None = None,
-) -> str:
+) -> dict[str, str]:
     """
-    Groq call producing the 'why this matters' line for one story. If
-    user_context is provided (a 1-3 line description of the analyst's
-    beat — tracked entities, primary geo, topic mix), Groq is told to
-    tie the implication to those interests.
+    Groq call producing both an English display title AND the
+    'why this matters' paragraph for one story. If user_context is
+    provided (a 1-3 line description of the analyst's beat), Groq
+    is told to tie the implication to those interests.
+
+    Returns {"display_title": str, "why_matters": str}.
+    Both keys always present; values may be "" on failure.
     """
     user_prompt_parts = [
         f"Headline: {article['title']}",
@@ -109,7 +118,7 @@ async def _generate_rationale(
     if user_context:
         user_prompt_parts.append("\nAnalyst context (do NOT quote back):")
         user_prompt_parts.append(user_context)
-    user_prompt_parts.append("\nWrite the 'why this matters' paragraph.")
+    user_prompt_parts.append("\nReturn the JSON object.")
     user_prompt = "\n".join(user_prompt_parts)
     try:
         out = await call_groq(
@@ -117,11 +126,23 @@ async def _generate_rationale(
             user=user_prompt,
             task_type="rag_response",
             model=QUALITY_MODEL,
+            json_response=True,
         )
+        parsed = json.loads(out)
+        if not isinstance(parsed, dict):
+            return {"display_title": "", "why_matters": ""}
+        return {
+            "display_title": str(parsed.get("display_title", ""))
+                .strip().replace('"', "")[:240],
+            "why_matters": str(parsed.get("why_matters", ""))
+                .strip()[:600],
+        }
     except (GroqQuotaExhausted, GroqCallFailed) as exc:
         logger.warning("top_stories rationale failed: %s", exc)
-        return ""
-    return out.strip()[:600]
+        return {"display_title": "", "why_matters": ""}
+    except json.JSONDecodeError:
+        logger.warning("top_stories rationale returned non-JSON")
+        return {"display_title": "", "why_matters": ""}
 
 
 async def _select_user_top_5(user_id: str) -> list[dict[str, Any]]:
@@ -139,7 +160,11 @@ async def _select_user_top_5(user_id: str) -> list[dict[str, Any]]:
                 JOIN sources s ON s.id = a.source_id
                 WHERE uar.user_id = :uid
                   AND uar.relevance_tier IN (1, 2)
-                  AND uar.scored_at > NOW() - interval '24 hours'
+                  -- Freshness anchored on PUBLICATION time, not when we
+                  -- last re-scored the article. A 3-day-old article that
+                  -- got re-scored yesterday is still 3 days old news and
+                  -- should not appear in Top Stories Today.
+                  AND a.published_at > NOW() - interval '24 hours'
                   AND a.is_duplicate IS NOT TRUE
                 ORDER BY uar.score_final DESC
                 LIMIT 5
@@ -286,8 +311,12 @@ async def _run_for_user(user_id: str) -> int:
     user_ctx = await _build_user_context(user_id)
     enriched: list[dict[str, Any]] = []
     for story in stories:
-        rationale = await _generate_rationale(story, user_context=user_ctx)
-        enriched.append({**story, "why_matters": rationale})
+        result = await _generate_rationale(story, user_context=user_ctx)
+        enriched.append({
+            **story,
+            "display_title": result["display_title"] or story["title"],
+            "why_matters": result["why_matters"],
+        })
 
     async with get_db() as db:
         await db.execute(
@@ -335,8 +364,12 @@ async def _run() -> dict[str, Any]:
     if global_stories:
         enriched_global: list[dict[str, Any]] = []
         for story in global_stories:
-            r = await _generate_rationale(story, user_context=None)
-            enriched_global.append({**story, "why_matters": r})
+            result = await _generate_rationale(story, user_context=None)
+            enriched_global.append({
+                **story,
+                "display_title": result["display_title"] or story["title"],
+                "why_matters": result["why_matters"],
+            })
         async with get_db() as db:
             await db.execute(
                 text(

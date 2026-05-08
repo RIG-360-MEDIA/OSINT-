@@ -347,15 +347,12 @@ def score_cluster(
         (1.0 - _TOPIC_MULTIPLIER_FLOOR) * topic_score
     )
     # Recency multiplier — for the BREAKING band, "newer" wins over "more
-    # relevant but older". A 5-minute-old event should feel more "breaking"
-    # than a 50-minute-old event even if user-affinity is identical.
-    # Linear decay from 1.0 at 0 min → 0.5 at 60 min, never below 0.5 (so
-    # an exceptionally relevant older cluster can still beat a borderline
-    # fresh one). cluster_age_minutes capped at 60 because the endpoint
-    # already filters >60 min out — anything older is effectively unused.
+    # relevant but older". Linear decay from 1.0 at 0 min → 0.4 at 180 min
+    # (the endpoint's freshness window). Floor at 0.4 so a far-more-relevant
+    # older cluster can still beat a borderline fresh one — but barely.
     recency_multiplier = max(
-        0.5,
-        1.0 - 0.5 * (min(cluster_age_minutes, 60.0) / 60.0),
+        0.4,
+        1.0 - 0.6 * (min(cluster_age_minutes, 180.0) / 180.0),
     )
     total = base * topic_multiplier * recency_multiplier
 

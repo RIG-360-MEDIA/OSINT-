@@ -1271,8 +1271,9 @@ async def breaking(
                       -- topical fit. With it, a Telangana article
                       -- always beats a Maharashtra article for a
                       -- Telangana-focused admin.
-                      (CASE WHEN :user_geo IS NOT NULL
-                            AND LOWER(a.geo_primary) = LOWER(:user_geo)
+                      (CASE WHEN CAST(:user_geo AS text) IS NOT NULL
+                            AND LOWER(a.geo_primary)
+                                = LOWER(CAST(:user_geo AS text))
                             THEN 0 ELSE 1 END) ASC,
                       uar.score_final DESC,
                       a.published_at DESC

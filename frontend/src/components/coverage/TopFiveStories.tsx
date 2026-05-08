@@ -149,7 +149,6 @@ export function TopFiveStories({ onRead, onAddToCard, onCompareToggle, selectedF
                     color: 'var(--onyx-bone)',
                     margin: 0,
                     cursor: 'pointer',
-                    letterSpacing: '-0.01em',
                   }}
                   onClick={() => onRead(story.article_id)}
                 >

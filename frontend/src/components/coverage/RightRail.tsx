@@ -215,21 +215,49 @@ function QuotesPanel({ onArticleClick }: { onArticleClick: (id: string) => void 
             borderBottom: '1px solid var(--onyx-rule-dim)',
           }}
         >
-          <div
-            style={{
-              fontFamily: 'var(--onyx-italic)',
-              fontStyle: 'italic',
-              fontSize: '14px',
-              lineHeight: 1.5,
-              color: 'var(--onyx-bone-2)',
-              marginBottom: '8px',
-            }}
-          >
-            {(() => {
-              const text = q.quote_text_en || q.quote_text
-              return `"${text.slice(0, 180)}${text.length > 180 ? '…' : ''}"`
-            })()}
-          </div>
+          {(() => {
+            // If the source-language text differs from the English
+            // translation, show ORIGINAL first (italic, full opacity) then
+            // English underneath (slightly smaller, dimmer). When the
+            // article is already English, quote_text_en will match
+            // quote_text — show only one line.
+            const original = q.quote_text
+            const english = q.quote_text_en
+            const showBoth =
+              !!english &&
+              english.trim().length > 0 &&
+              english.trim() !== original.trim()
+            const truncate = (s: string) =>
+              s.length > 180 ? `${s.slice(0, 180)}…` : s
+            return (
+              <>
+                <div
+                  style={{
+                    fontFamily: 'var(--onyx-italic)',
+                    fontStyle: 'italic',
+                    fontSize: '14px',
+                    lineHeight: 1.5,
+                    color: 'var(--onyx-bone-2)',
+                    marginBottom: showBoth ? '6px' : '8px',
+                  }}
+                >
+                  {`"${truncate(original)}"`}
+                </div>
+                {showBoth && (
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      lineHeight: 1.5,
+                      color: 'var(--onyx-dim)',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    {`"${truncate(english as string)}"`}
+                  </div>
+                )}
+              </>
+            )
+          })()}
           <div
             className="onyx-mono"
             style={{
@@ -239,7 +267,17 @@ function QuotesPanel({ onArticleClick }: { onArticleClick: (id: string) => void 
               color: 'var(--onyx-dim)',
             }}
           >
-            {(q.speaker_name_en || q.speaker_name)} · {q.source_name}
+            {(() => {
+              const sp = q.speaker_name
+              const spEn = q.speaker_name_en
+              const showBothSpeaker =
+                !!spEn &&
+                spEn.trim().length > 0 &&
+                spEn.trim() !== sp.trim()
+              return showBothSpeaker
+                ? `${sp} (${spEn}) · ${q.source_name}`
+                : `${sp} · ${q.source_name}`
+            })()}
           </div>
         </button>
       ))}

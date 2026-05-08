@@ -12,6 +12,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import type { CoverageSlug } from './thumbnails'
 
 interface TickerItem {
@@ -51,8 +52,12 @@ export function LiveTicker() {
 
     const load = async () => {
       try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+        if (!token) return
         const res = await fetch(`${API_BASE}/api/coverage/ticker`, {
-          credentials: 'include',
+          headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
         })
         if (!res.ok) return

@@ -1255,7 +1255,7 @@ async def breaking(
                                     a.lead_text_original) AS lead,
                            a.published_at, a.thumbnail_url,
                            s.name AS source_name, s.domain AS source_domain,
-                           uar.score_final
+                           uar.score_final, a.geo_primary
                     FROM user_article_relevance uar
                     JOIN articles a ON a.id = uar.article_id
                     JOIN sources s ON s.id = a.source_id
@@ -1263,12 +1263,23 @@ async def breaking(
                       AND uar.relevance_tier IN (1, 2)
                       AND a.published_at > NOW() - INTERVAL '60 minutes'
                       AND a.is_duplicate IS NOT TRUE
-                    ORDER BY uar.score_final DESC,
-                             a.published_at DESC
+                    ORDER BY
+                      -- Tie-break: prefer articles whose geo matches
+                      -- the user's primary geo. Without this, all
+                      -- tier-2 candidates score identically (0.3) and
+                      -- the most-recently-published wins regardless of
+                      -- topical fit. With it, a Telangana article
+                      -- always beats a Maharashtra article for a
+                      -- Telangana-focused admin.
+                      (CASE WHEN :user_geo IS NOT NULL
+                            AND LOWER(a.geo_primary) = LOWER(:user_geo)
+                            THEN 0 ELSE 1 END) ASC,
+                      uar.score_final DESC,
+                      a.published_at DESC
                     LIMIT 1
                     """
                 ),
-                {"uid": user_id},
+                {"uid": user_id, "user_geo": profile.geo_primary},
             )
             dev_row = dev.fetchone()
         if dev_row:

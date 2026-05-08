@@ -567,19 +567,58 @@ async def top_stories(
     """
     Top-5 stories scoped to THIS user.
 
-    Always live-computed from user_article_relevance for accurate
-    personalisation. Then enriched with cached chain-of-thought
-    'why_matters' rationale when the cache row covers the same
-    article_id. Cache hit is best-effort — we never fall back to
-    global top-5 because that defeats the whole point.
+    Resolution order:
+      1. Per-user cache row from today (`top_stories_daily` with this
+         user_id). Contains the same 5 articles the refresh task
+         selected for them, each with a fully-personalised Groq
+         'why_matters' paragraph. Refresh runs every 6h.
+      2. Live computation against `user_article_relevance` if the
+         cache row doesn't exist yet (brand-new user, or refresh
+         hasn't run). Each row falls back to `relevance_explanation`,
+         which is short but user-specific. Eligibility for the cache
+         comes on the next refresh cycle.
+
+    We do NOT fall back to the global cache row — that defeats
+    personalisation. Live computation is the safety net.
     """
     user_id = user["id"]
 
     async with get_db() as db:
+        # Try per-user cache first.
+        cache_result = await db.execute(
+            text(
+                """
+                SELECT stories, generated_at
+                FROM top_stories_daily
+                WHERE date = CURRENT_DATE
+                  AND user_id = CAST(:uid AS uuid)
+                LIMIT 1
+                """
+            ),
+            {"uid": user_id},
+        )
+        cache_row = cache_result.fetchone()
+        if cache_row:
+            stories_blob = cache_row.stories
+            if isinstance(stories_blob, str):
+                try:
+                    stories_blob = json.loads(stories_blob)
+                except json.JSONDecodeError:
+                    stories_blob = None
+            if isinstance(stories_blob, list) and stories_blob:
+                return {
+                    "stories": stories_blob,
+                    "from_cache": True,
+                    "personalised": True,
+                    "generated_at": (
+                        cache_row.generated_at.isoformat()
+                        if cache_row.generated_at else None
+                    ),
+                }
+
+        # Live fallback when no per-user cache row exists yet.
         # Lead + Notable only (tiers 1, 2). Tier 3 is a loose catch-all
-        # that surfaces noise — e.g. global news scored against the user
-        # via weak entity matches. Top-5 should be the user's strongest
-        # signal of the day.
+        # that surfaces noise.
         live = await db.execute(
             text(
                 """
@@ -603,33 +642,6 @@ async def top_stories(
         )
         rows = live.fetchall()
 
-        # Best-effort enrichment from today's cache (any article_id match).
-        rationales: dict[str, str] = {}
-        if rows:
-            cache_result = await db.execute(
-                text(
-                    """
-                    SELECT stories
-                    FROM top_stories_daily
-                    WHERE date = CURRENT_DATE
-                      AND (user_id = :uid OR user_id IS NULL)
-                    """
-                ),
-                {"uid": user_id},
-            )
-            for cache_row in cache_result.fetchall():
-                stories_blob = cache_row.stories
-                if isinstance(stories_blob, str):
-                    try:
-                        stories_blob = json.loads(stories_blob)
-                    except json.JSONDecodeError:
-                        continue
-                for s in stories_blob or []:
-                    aid = s.get("article_id")
-                    why = s.get("why_matters")
-                    if aid and why and aid not in rationales:
-                        rationales[aid] = why
-
     return {
         "stories": [
             {
@@ -640,9 +652,7 @@ async def top_stories(
                 "source_domain": r.source_domain,
                 "published_at": r.published_at.isoformat() if r.published_at else None,
                 "thumbnail_url": r.thumbnail_url,
-                # Prefer cached LLM rationale; fall back to relevance_explanation
-                # which is short but at least user-specific.
-                "why_matters": rationales.get(r.article_id) or r.relevance_explanation,
+                "why_matters": r.relevance_explanation,
                 "score": float(r.score_final),
             }
             for r in rows

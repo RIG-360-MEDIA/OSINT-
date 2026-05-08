@@ -63,12 +63,15 @@ async def _fetch_articles_for_definition(
     params: dict[str, Any] = {"hrs": _WINDOW_HOURS, "limit": _SAMPLE_SIZE}
 
     if entity_refs:
-        # Match if any of the entity IDs appear in entities_extracted JSONB.
+        # Match by entity NAME (lowercased) since articles.entities_extracted
+        # is keyed on 'name' not 'entity_id'. We accept either UUID strings
+        # (legacy) or plain names in entity_refs — UUIDs simply won't match
+        # but plain-text names will. Frontend should now submit names.
         clauses.append(
             "EXISTS (SELECT 1 FROM jsonb_array_elements(a.entities_extracted) elt "
-            "WHERE elt->>'entity_id' = ANY(:ents))"
+            "WHERE LOWER(elt->>'name') = ANY(:ents))"
         )
-        params["ents"] = entity_refs
+        params["ents"] = [e.lower() for e in entity_refs]
 
     if topic_filters:
         clauses.append("a.topic_category = ANY(:topics)")

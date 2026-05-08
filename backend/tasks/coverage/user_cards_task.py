@@ -345,8 +345,8 @@ async def _retry_unrefreshed_run() -> dict[str, Any]:
                     uc.entity_refs, uc.topic_filters, uc.geo_filter
                 FROM user_cards uc
                 LEFT JOIN user_card_summaries ucs
-                  ON ucs.card_id = uc.id
-                WHERE ucs.card_id IS NULL  -- no summary row yet
+                  ON ucs.definition_hash = uc.definition_hash
+                WHERE ucs.definition_hash IS NULL  -- no summary row yet
                   AND uc.created_at > NOW() - make_interval(
                     hours => :max_age_h
                   )

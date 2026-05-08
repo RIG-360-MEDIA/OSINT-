@@ -36,13 +36,62 @@ logger = logging.getLogger(__name__)
 _WINDOW_HOURS = 2
 _MIN_CLUSTER_SIZE = 3
 _MIN_DISTINCT_SOURCES = 2
-# Loosened from 0.18 → 0.32. At 0.18 only near-duplicate republished
-# wires clustered (e.g. an AP wire on a German bank standoff fed by
-# 5 syndicated outlets). Real "different reporters on the same event"
-# vary on phrasing and language enough to require ~0.30. Tested on a
-# 24h window of 6106 articles — produces dozens of natural clusters
-# vs the 2 we got before.
-_DBSCAN_EPS = 0.32
+# DBSCAN eps had been loosened to 0.32 to surface MORE clusters. That was
+# too loose: articles co-mentioning a major place name ("Telangana") got
+# pulled into the same cluster despite being about completely different
+# events. Tightened to 0.22 — strict enough that semantically-unrelated
+# articles can't co-cluster, loose enough that translations of the same
+# wire across Telugu/English/Bengali still group. Combined with the
+# downstream Groq event-validation gate (see _classify_cluster), junk
+# clusters are now caught at two layers.
+_DBSCAN_EPS = 0.22
+
+# Event types that exist in the wild but are NOT what users want from a
+# BREAKING surface. We classify but reject these.
+_TRIVIAL_EVENT_TYPES: frozenset[str] = frozenset({
+    "sports_result",
+    "entertainment_release",
+    "celebrity_news",
+    "routine_update",
+})
+
+# Severity levels considered worth surfacing. "low" is filtered out.
+_SURFACEABLE_SEVERITIES: frozenset[str] = frozenset({
+    "medium", "high", "breaking",
+})
+
+_CLASSIFY_SYSTEM = (
+    "You validate a candidate breaking-news cluster — a set of articles "
+    "an algorithm grouped together based on text similarity. Your job is "
+    "twofold: (1) decide whether these articles are actually reporting "
+    "ONE shared event, and (2) if yes, classify what kind and how serious. "
+    "Return STRICT JSON, no prose, no fences.\n"
+    "{\n"
+    '  "is_real_event": true|false,\n'
+    '  "shared_subject": "what the cluster is jointly about, or null",\n'
+    '  "event_type": one of [policy_announcement, official_statement, '
+    "election_event, crime_incident, disaster_emergency, "
+    "protest_demonstration, legal_proceeding, market_event, "
+    "infrastructure_update, health_alert, weather_alert, "
+    "sports_result, entertainment_release, celebrity_news, "
+    "routine_update, other],\n"
+    '  "severity": "low" | "medium" | "high" | "breaking",\n'
+    '  "summary": "one-line plain summary, max 14 words"\n'
+    "}\n"
+    "Hard rules:\n"
+    "- is_real_event MUST be false if the headlines describe UNRELATED "
+    "topics that merely share a place name or entity. Example: a flood-"
+    "relief announcement, an election rally, and a cricket toss all "
+    "mentioning the same state — that is NOT one event.\n"
+    "- severity=low for: routine sports results, celebrity gossip, "
+    "promotional/scheduled releases, daily-column content.\n"
+    "- severity=medium for: noteworthy political statements, local "
+    "crime, infrastructure milestones, market moves.\n"
+    "- severity=high for: major policy, significant crime, large "
+    "incidents, court rulings of consequence.\n"
+    "- severity=breaking for: emergencies, mass-casualty events, urgent "
+    "national/international announcements."
+)
 
 
 async def _fetch_recent_articles() -> list[dict[str, Any]]:
@@ -111,22 +160,37 @@ def _cluster(articles: list[dict[str, Any]]) -> dict[int, list[int]]:
     return clusters
 
 
-async def _generate_headline(article_titles: list[str]) -> str:
-    sample = "\n".join(f"- {t}" for t in article_titles[:8])
+async def _classify_cluster(article_titles: list[str]) -> dict[str, Any]:
+    """
+    One Groq call per cluster — combines event validation + classification
+    + headline generation. Returns parsed JSON or {} on failure.
+
+    On Groq failure we return {} (caller treats as "not validated yet" and
+    skips persisting the cluster). This is the right behaviour: rather
+    than ship an unvalidated cluster as BREAKING, we'd rather wait for
+    the next 15-min cycle when Groq is healthy.
+    """
+    sample = "\n".join(
+        f"{i + 1}. {t}" for i, t in enumerate(article_titles[:10])
+    )
     try:
-        out = await call_groq(
-            system=(
-                "You write a single short news-wire headline (max 12 words) "
-                "summarizing what is unfolding. No quotes, no fluff. Plain text."
-            ),
-            user=f"Articles in this burst:\n{sample}\n\nHeadline:",
-            task_type="classification",
+        raw = await call_groq(
+            system=_CLASSIFY_SYSTEM,
+            user=f"Headlines:\n{sample}\n\nReturn JSON.",
+            task_type="rag_response",
             model=FAST_MODEL,
+            json_response=True,
         )
-    except (GroqQuotaExhausted, GroqCallFailed):
-        # Fallback: use the first article title
-        return article_titles[0][:120] if article_titles else "Breaking development"
-    return out.strip().replace('"', "")[:200]
+        parsed = json.loads(raw)
+        if not isinstance(parsed, dict):
+            return {}
+        return parsed
+    except (GroqQuotaExhausted, GroqCallFailed) as exc:
+        logger.warning("breaking classifier Groq failed: %s", exc)
+        return {}
+    except json.JSONDecodeError:
+        logger.warning("breaking classifier returned non-JSON")
+        return {}
 
 
 async def _store_cluster(
@@ -141,7 +205,50 @@ async def _store_cluster(
     if len(distinct_sources) < _MIN_DISTINCT_SOURCES:
         return  # single-source burst — likely not real news
 
-    headline = await _generate_headline(titles)
+    # ── Stage 1: event validation + classification (Groq) ─────────────
+    # One call decides four things at once: real-event flag, event_type,
+    # severity, and the headline summary. On Groq failure we skip the
+    # cluster entirely rather than persist an unvalidated row.
+    classification = await _classify_cluster(titles)
+    if not classification:
+        logger.info(
+            "breaking cluster skipped (classifier unavailable); "
+            "%d articles, %d sources", len(members), len(distinct_sources)
+        )
+        return
+
+    is_real_event = bool(classification.get("is_real_event"))
+    if not is_real_event:
+        logger.info(
+            "breaking cluster rejected (not one shared event): titles=%s",
+            titles[:3],
+        )
+        return
+
+    event_type = str(classification.get("event_type") or "other").strip().lower()
+    severity = str(classification.get("severity") or "low").strip().lower()
+
+    if event_type in _TRIVIAL_EVENT_TYPES:
+        logger.info(
+            "breaking cluster rejected (trivial event_type=%s): %s",
+            event_type, titles[0] if titles else "",
+        )
+        return
+    if severity not in _SURFACEABLE_SEVERITIES:
+        logger.info(
+            "breaking cluster rejected (severity=%s): %s",
+            severity, titles[0] if titles else "",
+        )
+        return
+
+    headline = (
+        str(classification.get("summary") or "").strip().replace('"', "")[:200]
+        or (titles[0][:120] if titles else "Breaking development")
+    )
+    shared_subject = (
+        str(classification.get("shared_subject") or "").strip()[:240] or None
+    )
+
     window_start = min(m["published_at"] for m in members if m["published_at"])
     window_end = max(m["published_at"] for m in members if m["published_at"])
 
@@ -168,9 +275,13 @@ async def _store_cluster(
                 """
                 INSERT INTO breaking_clusters
                   (window_start, window_end, member_article_ids,
-                   headline, sources_count, score)
+                   headline, sources_count, score,
+                   event_type, severity, is_real_event,
+                   shared_subject, classified_at)
                 VALUES (:ws, :we, CAST(:ids AS uuid[]),
-                        :h, :sc, :score)
+                        :h, :sc, :score,
+                        :et, :sev, TRUE,
+                        :subj, NOW())
                 """
             ),
             {
@@ -180,6 +291,9 @@ async def _store_cluster(
                 "h": headline,
                 "sc": len(distinct_sources),
                 "score": float(len(indices)) / max(len(distinct_sources), 1),
+                "et": event_type,
+                "sev": severity,
+                "subj": shared_subject,
             },
         )
         await db.commit()

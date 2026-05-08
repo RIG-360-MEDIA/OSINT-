@@ -1073,17 +1073,22 @@ async def breaking(
                 SELECT bc.id::text AS id, bc.headline, bc.sources_count,
                        bc.member_article_ids,
                        array_length(bc.member_article_ids, 1) AS volume,
-                       bc.window_start, bc.created_at,
+                       bc.window_start, bc.window_end, bc.created_at,
                        bc.event_type, bc.severity, bc.shared_subject
                 FROM breaking_clusters bc
                 WHERE bc.is_active = TRUE
-                  -- Recency: a "BREAKING" surface should feel live.
-                  -- Older validated events stay in the DB (used by other
-                  -- surfaces, e.g. Today's Stories) but drop off the band.
-                  -- 60 min lines up with the detector's 15-min cadence:
-                  -- there are typically 1-4 fresh validated clusters in
-                  -- this window at any time.
-                  AND bc.created_at > NOW() - INTERVAL '60 minutes'
+                  -- Recency anchored on window_end (the most recent
+                  -- article in the cluster), not created_at (which is
+                  -- our pipeline's detection time). An event whose
+                  -- latest reporting was 30 min ago is "30 min old"
+                  -- regardless of how long our classifier took to
+                  -- catch up — the user cares about news age, not
+                  -- pipeline age. 90 min window: gives backfill time
+                  -- to finish (when Stage-1 Groq is throttled, the
+                  -- 5-min backfill task may take 1-2 cycles to
+                  -- successfully classify).
+                  AND COALESCE(bc.window_end, bc.created_at)
+                      > NOW() - INTERVAL '90 minutes'
                   AND (
                     -- Validated rows: keep only real events at
                     -- non-trivial severity + non-trivial event_type.
@@ -1161,12 +1166,16 @@ async def breaking(
             cluster_geos.append(m["geo"])
             cluster_topics.append(m.get("topic"))
 
-        # Cluster age in minutes (since cluster's first article).
-        if c.window_start:
-            ws = c.window_start
-            if ws.tzinfo is None:
-                ws = ws.replace(tzinfo=_dt.timezone.utc)
-            age_min = max(0.0, (now - ws).total_seconds() / 60.0)
+        # Cluster age in minutes — anchored on window_end (most recent
+        # article in the cluster) so a cluster still receiving fresh
+        # reporting reads as young, even if its earliest member was old.
+        # Falls back to created_at if window_end isn't set.
+        anchor = c.window_end if hasattr(c, "window_end") and c.window_end \
+            else c.window_start or c.created_at
+        if anchor:
+            if anchor.tzinfo is None:
+                anchor = anchor.replace(tzinfo=_dt.timezone.utc)
+            age_min = max(0.0, (now - anchor).total_seconds() / 60.0)
         else:
             age_min = 0.0
 

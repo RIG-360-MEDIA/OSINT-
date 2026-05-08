@@ -114,6 +114,7 @@ app.config_from_object(
             "tasks.refresh_coverage_summaries": {"queue": "nlp"},
             # /coverage/articles rebuild
             "tasks.refresh_user_cards": {"queue": "nlp"},
+            "tasks.retry_unrefreshed_cards": {"queue": "nlp"},
             "tasks.detect_breaking_events": {"queue": "nlp"},
             "tasks.classify_pending_breaking_clusters": {"queue": "nlp"},
             "tasks.refresh_contradictions": {"queue": "nlp"},
@@ -335,6 +336,14 @@ app.config_from_object(
             "refresh-user-cards-daily-0130-utc": {
                 "task": "tasks.refresh_user_cards",
                 "schedule": crontab(hour=1, minute=30),
+                "options": {"queue": "nlp"},
+            },
+            # Fast-retry driver — picks up cards that were created
+            # during a Groq-quota dip and never got their summary
+            # generated. Runs every 5 min, capped at 5 cards/fire.
+            "retry-unrefreshed-user-cards-every-5-min": {
+                "task": "tasks.retry_unrefreshed_cards",
+                "schedule": timedelta(minutes=5),
                 "options": {"queue": "nlp"},
             },
             "detect-breaking-events-every-15-min": {

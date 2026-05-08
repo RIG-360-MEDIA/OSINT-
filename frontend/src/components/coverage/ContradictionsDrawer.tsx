@@ -195,10 +195,10 @@ export function ContradictionsDrawer({ open, onClose, onArticleClick }: Props) {
               </div>
               <p
                 style={{
-                  fontFamily: 'var(--onyx-italic)',
-                  fontStyle: 'italic',
-                  fontSize: '15px',
-                  lineHeight: 1.6,
+                  fontFamily: 'var(--onyx-body)',
+                  fontStyle: 'normal',
+                  fontSize: '15.5px',
+                  lineHeight: 1.65,
                   color: 'var(--onyx-bone)',
                   margin: 0,
                 }}

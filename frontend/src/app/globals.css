@@ -692,30 +692,35 @@ body::before {
   --onyx-bg-3:         #0A0A0A;
   --onyx-panel:        #000000;
 
-  /* Text */
-  --onyx-bone:         #F2EEE3;
-  --onyx-bone-2:       #C8C2B4;
-  --onyx-dim:          #5E5E5E;
-  --onyx-dim-2:        #3A3A3A;
+  /* Text — cooler, classier, more readable than the warm cream of v1.
+     "Bone" is now a near-white #ECEEF1 with a slight cool tint. */
+  --onyx-bone:         #ECEEF1;
+  --onyx-bone-2:       #A8ADB8;
+  --onyx-dim:          #5A6070;
+  --onyx-dim-2:        #2E3340;
 
-  /* Accents — used sparingly */
+  /* Accents — neon blue + red, the only saturated colours on the page. */
   --onyx-cyan:         #00C2FF;
-  --onyx-cyan-soft:    rgba(0, 194, 255, 0.18);
+  --onyx-cyan-soft:    rgba(0, 194, 255, 0.14);
   --onyx-cyan-glow:    rgba(0, 194, 255, 0.45);
   --onyx-red:          #FF2D2D;
   --onyx-red-soft:     rgba(255, 45, 45, 0.55);
-  --onyx-red-hair:     rgba(255, 45, 45, 0.32);
+  --onyx-red-hair:     rgba(255, 45, 45, 0.30);
   --onyx-live:         #00FF88;
 
   /* Rules */
   --onyx-rule:         rgba(255, 45, 45, 0.55);
-  --onyx-rule-hair:    rgba(255, 45, 45, 0.22);
-  --onyx-rule-dim:     rgba(242, 238, 227, 0.08);
+  --onyx-rule-hair:    rgba(255, 45, 45, 0.20);
+  --onyx-rule-dim:     rgba(236, 238, 241, 0.08);
 
-  /* Fonts (locked: futuristic geometric + utility mono + editorial italic) */
-  --onyx-display:  'Space Grotesk', 'DM Sans', system-ui, sans-serif;
+  /* Fonts — techie + classy: Space Grotesk for display, Inter for body
+     copy (highly readable), JetBrains Mono for labels and timestamps.
+     `--onyx-italic` is repointed to Inter so existing components that
+     applied font-style: italic still render in a clean readable face. */
+  --onyx-display:  'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --onyx-body:     'Inter', system-ui, -apple-system, sans-serif;
   --onyx-mono:     'JetBrains Mono', 'DM Mono', ui-monospace, monospace;
-  --onyx-italic:   'Instrument Serif', 'Cormorant Garamond', Georgia, serif;
+  --onyx-italic:   'Inter', system-ui, sans-serif;
 
   color-scheme: dark;
 }
@@ -724,6 +729,7 @@ body::before {
 [data-theme='onyx'] {
   background: var(--onyx-bg);
   color: var(--onyx-bone);
+  font-family: var(--onyx-body);
 }
 
 /* ── Onyx typography helpers ─────────────────────────────────────────────── */
@@ -801,16 +807,9 @@ body::before {
   50%, 99%      { opacity: 0; }
 }
 
-/* ── Onyx grain (animated film-noise overlay) ────────────────────────────── */
+/* ── Onyx grain — disabled. Component still mounts but renders nothing. */
 .onyx-grain {
-  position: fixed;
-  inset: -20%;
-  pointer-events: none;
-  z-index: 80;
-  opacity: 0.10;
-  mix-blend-mode: overlay;
-  animation: onyx-grain-shift 8s steps(10) infinite;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.85 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  display: none !important;
 }
 
 /* ── Onyx scanline (sweep through hovered tile) ──────────────────────────── */

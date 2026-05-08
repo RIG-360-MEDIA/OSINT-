@@ -32,8 +32,6 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { OnyxTopBar } from '@/components/coverage/OnyxTopBar'
-import { ParticleField } from '@/components/coverage/ParticleField'
-import { GrainOverlay } from '@/components/coverage/GrainOverlay'
 import { AskBar } from '@/components/coverage/AskBar'
 import { BreakingBand } from '@/components/coverage/BreakingBand'
 import { CustomCardsRow } from '@/components/coverage/CustomCardsRow'
@@ -293,8 +291,6 @@ function ArticlesInner() {
         overflow: 'hidden',
       }}
     >
-      <ParticleField />
-      <GrainOverlay />
       <OnyxTopBar />
 
       <main
@@ -816,10 +812,12 @@ function ArticleRow({
             background: 'transparent',
             border: 'none',
             color: 'var(--onyx-bone)',
-            fontFamily: 'var(--onyx-italic)',
+            fontFamily: 'var(--onyx-display)',
             fontStyle: 'normal',
-            fontSize: '20px',
-            lineHeight: 1.25,
+            fontSize: '19px',
+            lineHeight: 1.3,
+            fontWeight: 500,
+            letterSpacing: '-0.005em',
             textAlign: 'left',
             padding: 0,
             cursor: 'pointer',
@@ -832,10 +830,10 @@ function ArticleRow({
         {article.relevance_explanation && (
           <p
             style={{
-              fontFamily: 'var(--onyx-italic)',
-              fontStyle: 'italic',
-              fontSize: '13.5px',
-              lineHeight: 1.55,
+              fontFamily: 'var(--onyx-body)',
+              fontStyle: 'normal',
+              fontSize: '14px',
+              lineHeight: 1.6,
               color: 'var(--onyx-bone-2)',
               margin: '8px 0 0',
               maxWidth: '70ch',
@@ -1029,11 +1027,11 @@ function ArticleReader({
 
         <h1
           style={{
-            fontFamily: 'var(--onyx-italic)',
+            fontFamily: 'var(--onyx-display)',
             fontStyle: 'normal',
-            fontSize: '36px',
-            lineHeight: 1.1,
-            fontWeight: 400,
+            fontSize: '32px',
+            lineHeight: 1.15,
+            fontWeight: 600,
             color: 'var(--onyx-bone)',
             letterSpacing: '-0.012em',
             margin: '0 0 16px',
@@ -1045,10 +1043,10 @@ function ArticleReader({
         {article.relevance_explanation && (
           <p
             style={{
-              fontFamily: 'var(--onyx-italic)',
-              fontStyle: 'italic',
-              fontSize: '17px',
-              lineHeight: 1.6,
+              fontFamily: 'var(--onyx-body)',
+              fontStyle: 'normal',
+              fontSize: '16.5px',
+              lineHeight: 1.7,
               color: 'var(--onyx-bone-2)',
               marginBottom: '24px',
             }}
@@ -1133,10 +1131,10 @@ function ArticleReader({
             </div>
             <p
               style={{
-                fontFamily: 'var(--onyx-italic)',
-                fontStyle: 'italic',
+                fontFamily: 'var(--onyx-body)',
+                fontStyle: 'normal',
                 fontSize: '15px',
-                lineHeight: 1.65,
+                lineHeight: 1.7,
                 color: 'var(--onyx-bone-2)',
                 margin: 0,
               }}
@@ -1207,9 +1205,10 @@ function RelatedStrip({ articleId }: { articleId: string }) {
           <li key={r.article_id}>
             <div
               style={{
-                fontFamily: 'var(--onyx-italic)',
+                fontFamily: 'var(--onyx-body)',
                 fontStyle: 'normal',
                 fontSize: '14px',
+                fontWeight: 500,
                 color: 'var(--onyx-bone-2)',
                 marginBottom: '4px',
               }}
@@ -1371,10 +1370,10 @@ function CompareOverlay({
           <>
             <p
               style={{
-                fontFamily: 'var(--onyx-italic)',
-                fontStyle: 'italic',
-                fontSize: '18px',
-                lineHeight: 1.6,
+                fontFamily: 'var(--onyx-body)',
+                fontStyle: 'normal',
+                fontSize: '17px',
+                lineHeight: 1.7,
                 color: 'var(--onyx-bone)',
                 marginBottom: '40px',
                 padding: '20px 24px',
@@ -1409,10 +1408,11 @@ function CompareOverlay({
                   </div>
                   <h3
                     style={{
-                      fontFamily: 'var(--onyx-italic)',
+                      fontFamily: 'var(--onyx-display)',
                       fontStyle: 'normal',
-                      fontSize: '20px',
-                      lineHeight: 1.25,
+                      fontSize: '18px',
+                      lineHeight: 1.3,
+                      fontWeight: 500,
                       color: 'var(--onyx-bone)',
                       margin: '0 0 12px',
                     }}

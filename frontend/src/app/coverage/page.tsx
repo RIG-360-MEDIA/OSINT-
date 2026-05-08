@@ -17,8 +17,6 @@ import { createClient } from '@/lib/supabase/client'
 import { OnyxTopBar } from '@/components/coverage/OnyxTopBar'
 import { CoveragePanel, type CoveragePanelData } from '@/components/coverage/CoveragePanel'
 import { LiveTicker } from '@/components/coverage/LiveTicker'
-import { ParticleField } from '@/components/coverage/ParticleField'
-import { GrainOverlay } from '@/components/coverage/GrainOverlay'
 import type { CoverageSlug } from '@/components/coverage/thumbnails'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -137,8 +135,8 @@ export default function CoveragePage() {
         overflow: 'hidden',
       }}
     >
-      <ParticleField />
-      <GrainOverlay />
+      {/* Background is intentionally pure black — no particles, no grain.
+          User direction: classy + techie, static, high readability. */}
 
       {/* ── Header ───────────────────────────────────────────────────── */}
       <div

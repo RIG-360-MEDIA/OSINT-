@@ -314,10 +314,10 @@ function AnswerPanel({ answer, sources, streaming, error, onCiteClick }: AnswerP
 
       <div
         style={{
-          fontFamily: 'var(--onyx-italic)',
-          fontStyle: 'italic',
-          fontSize: '20px',
-          lineHeight: 1.65,
+          fontFamily: 'var(--onyx-body)',
+          fontStyle: 'normal',
+          fontSize: '17px',
+          lineHeight: 1.7,
           color: 'var(--onyx-bone)',
           maxWidth: '78ch',
         }}

@@ -51,6 +51,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from backend.auth.auth_middleware import get_current_principal, require_page
+from backend.coverage.scoring import (
+    SURFACE_THRESHOLD,
+    UserInterestProfile,
+    load_user_profile,
+    profile_top_entity_names,
+    score_cluster,
+)
 from backend.database import get_db
 from backend.nlp.groq_client import (
     FAST_MODEL,
@@ -1017,13 +1024,26 @@ async def breaking(
     user: dict = Depends(get_current_principal),
 ) -> dict:
     """
-    Active breaking clusters, FILTERED by overlap with the user's
-    recently-relevant articles. A cluster surfaces only if at least one
-    of its member articles has shown up in this user's relevance feed
-    in the last 14 days. Falls back to global if user has no signal.
+    Active breaking clusters, ranked by per-user relevance score.
+
+    Replaces the previous binary tier-1/2-article-membership filter
+    (which dropped Tamil Nadu / West Bengal clusters because the
+    relevance scorer hadn't yet tier-1/2'd those exact articles for
+    the user, even though the user heavily tracked those entities).
+
+    Pipeline:
+        1. Load UserInterestProfile (cached 5 min).
+        2. Pull all active clusters + their member articles' entities
+           and geos in one query.
+        3. Score each cluster via backend.coverage.scoring.score_cluster.
+        4. Sort by score, drop below SURFACE_THRESHOLD, return top 5.
+
+    A new user with an empty profile returns an empty list — never
+    falls back to global.
     """
     _require_flag("FEATURE_BREAKING")
     user_id = user["id"]
+    import datetime as _dt
 
     async with get_db() as db:
         check = await db.execute(
@@ -1033,54 +1053,126 @@ async def breaking(
             )
         )
         if not check.fetchone():
-            return {"clusters": []}
+            return {"clusters": [], "personalised": True}
 
-        # Surface only clusters touching the user's HIGH-relevance feed —
-        # at least one member article scored Lead (tier 1) or Notable
-        # (tier 2). Tier 3 ('Background') is too loose: a German bank
-        # standoff scored against a Telangana admin still appeared via
-        # tier 3 noise. Lead/Notable kills that.
-        per_user = await db.execute(
+        profile = await load_user_profile(user_id, db)
+        if profile.is_empty():
+            return {"clusters": [], "personalised": True}
+
+        # All active clusters — small set, can score in Python.
+        cluster_rows = await db.execute(
             text(
                 """
-                SELECT DISTINCT bc.id::text AS id, bc.headline, bc.sources_count,
+                SELECT bc.id::text AS id, bc.headline, bc.sources_count,
+                       bc.member_article_ids,
                        array_length(bc.member_article_ids, 1) AS volume,
-                       bc.window_start, bc.window_end, bc.created_at,
-                       bc.top_entities
+                       bc.window_start, bc.created_at
                 FROM breaking_clusters bc
                 WHERE bc.is_active = TRUE
-                  AND EXISTS (
-                    SELECT 1 FROM user_article_relevance uar
-                    WHERE uar.user_id = :uid
-                      AND uar.relevance_tier IN (1, 2)
-                      AND uar.scored_at > NOW() - interval '14 days'
-                      AND uar.article_id = ANY(bc.member_article_ids)
-                  )
                 ORDER BY bc.created_at DESC
-                LIMIT 5
+                LIMIT 50
+                """
+            )
+        )
+        clusters = cluster_rows.fetchall()
+        if not clusters:
+            return {"clusters": [], "personalised": True}
+
+        # Single batch fetch: entities + geo for all candidate articles.
+        all_member_ids: list[str] = []
+        for c in clusters:
+            for mid in (c.member_article_ids or []):
+                all_member_ids.append(str(mid))
+
+        if not all_member_ids:
+            return {"clusters": [], "personalised": True}
+
+        article_meta = await db.execute(
+            text(
+                """
+                SELECT id::text AS id, geo_primary, entities_extracted
+                FROM articles
+                WHERE id::text = ANY(:ids)
                 """
             ),
-            {"uid": user_id},
+            {"ids": list(set(all_member_ids))},
         )
-        rows = per_user.fetchall()
+        meta_by_id: dict[str, dict[str, Any]] = {}
+        for r in article_meta.fetchall():
+            ents: set[str] = set()
+            ee = r.entities_extracted
+            if isinstance(ee, str):
+                try:
+                    ee = json.loads(ee)
+                except json.JSONDecodeError:
+                    ee = []
+            for elt in (ee or []):
+                if isinstance(elt, dict):
+                    name = elt.get("name") or elt.get("canonical_name")
+                    if name:
+                        ents.add(str(name).lower())
+            meta_by_id[r.id] = {
+                "geo": r.geo_primary,
+                "entities": ents,
+            }
 
-    # NO global fallback. If no breaking cluster touches the user's feed,
-    # return an empty list. Showing a generic global story (e.g. a German
-    # bank standoff to an India-focused user) defeats the whole feature.
+    # Score every cluster against the profile.
+    now = _dt.datetime.now(_dt.timezone.utc)
+    scored: list[tuple[float, Any, list]] = []  # (score, cluster_row, score_detail)
+    for c in clusters:
+        ids = [str(m) for m in (c.member_article_ids or [])]
+        cluster_entities: set[str] = set()
+        cluster_geos: list[str | None] = []
+        for mid in ids:
+            m = meta_by_id.get(mid)
+            if not m:
+                continue
+            cluster_entities |= m["entities"]
+            cluster_geos.append(m["geo"])
+
+        # Cluster age in minutes (since cluster's first article).
+        if c.window_start:
+            ws = c.window_start
+            if ws.tzinfo is None:
+                ws = ws.replace(tzinfo=_dt.timezone.utc)
+            age_min = max(0.0, (now - ws).total_seconds() / 60.0)
+        else:
+            age_min = 0.0
+
+        s = score_cluster(
+            cluster_entities=cluster_entities,
+            cluster_geos=cluster_geos,
+            cluster_age_minutes=age_min,
+            sources_count=int(c.sources_count or 0),
+            profile=profile,
+        )
+        if s.total >= SURFACE_THRESHOLD:
+            scored.append((s.total, c, s))
+
+    scored.sort(key=lambda t: -t[0])
+    top = scored[:5]
+
     return {
         "personalised": True,
+        "user_geo": profile.geo_primary,
         "clusters": [
             {
-                "id": r.id,
-                "headline": r.headline,
-                "sources_count": r.sources_count,
-                "volume": r.volume,
-                "window_start": r.window_start.isoformat()
-                                if r.window_start else None,
-                "created_at": r.created_at.isoformat() if r.created_at else None,
-                "top_entities": r.top_entities,
+                "id": c.id,
+                "headline": c.headline,
+                "sources_count": c.sources_count,
+                "volume": c.volume,
+                "window_start": c.window_start.isoformat() if c.window_start else None,
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+                "score": round(score_total, 3),
+                "matched_entities": list(detail.matched_entities),
+                "score_breakdown": {
+                    "entity": round(detail.entity, 3),
+                    "geo": round(detail.geo, 3),
+                    "person": round(detail.person, 3),
+                    "velocity": round(detail.velocity, 3),
+                },
             }
-            for r in rows
+            for score_total, c, detail in top
         ],
     }
 

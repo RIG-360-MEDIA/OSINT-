@@ -221,12 +221,23 @@ function QuotesPanel({ onArticleClick }: { onArticleClick: (id: string) => void 
             // English underneath (slightly smaller, dimmer). When the
             // article is already English, quote_text_en will match
             // quote_text — show only one line.
+            //
+            // Normalisation matters: Groq sometimes returns text with
+            // surrounding quotation marks/apostrophes in one variant
+            // and stripped in the other (e.g. "'stealing elections'"
+            // vs "stealing elections"). Compare lowercased+stripped of
+            // punctuation+whitespace before deciding to render twice.
             const original = q.quote_text
             const english = q.quote_text_en
+            const norm = (s: string) =>
+              s
+                .toLowerCase()
+                .replace(/[\s\p{P}]+/gu, '')
+                .trim()
             const showBoth =
               !!english &&
               english.trim().length > 0 &&
-              english.trim() !== original.trim()
+              norm(english) !== norm(original)
             const truncate = (s: string) =>
               s.length > 180 ? `${s.slice(0, 180)}…` : s
             return (
@@ -270,10 +281,15 @@ function QuotesPanel({ onArticleClick }: { onArticleClick: (id: string) => void 
             {(() => {
               const sp = q.speaker_name
               const spEn = q.speaker_name_en
+              const norm = (s: string) =>
+                s
+                  .toLowerCase()
+                  .replace(/[\s\p{P}]+/gu, '')
+                  .trim()
               const showBothSpeaker =
                 !!spEn &&
                 spEn.trim().length > 0 &&
-                spEn.trim() !== sp.trim()
+                norm(spEn) !== norm(sp)
               return showBothSpeaker
                 ? `${sp} (${spEn}) · ${q.source_name}`
                 : `${sp} · ${q.source_name}`

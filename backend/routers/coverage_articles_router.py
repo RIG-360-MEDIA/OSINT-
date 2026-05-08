@@ -1171,8 +1171,14 @@ async def breaking(
             profile=profile,
             cluster_topics=cluster_topics,
         )
-        if s.total >= SURFACE_THRESHOLD:
-            scored.append((s.total, c, s))
+        # No SURFACE_THRESHOLD gate here. Stage-1 event-quality
+        # classification at cluster creation has already proven these are
+        # real, non-trivial, medium-severity-or-higher events. Relevance
+        # scoring is for *ordering* (Telangana events float to top for a
+        # Telangana admin, international events sink) — not for hiding.
+        # An empty BREAKING band when the world genuinely has news would
+        # be worse than showing a low-relevance-but-real event.
+        scored.append((s.total, c, s))
 
     scored.sort(key=lambda t: -t[0])
     top = scored[:5]

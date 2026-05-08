@@ -129,10 +129,10 @@ export default function Navigation() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0px',
+          gap: '36px',
           flex: 1,
           minWidth: 0,
-          justifyContent: 'space-between',
+          justifyContent: 'flex-start',
           marginRight: '12px',
           flexWrap: 'nowrap',
         }}

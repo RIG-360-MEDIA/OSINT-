@@ -227,16 +227,25 @@ def score_cluster(
     if profile.is_empty():
         return ClusterScore(0.0, 0.0, 0.0, 0.0, 0.0, ())
 
-    # ── Entity overlap (weighted by user frequency) ─────────────────────
+    # ── Entity overlap (count AND weight, take the stronger signal) ─────
     matched: list[tuple[str, float]] = []
     for name in cluster_entities:
         w = profile.entity_weights.get(name)
         if w:
             matched.append((name, w))
 
-    # Sum of matched weights, capped. Three top-weight matches = 1.0.
-    entity_raw = sum(w for _, w in matched)
-    entity_score = min(1.0, entity_raw / 3.0)
+    overlap_count = len(matched)
+    top_weight = max((w for _, w in matched), default=0.0)
+    # Count signal: 1 match = 0.4, 2 = 0.7, 3+ = 1.0.
+    # Weight signal: how dominant the strongest matched entity is for
+    # the user. A single match on a top-3 tracked entity is enough.
+    # Take the stronger of the two so we don't punish single-but-strong
+    # matches (e.g. cluster squarely about "Telangana") nor multiple
+    # mid-tier matches (cluster about West Bengal politics with several
+    # tracked players).
+    count_contribution = min(1.0, overlap_count / 3.0) if overlap_count else 0.0
+    weight_contribution = top_weight
+    entity_score = max(count_contribution, weight_contribution)
 
     # ── Geo proximity (best of any member article) ──────────────────────
     geo_score = 0.0

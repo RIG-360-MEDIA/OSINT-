@@ -25,6 +25,7 @@ from backend.routers.admin_router import admin_router
 from backend.routers.analyst_router import analyst_router
 from backend.routers.brief_router import brief_router
 from backend.routers.coverage_router import coverage_router
+from backend.routers.coverage_articles_router import coverage_articles_router
 from backend.routers.debug_router import debug_router
 from backend.routers.onboarding_router import onboarding_router
 from backend.routers.clippings_router import clippings_router, newspapers_router
@@ -51,6 +52,7 @@ app.include_router(debug_router)
 app.include_router(onboarding_router)
 app.include_router(brief_router)
 app.include_router(coverage_router)
+app.include_router(coverage_articles_router)
 app.include_router(clippings_router)
 app.include_router(newspapers_router)
 app.include_router(clips_router)

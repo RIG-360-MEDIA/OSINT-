@@ -260,9 +260,7 @@ async def _active_user_ids(limit: int) -> list[str]:
                 """
                 SELECT u.id::text AS uid
                 FROM users u
-                JOIN user_pages up ON up.user_id = u.id
-                WHERE up.page_slug = 'coverage'
-                  AND EXISTS (
+                WHERE EXISTS (
                     SELECT 1 FROM user_article_relevance uar
                     WHERE uar.user_id = u.id
                       AND uar.relevance_tier IN (1, 2)

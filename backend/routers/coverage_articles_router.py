@@ -1262,15 +1262,23 @@ async def breaking(
                     WHERE uar.user_id = :uid
                       AND uar.relevance_tier IN (1, 2)
                       AND a.published_at > NOW() - INTERVAL '60 minutes'
+                      -- Filter trivial topic categories. OTHER is a
+                      -- coarse catch-all that includes horoscopes,
+                      -- daily forecasts, lifestyle filler — not news.
+                      -- SPORTS results, ENTERTAINMENT releases also
+                      -- excluded. The remaining topics (POLITICS,
+                      -- GOVERNANCE, SECURITY, LEGAL, INFRASTRUCTURE,
+                      -- HEALTH, FINANCE, BUSINESS, INTERNATIONAL,
+                      -- ENVIRONMENT, AGRICULTURE, SOCIAL, etc.) are
+                      -- where actual breaking news lives.
+                      AND a.topic_category IS NOT NULL
+                      AND a.topic_category NOT IN (
+                        'OTHER', 'SPORTS', 'ENTERTAINMENT', 'TECHNOLOGY'
+                      )
                       -- NOTE: deliberately NOT filtering on is_duplicate.
-                      -- Investigation shows the dedup pipeline is over-
-                      -- flagging legitimate regional content (e.g. Mana
-                      -- Telangana original articles getting is_duplicate
-                      -- =TRUE), which was hiding genuinely-relevant
-                      -- local content from this fallback. The dedup
-                      -- bug deserves its own fix; meanwhile, surfacing
-                      -- a "duplicate" as the developing item is far
-                      -- better than surfacing an off-topic non-duplicate
+                      -- Dedup pipeline over-flags legitimate regional
+                      -- content; surfacing a "duplicate" is better
+                      -- than surfacing nothing.
                     ORDER BY
                       -- Tie-break: prefer articles whose geo matches
                       -- the user's primary geo. Without this, all

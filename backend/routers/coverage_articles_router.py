@@ -1059,16 +1059,37 @@ async def breaking(
         if profile.is_empty():
             return {"clusters": [], "personalised": True}
 
-        # All active clusters — small set, can score in Python.
+        # All active, validated, surfaceable clusters. The Stage-1 gate
+        # (event-quality classification done at cluster-creation time)
+        # filters out junk-clusters and trivial event types BEFORE we
+        # even score them per-user. We additionally accept old rows
+        # without classification (is_real_event IS NULL) only if their
+        # severity column is NULL too, so old data isn't silently hidden
+        # — but on the next 15-min cycle it'll be naturally replaced
+        # with classified rows.
         cluster_rows = await db.execute(
             text(
                 """
                 SELECT bc.id::text AS id, bc.headline, bc.sources_count,
                        bc.member_article_ids,
                        array_length(bc.member_article_ids, 1) AS volume,
-                       bc.window_start, bc.created_at
+                       bc.window_start, bc.created_at,
+                       bc.event_type, bc.severity, bc.shared_subject
                 FROM breaking_clusters bc
                 WHERE bc.is_active = TRUE
+                  AND (
+                    -- Validated rows: keep only real events at
+                    -- non-trivial severity + non-trivial event_type.
+                    (bc.is_real_event = TRUE
+                     AND bc.severity IN ('medium', 'high', 'breaking')
+                     AND bc.event_type NOT IN (
+                       'sports_result', 'entertainment_release',
+                       'celebrity_news', 'routine_update'
+                     ))
+                    -- Pre-classification rows (created before migration
+                    -- 048 / before this code was deployed): excluded.
+                    -- They will decay out within 6 hours and be replaced.
+                  )
                 ORDER BY bc.created_at DESC
                 LIMIT 50
                 """
@@ -1167,6 +1188,9 @@ async def breaking(
                 "volume": c.volume,
                 "window_start": c.window_start.isoformat() if c.window_start else None,
                 "created_at": c.created_at.isoformat() if c.created_at else None,
+                "event_type": c.event_type,
+                "severity": c.severity,
+                "shared_subject": c.shared_subject,
                 "score": round(score_total, 3),
                 "matched_entities": list(detail.matched_entities),
                 "score_breakdown": {

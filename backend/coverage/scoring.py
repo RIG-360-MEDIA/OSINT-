@@ -237,14 +237,22 @@ class ClusterScore:
     matched_entities: tuple[str, ...]
 
 
-# Weights — tunable. Sum to 1.0 (any single signal can max the score).
-# Topic affinity was added 2026-05-08 after a cricket-toss cluster
-# outranked a Hyderabad CP press conference for a politics-focused admin.
-_W_ENTITY   = 0.45
-_W_GEO      = 0.20
-_W_PERSON   = 0.10
+# Weights — tunable. The four "match" signals are additive, summing to 1.0.
+# Topic affinity is then applied as a MULTIPLIER on the resulting base score
+# (range 0.4 - 1.0). This is deliberate: a 15% additive topic component was
+# too weak to demote sport-with-matching-geo clusters below politics-with-
+# fuzzy-geo clusters for a politics-focused admin. The multiplier model says
+# "even a perfect entity+geo+velocity match is worth less if you don't care
+# about the topic at all" — which mirrors human attention.
+_W_ENTITY   = 0.50
+_W_GEO      = 0.25
+_W_PERSON   = 0.15
 _W_VELOCITY = 0.10
-_W_TOPIC    = 0.15
+
+# Topic multiplier floor: a cluster on a topic the user has never engaged
+# with still gets 40% credit (gives new-topic discovery a fighting chance),
+# scaling up to 100% as topic affinity → 1.0.
+_TOPIC_MULTIPLIER_FLOOR = 0.40
 
 # Surface threshold — clusters below this score are hidden entirely.
 SURFACE_THRESHOLD = 0.25
@@ -327,13 +335,18 @@ def score_cluster(
     elif not profile.topic_weights:
         topic_score = 0.5  # user has no topic signal yet — be neutral
 
-    total = (
+    base = (
         _W_ENTITY   * entity_score
         + _W_GEO      * geo_score
         + _W_PERSON   * person_score
         + _W_VELOCITY * velocity_score
-        + _W_TOPIC    * topic_score
     )
+    # Multiplicative topic gate. Floor at 0.40 so unfamiliar topics aren't
+    # silently zeroed out, ceiling at 1.0 when affinity is at user's peak.
+    topic_multiplier = _TOPIC_MULTIPLIER_FLOOR + (
+        (1.0 - _TOPIC_MULTIPLIER_FLOOR) * topic_score
+    )
+    total = base * topic_multiplier
 
     matched_names = tuple(name for name, _ in sorted(matched, key=lambda t: -t[1])[:5])
 

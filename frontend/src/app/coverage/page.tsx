@@ -13,6 +13,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import Navigation from '@/components/Navigation'
 import { CoveragePanel, type CoveragePanelData } from '@/components/coverage/CoveragePanel'
 import { LiveTicker } from '@/components/coverage/LiveTicker'
 import { LiveClock } from '@/components/coverage/LiveClock'
@@ -68,8 +70,15 @@ export default function CoveragePage() {
 
     const load = async () => {
       try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+        if (!token) {
+          if (!cancelled) setPanels((prev) => prev.map((p) => ({ ...p, loading: false })))
+          return
+        }
         const res = await fetch(`${API_BASE}/api/coverage/panels`, {
-          credentials: 'include',
+          headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
         })
         if (!res.ok) {
@@ -115,11 +124,14 @@ export default function CoveragePage() {
   }, [])
 
   return (
+    <>
+      <Navigation />
     <div
       data-theme="onyx"
       style={{
         position: 'relative',
         minHeight: '100vh',
+        paddingTop: 'var(--topbar-h)',
         background: 'var(--onyx-bg)',
         color: 'var(--onyx-bone)',
         fontFamily: 'var(--onyx-display)',
@@ -255,5 +267,6 @@ export default function CoveragePage() {
         }
       `}</style>
     </div>
+    </>
   )
 }

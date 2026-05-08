@@ -40,7 +40,7 @@ function HalftoneDefs({ id }: { id: string }) {
         height="6"
         patternUnits="userSpaceOnUse"
       >
-        <circle cx="3" cy="3" r="0.6" fill={BONE} fillOpacity="0.18" />
+        <circle cx="3" cy="3" r="0.6" fill={BONE} fillOpacity="0.22" />
       </pattern>
       <linearGradient id={`fade-${id}`} x1="0" x2="0" y1="0" y2="1">
         <stop offset="0%" stopColor={BG} stopOpacity="0" />
@@ -65,8 +65,6 @@ function ThumbFrame({ id, children, className }: { id: string; children: ReactNo
       {children}
       {/* Halftone overlay on top of everything */}
       <rect width="400" height="240" fill={`url(#halftone-${id})`} />
-      {/* Bottom vignette */}
-      <rect width="400" height="240" fill={`url(#fade-${id})`} />
     </svg>
   )
 }
@@ -85,8 +83,8 @@ export function ArticlesThumb({ className }: ThumbProps) {
           {/* Column rule */}
           <line x1={x - 8} y1="30" x2={x - 8} y2="210" stroke={DIM_2} strokeWidth="0.5" />
           {/* Column heading slab */}
-          <rect x={x} y="34" width="50" height="6" fill={BONE} fillOpacity={0.85 - ci * 0.12} />
-          <rect x={x} y="44" width="38" height="3" fill={DIM} fillOpacity="0.6" />
+          <rect x={x} y="34" width="50" height="6" fill={BONE} fillOpacity={0.95 - ci * 0.08} />
+          <rect x={x} y="44" width="38" height="3" fill={BONE} fillOpacity="1.0" />
           {/* Body lines */}
           {Array.from({ length: 14 }).map((_, li) => {
             const w = 38 + ((ci + li) % 5) * 4
@@ -100,7 +98,7 @@ export function ArticlesThumb({ className }: ThumbProps) {
                 width={w}
                 height="1.5"
                 fill={BONE}
-                fillOpacity={0.32 - li * 0.012}
+                fillOpacity={0.55 - li * 0.018}
               />
             )
           })}
@@ -108,7 +106,7 @@ export function ArticlesThumb({ className }: ThumbProps) {
       ))}
       {/* Subtle red kicker dot top-left */}
       <circle cx="22" cy="24" r="2" fill={RED} />
-      <line x1="28" y1="24" x2="60" y2="24" stroke={RED} strokeOpacity="0.4" strokeWidth="0.5" />
+      <line x1="28" y1="24" x2="60" y2="24" stroke={RED} strokeOpacity="0.7" strokeWidth="0.5" />
     </ThumbFrame>
   )
 }
@@ -122,13 +120,13 @@ export function NewspaperThumb({ className }: ThumbProps) {
       <g transform="rotate(-3 200 120)">
         <rect x="60" y="36" width="280" height="180" fill="#0E0E0E" />
         {/* Side-light wash */}
-        <rect x="60" y="36" width="120" height="180" fill={BONE} fillOpacity="0.06" />
+        <rect x="60" y="36" width="120" height="180" fill={BONE} fillOpacity="0.04" />
         {/* Masthead */}
-        <rect x="74" y="50" width="252" height="22" fill={BONE} fillOpacity="0.78" />
-        <rect x="74" y="76" width="120" height="2" fill={RED} fillOpacity="0.7" />
+        <rect x="74" y="50" width="252" height="22" fill={BONE} fillOpacity="0.95" />
+        <rect x="74" y="76" width="120" height="2" fill={RED} fillOpacity="1.0" />
         {/* Lead headline */}
-        <rect x="74" y="88" width="180" height="9" fill={BONE} fillOpacity="0.55" />
-        <rect x="74" y="100" width="160" height="9" fill={BONE} fillOpacity="0.42" />
+        <rect x="74" y="88" width="180" height="9" fill={BONE} fillOpacity="1.0" />
+        <rect x="74" y="100" width="160" height="9" fill={BONE} fillOpacity="0.65" />
         {/* Body columns (3 narrow) */}
         {[74, 162, 250].map((cx, ci) => (
           <g key={ci}>
@@ -140,7 +138,7 @@ export function NewspaperThumb({ className }: ThumbProps) {
                 width={56 + ((ci + li) % 3) * 4}
                 height="1.2"
                 fill={BONE}
-                fillOpacity={0.22 - li * 0.014}
+                fillOpacity={0.5 - li * 0.022}
               />
             ))}
           </g>
@@ -183,7 +181,7 @@ export function TvThumb({ className }: ThumbProps) {
           x2="340"
           y2={50 + i * 4}
           stroke={BONE}
-          strokeOpacity="0.06"
+          strokeOpacity="0.12"
           strokeWidth="1"
         />
       ))}
@@ -261,7 +259,7 @@ export function SocialThumb({ className }: ThumbProps) {
             x2={B.x}
             y2={B.y}
             stroke={BONE}
-            strokeOpacity={0.18}
+            strokeOpacity={0.4}
             strokeWidth="0.6"
           />
         )
@@ -269,13 +267,13 @@ export function SocialThumb({ className }: ThumbProps) {
       {/* Nodes — outer ring + inner dot */}
       {nodes.map((n, i) => (
         <g key={i}>
-          <circle cx={n.x} cy={n.y} r={n.r} fill="none" stroke={BONE} strokeOpacity="0.5" strokeWidth="0.8" />
-          <circle cx={n.x} cy={n.y} r={n.r * 0.35} fill={BONE} fillOpacity="0.85" />
+          <circle cx={n.x} cy={n.y} r={n.r} fill="none" stroke={BONE} strokeOpacity="0.85" strokeWidth="0.8" />
+          <circle cx={n.x} cy={n.y} r={n.r * 0.35} fill={BONE} fillOpacity="1.0" />
         </g>
       ))}
       {/* One hot node — cyan accent */}
       <g>
-        <circle cx="200" cy="50" r="10" fill="none" stroke={CYAN} strokeOpacity="0.4" strokeWidth="0.6" />
+        <circle cx="200" cy="50" r="10" fill="none" stroke={CYAN} strokeOpacity="0.7" strokeWidth="0.6" />
         <circle cx="200" cy="50" r="14" fill="none" stroke={CYAN} strokeOpacity="0.18" strokeWidth="0.4" />
       </g>
       {/* Counter top-right */}
@@ -306,8 +304,8 @@ export function GovtThumb({ className }: ThumbProps) {
         <rect x="80" y="40" width="240" height="170" fill={BONE} fillOpacity="0.05" />
         <rect x="80" y="40" width="240" height="170" fill="none" stroke={BONE} strokeOpacity="0.22" strokeWidth="1" />
         {/* Letterhead block */}
-        <rect x="92" y="54" width="160" height="6" fill={BONE} fillOpacity="0.6" />
-        <rect x="92" y="64" width="100" height="3" fill={BONE} fillOpacity="0.32" />
+        <rect x="92" y="54" width="160" height="6" fill={BONE} fillOpacity="0.85" />
+        <rect x="92" y="64" width="100" height="3" fill={BONE} fillOpacity="0.65" />
         {/* Hairline divider */}
         <line x1="92" y1="76" x2="308" y2="76" stroke={BONE} strokeOpacity="0.32" strokeWidth="0.6" />
         {/* Doc number / classification stripe */}
@@ -330,7 +328,7 @@ export function GovtThumb({ className }: ThumbProps) {
             return (
               <g key={li}>
                 <rect x="92" y={102 + li * 11} width={36} height="5" fill={BONE} fillOpacity="0.22" />
-                <rect x="132" y={102 + li * 11} width={68} height="5" fill={BONE} fillOpacity="0.85" />
+                <rect x="132" y={102 + li * 11} width={68} height="5" fill={BONE} fillOpacity="1.0" />
                 <rect x="204" y={102 + li * 11} width={w - 116} height="5" fill={BONE} fillOpacity="0.22" />
               </g>
             )
@@ -343,7 +341,7 @@ export function GovtThumb({ className }: ThumbProps) {
               width={w}
               height="1.5"
               fill={BONE}
-              fillOpacity={0.28 - li * 0.012}
+              fillOpacity={0.55 - li * 0.025}
             />
           )
         })}

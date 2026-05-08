@@ -1090,19 +1090,16 @@ async def breaking(
                        bc.event_type, bc.severity, bc.shared_subject
                 FROM breaking_clusters bc
                 WHERE bc.is_active = TRUE
-                  -- Recency anchored on window_end (the most recent
-                  -- article in the cluster), not created_at (pipeline
-                  -- time). Window: 3 hours. Reasoning: regional /
-                  -- single-language coverage often takes 60-90 min for
-                  -- 3 distinct sources to all publish — the multi-
-                  -- source threshold is a quality bar we keep, but it
-                  -- inherently lags real-time. With 3h, we accept up
-                  -- to ~90 min of detector latency on top of natural
-                  -- spread, while still feeling 'recent'. The recency
-                  -- multiplier in scoring still demotes older clusters
-                  -- so the freshest event always rises to top.
-                  AND COALESCE(bc.window_end, bc.created_at)
-                      > NOW() - INTERVAL '3 hours'
+                  -- Recency strictly on window_end (publication time
+                  -- of the latest member article). NOT created_at —
+                  -- created_at is when our detector first saw the
+                  -- cluster, which can be re-touched on every 15-min
+                  -- detector run, making old news look perpetually
+                  -- "fresh". window_end pins to actual news age.
+                  -- 90 min: balances "BREAKING means recent" against
+                  -- the inherent 30-60 min lag for 3 sources to all
+                  -- publish on the same regional event.
+                  AND bc.window_end > NOW() - INTERVAL '90 minutes'
                   AND (
                     -- Validated rows: keep only real events at
                     -- non-trivial severity + non-trivial event_type.
@@ -1201,14 +1198,15 @@ async def breaking(
             profile=profile,
             cluster_topics=cluster_topics,
         )
-        # No SURFACE_THRESHOLD gate here. Stage-1 event-quality
-        # classification at cluster creation has already proven these are
-        # real, non-trivial, medium-severity-or-higher events. Relevance
-        # scoring is for *ordering* (Telangana events float to top for a
-        # Telangana admin, international events sink) — not for hiding.
-        # An empty BREAKING band when the world genuinely has news would
-        # be worse than showing a low-relevance-but-real event.
-        scored.append((s.total, c, s))
+        # Soft per-user threshold: incidental matches (e.g. a foreign
+        # disaster covered by Indian press, where 'India' lights up an
+        # entity slot) score in the 0.20-0.25 range and stay shown for
+        # hours, frustrating users with a static band. Below 0.15 the
+        # cluster is almost certainly a coincidental match and should
+        # not occupy real-estate. Above 0.15 we keep it. If NO cluster
+        # qualifies, empty band is preferable to stale incidental.
+        if s.total >= 0.15:
+            scored.append((s.total, c, s))
 
     scored.sort(key=lambda t: -t[0])
     top = scored[:5]

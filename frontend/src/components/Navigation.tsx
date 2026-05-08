@@ -18,12 +18,10 @@ interface NavLink {
 // `KNOWN_PAGES` in `backend/auth/auth_middleware.py`.
 const BASE_NAV_LINKS: ReadonlyArray<NavLink> = [
   { path: '/brief',        label: 'The Brief',       slug: 'brief' },
-  { path: '/coverage',     label: 'Articles',        slug: 'coverage' },
+  // Coverage hub — consolidated entry for Articles, TV, Newspaper, Social, Govt Docs.
+  // Each pillar reachable via the panels on /coverage.
+  { path: '/coverage',     label: 'Coverage',        slug: 'coverage' },
   { path: '/threads',      label: 'Threads',         slug: 'threads' },
-  { path: '/clips',        label: 'TV',              slug: 'clips' },
-  { path: '/cuttings',     label: 'Newspaper',       slug: 'cuttings' },
-  { path: '/signals',      label: 'Social Media',    slug: 'signals' },
-  { path: '/documents',    label: 'Govt Docs',       slug: 'documents' },
   { path: '/analyst',      label: 'Chat System',     slug: 'analyst' },
   { path: '/worldmonitor', label: 'Live Monitoring', slug: 'worldmonitor' },
 ]

@@ -1326,18 +1326,25 @@ async def breaking(
                       -- HEALTH, FINANCE, BUSINESS, INTERNATIONAL,
                       -- ENVIRONMENT, AGRICULTURE, SOCIAL, etc.) are
                       -- where actual breaking news lives.
-                      AND a.topic_category IS NOT NULL
-                      AND a.topic_category NOT IN (
-                        -- OTHER: catch-all dump.
-                        -- SPORTS / ENTERTAINMENT: not news.
-                        -- TECHNOLOGY: usually product PR.
-                        -- SOCIAL: topic-tagger over-classifies lifestyle
-                        --   (horoscopes, weddings, daily forecasts) as
-                        --   SOCIAL alongside genuine social issues. Until
-                        --   we have a finer-grained signal, exclude.
-                        'OTHER', 'SPORTS', 'ENTERTAINMENT',
-                        'TECHNOLOGY', 'SOCIAL'
-                      )
+                      -- Topic filter: exclude obvious-junk categories.
+                      -- Keep SOCIAL because legitimate local news lands
+                      -- there (protests, civic issues, minority policy,
+                      -- etc.) more often than lifestyle filler.
+                      AND (a.topic_category IS NULL
+                           OR a.topic_category NOT IN (
+                             'SPORTS', 'ENTERTAINMENT', 'TECHNOLOGY'
+                           ))
+                      -- Title-pattern filter: catches the lifestyle
+                      -- filler that the coarse topic tagger lumps with
+                      -- legitimate content. Cheap LIKE checks across
+                      -- Telugu, Tamil, English variants of horoscope/
+                      -- forecast/wedding/match-result keywords.
+                      AND a.title NOT ILIKE '%horoscope%'
+                      AND a.title NOT ILIKE '%రాశి%'   -- Telugu zodiac
+                      AND a.title NOT ILIKE '%జాతక%'   -- Telugu astrology
+                      AND a.title NOT ILIKE '%forecast%'
+                      AND a.title NOT ILIKE '%toss%'
+                      AND a.title NOT ILIKE '%match%result%'
                       -- NOTE: deliberately NOT filtering on is_duplicate.
                       -- Dedup pipeline over-flags legitimate regional
                       -- content; surfacing a "duplicate" is better

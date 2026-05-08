@@ -512,8 +512,11 @@ async def get_chat_session(
 async def _user_active_entity_names(user_id: str, db, days: int = 14) -> list[str]:
     """
     Pull the entity names this user has actually engaged with — derived
-    from their recent user_article_relevance matches. Used to filter
-    Top-5 / Breaking / Quotes / Gaps so the page reflects THIS user.
+    from their HIGH-relevance (tier 1 or 2) user_article_relevance
+    matches. Tier 3 (Background) is excluded because it's a loose
+    catch-all that surfaces noise (e.g. unrelated international news
+    matched on weak entity overlap). Used to filter Top-5 / Breaking /
+    Quotes / Gaps so the page reflects THIS user's real interests.
     """
     result = await db.execute(
         text(
@@ -522,6 +525,7 @@ async def _user_active_entity_names(user_id: str, db, days: int = 14) -> list[st
             FROM user_article_relevance uar
             WHERE uar.user_id = :uid
               AND uar.matched_entity_names IS NOT NULL
+              AND uar.relevance_tier IN (1, 2)
               AND uar.scored_at > NOW() - make_interval(days => :days)
             LIMIT 80
             """
@@ -565,6 +569,10 @@ async def top_stories(
     user_id = user["id"]
 
     async with get_db() as db:
+        # Lead + Notable only (tiers 1, 2). Tier 3 is a loose catch-all
+        # that surfaces noise — e.g. global news scored against the user
+        # via weak entity matches. Top-5 should be the user's strongest
+        # signal of the day.
         live = await db.execute(
             text(
                 """
@@ -577,6 +585,7 @@ async def top_stories(
                 JOIN articles a ON a.id = uar.article_id
                 JOIN sources s ON s.id = a.source_id
                 WHERE uar.user_id = :uid
+                  AND uar.relevance_tier IN (1, 2)
                   AND a.published_at > NOW() - make_interval(days => :days)
                   AND a.is_duplicate IS NOT TRUE
                 ORDER BY uar.score_final DESC
@@ -792,7 +801,8 @@ async def quotes(
                 conds.append("q.speaker_entity_id::text = ANY(:entity_ids)")
                 conds.append(
                     "EXISTS (SELECT 1 FROM user_article_relevance uar "
-                    "WHERE uar.user_id = :uid AND uar.article_id = q.article_id)"
+                    "WHERE uar.user_id = :uid AND uar.article_id = q.article_id "
+                    "AND uar.relevance_tier IN (1, 2))"
                 )
             if user_entity_names:
                 params["entity_names"] = [n.lower() for n in user_entity_names]
@@ -1025,8 +1035,11 @@ async def breaking(
         if not check.fetchone():
             return {"clusters": []}
 
-        # Prefer per-user filter: only clusters touching articles the user
-        # has been scored against recently.
+        # Surface only clusters touching the user's HIGH-relevance feed —
+        # at least one member article scored Lead (tier 1) or Notable
+        # (tier 2). Tier 3 ('Background') is too loose: a German bank
+        # standoff scored against a Telangana admin still appeared via
+        # tier 3 noise. Lead/Notable kills that.
         per_user = await db.execute(
             text(
                 """
@@ -1039,6 +1052,7 @@ async def breaking(
                   AND EXISTS (
                     SELECT 1 FROM user_article_relevance uar
                     WHERE uar.user_id = :uid
+                      AND uar.relevance_tier IN (1, 2)
                       AND uar.scored_at > NOW() - interval '14 days'
                       AND uar.article_id = ANY(bc.member_article_ids)
                   )

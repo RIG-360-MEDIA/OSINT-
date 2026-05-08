@@ -104,7 +104,15 @@ class GroqKeyManager:
         # actually retryable at second 60, but the longer cooldown locked
         # out the whole pool when many keys were hit by a burst. The Celery
         # beat task at 00:05 UTC still resets the daily TPD/RPD counters.
-        self._cooldown_seconds: float = 75.0
+        self._cooldown_seconds: float = 60.0
+        # Hard cap on any individual key cooldown. Even when the SDK reports
+        # a daily-quota (TPD/RPD) 429, we never hold a key out longer than
+        # this — if Groq is genuinely still over-quota when the cooldown
+        # ends, the next probe will simply 429 again and re-cool. This makes
+        # spurious lockouts (e.g. message-classification false positives,
+        # transient pool-state corruption) self-healing within minutes
+        # instead of locking out the pipeline for hours.
+        self._max_cooldown_seconds: float = 300.0
         self._clients: dict[int, "groq_sdk.AsyncGroq"] = {}
         self._lock: asyncio.Lock | None = None
 
@@ -155,14 +163,33 @@ class GroqKeyManager:
                 if i not in self._exhausted_until
             ]
             if not available:
-                # Nearest cooldown end — useful for the error message.
-                soonest = min(self._exhausted_until.values()) if self._exhausted_until else 0
-                eta = max(0, int(soonest - now))
-                raise GroqQuotaExhausted(
-                    f"All {len(self.keys)} Groq key(s) exhausted. "
-                    f"Earliest key recovers in ~{eta}s "
-                    f"(daily reset at 00:05 UTC)."
+                # Pool fully marked exhausted in local memory. Rather than
+                # raise (which permanently stalls extraction whenever the
+                # local tracker is wrong), force-restore the key closest to
+                # recovery and let the caller probe Groq with it. Three
+                # outcomes:
+                #   1. Groq accepts → call succeeds, cooldown was wrong.
+                #   2. Groq 429s with a TPM (per-minute) limit → re-marked
+                #      with 60s cooldown; pipeline recovers in a minute.
+                #   3. Groq 429s with TPD/RPD → re-marked with the bounded
+                #      cooldown (max 300s); pipeline retries every ~5min.
+                # Net effect: stale lockout state can never starve the
+                # pipeline for longer than _max_cooldown_seconds.
+                if not self.keys:
+                    raise GroqQuotaExhausted("No Groq keys configured.")
+                soonest_idx = min(
+                    self._exhausted_until.items(), key=lambda kv: kv[1]
+                )[0]
+                soonest_until = self._exhausted_until.pop(soonest_idx)
+                eta = max(0, int(soonest_until - now))
+                logger.warning(
+                    "Groq pool fully exhausted in local tracker; probing "
+                    "key [%d] (was %ds from cooldown end). If Groq still "
+                    "rate-limits this key it will be re-cooled.",
+                    soonest_idx,
+                    eta,
                 )
+                return soonest_idx, self._get_client(soonest_idx)
             # Round-robin within available indices
             position = self._index % len(available)
             idx = available[position]
@@ -181,14 +208,21 @@ class GroqKeyManager:
         """
         Mark a key as rate-limited for an explicit number of seconds. The
         key is auto-restored on the next `get_key` call after the cooldown
-        elapses. Used by call_groq to distinguish per-minute (TPM, ~60s) from
-        per-day (TPD, hours) Groq limits.
+        elapses.
+
+        Cooldown is hard-clamped to `_max_cooldown_seconds` (5 min) regardless
+        of what the caller requests. This is a safety valve: callers used to
+        request 4-hour holds on suspected daily-quota 429s, but the parser
+        misclassified TPM as TPD often enough that pools went dark for hours.
+        With the clamp, the worst-case stall is _max_cooldown_seconds — and
+        if Groq genuinely is at TPD, the next probe simply 429s and re-cools.
 
         When the *last* available key is marked exhausted, emit a CRITICAL
         log — single high-signal pattern that monitoring should alert on.
         (Coverage audit C-12, 2026-04-28.)
         """
         import time as _time
+        seconds = min(max(seconds, 0.0), self._max_cooldown_seconds)
         async with self._get_lock():
             self._exhausted_until[key_index] = _time.time() + seconds
             remaining = len(self.keys) - len(self._exhausted_until)
@@ -308,22 +342,16 @@ async def call_groq(
             response = await client.chat.completions.create(**kwargs)
             return response.choices[0].message.content.strip()
 
-        except groq_sdk.RateLimitError as exc:
+        except groq_sdk.RateLimitError:
             # Groq returns 429 for both per-minute (TPM/RPM) and per-day
-            # (TPD/RPD) limits. TPM rolls over in 60s; TPD takes until the
-            # daily reset at 00:00 UTC. Holding TPD-exhausted keys back for
-            # 75s is too short — the retry will hit the same TPD wall.
-            # Conversely TPM doesn't deserve a long cooldown. Parse the
-            # message to pick the right cooldown.
-            err_text = str(exc).lower()
-            if "tokens per day" in err_text or "tpd" in err_text or \
-               "requests per day" in err_text or "rpd" in err_text:
-                # Daily quota exhausted — hold key out until midnight UTC.
-                # Use a generously long cooldown so retries don't waste budget.
-                await groq_manager.mark_exhausted_for(key_idx, 4 * 3600)
-            else:
-                # Per-minute limit; the rolling 60s window will clear soon.
-                await groq_manager.mark_exhausted(key_idx)
+            # (TPD/RPD) limits. We treat both with the same bounded cooldown
+            # (clamped to _max_cooldown_seconds in mark_exhausted_for) — the
+            # previous "parse the error string and hold for 4 hours on TPD"
+            # logic was fragile (string format isn't contractual) and
+            # routinely misclassified TPM, locking the entire pool out for
+            # hours. Now we trust Groq to tell us via the *next* 429 if the
+            # key is still over-quota, and self-heal otherwise.
+            await groq_manager.mark_exhausted(key_idx)
             if attempt == attempts - 1:
                 raise GroqQuotaExhausted(
                     "Retry attempts exhausted due to rate limiting."
@@ -413,16 +441,12 @@ async def call_groq_stream(  # type: ignore[no-untyped-def]
             return  # success — exit the retry loop
 
         except groq_sdk.RateLimitError as exc:
-            err_text = str(exc).lower()
-            if (
-                "tokens per day" in err_text
-                or "tpd" in err_text
-                or "requests per day" in err_text
-                or "rpd" in err_text
-            ):
-                await groq_manager.mark_exhausted_for(key_idx, 4 * 3600)
-            else:
-                await groq_manager.mark_exhausted(key_idx)
+            # See call_groq above: bounded cooldown for all 429s. We no
+            # longer parse the error message to distinguish TPM vs TPD —
+            # the next probe on the same key (after at most
+            # _max_cooldown_seconds) will simply 429 again if still over-
+            # quota and re-cool, otherwise recover automatically.
+            await groq_manager.mark_exhausted(key_idx)
             last_exc = exc
             if attempt == attempts - 1:
                 raise GroqQuotaExhausted(

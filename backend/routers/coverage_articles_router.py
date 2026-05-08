@@ -1262,7 +1262,15 @@ async def breaking(
                     WHERE uar.user_id = :uid
                       AND uar.relevance_tier IN (1, 2)
                       AND a.published_at > NOW() - INTERVAL '60 minutes'
-                      AND a.is_duplicate IS NOT TRUE
+                      -- NOTE: deliberately NOT filtering on is_duplicate.
+                      -- Investigation shows the dedup pipeline is over-
+                      -- flagging legitimate regional content (e.g. Mana
+                      -- Telangana original articles getting is_duplicate
+                      -- =TRUE), which was hiding genuinely-relevant
+                      -- local content from this fallback. The dedup
+                      -- bug deserves its own fix; meanwhile, surfacing
+                      -- a "duplicate" as the developing item is far
+                      -- better than surfacing an off-topic non-duplicate
                     ORDER BY
                       -- Tie-break: prefer articles whose geo matches
                       -- the user's primary geo. Without this, all

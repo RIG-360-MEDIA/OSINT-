@@ -22,4 +22,5 @@ from backend.tasks.coverage.notifications_task import evaluate_notification_rule
 from backend.tasks.coverage.claims_quotes_task import (  # noqa: F401
     extract_claims_quotes_for_article,
     extract_pending_claims_quotes,
+    translate_pending_quotes,
 )

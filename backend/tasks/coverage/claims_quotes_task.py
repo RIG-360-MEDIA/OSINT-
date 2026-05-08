@@ -34,8 +34,15 @@ _EXTRACTION_SYSTEM = (
     "Return STRICT JSON: { "
     "claims: [{text: 'short factual claim', subject: 'entity name', "
     "predicate: 'verb-phrase', object: 'short object'}, ...] (max 6), "
-    "quotes: [{speaker: 'name as written', text: 'exact quote', "
+    "quotes: [{speaker: 'name AS WRITTEN in source', "
+    "speaker_en: 'speaker name in natural English/transliterated', "
+    "text: 'exact quote in source language', "
+    "text_en: 'natural English translation of the quote', "
     "is_direct: true|false}, ...] (max 6) }. "
+    "If the source article is already in English, set speaker_en "
+    "= speaker and text_en = text (just normalised). For non-English "
+    "articles (Telugu, Tamil, Bengali, Hindi etc.), translate "
+    "faithfully — preserve meaning over literal word order. "
     "Skip opinion / editorial commentary — only verifiable factual claims. "
     "No prose outside JSON. No fences."
 )
@@ -122,14 +129,20 @@ async def _persist(article_id: str, parsed: dict[str, Any]) -> dict[str, int]:
             speaker = str(q.get("speaker", ""))[:240]
             if not quote_text_value.strip() or not speaker.strip():
                 continue
-            speaker_entity = await _resolve_entity_id(speaker)
+            quote_text_en = str(q.get("text_en", ""))[:1500].strip() or None
+            speaker_en = str(q.get("speaker_en", ""))[:240].strip() or None
+            speaker_entity = await _resolve_entity_id(speaker_en or speaker)
             await db.execute(
                 text(
                     """
                     INSERT INTO article_quotes
                       (article_id, speaker_name, speaker_entity_id,
-                       quote_text, is_direct)
-                    VALUES (:a, :sp, :se, :qt, :d)
+                       quote_text, is_direct,
+                       quote_text_en, speaker_name_en, translated_at)
+                    VALUES (:a, :sp, :se, :qt, :d,
+                            :qt_en, :sp_en,
+                            CASE WHEN :qt_en IS NOT NULL
+                                 THEN NOW() ELSE NULL END)
                     """
                 ),
                 {
@@ -138,6 +151,8 @@ async def _persist(article_id: str, parsed: dict[str, Any]) -> dict[str, int]:
                     "se": speaker_entity,
                     "qt": quote_text_value,
                     "d": bool(q.get("is_direct", True)),
+                    "qt_en": quote_text_en,
+                    "sp_en": speaker_en,
                 },
             )
             n_quotes += 1
@@ -279,3 +294,105 @@ def extract_pending_claims_quotes(self) -> dict:  # type: ignore[no-untyped-def]
     pull the beat entry.
     """
     return asyncio.run(_queue_pending())
+
+
+# ── Backfill: translate pre-existing quotes that have no English text ─────────
+
+
+_TRANSLATE_SYSTEM = (
+    "You translate news quotes to natural English. Return STRICT JSON: "
+    "{\"speaker_en\": \"...\", \"text_en\": \"...\"}. If the input is "
+    "already English, return it lightly cleaned. For non-English input "
+    "(Telugu, Tamil, Bengali, Hindi etc.), translate faithfully — "
+    "preserve meaning over literal word order. No prose outside JSON, "
+    "no fences."
+)
+
+_TRANSLATE_BATCH_SIZE = 30
+
+
+async def _translate_pending_run() -> dict[str, int]:
+    """
+    Find quotes where quote_text_en IS NULL (created before migration
+    049 / before the extractor learned to translate), translate via
+    Groq, update in place. Capped at _TRANSLATE_BATCH_SIZE per fire.
+    """
+    async with get_db() as db:
+        result = await db.execute(
+            text(
+                """
+                SELECT id::text AS id, speaker_name, quote_text
+                FROM article_quotes
+                WHERE quote_text_en IS NULL
+                  AND extracted_at > NOW() - INTERVAL '60 days'
+                ORDER BY extracted_at DESC
+                LIMIT :lim
+                """
+            ),
+            {"lim": _TRANSLATE_BATCH_SIZE},
+        )
+        rows = result.fetchall()
+
+    translated, failed = 0, 0
+    for row in rows:
+        prompt = (
+            f"speaker: {row.speaker_name}\n"
+            f"text: {row.quote_text}\n\n"
+            "Return the JSON object."
+        )
+        try:
+            raw = await call_groq(
+                system=_TRANSLATE_SYSTEM,
+                user=prompt,
+                task_type="classification",
+                model=FAST_MODEL,
+                json_response=True,
+            )
+            parsed = json.loads(raw)
+            if not isinstance(parsed, dict):
+                failed += 1
+                continue
+            sp_en = str(parsed.get("speaker_en") or "").strip()[:240] or None
+            qt_en = str(parsed.get("text_en") or "").strip()[:1500] or None
+            if not qt_en:
+                failed += 1
+                continue
+        except (GroqQuotaExhausted, GroqCallFailed) as exc:
+            logger.warning("quote translation failed: %s", exc)
+            failed += 1
+            continue
+        except json.JSONDecodeError:
+            failed += 1
+            continue
+
+        async with get_db() as db:
+            await db.execute(
+                text(
+                    """
+                    UPDATE article_quotes
+                    SET quote_text_en = :qt_en,
+                        speaker_name_en = COALESCE(:sp_en, speaker_name_en),
+                        translated_at = NOW()
+                    WHERE id::text = :id
+                    """
+                ),
+                {"qt_en": qt_en, "sp_en": sp_en, "id": row.id},
+            )
+            await db.commit()
+        translated += 1
+
+    return {"scanned": len(rows), "translated": translated, "failed": failed}
+
+
+@app.task(
+    name="tasks.translate_pending_quotes",
+    bind=True,
+    max_retries=0,
+)
+def translate_pending_quotes(self) -> dict:  # type: ignore[no-untyped-def]
+    """
+    Periodic driver. Beat-fired every 5 min on the nlp queue.
+    Translates quotes that were extracted before migration 049 added
+    the English columns.
+    """
+    return asyncio.run(_translate_pending_run())

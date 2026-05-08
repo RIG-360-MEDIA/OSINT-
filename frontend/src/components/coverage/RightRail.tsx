@@ -173,7 +173,13 @@ function WatchlistPanel() {
 interface Quote {
   id: string
   speaker_name: string
+  // Translated/transliterated speaker name (English). Set by extractor
+  // post-migration-049 OR by the backfill translator. Renderer prefers
+  // it so a Telugu-script speaker name appears as English.
+  speaker_name_en?: string | null
   quote_text: string
+  // English translation of the quote text. Same fallback rule.
+  quote_text_en?: string | null
   article_id: string
   source_name: string
 }
@@ -219,7 +225,10 @@ function QuotesPanel({ onArticleClick }: { onArticleClick: (id: string) => void 
               marginBottom: '8px',
             }}
           >
-            "{q.quote_text.slice(0, 180)}{q.quote_text.length > 180 ? '…' : ''}"
+            {(() => {
+              const text = q.quote_text_en || q.quote_text
+              return `"${text.slice(0, 180)}${text.length > 180 ? '…' : ''}"`
+            })()}
           </div>
           <div
             className="onyx-mono"
@@ -230,7 +239,7 @@ function QuotesPanel({ onArticleClick }: { onArticleClick: (id: string) => void 
               color: 'var(--onyx-dim)',
             }}
           >
-            {q.speaker_name} · {q.source_name}
+            {(q.speaker_name_en || q.speaker_name)} · {q.source_name}
           </div>
         </button>
       ))}

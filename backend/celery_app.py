@@ -122,6 +122,7 @@ app.config_from_object(
             "tasks.evaluate_notification_rules": {"queue": "nlp"},
             "tasks.extract_claims_quotes_for_article": {"queue": "nlp"},
             "tasks.extract_pending_claims_quotes": {"queue": "nlp"},
+            "tasks.translate_pending_quotes": {"queue": "nlp"},
             # CM Page tasks. Heavy LLM work routes to `nlp`; cheap
             # aggregation/refresh work routes to `social` to avoid
             # competing with article NLP for the nlp pool.
@@ -347,6 +348,15 @@ app.config_from_object(
             # disappear whenever Groq is throttled.
             "classify-pending-breaking-every-5-min": {
                 "task": "tasks.classify_pending_breaking_clusters",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
+            },
+            # Translates pre-existing non-English quotes to English so
+            # the Recent Quotes panel renders readable text. Quotes
+            # extracted post-migration-049 already include translations
+            # at extract time; this driver only catches the legacy backlog.
+            "translate-pending-quotes-every-5-min": {
+                "task": "tasks.translate_pending_quotes",
                 "schedule": timedelta(minutes=5),
                 "options": {"queue": "nlp"},
             },

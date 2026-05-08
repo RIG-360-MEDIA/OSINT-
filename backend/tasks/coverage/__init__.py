@@ -11,7 +11,10 @@ Tasks:
     extract_claims_quotes_for_article (incremental, fired by NLP batch)
 """
 from backend.tasks.coverage.user_cards_task import refresh_user_cards  # noqa: F401
-from backend.tasks.coverage.breaking_task import detect_breaking_events  # noqa: F401
+from backend.tasks.coverage.breaking_task import (  # noqa: F401
+    detect_breaking_events,
+    classify_pending_breaking_clusters,
+)
 from backend.tasks.coverage.contradictions_task import refresh_contradictions  # noqa: F401
 from backend.tasks.coverage.top_stories_task import refresh_top_stories  # noqa: F401
 from backend.tasks.coverage.coverage_gaps_task import refresh_coverage_gaps  # noqa: F401

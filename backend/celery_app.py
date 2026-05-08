@@ -115,6 +115,7 @@ app.config_from_object(
             # /coverage/articles rebuild
             "tasks.refresh_user_cards": {"queue": "nlp"},
             "tasks.detect_breaking_events": {"queue": "nlp"},
+            "tasks.classify_pending_breaking_clusters": {"queue": "nlp"},
             "tasks.refresh_contradictions": {"queue": "nlp"},
             "tasks.refresh_top_stories": {"queue": "nlp"},
             "tasks.refresh_coverage_gaps": {"queue": "nlp"},
@@ -338,6 +339,15 @@ app.config_from_object(
             "detect-breaking-events-every-15-min": {
                 "task": "tasks.detect_breaking_events",
                 "schedule": timedelta(minutes=15),
+                "options": {"queue": "nlp"},
+            },
+            # Backfill classification on clusters whose Stage-1 Groq call
+            # failed at detection time (quota contention with extraction).
+            # Without this, real Telangana / India clusters silently
+            # disappear whenever Groq is throttled.
+            "classify-pending-breaking-every-5-min": {
+                "task": "tasks.classify_pending_breaking_clusters",
+                "schedule": timedelta(minutes=5),
                 "options": {"queue": "nlp"},
             },
             "refresh-contradictions-daily-0430-utc": {

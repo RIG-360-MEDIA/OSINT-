@@ -207,47 +207,12 @@ async def _store_cluster(
 
     # ── Stage 1: event validation + classification (Groq) ─────────────
     # One call decides four things at once: real-event flag, event_type,
-    # severity, and the headline summary. On Groq failure we skip the
-    # cluster entirely rather than persist an unvalidated row.
+    # severity, and the headline summary. PERSIST EITHER WAY — even if
+    # Groq fails we keep the cluster (with NULL classification) and a
+    # periodic backfill task retries classification later. Dropping
+    # candidates on transient quota loses real Telangana events when
+    # extraction-quota contention spikes.
     classification = await _classify_cluster(titles)
-    if not classification:
-        logger.info(
-            "breaking cluster skipped (classifier unavailable); "
-            "%d articles, %d sources", len(members), len(distinct_sources)
-        )
-        return
-
-    is_real_event = bool(classification.get("is_real_event"))
-    if not is_real_event:
-        logger.info(
-            "breaking cluster rejected (not one shared event): titles=%s",
-            titles[:3],
-        )
-        return
-
-    event_type = str(classification.get("event_type") or "other").strip().lower()
-    severity = str(classification.get("severity") or "low").strip().lower()
-
-    if event_type in _TRIVIAL_EVENT_TYPES:
-        logger.info(
-            "breaking cluster rejected (trivial event_type=%s): %s",
-            event_type, titles[0] if titles else "",
-        )
-        return
-    if severity not in _SURFACEABLE_SEVERITIES:
-        logger.info(
-            "breaking cluster rejected (severity=%s): %s",
-            severity, titles[0] if titles else "",
-        )
-        return
-
-    headline = (
-        str(classification.get("summary") or "").strip().replace('"', "")[:200]
-        or (titles[0][:120] if titles else "Breaking development")
-    )
-    shared_subject = (
-        str(classification.get("shared_subject") or "").strip()[:240] or None
-    )
 
     window_start = min(m["published_at"] for m in members if m["published_at"])
     window_end = max(m["published_at"] for m in members if m["published_at"])
@@ -270,32 +235,89 @@ async def _store_cluster(
         if existing.fetchone():
             return
 
-        await db.execute(
-            text(
-                """
-                INSERT INTO breaking_clusters
-                  (window_start, window_end, member_article_ids,
-                   headline, sources_count, score,
-                   event_type, severity, is_real_event,
-                   shared_subject, classified_at)
-                VALUES (:ws, :we, CAST(:ids AS uuid[]),
-                        :h, :sc, :score,
-                        :et, :sev, TRUE,
-                        :subj, NOW())
-                """
-            ),
-            {
-                "ws": window_start,
-                "we": window_end,
-                "ids": article_ids,
-                "h": headline,
-                "sc": len(distinct_sources),
-                "score": float(len(indices)) / max(len(distinct_sources), 1),
-                "et": event_type,
-                "sev": severity,
-                "subj": shared_subject,
-            },
-        )
+        if classification:
+            is_real_event = bool(classification.get("is_real_event"))
+            event_type = str(
+                classification.get("event_type") or "other"
+            ).strip().lower()
+            severity = str(
+                classification.get("severity") or "low"
+            ).strip().lower()
+
+            # If classifier definitively rejected (not a real event, or
+            # trivial type, or low severity), still write the row so we
+            # don't re-cluster + re-classify it on every detector cycle.
+            # The /breaking endpoint filters these out.
+            headline = (
+                str(classification.get("summary") or "")
+                .strip().replace('"', "")[:200]
+                or (titles[0][:120] if titles else "Breaking development")
+            )
+            shared_subject = (
+                str(classification.get("shared_subject") or "")
+                .strip()[:240]
+                or None
+            )
+            await db.execute(
+                text(
+                    """
+                    INSERT INTO breaking_clusters
+                      (window_start, window_end, member_article_ids,
+                       headline, sources_count, score,
+                       event_type, severity, is_real_event,
+                       shared_subject, classified_at)
+                    VALUES (:ws, :we, CAST(:ids AS uuid[]),
+                            :h, :sc, :score,
+                            :et, :sev, :real,
+                            :subj, NOW())
+                    """
+                ),
+                {
+                    "ws": window_start,
+                    "we": window_end,
+                    "ids": article_ids,
+                    "h": headline,
+                    "sc": len(distinct_sources),
+                    "score": float(len(indices))
+                    / max(len(distinct_sources), 1),
+                    "et": event_type,
+                    "sev": severity,
+                    "real": is_real_event,
+                    "subj": shared_subject,
+                },
+            )
+        else:
+            # Classifier unavailable. Persist with NULL classification so
+            # backfill can retry. Use the first article title as a
+            # provisional headline; backfill will overwrite when it
+            # successfully classifies.
+            await db.execute(
+                text(
+                    """
+                    INSERT INTO breaking_clusters
+                      (window_start, window_end, member_article_ids,
+                       headline, sources_count, score)
+                    VALUES (:ws, :we, CAST(:ids AS uuid[]),
+                            :h, :sc, :score)
+                    """
+                ),
+                {
+                    "ws": window_start,
+                    "we": window_end,
+                    "ids": article_ids,
+                    "h": (titles[0][:200]
+                          if titles else "Pending classification"),
+                    "sc": len(distinct_sources),
+                    "score": float(len(indices))
+                    / max(len(distinct_sources), 1),
+                },
+            )
+            logger.info(
+                "breaking cluster persisted unclassified (classifier "
+                "unavailable); %d articles, %d sources — backfill will "
+                "retry", len(members), len(distinct_sources),
+            )
+
         await db.commit()
 
 
@@ -349,3 +371,108 @@ def detect_breaking_events(self) -> dict:  # type: ignore[no-untyped-def]
     if not _flag("FEATURE_BREAKING"):
         return {"skipped": "feature flag off"}
     return asyncio.run(_detect_run())
+
+
+# ── Backfill: re-classify clusters that were stored without classification ────
+
+
+async def _backfill_run() -> dict[str, Any]:
+    """
+    Find active breaking_clusters where classified_at IS NULL (Groq was
+    unavailable when they were detected), pull their member-article
+    titles, and run the same classifier on them. Update the row.
+
+    Limits: 20 clusters per run to bound Groq cost. The next 5-min cycle
+    picks up whatever remains.
+    """
+    async with get_db() as db:
+        result = await db.execute(
+            text(
+                """
+                SELECT bc.id::text AS id, bc.member_article_ids,
+                       array_agg(a.title ORDER BY a.published_at DESC)
+                         FILTER (WHERE a.title IS NOT NULL) AS titles
+                FROM breaking_clusters bc
+                JOIN articles a ON a.id::text = ANY(
+                  SELECT unnest(bc.member_article_ids)::text
+                )
+                WHERE bc.is_active = TRUE
+                  AND bc.classified_at IS NULL
+                  AND bc.created_at > NOW() - INTERVAL '6 hours'
+                GROUP BY bc.id, bc.member_article_ids
+                ORDER BY bc.created_at DESC
+                LIMIT 20
+                """
+            )
+        )
+        rows = result.fetchall()
+
+    classified = 0
+    failed = 0
+    for row in rows:
+        titles = list(row.titles or [])
+        if not titles:
+            continue
+        cl = await _classify_cluster(titles[:10])
+        if not cl:
+            failed += 1
+            continue
+
+        is_real = bool(cl.get("is_real_event"))
+        event_type = str(cl.get("event_type") or "other").strip().lower()
+        severity = str(cl.get("severity") or "low").strip().lower()
+        summary = (
+            str(cl.get("summary") or "").strip().replace('"', "")[:200]
+        )
+        subject = (
+            str(cl.get("shared_subject") or "").strip()[:240] or None
+        )
+
+        async with get_db() as db:
+            await db.execute(
+                text(
+                    """
+                    UPDATE breaking_clusters
+                    SET is_real_event = :r,
+                        event_type = :et,
+                        severity = :sev,
+                        shared_subject = :subj,
+                        classified_at = NOW(),
+                        headline = COALESCE(NULLIF(:h, ''), headline)
+                    WHERE id::text = :id
+                    """
+                ),
+                {
+                    "r": is_real,
+                    "et": event_type,
+                    "sev": severity,
+                    "subj": subject,
+                    "h": summary,
+                    "id": row.id,
+                },
+            )
+            await db.commit()
+        classified += 1
+
+    return {
+        "scanned": len(rows),
+        "classified": classified,
+        "failed": failed,
+    }
+
+
+@app.task(
+    name="tasks.classify_pending_breaking_clusters",
+    bind=True,
+    max_retries=0,
+)
+def classify_pending_breaking_clusters(self) -> dict:  # type: ignore[no-untyped-def]
+    """
+    Periodic driver. Beat-fired every 5 min on the nlp queue. Retries
+    classification on any active breaking_clusters whose Stage-1 Groq
+    call failed at detection time. Capped at 20 clusters/run to bound
+    Groq spend.
+    """
+    if not _flag("FEATURE_BREAKING"):
+        return {"skipped": "feature flag off"}
+    return asyncio.run(_backfill_run())

@@ -128,8 +128,8 @@ export function OnyxTopBar() {
         WebkitBackdropFilter: 'blur(24px) saturate(1.4)',
         display: 'flex',
         alignItems: 'center',
-        padding: '0 32px',
-        gap: '28px',
+        padding: '0 56px',
+        gap: '40px',
         zIndex: 200,
       }}
     >
@@ -153,12 +153,12 @@ export function OnyxTopBar() {
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '14px',
+          gap: '18px',
           textDecoration: 'none',
           flexShrink: 0,
         }}
       >
-        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" style={{ color: 'var(--onyx-cyan)', display: 'block', filter: 'drop-shadow(0 0 6px rgba(0, 194, 255, 0.45))' }}>
+        <svg width="28" height="28" viewBox="0 0 22 22" aria-hidden="true" style={{ color: 'var(--onyx-cyan)', display: 'block', filter: 'drop-shadow(0 0 6px rgba(0, 194, 255, 0.45))' }}>
           <circle cx="11" cy="11" r="9.5" fill="none" stroke="currentColor" strokeWidth="0.6" opacity="0.32" />
           <circle cx="11" cy="11" r="5.5" fill="none" stroke="currentColor" strokeWidth="0.9" opacity="0.62" />
           <circle cx="11" cy="11" r="2" fill="currentColor" />
@@ -168,9 +168,9 @@ export function OnyxTopBar() {
         <span style={{
           fontFamily: 'var(--onyx-display)',
           fontWeight: 500,
-          fontSize: '17px',
+          fontSize: '22px',
           lineHeight: 1,
-          letterSpacing: '-0.012em',
+          letterSpacing: '-0.014em',
           color: 'var(--onyx-bone)',
         }}>
           Robin
@@ -178,7 +178,7 @@ export function OnyxTopBar() {
       </Link>
 
       {/* Vertical hairline divider */}
-      <div style={{ width: '1px', height: '22px', background: 'var(--onyx-rule-hair)', flexShrink: 0 }} aria-hidden="true" />
+      <div style={{ width: '1px', height: '32px', background: 'var(--onyx-rule-hair)', flexShrink: 0 }} aria-hidden="true" />
 
       {/* ── Nav with sliding cyan indicator ───────────────────────────── */}
       <nav
@@ -186,7 +186,7 @@ export function OnyxTopBar() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '32px',
+          gap: '44px',
           flex: 1,
           position: 'relative',
           height: '100%',
@@ -201,9 +201,9 @@ export function OnyxTopBar() {
               data-nav-link
               style={{
                 fontFamily: 'var(--onyx-mono)',
-                fontSize: '11px',
+                fontSize: '12.5px',
                 fontWeight: 500,
-                letterSpacing: '0.28em',
+                letterSpacing: '0.36em',
                 textTransform: 'uppercase',
                 color: isActive ? 'var(--onyx-bone)' : 'var(--onyx-dim)',
                 textDecoration: 'none',
@@ -228,7 +228,7 @@ export function OnyxTopBar() {
           aria-hidden="true"
           style={{
             position: 'absolute',
-            bottom: '14px',
+            bottom: '18px',
             left: indicator.left,
             width: indicator.width,
             height: '2px',
@@ -242,14 +242,14 @@ export function OnyxTopBar() {
       </nav>
 
       {/* ── Right rail ────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '26px', flexShrink: 0 }}>
         {/* Live status pill */}
         <div className="onyx-topbar-rail-mid" style={{
           display: 'inline-flex', alignItems: 'center', gap: '8px',
-          padding: '5px 11px',
+          padding: '7px 14px',
           border: '1px solid var(--onyx-rule-hair)',
           fontFamily: 'var(--onyx-mono)',
-          fontSize: '9.5px',
+          fontSize: '10.5px',
           fontWeight: 500,
           letterSpacing: '0.28em',
           textTransform: 'uppercase',
@@ -262,13 +262,13 @@ export function OnyxTopBar() {
         {/* UTC clock */}
         <span className="onyx-topbar-rail-mid" style={{
           fontFamily: 'var(--onyx-mono)',
-          fontSize: '11.5px',
+          fontSize: '13.5px',
           letterSpacing: '0.14em',
           color: 'var(--onyx-bone-2)',
           fontVariantNumeric: 'tabular-nums',
         }}>
           {now ? formatHMS(now) : '--:--:--'}{' '}
-          <span style={{ color: 'var(--onyx-dim)', marginLeft: '4px', fontSize: '9.5px', letterSpacing: '0.32em' }}>UTC</span>
+          <span style={{ color: 'var(--onyx-dim)', marginLeft: '4px', fontSize: '10.5px', letterSpacing: '0.32em' }}>UTC</span>
         </span>
 
         {/* User avatar */}
@@ -276,12 +276,12 @@ export function OnyxTopBar() {
           <div
             aria-label="Account"
             style={{
-              width: '32px', height: '32px',
+              width: '36px', height: '36px',
               border: '1px solid var(--onyx-rule-hair)',
               borderRadius: '50%',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               fontFamily: 'var(--onyx-display)',
-              fontSize: '13px',
+              fontSize: '14px',
               fontWeight: 500,
               color: 'var(--onyx-bone-2)',
               flexShrink: 0,
@@ -300,9 +300,9 @@ export function OnyxTopBar() {
             border: 'none',
             color: 'var(--onyx-dim)',
             fontFamily: 'var(--onyx-mono)',
-            fontSize: '10px',
+            fontSize: '11px',
             fontWeight: 500,
-            letterSpacing: '0.32em',
+            letterSpacing: '0.36em',
             textTransform: 'uppercase',
             cursor: 'pointer',
             padding: '4px 0',

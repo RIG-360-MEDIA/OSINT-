@@ -44,7 +44,7 @@
   --font-display: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
   --font-mono:    'DM Mono', ui-monospace, 'Cascadia Code', monospace;
 
-  --topbar-h:    86px;
+  --topbar-h:    96px;
   --dateline-h:  36px;
   --masthead-h:  122px; /* topbar + dateline */
 

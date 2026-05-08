@@ -14,7 +14,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Navigation from '@/components/Navigation'
+import { OnyxTopBar } from '@/components/coverage/OnyxTopBar'
 import { CoveragePanel, type CoveragePanelData } from '@/components/coverage/CoveragePanel'
 import { LiveTicker } from '@/components/coverage/LiveTicker'
 import { LiveClock } from '@/components/coverage/LiveClock'
@@ -125,7 +125,7 @@ export default function CoveragePage() {
 
   return (
     <>
-      <Navigation />
+      <OnyxTopBar />
     <div
       data-theme="onyx"
       style={{

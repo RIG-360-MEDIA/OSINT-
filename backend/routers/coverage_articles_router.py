@@ -1078,17 +1078,18 @@ async def breaking(
                 FROM breaking_clusters bc
                 WHERE bc.is_active = TRUE
                   -- Recency anchored on window_end (the most recent
-                  -- article in the cluster), not created_at (which is
-                  -- our pipeline's detection time). An event whose
-                  -- latest reporting was 30 min ago is "30 min old"
-                  -- regardless of how long our classifier took to
-                  -- catch up — the user cares about news age, not
-                  -- pipeline age. 90 min window: gives backfill time
-                  -- to finish (when Stage-1 Groq is throttled, the
-                  -- 5-min backfill task may take 1-2 cycles to
-                  -- successfully classify).
+                  -- article in the cluster), not created_at (pipeline
+                  -- time). Window: 3 hours. Reasoning: regional /
+                  -- single-language coverage often takes 60-90 min for
+                  -- 3 distinct sources to all publish — the multi-
+                  -- source threshold is a quality bar we keep, but it
+                  -- inherently lags real-time. With 3h, we accept up
+                  -- to ~90 min of detector latency on top of natural
+                  -- spread, while still feeling 'recent'. The recency
+                  -- multiplier in scoring still demotes older clusters
+                  -- so the freshest event always rises to top.
                   AND COALESCE(bc.window_end, bc.created_at)
-                      > NOW() - INTERVAL '90 minutes'
+                      > NOW() - INTERVAL '3 hours'
                   AND (
                     -- Validated rows: keep only real events at
                     -- non-trivial severity + non-trivial event_type.

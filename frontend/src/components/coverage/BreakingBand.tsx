@@ -15,9 +15,14 @@ interface BreakingCluster {
   id: string
   headline: string
   sources_count: number
-  volume: number
-  window_start: string | null
-  created_at: string | null
+  volume?: number
+  window_start?: string | null
+  created_at?: string | null
+  // 'breaking' = multi-source validated cluster (red band)
+  // 'developing' = single high-relevance tier-1 article in last 60 min,
+  //   shown in cyan when no validated cluster exists for the user.
+  kind?: 'breaking' | 'developing'
+  published_at?: string | null
 }
 
 export function BreakingBand() {
@@ -50,9 +55,23 @@ export function BreakingBand() {
 
   if (!cluster) return null
 
-  const ageMinutes = cluster.created_at
-    ? Math.max(1, Math.floor((Date.now() - new Date(cluster.created_at).getTime()) / 60_000))
+  // Age: prefer published_at when present (developing items), else
+  // created_at (clusters). Both are wall-clock; we just pick whichever
+  // the backend supplied.
+  const anchor = cluster.published_at || cluster.created_at
+  const ageMinutes = anchor
+    ? Math.max(1, Math.floor((Date.now() - new Date(anchor).getTime()) / 60_000))
     : 0
+
+  const isDeveloping = cluster.kind === 'developing'
+  const accent = isDeveloping ? 'var(--onyx-cyan)' : 'var(--onyx-red)'
+  const accentBg = isDeveloping
+    ? 'rgba(0, 194, 255, 0.04)'
+    : 'rgba(255, 45, 45, 0.04)'
+  const label = isDeveloping ? 'Developing' : 'Breaking'
+  const sourceLine = isDeveloping
+    ? `${cluster.sources_count} source · ${ageMinutes}m`
+    : `${cluster.sources_count} sources · ${ageMinutes}m`
 
   return (
     <div
@@ -63,8 +82,8 @@ export function BreakingBand() {
         gap: '20px',
         padding: '16px 24px',
         marginTop: '24px',
-        border: '1px solid var(--onyx-red)',
-        background: 'rgba(255, 45, 45, 0.04)',
+        border: `1px solid ${accent}`,
+        background: accentBg,
         animation: 'onyx-fade-up 0.4s ease both',
       }}
     >
@@ -72,8 +91,8 @@ export function BreakingBand() {
         style={{
           width: '8px',
           height: '8px',
-          background: 'var(--onyx-red)',
-          boxShadow: '0 0 12px var(--onyx-red)',
+          background: accent,
+          boxShadow: `0 0 12px ${accent}`,
           animation: 'onyx-pulse-cyan 1.2s ease-in-out infinite',
           flexShrink: 0,
         }}
@@ -84,11 +103,11 @@ export function BreakingBand() {
           fontSize: '11px',
           letterSpacing: '0.42em',
           textTransform: 'uppercase',
-          color: 'var(--onyx-red)',
+          color: accent,
           flexShrink: 0,
         }}
       >
-        Breaking
+        {label}
       </span>
       <span
         style={{
@@ -111,7 +130,7 @@ export function BreakingBand() {
           flexShrink: 0,
         }}
       >
-        {cluster.sources_count} sources · {ageMinutes}m
+        {sourceLine}
       </span>
     </div>
   )

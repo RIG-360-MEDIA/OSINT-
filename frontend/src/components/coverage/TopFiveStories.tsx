@@ -21,6 +21,11 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 interface TopStory {
   article_id: string
   title: string
+  // display_title is an English-translated headline produced by the
+  // top-stories refresh task. Always present when the cache row was
+  // generated; absent on live-fallback rows. Renderer prefers it
+  // over `title` so non-English source articles get readable headlines.
+  display_title?: string | null
   lead: string
   source_name: string
   source_domain: string
@@ -152,7 +157,7 @@ export function TopFiveStories({ onRead, onAddToCard, onCompareToggle, selectedF
                   }}
                   onClick={() => onRead(story.article_id)}
                 >
-                  {story.title}
+                  {story.display_title || story.title}
                 </h3>
 
                 {story.why_matters && (

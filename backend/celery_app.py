@@ -120,6 +120,7 @@ app.config_from_object(
             "tasks.refresh_coverage_gaps": {"queue": "nlp"},
             "tasks.evaluate_notification_rules": {"queue": "nlp"},
             "tasks.extract_claims_quotes_for_article": {"queue": "nlp"},
+            "tasks.extract_pending_claims_quotes": {"queue": "nlp"},
             # CM Page tasks. Heavy LLM work routes to `nlp`; cheap
             # aggregation/refresh work routes to `social` to avoid
             # competing with article NLP for the nlp pool.
@@ -357,6 +358,15 @@ app.config_from_object(
             "evaluate-notification-rules-every-15-min": {
                 "task": "tasks.evaluate_notification_rules",
                 "schedule": timedelta(minutes=15),
+                "options": {"queue": "nlp"},
+            },
+            "extract-pending-claims-quotes-every-5-min": {
+                # Foundational extraction driver. process_nlp_batch never
+                # fires per-article extraction itself, so without this the
+                # claims_extracted=FALSE backlog grows forever. Scans the
+                # unextracted pile, queues 50 articles per fire. Always on.
+                "task": "tasks.extract_pending_claims_quotes",
+                "schedule": timedelta(minutes=5),
                 "options": {"queue": "nlp"},
             },
             # ── CM Page political-intelligence schedule ──

@@ -266,7 +266,7 @@ async def _active_user_ids(limit: int) -> list[str]:
                       AND uar.relevance_tier IN (1, 2)
                       AND uar.scored_at > NOW() - interval '14 days'
                   )
-                ORDER BY u.last_active_at DESC NULLS LAST
+                ORDER BY u.created_at DESC NULLS LAST
                 LIMIT :lim
                 """
             ),

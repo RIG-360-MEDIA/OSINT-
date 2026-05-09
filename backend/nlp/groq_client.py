@@ -279,6 +279,125 @@ def _init_manager() -> GroqKeyManager:
 groq_manager: GroqKeyManager = _init_manager()
 
 
+# ── Cerebras failover provider ───────────────────────────────────────────────
+#
+# When Groq's 20-key pool is fully rate-limited (per-minute caps tripping
+# during burst windows), we fail over to Cerebras Inference. Same Llama
+# models, completely separate quota universe (1M tokens/day per Cerebras
+# key, 60-100K TPM — 10-16x Groq's per-key TPM headroom). Free tier, no
+# credit card.
+#
+# Implemented as a minimal raw-httpx client (no SDK install) so the
+# failover surface stays small and explicit. Each Cerebras call is gated
+# by the same token bucket so the per-process rate limit applies across
+# both providers — we don't get extra burst budget by having two
+# providers, but we get extra steady-state capacity because each
+# provider has its own 30-rpm-per-key Groq-style ceiling.
+
+_CEREBRAS_BASE = "https://api.cerebras.ai/v1/chat/completions"
+_CEREBRAS_KEYS: list[str] = [
+    k.strip() for k in os.getenv("CEREBRAS_API_KEYS", "").split(",") if k.strip()
+]
+_cerebras_index: int = 0
+
+# Groq model id → Cerebras model id. Same model weights, different naming
+# convention. Anything not in the map falls back to llama3.1-8b.
+_GROQ_TO_CEREBRAS_MODEL: dict[str, str] = {
+    "llama-3.1-8b-instant": "llama3.1-8b",
+    "llama-3.3-70b-versatile": "llama3.3-70b",
+    "llama-3.1-70b-versatile": "llama3.3-70b",
+    "llama-3.2-3b-preview": "llama3.1-8b",
+    "llama3-8b-8192": "llama3.1-8b",
+    "llama3-70b-8192": "llama3.3-70b",
+}
+
+
+def _next_cerebras_key() -> str | None:
+    """Round-robin pick. None if no keys configured."""
+    global _cerebras_index
+    if not _CEREBRAS_KEYS:
+        return None
+    key = _CEREBRAS_KEYS[_cerebras_index % len(_CEREBRAS_KEYS)]
+    _cerebras_index = (_cerebras_index + 1) % max(len(_CEREBRAS_KEYS), 1)
+    return key
+
+
+async def _call_cerebras(
+    messages: list,
+    groq_model: str,
+    max_tokens: int,
+    temperature: float,
+    json_response: bool,
+) -> str:
+    """
+    Failover call to Cerebras Inference. Raises GroqCallFailed on any
+    error so caller treats it identically to a Groq failure (returning
+    error to the task, which gets retried on next cycle). Acquires the
+    same shared rate bucket so concurrent failover doesn't burst.
+    """
+    if not _CEREBRAS_KEYS:
+        raise GroqQuotaExhausted("No Cerebras keys configured for failover.")
+
+    cerebras_model = _GROQ_TO_CEREBRAS_MODEL.get(groq_model, "llama3.1-8b")
+    import httpx as _httpx
+    # Try up to 3 Cerebras keys before giving up.
+    last_exc: Exception | None = None
+    for _ in range(min(len(_CEREBRAS_KEYS), 3)):
+        await _get_bucket().acquire()
+        key = _next_cerebras_key()
+        if not key:
+            break
+        body: dict[str, Any] = {
+            "model": cerebras_model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if json_response:
+            body["response_format"] = {"type": "json_object"}
+        try:
+            async with _httpx.AsyncClient(timeout=30.0) as c:
+                r = await c.post(
+                    _CEREBRAS_BASE,
+                    headers={
+                        "Authorization": f"Bearer {key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=body,
+                )
+            if r.status_code == 429:
+                logger.warning("Cerebras key rate-limited; trying next.")
+                continue
+            if r.status_code >= 400:
+                raise GroqCallFailed(
+                    f"Cerebras API error {r.status_code}: {r.text[:200]}"
+                )
+            data = r.json()
+            content = (
+                data.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+            )
+            if not content:
+                raise GroqCallFailed("Cerebras returned empty content")
+            return content.strip()
+        except (GroqCallFailed, GroqQuotaExhausted):
+            raise
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            logger.warning("Cerebras call failed: %s", exc)
+            continue
+
+    raise GroqCallFailed(
+        f"Cerebras failover exhausted: {last_exc}"
+        if last_exc else "Cerebras failover exhausted"
+    )
+
+
+# Type imports needed by the Cerebras helper.
+from typing import Any  # noqa: E402  — late import keeps the diff localised
+
+
 # ── Per-process token-bucket rate limiter ────────────────────────────────────
 #
 # Groq free tier is RPM-bound (~30 requests/min/key × 20 keys = 600 req/min
@@ -405,9 +524,21 @@ async def call_groq(
     # HTTP attempt, not per call_groq invocation. That way a single
     # call_groq's 3-key retry loop spreads its requests across the rate
     # cap instead of bursting them all in the same second.
-    return await _call_groq_inner(
-        messages, model, max_tokens, temperature, json_response, attempts
-    )
+    try:
+        return await _call_groq_inner(
+            messages, model, max_tokens, temperature, json_response, attempts
+        )
+    except GroqQuotaExhausted as exc:
+        # Groq pool fully cooled. Fail over to Cerebras (separate quota
+        # universe, same Llama models). Only triggers when configured.
+        if not _CEREBRAS_KEYS:
+            raise
+        logger.info(
+            "Groq pool exhausted — failing over to Cerebras for this call."
+        )
+        return await _call_cerebras(
+            messages, model, max_tokens, temperature, json_response
+        )
 
 
 async def _call_groq_inner(

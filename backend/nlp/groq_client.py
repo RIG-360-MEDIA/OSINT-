@@ -338,8 +338,8 @@ class _TokenBucket:
             await asyncio.sleep(wait_s)
 
 
-_GROQ_RATE_PER_SECOND = 8.0
-_GROQ_BURST_CAPACITY = 8.0
+_GROQ_RATE_PER_SECOND = 4.0
+_GROQ_BURST_CAPACITY = 4.0
 _groq_bucket: _TokenBucket | None = None
 
 

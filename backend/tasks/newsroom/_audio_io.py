@@ -18,7 +18,25 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 
+from backend.tasks.newsroom._youtube_throttle import (
+    record_block,
+    record_success,
+    throttle_async,
+    YoutubeCircuitOpen,
+)
+
 logger = logging.getLogger(__name__)
+
+
+def _is_bot_wall(exc: BaseException) -> bool:
+    """Heuristic: is this exception YouTube saying 'sign in to confirm'?"""
+    msg = (str(exc) or "").lower()
+    return any(needle in msg for needle in (
+        "sign in to confirm",
+        "confirm you're not a bot",
+        "requestblocked",
+        "ip block",
+    ))
 
 
 @dataclass(frozen=True)
@@ -79,18 +97,25 @@ async def download_youtube_audio(
         ydl_opts["proxy"] = pu
 
     logger.info("yt-dlp downloading audio for %s", yt_video_id)
+    # Polite gap (and circuit-breaker check) before any YouTube call.
+    await throttle_async()
     try:
         def _do_download() -> None:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
         await asyncio.to_thread(_do_download)
+    except YoutubeCircuitOpen:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise
     except Exception as exc:
-        # Surface a clean error so process_broadcast can log it once
-        # without a 50-line yt-dlp traceback.
+        if _is_bot_wall(exc):
+            record_block()
         shutil.rmtree(tmpdir, ignore_errors=True)
         raise RuntimeError(
             f"yt-dlp audio download failed for {yt_video_id}: {exc}"
         ) from exc
+
+    record_success()
 
     if not os.path.exists(audio_path):
         # Fall back to scanning the dir — yt-dlp may have written under

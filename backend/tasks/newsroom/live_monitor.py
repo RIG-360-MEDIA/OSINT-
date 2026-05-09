@@ -244,21 +244,49 @@ def _current_live_video_id(yt_handle: str) -> str | None:
     Strategy: yt-dlp --get-id on the channel's /live URL returns the
     yt_video_id of whatever is currently streaming, or fails if the
     channel isn't live right now.
+
+    Honours the shared YouTube throttle + circuit breaker.
     """
+    from backend.tasks.newsroom._youtube_throttle import (
+        record_block, record_success, throttle_sync, YoutubeCircuitOpen,
+    )
     handle = yt_handle.lstrip("@")
     url = f"https://www.youtube.com/@{handle}/live"
+
+    cookies = os.getenv("YOUTUBE_COOKIES_PATH", "").strip()
+    proxy = os.getenv("YOUTUBE_PROXY_URL", "").strip()
+    cmd = [
+        "yt-dlp",
+        "--no-playlist",
+        "--quiet", "--no-warnings",
+        "--skip-download",
+        "--print", "%(id)s",
+    ]
+    if cookies and os.path.exists(cookies):
+        cmd.extend(["--cookies", cookies])
+    if proxy:
+        cmd.extend(["--proxy", proxy])
+    cmd.append(url)
+
+    try:
+        throttle_sync()
+    except YoutubeCircuitOpen as exc:
+        logger.info("live_monitor: %s; will retry on next tick", exc)
+        return None
+
     try:
         result = subprocess.run(
-            [
-                "yt-dlp",
-                "--no-playlist",
-                "--quiet", "--no-warnings",
-                "--skip-download",
-                "--print", "%(id)s",
-                url,
-            ],
-            check=True, capture_output=True, text=True, timeout=20,
+            cmd, check=True, capture_output=True, text=True, timeout=20,
         )
-        return (result.stdout or "").strip() or None
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+    except subprocess.CalledProcessError as exc:
+        stderr = (exc.stderr or "").lower()
+        if "sign in to confirm" in stderr or "ip block" in stderr:
+            record_block()
         return None
+    except subprocess.TimeoutExpired:
+        return None
+
+    vid = (result.stdout or "").strip() or None
+    if vid:
+        record_success()
+    return vid

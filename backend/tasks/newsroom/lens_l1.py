@@ -17,7 +17,17 @@ import logging
 import os
 from dataclasses import dataclass
 
+from backend.tasks.newsroom._youtube_throttle import (
+    record_block,
+    record_success,
+    throttle_sync,
+    YoutubeCircuitOpen,
+)
+
 logger = logging.getLogger(__name__)
+
+
+_BLOCK_EXCS = {"RequestBlocked", "IpBlocked", "RequestBlockedByYouTube"}
 
 
 @dataclass(frozen=True)
@@ -70,11 +80,19 @@ def fetch_l1_segments(yt_video_id: str, language: str = "te") -> list[L1Segment]
     candidates = [language] + [l for l in ("en", "te", "hi", "kn", "ta") if l != language]
 
     for lang in candidates:
+        # Polite throttle + circuit-breaker check before each call.
+        try:
+            throttle_sync()
+        except YoutubeCircuitOpen as exc:
+            logger.warning("L1: %s; skipping %s", exc, yt_video_id)
+            return []
+
         try:
             data = api.fetch(yt_video_id, languages=[lang])
         except Exception as exc:
             cls = exc.__class__.__name__
-            if cls in {"RequestBlocked", "IpBlocked", "RequestBlockedByYouTube"}:
+            if cls in _BLOCK_EXCS:
+                record_block()
                 logger.warning(
                     "L1: IP-blocked fetching %s (%s); giving up on this video",
                     yt_video_id, lang,
@@ -98,6 +116,8 @@ def fetch_l1_segments(yt_video_id: str, language: str = "te") -> list[L1Segment]
                 end = start
             out.append(L1Segment(start_sec=start, end_sec=end, text=text, lang=lang))
             prev_end = end
+        if out:
+            record_success()
         return out
 
     logger.info("L1 no captions for %s in any of %s", yt_video_id, candidates)

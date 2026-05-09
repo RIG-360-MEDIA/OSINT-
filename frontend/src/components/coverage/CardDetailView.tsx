@@ -629,78 +629,136 @@ function SubCardPanel({
         </div>
       )}
 
-      {/* Source articles — top 3 compact rows */}
+      {/* Source articles — explicit section with header so users know
+          what they're looking at. Up to 4 articles inline (we hydrate
+          12 from the API for "see all" expansion later). */}
       {slice.articles.length > 0 && (
         <div
           style={{
-            paddingLeft: '12px',
-            paddingTop: '12px',
-            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
+            marginLeft: '12px',
+            marginTop: '8px',
+            paddingTop: '14px',
+            borderTop: '1px solid rgba(255, 45, 45, 0.18)',
           }}
         >
-          {slice.articles.slice(0, 3).map((a) => (
-            <button
-              key={a.article_id}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                onArticleClick(a.article_id)
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                background: 'transparent',
-                border: 'none',
-                color: 'inherit',
-                font: 'inherit',
-                cursor: 'pointer',
-                outline: 'none',
-                padding: 0,
-                textAlign: 'left',
-              }}
-            >
-              <span
-                style={{
-                  flexShrink: 0,
-                  width: '4px',
-                  height: '24px',
-                  background: 'var(--onyx-red)',
-                  opacity: 0.5,
+          <div
+            className="onyx-mono"
+            style={{
+              fontSize: '8.5px',
+              letterSpacing: '0.36em',
+              textTransform: 'uppercase',
+              color: 'var(--onyx-red)',
+              opacity: 0.85,
+              marginBottom: '10px',
+              display: 'flex',
+              alignItems: 'baseline',
+              justifyContent: 'space-between',
+            }}
+          >
+            <span>Source Articles</span>
+            <span style={{ color: 'var(--onyx-dim)' }}>
+              {slice.articles.length} shown · {slice.summary?.sample_size ?? slice.articles.length} total
+            </span>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}
+          >
+            {slice.articles.slice(0, 4).map((a) => (
+              <button
+                key={a.article_id}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onArticleClick(a.article_id)
                 }}
-              />
-              <span
                 style={{
-                  fontSize: '11px',
-                  lineHeight: 1.4,
-                  color: 'var(--onyx-bone-2)',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 1,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  flex: 1,
-                  minWidth: 0,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '10px 12px',
+                  background: 'rgba(255, 45, 45, 0.04)',
+                  border: '1px solid rgba(255, 45, 45, 0.12)',
+                  color: 'inherit',
+                  font: 'inherit',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  textAlign: 'left',
+                  transition: 'background 0.2s, border-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 45, 45, 0.10)'
+                  e.currentTarget.style.borderColor = 'rgba(255, 45, 45, 0.40)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 45, 45, 0.04)'
+                  e.currentTarget.style.borderColor = 'rgba(255, 45, 45, 0.12)'
                 }}
               >
-                {a.title}
-              </span>
-              <span
-                className="onyx-mono"
-                style={{
-                  fontSize: '8px',
-                  letterSpacing: '0.24em',
-                  textTransform: 'uppercase',
-                  color: 'var(--onyx-dim)',
-                  flexShrink: 0,
-                }}
-              >
-                {(a.source_name || '').slice(0, 16)}
-              </span>
-            </button>
-          ))}
+                <span
+                  aria-hidden
+                  style={{
+                    flexShrink: 0,
+                    width: '6px',
+                    height: '6px',
+                    marginTop: '6px',
+                    borderRadius: '50%',
+                    background: 'var(--onyx-red)',
+                  }}
+                />
+                <span
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '12px',
+                      lineHeight: 1.4,
+                      color: 'var(--onyx-bone)',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {a.title}
+                  </span>
+                  <span
+                    className="onyx-mono"
+                    style={{
+                      fontSize: '8px',
+                      letterSpacing: '0.28em',
+                      textTransform: 'uppercase',
+                      color: 'var(--onyx-dim)',
+                    }}
+                  >
+                    {a.source_name || ''}
+                    {a.published_at ? ` · ${formatTimeAgo(a.published_at)}` : ''}
+                  </span>
+                </span>
+                <span
+                  className="onyx-mono"
+                  style={{
+                    fontSize: '9px',
+                    letterSpacing: '0.32em',
+                    color: 'var(--onyx-red)',
+                    flexShrink: 0,
+                    alignSelf: 'center',
+                  }}
+                >
+                  →
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </article>

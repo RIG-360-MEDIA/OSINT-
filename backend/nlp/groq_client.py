@@ -279,6 +279,33 @@ def _init_manager() -> GroqKeyManager:
 groq_manager: GroqKeyManager = _init_manager()
 
 
+# ── Per-process concurrency limit ─────────────────────────────────────────────
+#
+# Without this, nlp workers (default concurrency=4) all pick up Celery
+# tasks in parallel and fire 4+ concurrent Groq HTTPS POSTs from the
+# same process. Combined with extraction + translation + classification
+# + breaking detector + top-stories all running at the same time, we
+# routinely produced 200+ requests/sec to Groq, blowing per-key per-
+# minute rate caps even though daily TPD was healthy. The 429 cascade
+# locked all keys in the local _exhausted_until tracker for 60s, and
+# the next batch of tasks immediately re-tripped them on recovery.
+#
+# Limiting in-process concurrency to 2 means at most 2 × 4 workers = 8
+# concurrent HTTPS calls per backend container. With round-robin across
+# 20 keys that's ~24 req/min/key average — safely under the 30 rpm cap.
+_GROQ_INPROC_CONCURRENCY = 2
+_groq_call_sem: asyncio.Semaphore | None = None
+
+
+def _get_call_sem() -> asyncio.Semaphore:
+    """Lazy-init the semaphore on first use to avoid event-loop binding
+    issues at import time."""
+    global _groq_call_sem
+    if _groq_call_sem is None:
+        _groq_call_sem = asyncio.Semaphore(_GROQ_INPROC_CONCURRENCY)
+    return _groq_call_sem
+
+
 # ── Call Wrapper ───────────────────────────────────────────────────────────────
 
 async def call_groq(
@@ -326,6 +353,24 @@ async def call_groq(
     # caller's higher-level retry logic to recover.
     attempts = min(len(groq_manager.keys), 3)
 
+    # In-process concurrency throttle. See _get_call_sem() comment block
+    # at the module level. Caller awaits the semaphore before doing the
+    # actual key rotation + HTTP call, so only N concurrent requests can
+    # leave this process at a time.
+    async with _get_call_sem():
+        return await _call_groq_inner(
+            messages, model, max_tokens, temperature, json_response, attempts
+        )
+
+
+async def _call_groq_inner(
+    messages: list,
+    model: str,
+    max_tokens: int,
+    temperature: float,
+    json_response: bool,
+    attempts: int,
+) -> str:
     for attempt in range(attempts):
         key_idx, client = await groq_manager.get_key()
 

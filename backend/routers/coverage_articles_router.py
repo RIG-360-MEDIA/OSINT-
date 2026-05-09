@@ -1514,7 +1514,7 @@ async def list_cards(
                   ON s.definition_hash = c.definition_hash
                 WHERE c.user_id = :uid
                   -- Only top-level (user-created) cards on the main row.
-                  -- Spawned sub-cards are revealed via /cards/:id/full.
+                  -- Spawned sub-cards are revealed via the full endpoint.
                   AND c.parent_card_id IS NULL
                 ORDER BY c.created_at DESC
                 """

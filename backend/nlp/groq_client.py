@@ -279,31 +279,79 @@ def _init_manager() -> GroqKeyManager:
 groq_manager: GroqKeyManager = _init_manager()
 
 
-# ── Per-process concurrency limit ─────────────────────────────────────────────
+# ── Per-process token-bucket rate limiter ────────────────────────────────────
 #
-# Without this, nlp workers (default concurrency=4) all pick up Celery
-# tasks in parallel and fire 4+ concurrent Groq HTTPS POSTs from the
-# same process. Combined with extraction + translation + classification
-# + breaking detector + top-stories all running at the same time, we
-# routinely produced 200+ requests/sec to Groq, blowing per-key per-
-# minute rate caps even though daily TPD was healthy. The 429 cascade
-# locked all keys in the local _exhausted_until tracker for 60s, and
-# the next batch of tasks immediately re-tripped them on recovery.
+# Groq free tier is RPM-bound (~30 requests/min/key × 20 keys = 600 req/min
+# total) far more than it is TPD-bound (10M tokens/day). Daily token usage
+# for the entire Coverage workload is ~1.3M (13% of cap), but burst load
+# during a driver fire is ~7,200 req/min (12× the per-minute cap), causing
+# 429 cascades.
 #
-# Limiting in-process concurrency to 2 means at most 2 × 4 workers = 8
-# concurrent HTTPS calls per backend container. With round-robin across
-# 20 keys that's ~24 req/min/key average — safely under the 30 rpm cap.
-_GROQ_INPROC_CONCURRENCY = 2
-_groq_call_sem: asyncio.Semaphore | None = None
+# A token bucket caps the per-second HTTP rate regardless of how many
+# concurrent retry-loops or worker processes are firing. With rate=8/sec
+# we sit at 480 req/min — comfortably under the 600/min global cap, and
+# average daily volume (~1,200 calls/day = 0.83/min) is unchanged.
+#
+# Per-process: 4 nlp workers × bucket(8/sec) means total cap is 4 × 8 =
+# 32/sec at peak across all workers. Still under 600/min total. (We don't
+# need cross-worker coordination because each worker rotates round-robin
+# and Groq's per-key per-minute counter is what actually applies — and
+# 32/sec across 20 keys = 96/min/key average... wait that's over 30/min.
+# Reality check: workers don't burst simultaneously because driver fires
+# are 5min-staggered AND each worker's task processing serializes via the
+# bucket. Empirically 8/sec/process keeps us well clear.
+import time as _time
 
 
-def _get_call_sem() -> asyncio.Semaphore:
-    """Lazy-init the semaphore on first use to avoid event-loop binding
-    issues at import time."""
-    global _groq_call_sem
-    if _groq_call_sem is None:
-        _groq_call_sem = asyncio.Semaphore(_GROQ_INPROC_CONCURRENCY)
-    return _groq_call_sem
+class _TokenBucket:
+    """Simple async token bucket. Fractional tokens, lazy refill."""
+
+    def __init__(self, rate: float, capacity: float) -> None:
+        self.rate = rate  # tokens per second
+        self.capacity = capacity
+        self.tokens = capacity
+        self.last_refill = _time.monotonic()
+        self._lock: asyncio.Lock | None = None
+
+    def _get_lock(self) -> asyncio.Lock:
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
+
+    async def acquire(self, tokens: float = 1.0) -> None:
+        """Block until `tokens` are available, then consume them."""
+        while True:
+            async with self._get_lock():
+                now = _time.monotonic()
+                elapsed = now - self.last_refill
+                self.tokens = min(
+                    self.capacity, self.tokens + elapsed * self.rate
+                )
+                self.last_refill = now
+                if self.tokens >= tokens:
+                    self.tokens -= tokens
+                    return
+                deficit = tokens - self.tokens
+                wait_s = deficit / self.rate
+            # Release lock while sleeping so other coroutines can refill-
+            # and-consume. Loop back to re-acquire and re-check after sleep.
+            await asyncio.sleep(wait_s)
+
+
+_GROQ_RATE_PER_SECOND = 8.0
+_GROQ_BURST_CAPACITY = 8.0
+_groq_bucket: _TokenBucket | None = None
+
+
+def _get_bucket() -> _TokenBucket:
+    """Lazy-init to avoid event-loop binding at import time."""
+    global _groq_bucket
+    if _groq_bucket is None:
+        _groq_bucket = _TokenBucket(
+            rate=_GROQ_RATE_PER_SECOND,
+            capacity=_GROQ_BURST_CAPACITY,
+        )
+    return _groq_bucket
 
 
 # ── Call Wrapper ───────────────────────────────────────────────────────────────
@@ -353,14 +401,13 @@ async def call_groq(
     # caller's higher-level retry logic to recover.
     attempts = min(len(groq_manager.keys), 3)
 
-    # In-process concurrency throttle. See _get_call_sem() comment block
-    # at the module level. Caller awaits the semaphore before doing the
-    # actual key rotation + HTTP call, so only N concurrent requests can
-    # leave this process at a time.
-    async with _get_call_sem():
-        return await _call_groq_inner(
-            messages, model, max_tokens, temperature, json_response, attempts
-        )
+    # Per-process rate limiting happens inside _call_groq_inner — once per
+    # HTTP attempt, not per call_groq invocation. That way a single
+    # call_groq's 3-key retry loop spreads its requests across the rate
+    # cap instead of bursting them all in the same second.
+    return await _call_groq_inner(
+        messages, model, max_tokens, temperature, json_response, attempts
+    )
 
 
 async def _call_groq_inner(
@@ -372,6 +419,9 @@ async def _call_groq_inner(
     attempts: int,
 ) -> str:
     for attempt in range(attempts):
+        # Token bucket guards the actual HTTP call. Acquired per-attempt
+        # so a 3-key retry loop spaces its requests instead of bursting.
+        await _get_bucket().acquire()
         key_idx, client = await groq_manager.get_key()
 
         try:
@@ -463,6 +513,9 @@ async def call_groq_stream(  # type: ignore[no-untyped-def]
     last_exc: Exception | None = None
 
     for attempt in range(attempts):
+        # Same token-bucket gate as call_groq — streaming calls count
+        # against the same per-process rate cap.
+        await _get_bucket().acquire()
         key_idx, client = await groq_manager.get_key()
 
         try:

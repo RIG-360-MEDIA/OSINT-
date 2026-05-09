@@ -115,6 +115,7 @@ app.config_from_object(
             # /coverage/articles rebuild
             "tasks.refresh_user_cards": {"queue": "nlp"},
             "tasks.retry_unrefreshed_cards": {"queue": "nlp"},
+            "tasks.spawn_sub_cards": {"queue": "nlp"},
             "tasks.detect_breaking_events": {"queue": "nlp"},
             "tasks.classify_pending_breaking_clusters": {"queue": "nlp"},
             "tasks.refresh_contradictions": {"queue": "nlp"},

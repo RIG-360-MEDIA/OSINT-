@@ -14,6 +14,7 @@ from backend.tasks.coverage.user_cards_task import (  # noqa: F401
     refresh_user_cards,
     retry_unrefreshed_cards,
 )
+from backend.tasks.coverage.spawn_sub_cards_task import spawn_sub_cards  # noqa: F401
 from backend.tasks.coverage.breaking_task import (  # noqa: F401
     detect_breaking_events,
     classify_pending_breaking_clusters,

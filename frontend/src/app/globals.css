@@ -699,14 +699,19 @@ body::before {
   --onyx-dim:          #5A6070;
   --onyx-dim-2:        #2E3340;
 
-  /* Accents — neon blue + red, the only saturated colours on the page. */
-  --onyx-cyan:         #00C2FF;
-  --onyx-cyan-soft:    rgba(0, 194, 255, 0.14);
-  --onyx-cyan-glow:    rgba(0, 194, 255, 0.45);
+  /* Accents — RED ONLY (cinematic redesign pass).
+     Strict three-colour discipline: black surfaces, red accents, white text.
+     Legacy --onyx-cyan* and --onyx-live tokens remain defined but aliased
+     to red so existing components flip palette without touching their code.
+     The DEVELOPING band variant (which used cyan to differentiate from
+     red BREAKING) handles its own bone/white treatment in BreakingBand.tsx. */
   --onyx-red:          #FF2D2D;
   --onyx-red-soft:     rgba(255, 45, 45, 0.55);
   --onyx-red-hair:     rgba(255, 45, 45, 0.30);
-  --onyx-live:         #00FF88;
+  --onyx-cyan:         var(--onyx-red);
+  --onyx-cyan-soft:    var(--onyx-red-hair);
+  --onyx-cyan-glow:    rgba(255, 45, 45, 0.45);
+  --onyx-live:         var(--onyx-red);
 
   /* Rules */
   --onyx-rule:         rgba(255, 45, 45, 0.55);
@@ -926,3 +931,27 @@ body::before {
   .rig-chip-mq-mid  { display: none; }
 }
 header > nav::-webkit-scrollbar { display: none; }
+
+
+/* ── Cinematic-redesign animations ───────────────────────────────────────
+   onyx-drift-glow — slow parallax for ambient red glow at top-right of page.
+   Converts otherwise-empty header background into "between-frame quiet". */
+@keyframes onyx-drift-glow {
+  0%, 100% { transform: translate(0, 0)         scale(1);    opacity: 1;   }
+  25%      { transform: translate(-60px, 30px)  scale(1.04); opacity: 0.85; }
+  50%      { transform: translate(-100px, -20px) scale(0.96); opacity: 1.05; }
+  75%      { transform: translate(-30px, -50px) scale(1.02); opacity: 0.9;  }
+}
+
+/* onyx-flicker-text — used by BREAKING / DEVELOPING indicator lights */
+@keyframes onyx-flicker-text {
+  0%, 92%, 100% { opacity: 1; }
+  93%, 95%      { opacity: 0.4; }
+  94%           { opacity: 1; }
+}
+
+/* onyx-hud-pulse — corner-bracket faint breathing for cinematic alerts */
+@keyframes onyx-hud-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1;    }
+}

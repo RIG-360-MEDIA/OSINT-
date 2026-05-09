@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y \
     libpango-1.0-0 \
     libatk1.0-0 \
     libcups2 \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy and install Python dependencies first
@@ -50,6 +51,13 @@ RUN python -m spacy download en_core_web_sm
 
 # Download LaBSE model into the image cache so the worker never needs internet
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('LaBSE')"
+
+# Pre-download the Faster-Whisper `small` model (Phase 2 L3 ASR).
+# ~480MB on disk; 2GB RAM at runtime. Baked into the image so the
+# whisper worker doesn't need internet at runtime (HF_HUB_OFFLINE=1
+# is set below). To upgrade: change to `medium` (1.5GB) or `large-v3`
+# (3GB) — the latter needs ~10GB RAM, verify host headroom first.
+RUN python -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8')"
 
 # Copy application code
 COPY backend/ ./backend/

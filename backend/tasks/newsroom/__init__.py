@@ -14,6 +14,16 @@ from __future__ import annotations
 
 from backend.celery_app import app
 
+# Import sub-modules whose @app.task decorators register tasks with
+# the Celery app. Bare `import backend.tasks.newsroom` from celery_app.py
+# only executes this __init__.py, so task modules MUST be imported here
+# or their tasks won't be discovered.
+#
+# Import order is significant only insofar as each module imports the
+# Celery app via `from backend.celery_app import app` at module top —
+# the app is already configured by the time we get here.
+from backend.tasks.newsroom import process_broadcast as _process_broadcast  # noqa: F401
+
 
 @app.task(name="tasks.newsroom.ping", queue="whisper")
 def ping(payload: str = "pong") -> str:

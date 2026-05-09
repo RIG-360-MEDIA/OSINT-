@@ -66,6 +66,19 @@ webvtt-py==0.5.1
 # SOCKS proxy support for YOUTUBE_PROXY_URL (WARP) — required by requests[socks]
 pysocks==1.7.1
 
+# THE NEWSROOM (Phase 2) — local 3-Lens transcription pipeline.
+# faster-whisper is the L3 ASR (CPU int8). Default model is `small`
+# (~480MB on disk, ~2GB RAM at runtime) — see backend/tasks/newsroom/lens_l3.py
+# for the upgrade path to large-v3 once host RAM allows.
+# pyphonetics + metaphone power the proper-noun snap step
+# (backend/tasks/newsroom/phonetic_snap.py) so transcripts that
+# mangle Indian names ("Revant Reddi" -> "Revanth Reddy") still snap
+# to the right entity_dictionary row. pyannote.audio is intentionally
+# NOT in requirements — the diarise stub kicks in until HF_TOKEN is set.
+faster-whisper==1.0.3
+pyphonetics==0.5.3
+metaphone==0.6
+
 # Newspaper clipping pipeline (P16 Cutting Room)
 # PyMuPDF renders the cropped article image; opendataloader-pdf
 # does layout-aware article extraction (requires Java at runtime).

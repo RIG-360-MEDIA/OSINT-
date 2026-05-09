@@ -5,10 +5,15 @@ Free, fully offline, much slower than L2. Compensates for L2 outages
 (rate-limit windows) and provides a third independent vote on each
 segment so the reconcile step can detect lens-level errors.
 
-Model size is `small` by default (~480MB on disk, ~2GB RAM at runtime,
-manageable on a 4-core / 16GB Hetzner box). Tunable via env var
+Model size defaults to `medium` (~1.5GB on disk, ~3-4GB RAM at runtime,
+fits the 4-core / 16GB Hetzner box with headroom). Tunable via env var
 `NEWSROOM_L3_MODEL` (`small`, `medium`, `large-v3`). Upgrade to
 `large-v3` requires ~10GB RAM — verify host headroom first.
+
+Why not `small`: tested on Telugu fixture (afX1BQu0DZ8); produced
+mangled output that pushed the reconcile LLM into hallucinated
+entity matches downstream. `medium` is the smallest size that gives
+acceptable Indic accuracy.
 
 Singleton pattern: the model is loaded once per worker process and
 reused for every call. Loading is heavy (~10s); reuse is essential.
@@ -40,7 +45,7 @@ class L3Segment:
     no_speech_prob: float | None = None
 
 
-_MODEL_NAME = os.getenv("NEWSROOM_L3_MODEL", "small")
+_MODEL_NAME = os.getenv("NEWSROOM_L3_MODEL", "medium")
 _MODEL_LOCK = threading.Lock()
 _MODEL = None  # populated on first call
 

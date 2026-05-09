@@ -65,12 +65,12 @@ RUN python -m spacy download en_core_web_sm
 # Download LaBSE model into the image cache so the worker never needs internet
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('LaBSE')"
 
-# Pre-download the Faster-Whisper `small` model (Phase 2 L3 ASR).
-# ~480MB on disk; 2GB RAM at runtime. Baked into the image so the
+# Pre-download the Faster-Whisper `medium` model (Phase 2 L3 ASR).
+# ~1.5GB on disk; 3-4GB RAM at runtime. Baked into the image so the
 # whisper worker doesn't need internet at runtime (HF_HUB_OFFLINE=1
-# is set below). To upgrade: change to `medium` (1.5GB) or `large-v3`
-# (3GB) — the latter needs ~10GB RAM, verify host headroom first.
-RUN python -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8')"
+# is set below). `small` is too weak on Indic languages; `large-v3`
+# (3GB / 10GB RAM) needs more host RAM than Hetzner currently has.
+RUN python -c "from faster_whisper import WhisperModel; WhisperModel('medium', device='cpu', compute_type='int8')"
 
 # Copy application code
 COPY backend/ ./backend/

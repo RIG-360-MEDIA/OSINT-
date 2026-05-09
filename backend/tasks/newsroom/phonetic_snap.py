@@ -113,8 +113,9 @@ def load_entity_index(db) -> list[dict]:
     index: list[dict] = []
     for r in rows:
         ent_id = str(r[0])
-        names = [r[1]] + list(r[2] or [])
-        for n in names:
+        canonical = r[1]
+        aliases = list(r[2] or [])
+        for n in [canonical] + aliases:
             if not n:
                 continue
             sx, mp = _phonetic_codes(n)
@@ -124,6 +125,7 @@ def load_entity_index(db) -> list[dict]:
                 "lower": _ascii_fold(n).lower(),
                 "soundex": sx,
                 "metaphone": mp,
+                "is_alias": n != canonical,
             })
     _ENTITY_INDEX = index
     logger.info("phonetic_snap: loaded %d entity index entries", len(index))
@@ -148,6 +150,23 @@ def snap_text(text: str, entity_index: list[dict]) -> list[EntityMention]:
             continue
         if len(nm) > _MAX_ENTITY_NAME_LEN or "." in nm:
             continue
+        # Reject GENERIC aliases that would over-match. Single-word
+        # lowercase aliases like "district", "minister", "court" wreck
+        # results — we saw 18 Gujarat-district rows fire on "district"
+        # appearing in a Telangana transcript. Allow alias only if:
+        #   - multi-word (e.g. "Narendra Modi"), OR
+        #   - all-uppercase acronym (e.g. "BJP", "TMC", "NDA"), OR
+        #   - ≥6 chars AND has at least one uppercase letter (proper-noun-y).
+        if entry.get("is_alias"):
+            raw = entry["name"].strip()
+            if " " in raw:
+                pass
+            elif raw.isupper() and len(raw) >= 2:
+                pass
+            elif len(raw) >= 6 and any(c.isupper() for c in raw):
+                pass
+            else:
+                continue
         idx = text_lower.find(nm)
         while idx != -1:
             # Only count exact substring matches if the surrounding

@@ -328,7 +328,9 @@ export function CustomCardsRow({ onOpenCreate, onCardClick, refreshTick }: Props
             alignItems: 'center',
             justifyContent: 'center',
             gap: '12px',
-            background: 'transparent',
+            background: hoveredId === '__track__'
+              ? 'rgba(255, 45, 45, 0.04)'
+              : 'transparent',
             border: hoveredId === '__track__'
               ? '1px dashed rgba(255, 45, 45, 0.7)'
               : '1px dashed rgba(255, 45, 45, 0.30)',
@@ -339,7 +341,6 @@ export function CustomCardsRow({ onOpenCreate, onCardClick, refreshTick }: Props
             transition:
               'transform 0.32s cubic-bezier(0.2, 0.7, 0.3, 1), border-color 0.32s, background 0.32s',
             transform: hoveredId === '__track__' ? 'translateY(-3px)' : 'translateY(0)',
-            background: hoveredId === '__track__' ? 'rgba(255, 45, 45, 0.04)' : 'transparent',
             scrollSnapAlign: 'start',
           }}
         >

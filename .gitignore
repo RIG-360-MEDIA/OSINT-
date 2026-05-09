@@ -14,3 +14,10 @@ venv/
 dist/
 build/
 .DS_Store
+
+# Next.js TypeScript incremental build cache
+*.tsbuildinfo
+
+# Cookie/auth dumps
+cookies*.txt
+backend/cookies*.txt

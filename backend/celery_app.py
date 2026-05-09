@@ -42,6 +42,8 @@ app = Celery(
         "backend.tasks.thumbnail_task",
         # Playwright Telugu-daily scraper (Eenadu / Sakshi / AJ — no public RSS)
         "backend.collectors.telugu_scraper",
+        # SearXNG-fallback thumbnail finder (fix for post-deploy og:image gap)
+        "backend.tasks.thumbnail_task",
         # Daily brief auto-generation (P10 / fix-brief-prod-readiness P1.5)
         "backend.tasks.brief_task",
         # Brief quality scorecard cron (fix-brief-prod-readiness P2.10)
@@ -117,6 +119,7 @@ app.config_from_object(
             "tasks.process_nlp_batch": {"queue": "nlp"},
             "tasks.score_relevance_batch": {"queue": "relevance"},
             "tasks.score_unscored_articles": {"queue": "relevance"},
+            "tasks.backfill_user_relevance": {"queue": "relevance"},
             "tasks.generate_all_briefs": {"queue": "brief"},
             "tasks.generate_brief_for_user": {"queue": "brief"},
             "tasks.score_brief_quality": {"queue": "brief"},
@@ -213,6 +216,9 @@ app.config_from_object(
                 "options": {"queue": "collectors"},
             },
             # Playwright og:image batch — opens one Chromium, processes
+            # Backfill missing og:image thumbnails using Playwright (real
+            # browser bypasses anti-bot rejection of httpx from data-center
+            # IPs). Single batch task per fire — opens 1 Chromium, processes
             # up to 30 articles, closes. See backend/tasks/thumbnail_task.py.
             "fetch-og-images-every-10-min": {
                 "task": "tasks.fetch_og_images_batch",

@@ -25,39 +25,7 @@ import {
   CM_PULSE,
   CM_THREATS,
 } from './cm-intel-data'
-import {
-  panelMode,
-  useCMActions,
-  useCMAnalysis,
-  useCMLivePulse,
-  useCMMonitor,
-  useCMNewsOnChair,
-  useCMOpposition,
-  useCMOutlook,
-  useCMThreats,
-} from './hooks'
 import styles from './styles.module.css'
-
-/** Tiny banner shown above any card whose live feed is degraded. */
-function DegradedBanner() {
-  return (
-    <div
-      style={{
-        fontFamily:
-          "'Söhne Mono','IBM Plex Mono','Menlo',monospace",
-        fontSize: 9,
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        color: '#9c2b1f',
-        opacity: 0.85,
-        padding: '2px 0 6px',
-        fontStyle: 'italic',
-      }}
-    >
-      live feed degraded · showing reference layout
-    </div>
-  )
-}
 
 export function CMIntelGrid() {
   return (
@@ -79,28 +47,14 @@ export function CMIntelGrid() {
 /* ------------------------------------------------------------------ */
 
 function NewsOnCM() {
-  const q = useCMNewsOnChair()
-  const mode = panelMode(q)
-  // Server CmNewsItem shape is { title, age_label, source, sentiment } —
-  // map to the demo's { text, ageLabel, source, sentiment } so the
-  // existing JSX renders without `.charAt(0)` blowing up on undefined.
-  const liveRaw = (q.data?.items ?? []) as unknown as ReadonlyArray<Record<string, unknown>>
-  const liveItems = liveRaw.map((r) => ({
-    source: String(r.source ?? ''),
-    ageLabel: String(r.age_label ?? r.ageLabel ?? ''),
-    text: String(r.title ?? r.text ?? ''),
-    sentiment: typeof r.sentiment === 'number' ? r.sentiment : 0,
-  }))
-  const items = mode === 'live' && liveItems.length > 0 ? liveItems : CM_NEWS
-  const lead = items[0]
-  const rest = items.slice(1)
+  const lead = CM_NEWS[0]
+  const rest = CM_NEWS.slice(1)
   return (
     <article className={`${styles.cmCard} ${styles.cmCardNews}`}>
       <header className={styles.cmCardHeader}>
         <span className={styles.cmCardEyebrow}>News on the Chair</span>
-        <span className={styles.cmCardMeta}>{items.length} stories · 24h</span>
+        <span className={styles.cmCardMeta}>{CM_NEWS.length} stories · 24h</span>
       </header>
-      {mode === 'degraded' && <DegradedBanner />}
       <div className={styles.cmNewsLead}>
         <span className={styles.cmNewsLeadMeta}>
           {lead.source} · {lead.ageLabel} · sentiment {lead.sentiment.toFixed(1)}
@@ -134,19 +88,14 @@ function NewsOnCM() {
 /* ------------------------------------------------------------------ */
 
 function ActionsForChair() {
-  const q = useCMActions()
-  const mode = panelMode(q)
-  const liveItems = q.data?.items ?? []
-  const actions = mode === 'live' && liveItems.length > 0 ? liveItems : CM_ACTIONS
   return (
     <article className={`${styles.cmCard} ${styles.cmCardMemo}`}>
       <header className={styles.cmCardHeader}>
         <span className={styles.cmCardEyebrow}>For the Chair</span>
-        <span className={styles.cmCardMeta}>{actions.length} action items</span>
+        <span className={styles.cmCardMeta}>{CM_ACTIONS.length} action items</span>
       </header>
-      {mode === 'degraded' && <DegradedBanner />}
       <ul className={styles.cmActionList}>
-        {actions.map((a, i) => (
+        {CM_ACTIONS.map((a, i) => (
           <li key={i} className={styles.cmActionRow}>
             <span className={styles.cmCheckbox} aria-hidden="true" />
             <span
@@ -181,28 +130,14 @@ function ActionsForChair() {
 /* ------------------------------------------------------------------ */
 
 function OppositionWatch() {
-  const q = useCMOpposition()
-  const mode = panelMode(q)
-  // Server uses age_label (snake); demo uses ageLabel (camel). Map.
-  const liveRaw = (q.data?.items ?? []) as unknown as ReadonlyArray<Record<string, unknown>>
-  const liveItems = liveRaw.map((r) => ({
-    actor: String(r.actor ?? ''),
-    party: (String(r.party ?? 'BRS') as 'BRS' | 'BJP' | 'INC' | 'AIMIM'),
-    channel: String(r.channel ?? ''),
-    ageLabel: String(r.age_label ?? r.ageLabel ?? ''),
-    text: String(r.text ?? ''),
-    reach: r.reach ? String(r.reach) : undefined,
-  }))
-  const items = mode === 'live' && liveItems.length > 0 ? liveItems : CM_OPPOSITION
   return (
     <article className={`${styles.cmCard} ${styles.cmCardOpp}`}>
       <header className={styles.cmCardHeader}>
         <span className={styles.cmCardEyebrow}>Opposition Watch</span>
-        <span className={styles.cmCardMeta}>{items.length} actors</span>
+        <span className={styles.cmCardMeta}>{CM_OPPOSITION.length} actors</span>
       </header>
-      {mode === 'degraded' && <DegradedBanner />}
       <ul className={styles.cmOppList}>
-        {items.map((o, i) => (
+        {CM_OPPOSITION.map((o, i) => (
           <li key={i} className={styles.cmOppEntry}>
             <div className={styles.cmOppHeader}>
               <span className={styles.cmOppAvatar}>{initials(o.actor)}</span>
@@ -234,19 +169,14 @@ function initials(name: string): string {
 /* ------------------------------------------------------------------ */
 
 function MonitorList() {
-  const q = useCMMonitor()
-  const mode = panelMode(q)
-  const liveItems = q.data?.items ?? []
-  const items = mode === 'live' && liveItems.length > 0 ? liveItems : CM_MONITOR
   return (
     <article className={`${styles.cmCard} ${styles.cmCardMonitor}`}>
       <header className={styles.cmCardHeader}>
         <span className={styles.cmCardEyebrow}>Watchlist · Surveillance Log</span>
-        <span className={styles.cmCardMeta}>{items.length} entities</span>
+        <span className={styles.cmCardMeta}>{CM_MONITOR.length} entities</span>
       </header>
-      {mode === 'degraded' && <DegradedBanner />}
       <ul className={styles.cmMonitorList}>
-        {items.map((m, i) => (
+        {CM_MONITOR.map((m, i) => (
           <li key={i} className={styles.cmMonitorRow}>
             <span className={styles.cmMonitorLabel}>{m.label}</span>
             <span className={styles.cmMonitorLeader} aria-hidden="true" />
@@ -275,19 +205,14 @@ function MonitorList() {
 /* ------------------------------------------------------------------ */
 
 function ThreatRegister() {
-  const q = useCMThreats()
-  const mode = panelMode(q)
-  const liveItems = q.data?.items ?? []
-  const items = mode === 'live' && liveItems.length > 0 ? liveItems : CM_THREATS
   return (
     <article className={`${styles.cmCard} ${styles.cmCardThreat}`}>
       <div className={styles.cmThreatBanner}>
         <span>RESTRICTED · THREAT REGISTER</span>
-        <span>{items.length} tracked</span>
+        <span>{CM_THREATS.length} tracked</span>
       </div>
-      {mode === 'degraded' && <DegradedBanner />}
       <ol className={styles.cmThreatList}>
-        {items.map((t, i) => (
+        {CM_THREATS.map((t, i) => (
           <li key={i} className={styles.cmThreatRow}>
             <span className={styles.cmThreatNum}>
               {String(i + 1).padStart(2, '0')}
@@ -320,20 +245,15 @@ function levelClass(level: string): string {
 /* ------------------------------------------------------------------ */
 
 function FutureOutlook() {
-  const q = useCMOutlook()
-  const mode = panelMode(q)
-  const liveItems = q.data?.items ?? []
-  const items = mode === 'live' && liveItems.length > 0 ? liveItems : CM_OUTLOOK
   return (
     <article className={`${styles.cmCard} ${styles.cmCardOutlook}`}>
       <header className={styles.cmCardHeader}>
         <span className={styles.cmCardEyebrow}>Future Outlook · 7 days</span>
-        <span className={styles.cmCardMeta}>{items.length} forecasts</span>
+        <span className={styles.cmCardMeta}>{CM_OUTLOOK.length} forecasts</span>
       </header>
-      {mode === 'degraded' && <DegradedBanner />}
       <div className={styles.cmTimeline}>
         <div className={styles.cmTimelineRule} />
-        {items.map((o, i) => (
+        {CM_OUTLOOK.map((o, i) => (
           <div key={i} className={styles.cmTimelineEntry}>
             <span className={styles.cmTimelinePeg} aria-hidden="true" />
             <span className={styles.cmTimelineWhen}>{o.when}</span>
@@ -350,24 +270,7 @@ function FutureOutlook() {
 /* ------------------------------------------------------------------ */
 
 function AnalysisColumn() {
-  const q = useCMAnalysis()
-  const mode = panelMode(q)
-  // The analysis endpoint returns the latest *published* draft or null.
-  // When null / errored / empty, fall back to the demo column so the
-  // page never has a hole. The schema mirrors CmAnalysis so we can
-  // assign directly (server uses pull_quote snake_case → coerce).
-  const live = q.data?.column ?? null
-  const a = live
-    ? {
-        eyebrow: live.eyebrow,
-        byline: live.byline,
-        headline: live.headline,
-        deck: live.deck,
-        paragraphs: live.paragraphs,
-        pullQuote: (live as unknown as { pull_quote?: string }).pull_quote ?? live.pullQuote ?? '',
-        endnote: live.endnote,
-      }
-    : CM_ANALYSIS
+  const a = CM_ANALYSIS
   // Split paragraphs around the pull-quote: roughly half before, rest after.
   const pivot = Math.ceil(a.paragraphs.length / 2)
   const before = a.paragraphs.slice(0, pivot)
@@ -378,7 +281,6 @@ function AnalysisColumn() {
         <span className={styles.cmAnalysisEyebrow}>{a.eyebrow}</span>
         <span className={styles.cmAnalysisByline}>{a.byline}</span>
       </header>
-      {mode === 'degraded' && <DegradedBanner />}
       <h2 className={styles.cmAnalysisHeadline}>{a.headline}</h2>
       <p className={styles.cmAnalysisDeck}>{a.deck}</p>
       <div className={styles.cmAnalysisDivider} />
@@ -414,26 +316,15 @@ function AnalysisColumn() {
 /* ------------------------------------------------------------------ */
 
 function LivePulse() {
-  const q = useCMLivePulse()
-  const mode = panelMode(q)
-  // Server returns the array under `tiles`, not `metrics`. Demo type
-  // already matches { label, value, delta, trend } — just rename the
-  // accessor.
-  const liveMetrics =
-    (q.data as unknown as { tiles?: ReadonlyArray<typeof CM_PULSE[number]> } | undefined)?.tiles ??
-    q.data?.metrics ??
-    []
-  const metrics = mode === 'live' && liveMetrics.length > 0 ? liveMetrics : CM_PULSE
   return (
     <article className={`${styles.cmCard} ${styles.cmCardPulse}`}>
       <div className={styles.cmPulseHeader}>
         <span className={styles.cmPulseLiveDot} />
         <span className={styles.cmCardEyebrow}>Live Pulse · CM-Related Metrics</span>
-        <span className={styles.cmCardMeta}>refreshes every 30 s</span>
+        <span className={styles.cmCardMeta}>refreshes every 60 s</span>
       </div>
-      {mode === 'degraded' && <DegradedBanner />}
       <div className={styles.cmPulseStrip}>
-        {metrics.map((p, i) => (
+        {CM_PULSE.map((p, i) => (
           <div key={i} className={styles.cmPulseTile}>
             <div className={styles.cmPulseLabel}>{p.label}</div>
             <div className={styles.cmPulseValue}>{p.value}</div>

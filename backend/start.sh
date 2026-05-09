@@ -1,4 +1,21 @@
 #!/bin/bash
+
+# --- Stale Beat pidfile cleanup ---------------------------------------------
+# The named volume rig-beat-schedule persists pidfiles across container
+# recreates; if Beat died ungracefully last time, its pidfile would block
+# restart in this instance. See infrastructure/DEPLOYMENT_NOTES.md (2026-04-29).
+PID_FILE=/app/beat/celerybeat.pid
+if [ -f "$PID_FILE" ]; then
+    PID=$(cat "$PID_FILE" 2>/dev/null || echo "")
+    if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+        echo "celerybeat.pid points at running PID $PID -- leaving alone"
+    else
+        echo "celerybeat.pid stale (PID=$PID not running) -- clearing"
+        rm -f "$PID_FILE"
+    fi
+fi
+# ----------------------------------------------------------------------------
+
 set -e
 
 echo "Starting RIG SURVEILLANCE backend"

@@ -1599,7 +1599,8 @@ async def card_full(
         parent_row = rows[0]
         children = [r for r in rows[1:]]
 
-        # Hydrate citations from every sub-card.
+        # Hydrate up to 12 citations per sub-card (was 8). Detail panels
+        # show 3 inline + the rest are accessible via "see all" expansion.
         all_article_ids: list[str] = []
         for r in [parent_row, *children]:
             cites = r.citations
@@ -1608,7 +1609,7 @@ async def card_full(
                     cites = json.loads(cites)
                 except json.JSONDecodeError:
                     cites = []
-            for c in (cites or [])[:8]:
+            for c in (cites or [])[:12]:
                 if c:
                     all_article_ids.append(str(c))
 
@@ -1655,7 +1656,7 @@ async def card_full(
                 cites = []
         articles = [
             article_meta[str(cid)]
-            for cid in (cites or [])[:8]
+            for cid in (cites or [])[:12]
             if str(cid) in article_meta
         ]
         return {

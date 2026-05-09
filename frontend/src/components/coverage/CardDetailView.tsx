@@ -500,7 +500,9 @@ function SubCardPanel({
             color: 'var(--onyx-dim)',
           }}
         >
-          {articleCount} {articleCount === 1 ? 'article' : 'articles'}
+          {(slice.summary?.sample_size ?? articleCount)}
+          {' '}
+          {(slice.summary?.sample_size ?? articleCount) === 1 ? 'article' : 'articles'}
         </span>
         <span style={{ color: 'var(--onyx-dim)', opacity: 0.4 }}>·</span>
         <span
@@ -512,7 +514,9 @@ function SubCardPanel({
             color: 'var(--onyx-dim)',
           }}
         >
-          Last 48h
+          {slice.last_refreshed_at
+            ? `Refreshed ${formatTimeAgo(slice.last_refreshed_at)}`
+            : 'Awaiting first refresh'}
         </span>
       </div>
 

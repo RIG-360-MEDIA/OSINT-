@@ -61,7 +61,10 @@ playwright>=1.47.0
 
 # YouTube transcript extraction (P14 Clip Room)
 youtube-transcript-api==1.2.4
-yt-dlp==2024.11.18
+# yt-dlp ≥ 2025.1: needed for nsig extraction + JS-runtime (deno) support
+# on current YouTube. Older 2024.11.18 falls back to generic n-function
+# search and returns "Only images are available" on most videos.
+yt-dlp>=2026.03.17
 webvtt-py==0.5.1
 # SOCKS proxy support for YOUTUBE_PROXY_URL (WARP) — required by requests[socks]
 pysocks==1.7.1

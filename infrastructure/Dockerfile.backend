@@ -27,7 +27,20 @@ RUN apt-get update && apt-get install -y \
     libatk1.0-0 \
     libcups2 \
     ffmpeg \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
+
+# Deno JS runtime — required by recent yt-dlp for YouTube nsig extraction.
+# Without it yt-dlp falls back to a generic regex that fails on current
+# YouTube and returns "Only images are available" instead of audio/video.
+# Static binary, ~30MB, no Node/npm needed. Pinned for reproducibility.
+ARG DENO_VERSION=v2.4.4
+RUN curl -fsSL --output /tmp/deno.zip \
+        https://github.com/denoland/deno/releases/download/${DENO_VERSION}/deno-x86_64-unknown-linux-gnu.zip \
+    && unzip -q -o /tmp/deno.zip -d /usr/local/bin/ \
+    && chmod +x /usr/local/bin/deno \
+    && rm /tmp/deno.zip \
+    && deno --version | head -1
 
 # Copy and install Python dependencies first
 # (separate layer — only rebuilds when requirements.txt changes)

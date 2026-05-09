@@ -6,7 +6,6 @@ import { useState } from 'react'
 import { STATEWIDE_SUMMARY } from './data'
 import { LayerOverlays } from './LayerOverlays'
 import { DEFAULT_LAYER_ID, getLayer } from './layers'
-import { useCMAtlasLayer } from './hooks'
 import { TELANGANA_DISTRICTS, TELANGANA_VIEWBOX } from './telangana-geo'
 import styles from './styles.module.css'
 
@@ -71,26 +70,6 @@ export function TelanganaMap({
   const router = useRouter()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const layer = getLayer(activeLayerId)
-
-  // Live atlas-layer values from /api/cm/atlas/layer/:layer_id. When the
-  // server is reachable AND returns at least one cell we use the live
-  // intensity (0..1) per district; otherwise fall back to the layer's
-  // hardcoded valueFor() so the map never goes blank.
-  const liveAtlas = useCMAtlasLayer(activeLayerId)
-  const liveCells = liveAtlas.data?.cells ?? []
-  const liveByDistrict: Map<string, number> = new Map()
-  if (liveAtlas.data?.meta?.status === 'fresh' || liveAtlas.data?.meta?.status === 'stale') {
-    for (const c of liveCells) {
-      if (typeof c.value === 'number') {
-        liveByDistrict.set(c.district_id, Math.max(0, Math.min(1, c.value)))
-      }
-    }
-  }
-  const valueFor = (districtId: string): number => {
-    const live = liveByDistrict.get(districtId)
-    if (typeof live === 'number') return live
-    return layer.valueFor(districtId)
-  }
 
   const handleClick = (districtId: string) => {
     if (disableNavigation) return
@@ -186,7 +165,7 @@ export function TelanganaMap({
          *  /brief/cm/preview/<district-id>. */}
         <g filter="url(#paperShadow)">
           {TELANGANA_DISTRICTS.map((d) => {
-            const value = valueFor(d.id)
+            const value = layer.valueFor(d.id)
             const fill = layer.colorFor(value)
             const isHighlighted = highlightDistrictId === d.id
             const isHovered = hoveredId === d.id
@@ -223,7 +202,7 @@ export function TelanganaMap({
         {activeLayerId === 'news-hotspot' && (
           <g pointerEvents="none">
             {TELANGANA_DISTRICTS.map((d) => {
-              const v = valueFor(d.id)
+              const v = layer.valueFor(d.id)
               if (v < 0.55) return null
               return (
                 <path
@@ -255,7 +234,7 @@ export function TelanganaMap({
         >
           {TELANGANA_DISTRICTS.map((d) => {
             if (SKIP_LABEL.has(d.id)) return null
-            const v = valueFor(d.id)
+            const v = layer.valueFor(d.id)
             const dark = v >= 0.55
             return (
               <text

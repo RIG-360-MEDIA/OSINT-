@@ -1,0 +1,32 @@
+# Production build of the frontend (next build + next start).
+# See infrastructure/DEPLOYMENT_NOTES.md for context.
+FROM node:20-alpine
+
+WORKDIR /app
+
+# NEXT_PUBLIC_* must be present at BUILD time (Next.js inlines them into the
+# client JS bundle). Pass via `args:` in docker-compose.prod.yml.
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_DOSSIER_ENABLED=false
+ARG NEXT_PUBLIC_WM_URL=/world-monitor-app/
+
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+    NEXT_PUBLIC_DOSSIER_ENABLED=$NEXT_PUBLIC_DOSSIER_ENABLED \
+    NEXT_PUBLIC_WM_URL=$NEXT_PUBLIC_WM_URL \
+    NEXT_TELEMETRY_DISABLED=1
+
+COPY frontend/package.json ./
+COPY frontend/package-lock.json* ./
+RUN npm install
+
+COPY frontend/ .
+RUN npm run build
+
+ENV NODE_ENV=production
+
+EXPOSE 3000
+CMD ["npm", "start"]

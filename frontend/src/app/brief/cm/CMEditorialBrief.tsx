@@ -37,7 +37,6 @@ import { LayerFeed } from './editorial/LayerFeed'
 import { LayerPanel } from './editorial/LayerPanel'
 import { DEFAULT_LAYER_ID, getLayer } from './editorial/layers'
 import { TelanganaMap } from './editorial/TelanganaMap'
-import { useCMLead, useCMTicker, panelMode } from './editorial/hooks'
 import styles from './editorial/styles.module.css'
 
 interface CMEditorialBriefProps {
@@ -160,36 +159,14 @@ function useClock(): string {
 const HEADLINE_INTERVAL_MS = 8000
 
 function Lead() {
-  // Live data via /api/cm/lead — falls back to the demo HEADLINES when
-  // the endpoint errors, returns empty, or is still loading on first
-  // paint. The progress dots and rotation cadence are unchanged.
-  const lead = useCMLead()
-  const mode = panelMode(lead)
-  // Server returns LeadHeadline { eyebrow, headline, rank, cite_ids,
-  // generated_at }. The demo Headline interface uses { eyebrow, text }.
-  // Map server → demo so render code stays untouched.
-  const liveRaw = lead.data?.headlines ?? []
-  const live: Array<{ eyebrow: string; text: string }> = liveRaw.map(
-    (h: { eyebrow?: string; headline?: string; text?: string }) => ({
-      eyebrow: h.eyebrow ?? '',
-      text: (h as { headline?: string; text?: string }).headline ?? h.text ?? '',
-    }),
-  )
-  const headlines = mode === 'live' && live.length > 0 ? live : HEADLINES
-  const degraded = mode === 'degraded'
   const [idx, setIdx] = useState(0)
   useEffect(() => {
     const id = window.setInterval(() => {
-      setIdx((i) => (i + 1) % headlines.length)
+      setIdx((i) => (i + 1) % HEADLINES.length)
     }, HEADLINE_INTERVAL_MS)
     return () => window.clearInterval(id)
-  }, [headlines.length])
-  // Reset index whenever the source list shrinks/grows so we never
-  // index past the end after a fallback swap.
-  useEffect(() => {
-    setIdx((i) => (i >= headlines.length ? 0 : i))
-  }, [headlines.length])
-  const current = headlines[idx] ?? headlines[0]
+  }, [])
+  const current = HEADLINES[idx]
   return (
     <section className={styles.lead}>
       <div className={styles.leadInner}>
@@ -200,17 +177,12 @@ function Lead() {
           className={`${styles.leadEyebrow} ${styles.leadEyebrowAnim}`}
         >
           {current.eyebrow}
-          {degraded && (
-            <span style={{ marginLeft: 8, fontStyle: 'italic', opacity: 0.7 }}>
-              · live feed degraded
-            </span>
-          )}
         </div>
         <h1 key={`headline-${idx}`} className={styles.leadHeadline}>
           {current.text}
         </h1>
         <div className={styles.leadProgress} aria-hidden="true">
-          {headlines.map((_, i) => (
+          {HEADLINES.map((_, i) => (
             <span
               key={i}
               className={`${styles.leadProgressDot} ${i === idx ? styles.leadProgressDotActive : ''}`}
@@ -775,26 +747,13 @@ function ForecastCard() {
 /* ------------------------------------------------------------------ */
 
 function Ticker() {
-  // Live data via /api/cm/ticker — falls back to demo TICKER_EVENTS on
-  // any error / empty / loading. We deliberately do NOT show a "feed
-  // degraded" banner here because the ticker is too narrow; instead
-  // the fallback is silent (the Lead surfaces the degraded state).
-  const ticker = useCMTicker()
-  const mode = panelMode(ticker)
-  const live = ticker.data?.events ?? []
-  const events = useMemo(() => {
-    if (mode === 'live' && live.length > 0) return live
-    return TICKER_EVENTS
-  }, [mode, live])
   const [idx, setIdx] = useState(0)
+  const events = useMemo(() => TICKER_EVENTS, [])
   useEffect(() => {
     const id = window.setInterval(() => {
       setIdx((i) => (i + 1) % events.length)
     }, 4000)
     return () => window.clearInterval(id)
-  }, [events.length])
-  useEffect(() => {
-    setIdx((i) => (i >= events.length ? 0 : i))
   }, [events.length])
   return (
     <div className={styles.tickerRail} aria-live="polite">

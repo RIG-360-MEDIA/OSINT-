@@ -83,7 +83,10 @@ export function CardDetailView({ cardId, onClose, onArticleClick }: Props) {
   const [error, setError] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // FLIP entry: capture source tile rect, animate from there.
+  // FLIP entry: capture source tile rect, animate FROM tile bounding box
+  // to the modal's natural (flex-centered) position. Because the outer
+  // wrapper centers the modal via flex, the modal's natural transform
+  // is identity — we animate from the tile's offset back to identity.
   useLayoutEffect(() => {
     if (!containerRef.current) return
     const sourceTile = document.querySelector<HTMLElement>(
@@ -104,7 +107,7 @@ export function CardDetailView({ cardId, onClose, onArticleClick }: Props) {
     el.getBoundingClientRect() // force layout flush
     el.style.transition =
       'transform 0.42s cubic-bezier(0.2, 0.7, 0.3, 1), opacity 0.42s'
-    el.style.transform = 'translate(0, 0) scale(1, 1)'
+    el.style.transform = ''  // identity — flex centers structurally
     el.style.opacity = '1'
   }, [cardId])
 
@@ -185,26 +188,37 @@ export function CardDetailView({ cardId, onClose, onArticleClick }: Props) {
         }}
       />
 
+      {/* Centring wrapper — flex puts the modal at viewport centre.
+          The inner panel uses transform only for the FLIP entry/exit. */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 950,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none', // backdrop catches clicks; modal opts back in
+          padding: '32px',
+        }}
+      >
       <div
         ref={containerRef}
         role="dialog"
         aria-modal="true"
         style={{
-          position: 'fixed',
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 'min(1200px, 88vw)',
-          height: '85vh',
+          width: 'min(1200px, 92vw)',
+          height: 'min(85vh, 880px)',
           background:
             'linear-gradient(180deg, rgba(10, 10, 12, 0.96) 0%, rgba(0, 0, 0, 0.98) 100%)',
           border: '1px solid rgba(255, 45, 45, 0.30)',
           boxShadow: '0 40px 120px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 45, 45, 0.10) inset',
           borderRadius: '6px',
-          zIndex: 950,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          pointerEvents: 'auto',
+          position: 'relative',
         }}
       >
         {/* Top edge — pulsing red beam */}
@@ -396,6 +410,7 @@ export function CardDetailView({ cardId, onClose, onArticleClick }: Props) {
             </>
           )}
         </div>
+      </div>
       </div>
     </>
   )

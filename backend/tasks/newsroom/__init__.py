@@ -23,6 +23,10 @@ from backend.celery_app import app
 # Celery app via `from backend.celery_app import app` at module top —
 # the app is already configured by the time we get here.
 from backend.tasks.newsroom import process_broadcast as _process_broadcast  # noqa: F401
+from backend.tasks.newsroom import extract_quotes as _extract_quotes        # noqa: F401
+from backend.tasks.newsroom import live_monitor as _live_monitor            # noqa: F401
+from backend.tasks.newsroom import detect_breaking as _detect_breaking      # noqa: F401
+from backend.tasks.newsroom import generate_daily_brief as _generate_daily  # noqa: F401
 
 
 @app.task(name="tasks.newsroom.ping", queue="whisper")

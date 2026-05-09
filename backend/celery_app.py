@@ -591,6 +591,28 @@ app.config_from_object(
                 "schedule": timedelta(hours=6),
                 "options": {"queue": "collectors"},
             },
+            # ── THE NEWSROOM beat schedule ──
+            "newsroom-extract-quotes-every-5-min": {
+                "task": "tasks.newsroom.extract_quotes",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
+            },
+            "newsroom-enqueue-live-monitors-every-5-min": {
+                "task": "tasks.newsroom.enqueue_live_monitors",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "whisper"},
+            },
+            "newsroom-detect-breaking-every-2-min": {
+                "task": "tasks.newsroom.detect_breaking",
+                "schedule": timedelta(minutes=2),
+                "options": {"queue": "nlp"},
+            },
+            "newsroom-daily-brief-0030-utc": {
+                "task": "tasks.newsroom.generate_daily_brief",
+                "schedule": crontab(hour=0, minute=30),
+                "options": {"queue": "brief"},
+            },
+
         },
     }
 )

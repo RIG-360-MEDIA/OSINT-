@@ -35,6 +35,7 @@ from backend.routers.me_router import me_router
 from backend.routers.cm_router import cm_router
 from backend.routers.cm_v2_router import cm_v2_router
 from backend.routers.rbac_admin_router import rbac_admin_router
+from backend.routers.newsroom_router import newsroom_router
 from backend.routers.signals_router import signals_router
 from backend.routers.thread_router import thread_router
 from backend.routers.worldmonitor_router import worldmonitor_router
@@ -57,6 +58,7 @@ app.include_router(coverage_articles_router)
 app.include_router(clippings_router)
 app.include_router(newspapers_router)
 app.include_router(clips_router)
+app.include_router(newsroom_router)
 app.include_router(documents_router)
 app.include_router(signals_router)
 app.include_router(thread_router)

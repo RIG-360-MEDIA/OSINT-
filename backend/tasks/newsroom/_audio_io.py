@@ -1,16 +1,16 @@
 """
 Audio I/O helpers for THE NEWSROOM 3-Lens pipeline.
 
-Responsibilities:
-  - Download a YouTube video's audio track to /tmp via yt-dlp
-  - Probe duration with ffprobe
-  - Clean up temp files
+Uses yt_dlp's Python API (not subprocess) to match the production
+pattern in backend.collectors.youtube_collector — same cookies +
+proxy passthrough, same format selector, same anti-bot handling.
 
 Output format is m4a (AAC) — small, widely supported by both Groq's
 audio API and Faster-Whisper / pyannote.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import shutil
@@ -29,53 +29,80 @@ class AudioFile:
     yt_video_url: str
 
 
-def download_youtube_audio(yt_video_id: str, *, max_duration_sec: int | None = None) -> AudioFile:
+def _cookies_path() -> str | None:
+    """Return YOUTUBE_COOKIES_PATH if set and the file exists, else None."""
+    p = os.getenv("YOUTUBE_COOKIES_PATH", "").strip()
+    if p and os.path.exists(p):
+        return p
+    return None
+
+
+def _proxy_url() -> str | None:
+    p = os.getenv("YOUTUBE_PROXY_URL", "").strip()
+    return p or None
+
+
+async def download_youtube_audio(
+    yt_video_id: str,
+    *,
+    max_duration_sec: int | None = None,
+) -> AudioFile:
     """Download a YouTube video's audio track to /tmp.
 
-    Raises subprocess.CalledProcessError if yt-dlp fails. Caller is
-    responsible for cleanup() once done.
-
-    `max_duration_sec` lets callers cap pulls (e.g. for live windows);
-    None = full video.
+    Uses the yt_dlp Python API (matches backend.collectors.youtube_collector
+    pattern) with cookies + proxy. Caller is responsible for cleanup().
     """
+    import yt_dlp                                  # imported lazily
+
     url = f"https://www.youtube.com/watch?v={yt_video_id}"
     tmpdir = tempfile.mkdtemp(prefix=f"newsroom_{yt_video_id}_")
-    out_template = os.path.join(tmpdir, "%(id)s.%(ext)s")
+    audio_path = os.path.join(tmpdir, f"{yt_video_id}.m4a")
 
-    cmd = [
-        "yt-dlp",
-        "--no-playlist",
-        "--quiet",
-        "--no-warnings",
-        # bestaudio in m4a/aac when available, fall back to anything audio-only
-        "-f", "bestaudio[ext=m4a]/bestaudio/best",
-        "-x", "--audio-format", "m4a",
-        "--no-progress",
-        "-o", out_template,
-        url,
-    ]
+    # Format selector: prefer m4a, fall through to any audio-only stream,
+    # last fallback is any stream that contains audio (production-tested
+    # selector from youtube_collector.py L946).
+    ydl_opts: dict = {
+        "format":      "bestaudio[ext=m4a]/bestaudio/best[acodec!=none]/best",
+        "outtmpl":     audio_path,
+        "quiet":       True,
+        "no_warnings": True,
+    }
     if max_duration_sec is not None:
-        # yt-dlp supports --download-sections "*0-N" to grab a window
-        cmd.extend(["--download-sections", f"*0-{max_duration_sec}"])
-
-    proxy = os.getenv("YOUTUBE_PROXY_URL", "").strip()
-    if proxy:
-        cmd.extend(["--proxy", proxy])
+        ydl_opts["match_filter"] = yt_dlp.utils.match_filter_func(
+            f"duration <= {max_duration_sec}"
+        )
+    cp = _cookies_path()
+    if cp:
+        ydl_opts["cookiefile"] = cp
+    pu = _proxy_url()
+    if pu:
+        ydl_opts["proxy"] = pu
 
     logger.info("yt-dlp downloading audio for %s", yt_video_id)
-    subprocess.run(cmd, check=True, capture_output=True, text=True)
+    try:
+        def _do_download() -> None:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+        await asyncio.to_thread(_do_download)
+    except Exception as exc:
+        # Surface a clean error so process_broadcast can log it once
+        # without a 50-line yt-dlp traceback.
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise RuntimeError(
+            f"yt-dlp audio download failed for {yt_video_id}: {exc}"
+        ) from exc
 
-    # yt-dlp wrote one .m4a into tmpdir
-    audio_path = None
-    for fn in os.listdir(tmpdir):
-        if fn.endswith(".m4a"):
-            audio_path = os.path.join(tmpdir, fn)
-            break
-    if not audio_path:
-        raise FileNotFoundError(
-            f"yt-dlp completed but no .m4a found in {tmpdir} — "
-            f"contents: {os.listdir(tmpdir)}"
-        )
+    if not os.path.exists(audio_path):
+        # Fall back to scanning the dir — yt-dlp may have written under
+        # a different extension if `bestaudio[ext=m4a]` didn't match.
+        candidates = [f for f in os.listdir(tmpdir) if not f.endswith(".part")]
+        if candidates:
+            audio_path = os.path.join(tmpdir, candidates[0])
+        else:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+            raise FileNotFoundError(
+                f"yt-dlp produced no audio file for {yt_video_id} in {tmpdir}"
+            )
 
     duration = _probe_duration_sec(audio_path)
     return AudioFile(

@@ -123,27 +123,16 @@ def process_broadcast(
             )
             return stats
 
-        # ── 2. Download audio ─────────────────────────────────────────────
-        audio = download_youtube_audio(yt_video_id, max_duration_sec=max_duration_sec)
-        stats["audio_duration_sec"] = audio.duration_sec
-
-        # ── 3. Run L1 (fast, sync) ────────────────────────────────────────
-        try:
-            l1 = fetch_l1_segments(yt_video_id, language=language)
-            stats["lens_status"]["l1"] = f"ok ({len(l1)} segs)"
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("L1 failed: %s", exc)
-            stats["lens_status"]["l1"] = f"failed: {exc}"
-            l1 = []
-
-        # ── 4. Run L2 + L3 + reconcile in ONE asyncio.run ─────────────────
-        # Why one: groq_manager has a module-level asyncio.Lock; mixing
-        # multiple asyncio.run() calls would attach the lock to one loop
-        # and then access it from another — classic "Lock bound to wrong
-        # loop" error. Single run keeps everything on one loop.
-        l2, l3, reconciled = asyncio.run(
-            _run_async_pipeline(audio.path, language, l1)
+        # ── 2. Download audio + run all 3 lenses + reconcile in ONE
+        #      asyncio.run, because groq_manager has a module-level
+        #      asyncio.Lock and mixing multiple asyncio.run() calls
+        #      would attach the lock to one loop and then access it
+        #      from another (classic "Lock bound to wrong loop" error).
+        audio, l1, l2, l3, reconciled = asyncio.run(
+            _run_async_pipeline(yt_video_id, language, max_duration_sec)
         )
+        stats["audio_duration_sec"] = audio.duration_sec
+        stats["lens_status"]["l1"] = f"ok ({len(l1)} segs)" if l1 else "empty"
         stats["lens_status"]["l2"] = f"ok ({len(l2)} segs)" if l2 else "empty"
         stats["lens_status"]["l3"] = f"ok ({len(l3)} segs)" if l3 else "empty"
         stats["reconciled_count"] = len(reconciled)
@@ -274,21 +263,32 @@ def process_broadcast(
 
 
 async def _run_async_pipeline(
-    audio_path: str,
+    yt_video_id: str,
     language: str,
-    l1: list,
+    max_duration_sec: int | None,
 ):
-    """Run L2 (Groq, network I/O) and L3 (CPU) concurrently, then
-    reconcile — all inside one event loop.
+    """Single async pipeline: download → L1 → L2 ‖ L3 → reconcile.
 
-    L3 is CPU-bound and runs in a thread via asyncio.to_thread so it
-    doesn't block L2's network I/O.
+    Everything inside one event loop so groq_manager's module-level
+    asyncio.Lock stays valid throughout.
+
+    L1 is fast and sync (transcript-api call). L2 (Groq network) and
+    L3 (CPU-bound, run via asyncio.to_thread) execute concurrently.
     """
-    l2_task = asyncio.create_task(fetch_l2_segments(audio_path, language=language))
-    l3_task = asyncio.create_task(asyncio.to_thread(fetch_l3_segments, audio_path, language))
+    audio = await download_youtube_audio(yt_video_id, max_duration_sec=max_duration_sec)
 
+    # L1 is sync but I/O-bound; run via to_thread so it doesn't block
+    l1_task = asyncio.create_task(asyncio.to_thread(fetch_l1_segments, yt_video_id, language))
+    l2_task = asyncio.create_task(fetch_l2_segments(audio.path, language=language))
+    l3_task = asyncio.create_task(asyncio.to_thread(fetch_l3_segments, audio.path, language))
+
+    l1 = []
     l2 = []
     l3 = []
+    try:
+        l1 = await l1_task
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("L1 failed (async): %s", exc)
     try:
         l2 = await l2_task
     except Exception as exc:  # noqa: BLE001
@@ -299,7 +299,7 @@ async def _run_async_pipeline(
         logger.warning("L3 failed (async): %s", exc)
 
     reconciled = await _reconcile_async(l1, l2, l3, language=language)
-    return l2, l3, reconciled
+    return audio, l1, l2, l3, reconciled
 
 
 # ── DB helpers (sync, psycopg2) ─────────────────────────────────────────────

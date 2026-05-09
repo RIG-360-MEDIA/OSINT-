@@ -84,6 +84,19 @@ async def download_youtube_audio(
         "outtmpl":     audio_path,
         "quiet":       True,
         "no_warnings": True,
+        # Hard socket timeout: yt-dlp through SOCKS5 has been observed to
+        # hang indefinitely when a connection stalls mid-stream
+        # (CLOSE-WAIT / FIN-WAIT-2 sockets, no further data). 20s is
+        # generous for a YT init and any single chunk; a stalled tunnel
+        # surfaces as a clean exception that the orchestrator can log
+        # and the next task can run.
+        "socket_timeout": 20,
+        # Limit retries — yt-dlp's default tries lots of player_clients
+        # which compounds latency. Two attempts is enough to handle
+        # transient YT 5xx without prolonging a real failure.
+        "retries":            2,
+        "fragment_retries":   2,
+        "extractor_retries":  1,
     }
     if max_duration_sec is not None:
         ydl_opts["match_filter"] = yt_dlp.utils.match_filter_func(
@@ -99,14 +112,25 @@ async def download_youtube_audio(
     logger.info("yt-dlp downloading audio for %s", yt_video_id)
     # Polite gap (and circuit-breaker check) before any YouTube call.
     await throttle_async()
+    # Hard outer ceiling on the whole download — belt-and-braces if
+    # yt-dlp ignores its own socket_timeout (we have seen it hang
+    # forever in CLOSE-WAIT/FIN-WAIT-2 through SOCKS5).
+    download_deadline_sec = 180 if max_duration_sec is None else min(180, max_duration_sec * 6)
     try:
         def _do_download() -> None:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
-        await asyncio.to_thread(_do_download)
+        await asyncio.wait_for(asyncio.to_thread(_do_download), timeout=download_deadline_sec)
     except YoutubeCircuitOpen:
         shutil.rmtree(tmpdir, ignore_errors=True)
         raise
+    except asyncio.TimeoutError:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        record_block()
+        raise RuntimeError(
+            f"yt-dlp audio download for {yt_video_id} exceeded "
+            f"{download_deadline_sec}s — likely SOCKS proxy stall"
+        )
     except Exception as exc:
         if _is_bot_wall(exc):
             record_block()

@@ -80,6 +80,12 @@ app = Celery(
         "backend.tasks.coverage.coverage_gaps_task",
         "backend.tasks.coverage.notifications_task",
         "backend.tasks.coverage.claims_quotes_task",
+        # THE NEWSROOM — multi-channel TV/YouTube intelligence (Phase 0+).
+        # Tasks split across three queues:
+        #   whisper — yt-dlp / Groq Whisper / local ASR / live HLS pulls
+        #   nlp     — Cerebras reconcile / quote / breaking-cluster gating
+        #   brief   — daily newsroom digest
+        "backend.tasks.newsroom",
     ],
 )
 
@@ -170,6 +176,25 @@ app.config_from_object(
             "tasks.collectors.tgspdcl_power":   {"queue": "collectors"},
             "tasks.collectors.welfare_coverage":{"queue": "collectors"},
             "tasks.collectors.acled_sink":      {"queue": "collectors"},
+            # ── THE NEWSROOM ──
+            # Whisper queue: ASR + live HLS pulls. Concurrency=1 because L3
+            # local ASR (IndicConformer / Faster-Whisper) is CPU-bound and a
+            # single live monitor task can run for hours streaming HLS.
+            "tasks.newsroom.ping": {"queue": "whisper"},
+            "tasks.newsroom.lens_l1_yt_captions": {"queue": "whisper"},
+            "tasks.newsroom.lens_l2_groq_whisper": {"queue": "whisper"},
+            "tasks.newsroom.lens_l3_local_asr": {"queue": "whisper"},
+            "tasks.newsroom.diarise": {"queue": "whisper"},
+            "tasks.newsroom.process_broadcast": {"queue": "whisper"},
+            "tasks.newsroom.live_monitor": {"queue": "whisper"},
+            "tasks.newsroom.enqueue_live_monitors": {"queue": "whisper"},
+            # NLP queue: LLM-heavy reconcile / quote / breaking-cluster gate.
+            "tasks.newsroom.reconcile": {"queue": "nlp"},
+            "tasks.newsroom.phonetic_snap": {"queue": "nlp"},
+            "tasks.newsroom.extract_quotes": {"queue": "nlp"},
+            "tasks.newsroom.detect_breaking": {"queue": "nlp"},
+            # Brief queue: daily newsroom digest (Phase 8).
+            "tasks.newsroom.generate_daily_brief": {"queue": "brief"},
         },
         "beat_schedule": {
             "collect-rss-every-15-min": {

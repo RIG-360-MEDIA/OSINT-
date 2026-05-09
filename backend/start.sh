@@ -50,6 +50,17 @@ celery -A backend.celery_app worker \
   --hostname=worker-relevance@%h \
   --loglevel=info &
 
+# Dedicated whisper worker — THE NEWSROOM 3-Lens transcript pipeline +
+# live HLS monitors. concurrency=1 because L3 local ASR is CPU-bound and
+# one live_monitor task streams a single channel for hours; prefetch=1
+# prevents a long live pull from starving sibling broadcast jobs.
+celery -A backend.celery_app worker \
+  --queues=whisper \
+  --concurrency=1 \
+  --prefetch-multiplier=1 \
+  --hostname=worker-whisper@%h \
+  --loglevel=info &
+
 # Start Celery Beat scheduler.
 # --schedule points at a persistent volume (see docker-compose.yml's
 # rig-beat-schedule volume on /app/beat). Without this, container

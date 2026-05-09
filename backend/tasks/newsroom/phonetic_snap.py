@@ -40,6 +40,24 @@ class EntityMention:
 
 _TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z'-]+")
 
+# Tightening (2026-05-09): the v1 phonetic snap was too generous — edit
+# distance ≤ 2 + 1-gram + 3-char minimum produced lots of false matches
+# ("Bajaj Holdings", "Badminton Association", "Aditya Birla Health
+# Insurance", "Announcement of corporate tax rate cuts" against a Telugu
+# BJP-MLA story). New rules:
+#   - Phonetic match: edit distance ≤ 1 (was 2)
+#   - Minimum candidate phrase length: 5 chars (was 3)
+#   - Minimum entity name length: 5 chars
+#   - Skip 1-grams entirely; only 2- and 3-token phrases
+#   - Skip entities whose canonical_name is multi-sentence ("Defected
+#     from..." style — those are notes, not entities — len ≥ 40 OR
+#     contains a period mid-name)
+_MIN_TOKEN_LEN = 5
+_MAX_EDIT_DIST = 1
+_MIN_NGRAM = 2
+_MAX_NGRAM = 3
+_MAX_ENTITY_NAME_LEN = 40
+
 
 # Cached per-process entity index: list of dicts {id, name, soundex, metaphone, lower}
 _ENTITY_INDEX: list[dict] | None = None
@@ -122,22 +140,31 @@ def snap_text(text: str, entity_index: list[dict]) -> list[EntityMention]:
     text_lower = _ascii_fold(text).lower()
 
     # Pass 1: exact substring match on canonical name + aliases.
-    # Fast and high-precision.
+    # Fast and high-precision. Skip pathologically short or sentence-
+    # length names — those produce false hits.
     for entry in entity_index:
         nm = entry["lower"]
-        if not nm or len(nm) < 3:
+        if not nm or len(nm) < _MIN_TOKEN_LEN:
+            continue
+        if len(nm) > _MAX_ENTITY_NAME_LEN or "." in nm:
             continue
         idx = text_lower.find(nm)
         while idx != -1:
-            key = (entry["id"], idx, idx + len(nm))
-            if key not in seen:
-                seen.add(key)
-                out.append(EntityMention(
-                    entity_id=entry["id"],
-                    span_start=idx,
-                    span_end=idx + len(nm),
-                    was_phonetic=False,
-                ))
+            # Only count exact substring matches if the surrounding
+            # characters are word boundaries (avoid "ram" inside "framework")
+            left_ok = idx == 0 or not text_lower[idx - 1].isalnum()
+            right_end = idx + len(nm)
+            right_ok = right_end == len(text_lower) or not text_lower[right_end].isalnum()
+            if left_ok and right_ok:
+                key = (entry["id"], idx, right_end)
+                if key not in seen:
+                    seen.add(key)
+                    out.append(EntityMention(
+                        entity_id=entry["id"],
+                        span_start=idx,
+                        span_end=right_end,
+                        was_phonetic=False,
+                    ))
             idx = text_lower.find(nm, idx + 1)
 
     # Pass 2: phonetic n-gram match. Only for tokens not already
@@ -147,8 +174,9 @@ def snap_text(text: str, entity_index: list[dict]) -> list[EntityMention]:
     for m in out:
         covered_offsets.update(range(m.span_start, m.span_end))
 
-    # Try 1-, 2-, 3-grams, longest first
-    for n in (3, 2, 1):
+    # Try only 2- and 3-grams (1-grams are too noisy on common short names).
+    # Longest first so we don't double-count.
+    for n in range(_MAX_NGRAM, _MIN_NGRAM - 1, -1):
         for i in range(len(tokens) - n + 1):
             grp = tokens[i:i + n]
             sp_start = grp[0].start()
@@ -180,10 +208,16 @@ def snap_text(text: str, entity_index: list[dict]) -> list[EntityMention]:
 def _phonetic_match(phrase: str, sx: str, mp: str, index: list[dict]) -> dict | None:
     """Find the entity whose phonetic code matches and is closest by
     edit-distance to `phrase`. Returns None if no match within
-    edit-distance 2."""
+    `_MAX_EDIT_DIST`. Skips entities whose canonical name looks like
+    a sentence (commas, periods, > _MAX_ENTITY_NAME_LEN chars)."""
+    if len(phrase) < _MIN_TOKEN_LEN:
+        return None
     candidates = [
         e for e in index
-        if (sx and e["soundex"] == sx) or (mp and e["metaphone"] == mp)
+        if ((sx and e["soundex"] == sx) or (mp and e["metaphone"] == mp))
+        and len(e["lower"]) >= _MIN_TOKEN_LEN
+        and len(e["lower"]) <= _MAX_ENTITY_NAME_LEN
+        and "." not in e["lower"]
     ]
     if not candidates:
         return None
@@ -195,7 +229,7 @@ def _phonetic_match(phrase: str, sx: str, mp: str, index: list[dict]) -> dict | 
         if d < best_d:
             best_d = d
             best = c
-    return best if best_d <= 2 else None
+    return best if best_d <= _MAX_EDIT_DIST else None
 
 
 def _levenshtein(a: str, b: str) -> int:

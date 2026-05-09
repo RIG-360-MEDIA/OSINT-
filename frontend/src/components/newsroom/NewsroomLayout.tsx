@@ -97,21 +97,23 @@ export function NewsroomLayout() {
 
   return (
     <div
-      className="onyx-driftglow onyx-scanlines onyx-grain onyx-vignette"
+      data-newsroom-root
       style={{
-        background: 'var(--onyx-bg)',
-        color: 'var(--onyx-bone)',
+        background: '#000000',
+        color: '#ECEEF1',
         minHeight: '100vh',
+        width: '100%',
         position: 'relative',
         paddingBottom: 60,
+        fontFamily: '"Inter", system-ui, -apple-system, sans-serif',
       }}
     >
       {/* Status bar */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 60,
-        background: 'rgba(0, 0, 0, 0.85)',
+        background: 'rgba(0, 0, 0, 0.92)',
         backdropFilter: 'blur(8px)',
-        borderBottom: '1px solid rgba(168, 173, 184, 0.10)',
+        borderBottom: '1px solid rgba(168, 173, 184, 0.18)',
         padding: '10px 28px',
         display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
       }}>

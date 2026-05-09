@@ -618,13 +618,50 @@ app.config_from_object(
 )
 
 
+# ── Per-fork state reset (cold-start deadlock fix) ────────────────────
+#
+# Celery prefork copies module state across the fork(). The Groq SDK's
+# AsyncGroq client is httpx-async under the hood; when the parent
+# process touches groq_manager (e.g. for any Groq call) it caches an
+# AsyncGroq instance whose internal asyncio primitives are bound to the
+# parent's event loop. After fork, the child inherits that cached
+# instance pointing at a now-dead loop. The very first `await
+# client.chat.completions.create(...)` in the child hangs forever.
+#
+# Same story for the asyncio.Lock that GroqKeyManager uses for round-
+# robin key picking.
+#
+# Reproduction (2026-05-09): tasks.newsroom.process_broadcast hung
+# reliably as the first task after a fresh worker fork; same task
+# succeeded when the worker had already been processing a backlog,
+# because some prior call had refreshed the cached state inside the
+# child's own loop. See feedback_newsroom_cold_start_deadlock.md.
+#
+# Reset both on every fork so the FIRST groq call in a child creates
+# fresh, child-loop-bound state.
+from celery.signals import worker_process_init, worker_ready
+
+
+@worker_process_init.connect
+def _reset_groq_after_fork(**_kw) -> None:  # noqa: D401, ANN001
+    try:
+        from backend.nlp.groq_client import groq_manager
+        groq_manager._lock = None
+        groq_manager._clients = {}
+    except Exception:  # noqa: BLE001
+        # Never crash the worker on an init hook
+        import logging
+        logging.getLogger(__name__).warning(
+            "groq state reset on fork failed", exc_info=True,
+        )
+
+
 # ── Worker boot self-checks ─────────────────────────────────────
 #
 # Verify Playwright is usable so the 9 JS-rendered govt adapters
 # (SEBI, SCI, NGT, MCA, ADB, IMF, UN, CERC, PNGRB) do not silently
 # return zero rows on every collection. Logs CRITICAL on failure but
 # does not abort the worker — httpx-direct adapters still need to run.
-from celery.signals import worker_ready
 
 
 @worker_ready.connect

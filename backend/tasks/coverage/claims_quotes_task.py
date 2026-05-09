@@ -240,8 +240,17 @@ def extract_claims_quotes_for_article(  # type: ignore[no-untyped-def]
 # Cost envelope: 50 calls/5 min × FAST_MODEL = ~$0.03/hour at current
 # Groq pricing. Negligible.
 
-_BATCH_SIZE = 50
+# Reduced from 50 → 12 to stop tripping Groq's per-minute rate limit.
+# With 4 nlp workers servicing the queue, 50 simultaneously-queued tasks
+# produced 240+ concurrent Groq HTTP requests in the first second, blowing
+# the 30-rpm-per-key cap on the free tier. 12 per cycle still drains the
+# backlog comfortably (12 × 12 fires/hr = 144/hr) without bursting.
+_BATCH_SIZE = 12
 _MAX_AGE_DAYS = 7  # don't waste budget on stale articles
+# Stagger between successive task sends so all 12 don't hit the broker
+# (and downstream Groq) in the same millisecond. 200ms × 12 = 2.4s
+# spread per cycle — barely affects throughput, dramatically smooths burst.
+_DISPATCH_STAGGER_S = 0.2
 
 
 async def _queue_pending() -> dict[str, int]:
@@ -295,6 +304,11 @@ async def _queue_pending() -> dict[str, int]:
             )
         except Exception as exc:  # noqa: BLE001 — never crash the driver
             logger.warning("queue extract failed for %s: %s", aid, exc)
+        # Spread submissions over a couple of seconds so workers pick up
+        # in a smooth stream instead of a stampede. Doesn't affect total
+        # throughput (we still process 12/cycle) but flattens the
+        # per-second Groq HTTP-request rate.
+        await asyncio.sleep(_DISPATCH_STAGGER_S)
 
     return {"queued": len(ids)}
 

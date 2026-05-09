@@ -42,11 +42,15 @@ _WINDOW_HOURS = 48
 _SYSTEM_PROMPT = (
     "You are an intelligence analyst writing a tracker card for a single "
     "subject (an entity, topic, or theme the user is tracking). Return "
-    "STRICT JSON with shape: { state: 'one short line', "
+    "STRICT JSON with shape: { state: 'one short line, present tense', "
     "whats_new: ['short bullet', 'short bullet', ...] (3-5 items), "
     "why_matters: 'one paragraph (max 80 words) of chain-of-thought "
-    "reasoning that ties the recent developments to the user-stated "
-    "intent — explain HOW one fact leads to another and what it implies', "
+    "reasoning that EXPLAINS one specific causal chain — pick ONE fact "
+    "from whats_new and trace what it implies for the user-stated intent. "
+    "Do NOT begin with generic openers like \"These developments matter\" "
+    "or \"This is significant because\" or \"This article matters\". "
+    "Start with the SUBJECT, an action verb, or a direct claim — make the "
+    "first 6 words concrete and specific to what changed.', "
     "watch_for: ['short bullet', ...] (1-3 items) }. No prose outside "
     "JSON. No fences. Plain text only."
 )

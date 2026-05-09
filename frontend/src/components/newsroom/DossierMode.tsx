@@ -85,7 +85,18 @@ export function DossierMode() {
 
       {error && <p style={{ color: 'var(--onyx-red)', font: '400 12px var(--onyx-mono)' }}>{error}</p>}
 
-      {!data ? (
+      {watched.length === 0 ? (
+        <p style={{
+          padding: '60px 24px', textAlign: 'center',
+          font: '400 12px/1.7 var(--onyx-mono)',
+          color: 'var(--onyx-dim)',
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase',
+        }}>
+          no watched entities · add some at /onboarding
+          <br/><span style={{ color: 'var(--onyx-bone-2)' }}>then this view shows mention deltas, sentiment trend, and top quotes for each</span>
+        </p>
+      ) : !data ? (
         <p style={{
           padding: '60px 24px', textAlign: 'center',
           font: '400 12px/1.5 var(--onyx-mono)',

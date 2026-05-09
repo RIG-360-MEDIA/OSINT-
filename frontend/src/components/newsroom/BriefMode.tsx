@@ -15,9 +15,10 @@ export function BriefMode() {
     if (!ready) return
     fetcher<NewsroomBriefResponse>('/api/newsroom/brief')
       .then((b) => { setBrief(b); setNotFound(false) })
-      .catch((e) => {
-        if (String(e).startsWith('404')) setNotFound(true)
-        else setError(e.message)
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e)
+        if (msg.startsWith('404')) setNotFound(true)
+        else setError(msg)
       })
   }, [ready, fetcher])
 

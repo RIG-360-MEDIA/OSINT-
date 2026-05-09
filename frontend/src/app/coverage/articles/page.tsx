@@ -32,13 +32,13 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { OnyxTopBar } from '@/components/coverage/OnyxTopBar'
-import { AskBar } from '@/components/coverage/AskBar'
 import { BreakingBand } from '@/components/coverage/BreakingBand'
 import { CustomCardsRow } from '@/components/coverage/CustomCardsRow'
 import { CreateCardModal } from '@/components/coverage/CreateCardModal'
 import { TopFiveStories } from '@/components/coverage/TopFiveStories'
 import { RightRail } from '@/components/coverage/RightRail'
 import { ContradictionsDrawer } from '@/components/coverage/ContradictionsDrawer'
+import { CardDetailView } from '@/components/coverage/CardDetailView'
 import {
   DEFAULT_FILTERS,
   type ArticleFilters,
@@ -135,6 +135,7 @@ function ArticlesInner() {
   const [contradictionsOpen, setContradictionsOpen] = useState(false)
   const [createCardOpen, setCreateCardOpen] = useState(false)
   const [cardsRefreshTick, setCardsRefreshTick] = useState(0)
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null)
 
   // ── Auth helper ───────────────────────────────────────────────
   const getToken = useCallback(async (): Promise<string | null> => {
@@ -270,12 +271,13 @@ function ArticlesInner() {
       if (e.key !== 'Escape') return
       if (compareOpen) setCompareOpen(false)
       else if (selectedArticle) closeArticle()
+      else if (expandedCardId) setExpandedCardId(null)
       else if (contradictionsOpen) setContradictionsOpen(false)
       else if (createCardOpen) setCreateCardOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedArticle, contradictionsOpen, createCardOpen, compareOpen, closeArticle])
+  }, [selectedArticle, contradictionsOpen, createCardOpen, compareOpen, expandedCardId, closeArticle])
 
   // ── Render ────────────────────────────────────────────────────
   return (
@@ -293,12 +295,31 @@ function ArticlesInner() {
     >
       <OnyxTopBar />
 
+      {/* Ambient atmosphere — slow-drifting red glow at top-right.
+          Converts otherwise-empty header area into "between-frame quiet"
+          rather than absence. Pointer-events:none so it never intercepts. */}
+      <div
+        aria-hidden
+        style={{
+          position: 'fixed',
+          top: '-200px',
+          right: '-220px',
+          width: '720px',
+          height: '720px',
+          background:
+            'radial-gradient(circle at center, rgba(255, 45, 45, 0.06) 0%, rgba(255, 45, 45, 0.0) 60%)',
+          pointerEvents: 'none',
+          zIndex: 1,
+          animation: 'onyx-drift-glow 60s ease-in-out infinite',
+        }}
+      />
+
       <main
         className="coverage-articles-grid"
         style={{
           position: 'relative',
           zIndex: 5,
-          maxWidth: '1480px',
+          maxWidth: '1320px',
           margin: '0 auto',
           padding: '0 56px 96px',
           display: 'grid',
@@ -308,22 +329,24 @@ function ArticlesInner() {
         }}
       >
         {/* Center column */}
-        <div style={{ minWidth: 0 }}>
+        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '64px' }}>
           <BreakingBand />
 
-          <AskBar filters={filters} onCiteClick={openArticle} />
-
+          <ZoneSeparator label="TRACK" />
           <CustomCardsRow
             onOpenCreate={() => setCreateCardOpen(true)}
+            onCardClick={(id) => setExpandedCardId(id)}
             refreshTick={cardsRefreshTick}
           />
 
+          <ZoneSeparator label="TODAY" />
           <TopFiveStories
             onRead={openArticle}
             onCompareToggle={toggleCompare}
             selectedForCompare={compareIds}
           />
 
+          <ZoneSeparator label="FEED" />
           <FeedSection
             articles={articles}
             filters={filters}
@@ -412,6 +435,16 @@ function ArticlesInner() {
       )}
 
       {/* Drawers / modals */}
+      {expandedCardId && (
+        <CardDetailView
+          cardId={expandedCardId}
+          onClose={() => setExpandedCardId(null)}
+          onArticleClick={(id) => {
+            setExpandedCardId(null)
+            openArticle(id)
+          }}
+        />
+      )}
       <ContradictionsDrawer
         open={contradictionsOpen}
         onClose={() => setContradictionsOpen(false)}
@@ -444,6 +477,53 @@ function ArticlesInner() {
           }
         }
       `}</style>
+    </div>
+  )
+}
+
+
+/* ───────────────────────────────────────────────────────────────
+   ZoneSeparator — film-chapter-card style rule between sections
+   Renders a 1px red-tinted rule with a small mono label sitting on
+   the left edge. Explicit zone naming makes the page feel chaptered
+   instead of stacked, per the cinematic redesign intent.
+   ─────────────────────────────────────────────────────────────── */
+
+function ZoneSeparator({ label }: { label: string }) {
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: 'relative',
+        height: '12px',
+        marginBottom: '-24px', // pulls the next section up by 24px tightening rhythm
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          top: '50%',
+          height: '1px',
+          background: 'rgba(255, 45, 45, 0.20)',
+        }}
+      />
+      <span
+        className="onyx-mono"
+        style={{
+          position: 'absolute',
+          left: '0',
+          top: '-3px',
+          padding: '0 12px 0 0',
+          background: 'var(--onyx-bg)',
+          fontSize: '9px',
+          letterSpacing: '0.36em',
+          textTransform: 'uppercase',
+          color: 'var(--onyx-dim)',
+        }}
+      >
+        / {label}
+      </span>
     </div>
   )
 }

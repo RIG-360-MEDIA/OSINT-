@@ -1477,6 +1477,14 @@ async def create_card(
             "tasks.refresh_user_cards",
             kwargs={"only_definition_hash": definition_hash},
         )
+        # Spawn 3-5 derivative sub-cards via Groq. Fires async — the
+        # parent card returns immediately; the detail view will populate
+        # its sub-card grid once tasks.spawn_sub_cards completes
+        # (typically 8-20s) followed by per-child refresh.
+        celery_app.send_task(
+            "tasks.spawn_sub_cards",
+            kwargs={"parent_card_id": row[0]},
+        )
     except Exception:  # noqa: BLE001 — best-effort
         pass
 
@@ -1505,6 +1513,9 @@ async def list_cards(
                 LEFT JOIN user_card_summaries s
                   ON s.definition_hash = c.definition_hash
                 WHERE c.user_id = :uid
+                  -- Only top-level (user-created) cards on the main row.
+                  -- Spawned sub-cards are revealed via /cards/:id/full.
+                  AND c.parent_card_id IS NULL
                 ORDER BY c.created_at DESC
                 """
             ),
@@ -1538,6 +1549,149 @@ async def list_cards(
             }
             for r in rows
         ]
+    }
+
+
+@coverage_articles_router.get("/cards/{card_id}/full")
+async def card_full(
+    card_id: UUID,
+    user: dict = Depends(get_current_principal),
+) -> dict:
+    """
+    Detail view payload: parent card + spawned sub-cards + each
+    sub-card's summary + each sub-card's hydrated source articles.
+
+    Sub-cards live in user_cards with parent_card_id pointing at the
+    parent. We fetch parent + children in one round-trip, then in a
+    second round-trip hydrate each unique citation article (by id) so
+    sub-card panels can render thumbnail + headline + meta inline.
+    """
+    _require_flag("FEATURE_CARDS")
+    user_id = user["id"]
+
+    async with get_db() as db:
+        # Parent + children in one query, joined to summaries by hash.
+        rows_result = await db.execute(
+            text(
+                """
+                SELECT c.id::text, c.label, c.definition_hash,
+                       c.entity_refs, c.topic_filters, c.geo_filter,
+                       c.user_intent, c.parent_card_id::text AS parent_id,
+                       c.sub_card_angle,
+                       c.created_at, c.last_refreshed_at,
+                       c.sub_cards_spawned,
+                       s.sections, s.citations, s.generated_at, s.sample_size
+                FROM user_cards c
+                LEFT JOIN user_card_summaries s
+                  ON s.definition_hash = c.definition_hash
+                WHERE c.user_id = :uid
+                  AND (c.id = :cid OR c.parent_card_id = :cid)
+                ORDER BY c.parent_card_id NULLS FIRST, c.created_at ASC
+                """
+            ),
+            {"uid": user_id, "cid": str(card_id)},
+        )
+        rows = rows_result.fetchall()
+
+        if not rows or rows[0].parent_id is not None:
+            return {"error": "card not found"}
+
+        parent_row = rows[0]
+        children = [r for r in rows[1:]]
+
+        # Hydrate citations from every sub-card.
+        all_article_ids: list[str] = []
+        for r in [parent_row, *children]:
+            cites = r.citations
+            if isinstance(cites, str):
+                try:
+                    cites = json.loads(cites)
+                except json.JSONDecodeError:
+                    cites = []
+            for c in (cites or [])[:8]:
+                if c:
+                    all_article_ids.append(str(c))
+
+        article_meta: dict[str, dict[str, Any]] = {}
+        if all_article_ids:
+            arts = await db.execute(
+                text(
+                    """
+                    SELECT a.id::text AS id, a.title,
+                           COALESCE(a.lead_text_translated,
+                                    a.lead_text_original) AS lead,
+                           a.published_at, a.thumbnail_url,
+                           a.geo_primary, a.language_detected,
+                           s.name AS source_name, s.domain AS source_domain
+                    FROM articles a
+                    JOIN sources s ON s.id = a.source_id
+                    WHERE a.id::text = ANY(:ids)
+                    """
+                ),
+                {"ids": list(set(all_article_ids))},
+            )
+            for ar in arts.fetchall():
+                article_meta[ar.id] = {
+                    "article_id": ar.id,
+                    "title": ar.title,
+                    "lead": (ar.lead or "")[:300],
+                    "source_name": ar.source_name,
+                    "source_domain": ar.source_domain,
+                    "thumbnail_url": ar.thumbnail_url,
+                    "published_at": (
+                        ar.published_at.isoformat()
+                        if ar.published_at else None
+                    ),
+                    "geo_primary": ar.geo_primary,
+                    "language_detected": ar.language_detected,
+                }
+
+    def _serialise(r: Any) -> dict[str, Any]:
+        cites = r.citations
+        if isinstance(cites, str):
+            try:
+                cites = json.loads(cites)
+            except json.JSONDecodeError:
+                cites = []
+        articles = [
+            article_meta[str(cid)]
+            for cid in (cites or [])[:8]
+            if str(cid) in article_meta
+        ]
+        return {
+            "id": r.id,
+            "label": r.label,
+            "sub_card_angle": r.sub_card_angle,
+            "user_intent": r.user_intent,
+            "definition_hash": r.definition_hash,
+            "entity_refs": r.entity_refs,
+            "topic_filters": r.topic_filters,
+            "geo_filter": r.geo_filter,
+            "created_at": (
+                r.created_at.isoformat() if r.created_at else None
+            ),
+            "last_refreshed_at": (
+                r.last_refreshed_at.isoformat()
+                if r.last_refreshed_at else None
+            ),
+            "summary": (
+                {
+                    "sections": r.sections,
+                    "generated_at": (
+                        r.generated_at.isoformat()
+                        if r.generated_at else None
+                    ),
+                    "sample_size": r.sample_size,
+                }
+                if r.sections else None
+            ),
+            "articles": articles,
+        }
+
+    return {
+        "parent": _serialise(parent_row),
+        "sub_cards_spawned": bool(parent_row.sub_cards_spawned),
+        "sub_cards": [_serialise(r) for r in children],
     }
 
 

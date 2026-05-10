@@ -109,9 +109,34 @@ async def wall(
     user: dict = Depends(require_page("clips")),
     per_channel: int = Query(default=5, ge=1, le=20),
 ) -> dict:
-    """Latest segments per active live-monitored channel — drives WALL mode tiles."""
+    """Latest segments per active channel — drives WALL mode tiles.
+
+    Returns one tile per active channel REGARDLESS of whether the channel
+    currently has segments. Channels with no segments get a tile with
+    `segments: []`, so the UI can render empty placeholders rather than
+    hiding the channel entirely. Segments are joined with a 24h recency
+    window so very-old VOD ingestion doesn't pollute the live feel.
+    """
     async with get_db() as db:
-        rows = await db.execute(
+        # Step 1 — every active channel, in deterministic order.
+        chan_rows = await db.execute(
+            text(
+                """
+                SELECT id::text      AS channel_id,
+                       name          AS channel_name,
+                       language,
+                       beat,
+                       is_live_24x7
+                  FROM newsroom_channels
+                 WHERE active = TRUE
+                 ORDER BY is_live_24x7 DESC, name
+                """
+            )
+        )
+        channels = [dict(r._mapping) for r in chan_rows.fetchall()]
+
+        # Step 2 — top-N latest segments per channel within 24h.
+        seg_rows = await db.execute(
             text(
                 """
                 WITH ranked AS (
@@ -120,9 +145,6 @@ async def wall(
                            s.is_quote, s.is_editorial, s.framing,
                            s.start_sec, s.end_sec, s.created_at,
                            c.id::text         AS channel_id,
-                           c.name             AS channel_name,
-                           c.language,
-                           c.beat,
                            ROW_NUMBER() OVER (
                                PARTITION BY c.id
                                ORDER BY s.created_at DESC
@@ -131,32 +153,33 @@ async def wall(
                       JOIN newsroom_broadcasts b  ON b.id = s.broadcast_id
                       JOIN newsroom_channels c    ON c.id = b.channel_id
                      WHERE c.active = TRUE
-                       AND s.created_at > NOW() - INTERVAL '6 hours'
+                       AND s.created_at > NOW() - INTERVAL '24 hours'
                 )
                 SELECT * FROM ranked
                  WHERE rn <= :n
-                 ORDER BY channel_name, created_at DESC
+                 ORDER BY channel_id, created_at DESC
                 """
             ),
             {"n": per_channel},
         )
-        rs = [dict(r._mapping) for r in rows.fetchall()]
-    by_channel: dict[str, dict] = {}
-    for r in rs:
-        ch = by_channel.setdefault(
-            r["channel_id"],
-            {
-                "channel_id":   r["channel_id"],
-                "channel_name": r["channel_name"],
-                "language":     r["language"],
-                "beat":         r["beat"],
-                "segments":     [],
-            },
-        )
-        ch["segments"].append(
-            {k: v for k, v in r.items() if k not in ("channel_id", "channel_name", "language", "beat", "rn")}
-        )
-    return {"tiles": list(by_channel.values())}
+        seg_by_channel: dict[str, list[dict]] = {}
+        for r in seg_rows.fetchall():
+            d = dict(r._mapping)
+            cid = d.pop("channel_id")
+            d.pop("rn", None)
+            seg_by_channel.setdefault(cid, []).append(d)
+
+    tiles = []
+    for c in channels:
+        tiles.append({
+            "channel_id":   c["channel_id"],
+            "channel_name": c["channel_name"],
+            "language":     c["language"],
+            "beat":         c["beat"],
+            "is_live_24x7": c["is_live_24x7"],
+            "segments":     seg_by_channel.get(c["channel_id"], []),
+        })
+    return {"tiles": tiles}
 
 
 # ─── /stream (cursor-paginated) ────────────────────────────────────────────

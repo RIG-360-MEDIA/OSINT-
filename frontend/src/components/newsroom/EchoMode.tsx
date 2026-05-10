@@ -19,7 +19,7 @@ export function EchoMode() {
   // Pull the user's watched entities from the existing /me/entities endpoint
   useEffect(() => {
     if (!ready) return
-    fetcher<{ entities: WatchedEntity[] }>('/api/me/entities').then((r) => {
+    fetcher<{ entities: WatchedEntity[] }>('/api/newsroom/me/entities').then((r) => {
       setWatched(r.entities ?? [])
       if ((r.entities ?? []).length > 0) setSelected(r.entities[0].id)
     }).catch(() => setWatched([]))

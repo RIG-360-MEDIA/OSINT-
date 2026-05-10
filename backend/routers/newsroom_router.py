@@ -46,6 +46,36 @@ _STREAM_DEFAULT_LIMIT = 50
 _STREAM_MAX_LIMIT = 200
 
 
+# ─── /me/entities — watched entities for the calling user ────────────────
+
+
+@newsroom_router.get("/me/entities")
+async def my_watched_entities(
+    user: dict = Depends(require_page("clips")),
+) -> dict:
+    """Return the calling user's watched entities, joined with
+    entity_dictionary so we get the canonical UUID needed by the
+    /echo and /dossier routes (those expect entity_id, not name)."""
+    async with get_db() as db:
+        rows = await db.execute(
+            text(
+                """
+                SELECT ed.id::text   AS id,
+                       ue.canonical_name AS name,
+                       ue.entity_type    AS type,
+                       ue.priority
+                  FROM user_entities ue
+             LEFT JOIN entity_dictionary ed ON ed.canonical_name = ue.canonical_name
+                 WHERE ue.user_id = CAST(:uid AS uuid)
+                   AND ed.id IS NOT NULL
+                 ORDER BY ue.priority DESC NULLS LAST, ue.canonical_name
+                """
+            ),
+            {"uid": user["id"]},
+        )
+        return {"entities": [dict(r._mapping) for r in rows.fetchall()]}
+
+
 # ─── /channels ─────────────────────────────────────────────────────────────
 
 

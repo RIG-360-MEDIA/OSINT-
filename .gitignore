@@ -21,3 +21,15 @@ build/
 # Cookie/auth dumps
 cookies*.txt
 backend/cookies*.txt
+
+# environment-specific (Hetzner production)
+infrastructure/.env.prod
+infrastructure/.env.prod.backup-*
+infrastructure/Caddyfile
+infrastructure/Caddyfile.backup-*
+infrastructure/docker-compose.prod.yml
+infrastructure/docker-compose.prod.yml.backup-*
+infrastructure/Dockerfile.frontend.prod.tmp-*
+
+# in-place edit safety backups (created during scripted edits)
+*.bak.before-*

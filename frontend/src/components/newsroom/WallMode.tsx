@@ -57,26 +57,16 @@ export function WallMode() {
     </ModeMessage>
   )
 
-  // Pad to a 3×3 grid with empty placeholder tiles for layout consistency.
-  const grid = [...tiles]
-  while (grid.length < 9) grid.push({
-    channel_id: `placeholder-${grid.length}`,
-    channel_name: 'awaiting',
-    language: '—',
-    beat: '—',
-    segments: [],
-  })
-
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
       gap: 14,
       padding: '4px 0 24px',
     }}>
-      {grid.slice(0, 9).map((t, i) => (
+      {tiles.map((t) => (
         <LiveTile
-          key={t.channel_id || `slot-${i}`}
+          key={t.channel_id}
           tile={t}
           isLive={t.segments.length > 0}
           isBreaking={breakingChannelIds.has(t.channel_id)}

@@ -122,20 +122,32 @@ async def wall(
         chan_rows = await db.execute(
             text(
                 """
-                SELECT id::text      AS channel_id,
-                       name          AS channel_name,
+                SELECT id::text                AS channel_id,
+                       name                    AS channel_name,
                        language,
                        beat,
-                       is_live_24x7
+                       is_live_24x7,
+                       yt_handle,
+                       current_live_video_id,
+                       current_live_title,
+                       last_live_at,
+                       last_live_check_at
                   FROM newsroom_channels
                  WHERE active = TRUE
-                 ORDER BY is_live_24x7 DESC, name
+                 ORDER BY (current_live_video_id IS NOT NULL) DESC,
+                          is_live_24x7 DESC,
+                          name
                 """
             )
         )
         channels = [dict(r._mapping) for r in chan_rows.fetchall()]
 
-        # Step 2 — top-N latest segments per channel within 24h.
+        # Step 2 — top-N segments per channel within 24h.
+        # Segments are ordered start_sec ASC for VOD broadcasts (so the
+        # tile shows the FIRST segment of the broadcast — usually the
+        # headline/intro — not the LAST one which is often outro audio
+        # that Whisper hallucinates on). For live broadcasts we keep
+        # created_at DESC so the most recent caption is on top.
         seg_rows = await db.execute(
             text(
                 """
@@ -144,10 +156,13 @@ async def wall(
                            s.text_native, s.text_en, s.confidence,
                            s.is_quote, s.is_editorial, s.framing,
                            s.start_sec, s.end_sec, s.created_at,
+                           s.is_live,
                            c.id::text         AS channel_id,
                            ROW_NUMBER() OVER (
                                PARTITION BY c.id
-                               ORDER BY s.created_at DESC
+                               ORDER BY
+                                 CASE WHEN s.is_live THEN s.created_at END DESC NULLS LAST,
+                                 CASE WHEN s.is_live THEN NULL ELSE s.start_sec END ASC NULLS LAST
                            ) AS rn
                       FROM newsroom_segments s
                       JOIN newsroom_broadcasts b  ON b.id = s.broadcast_id
@@ -157,7 +172,7 @@ async def wall(
                 )
                 SELECT * FROM ranked
                  WHERE rn <= :n
-                 ORDER BY channel_id, created_at DESC
+                 ORDER BY channel_id, rn
                 """
             ),
             {"n": per_channel},
@@ -172,12 +187,17 @@ async def wall(
     tiles = []
     for c in channels:
         tiles.append({
-            "channel_id":   c["channel_id"],
-            "channel_name": c["channel_name"],
-            "language":     c["language"],
-            "beat":         c["beat"],
-            "is_live_24x7": c["is_live_24x7"],
-            "segments":     seg_by_channel.get(c["channel_id"], []),
+            "channel_id":            c["channel_id"],
+            "channel_name":          c["channel_name"],
+            "language":              c["language"],
+            "beat":                  c["beat"],
+            "is_live_24x7":          c["is_live_24x7"],
+            "yt_handle":             c["yt_handle"],
+            "current_live_video_id": c["current_live_video_id"],
+            "current_live_title":    c["current_live_title"],
+            "last_live_at":          c["last_live_at"],
+            "last_live_check_at":    c["last_live_check_at"],
+            "segments":              seg_by_channel.get(c["channel_id"], []),
         })
     return {"tiles": tiles}
 

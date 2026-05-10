@@ -42,6 +42,12 @@ export interface NewsroomWallTile {
   channel_name: string
   language: NewsroomLanguage
   beat: string
+  is_live_24x7?: boolean
+  yt_handle?: string | null
+  current_live_video_id?: string | null
+  current_live_title?: string | null
+  last_live_at?: string | null
+  last_live_check_at?: string | null
   segments: NewsroomSegmentSummary[]
 }
 

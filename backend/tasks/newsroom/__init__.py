@@ -27,6 +27,7 @@ from backend.tasks.newsroom import extract_quotes as _extract_quotes        # no
 from backend.tasks.newsroom import live_monitor as _live_monitor            # noqa: F401
 from backend.tasks.newsroom import detect_breaking as _detect_breaking      # noqa: F401
 from backend.tasks.newsroom import generate_daily_brief as _generate_daily  # noqa: F401
+from backend.tasks.newsroom import check_liveness as _check_liveness        # noqa: F401
 
 
 @app.task(name="tasks.newsroom.ping", queue="whisper")

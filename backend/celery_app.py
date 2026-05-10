@@ -198,6 +198,8 @@ app.config_from_object(
             "tasks.newsroom.detect_breaking": {"queue": "nlp"},
             # Brief queue: daily newsroom digest (Phase 8).
             "tasks.newsroom.generate_daily_brief": {"queue": "brief"},
+            # Liveness probe (every 5 min) — checks each 24x7 channel.
+            "tasks.newsroom.check_liveness": {"queue": "whisper"},
         },
         "beat_schedule": {
             "collect-rss-every-15-min": {
@@ -619,6 +621,11 @@ app.config_from_object(
                 "options": {"queue": "brief"},
             },
 
+            "newsroom-check-liveness-every-5-min": {
+                "task": "tasks.newsroom.check_liveness",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "whisper"},
+            },
         },
     }
 )

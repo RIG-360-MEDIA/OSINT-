@@ -314,6 +314,19 @@ function ArticlesInner() {
         }}
       />
 
+      {/* Breaking band — full-width hero strip, sits above the 2-col grid */}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 5,
+          maxWidth: '1320px',
+          margin: '0 auto',
+          padding: '0 56px',
+        }}
+      >
+        <BreakingBand />
+      </div>
+
       <main
         className="coverage-articles-grid"
         style={{
@@ -321,7 +334,7 @@ function ArticlesInner() {
           zIndex: 5,
           maxWidth: '1320px',
           margin: '0 auto',
-          padding: '0 56px 96px',
+          padding: '24px 56px 96px',
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 1fr) 320px',
           gap: '64px',
@@ -330,8 +343,6 @@ function ArticlesInner() {
       >
         {/* Center column */}
         <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '64px' }}>
-          <BreakingBand />
-
           <ZoneSeparator label="TRACK" />
           <CustomCardsRow
             onOpenCreate={() => setCreateCardOpen(true)}

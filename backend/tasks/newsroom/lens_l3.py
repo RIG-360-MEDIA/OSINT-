@@ -76,13 +76,22 @@ def _get_model():
         return _MODEL
 
 
-def fetch_l3_segments(audio_path: str, language: str = "te") -> list[L3Segment]:
+def fetch_l3_segments(
+    audio_path: str,
+    language: str = "te",
+    *,
+    prompt_terms: str | None = None,
+) -> list[L3Segment]:
     """Run Faster-Whisper on the audio, return per-segment text.
 
     Faster-Whisper auto-detects language if `language=None` is passed,
     but giving it the hint helps Telugu/Hindi where the detector can
     confuse for similar scripts. We pass the requested language as
     a hint; the model still self-corrects per chunk.
+
+    `prompt_terms`: same idea as L2 — comma-separated proper-noun
+    list passed as `initial_prompt`, biases the decoder toward
+    correct spellings of regional politicians, places, parties.
     """
     model = _get_model()
     segments_iter, info = model.transcribe(
@@ -92,6 +101,7 @@ def fetch_l3_segments(audio_path: str, language: str = "te") -> list[L3Segment]:
         vad_filter=True,            # cuts long silences
         vad_parameters={"min_silence_duration_ms": 500},
         word_timestamps=False,
+        initial_prompt=(prompt_terms[:200] if prompt_terms else None),
     )
 
     detected = info.language if info else language

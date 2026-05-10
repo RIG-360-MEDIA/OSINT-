@@ -80,12 +80,20 @@ def process_broadcast(
     title: str | None = None,
     is_live: bool = False,
     max_duration_sec: int | None = None,
+    skip_l3: bool = False,
 ) -> dict:
     """End-to-end processing of one broadcast.
 
     Idempotent: if the broadcast row already has segments, this is a
     no-op (we don't re-transcribe to save quota). To force re-run,
     delete the broadcast's segments first.
+
+    `skip_l3` (bool, default False):
+      - For VOD ingest the default is False with adaptive L3 — L3 only
+        actually runs if L2 is empty / errors / has bad confidence.
+      - For live monitoring, callers pass skip_l3=True so the 30 s
+        window finishes inside its budget — L2 alone (Groq Whisper API)
+        keeps up with real time, L3 (CPU Faster-Whisper) doesn't.
     """
     started = time.time()
     stats: dict = {
@@ -123,13 +131,11 @@ def process_broadcast(
             )
             return stats
 
-        # ── 2. Download audio + run all 3 lenses + reconcile in ONE
-        #      asyncio.run, because groq_manager has a module-level
-        #      asyncio.Lock and mixing multiple asyncio.run() calls
-        #      would attach the lock to one loop and then access it
-        #      from another (classic "Lock bound to wrong loop" error).
+        # ── 2. Download audio + run lenses + reconcile in ONE asyncio.run
+        # (groq_manager has a module-level asyncio.Lock; multiple
+        # asyncio.run() calls would attach it to a dead loop)
         audio, l1, l2, l3, reconciled = asyncio.run(
-            _run_async_pipeline(yt_video_id, language, max_duration_sec)
+            _run_async_pipeline(yt_video_id, language, max_duration_sec, skip_l3=skip_l3)
         )
         stats["audio_duration_sec"] = audio.duration_sec
         stats["lens_status"]["l1"] = f"ok ({len(l1)} segs)" if l1 else "empty"
@@ -262,29 +268,95 @@ def process_broadcast(
 # ── Async pipeline driver (single-loop) ─────────────────────────────────────
 
 
+_PROMPT_CACHE: dict[str, str] = {}
+
+
+def _load_prompt_terms(language: str) -> str:
+    """Build a comma-separated proper-noun list from entity_dictionary
+    to bias Whisper toward correct spellings of regional politicians,
+    parties, places. Cached per process; refresh on container restart.
+
+    For Telugu/Hindi we filter to entries with state in
+    {Telangana, Andhra Pradesh, India} so we don't dilute the prompt
+    with unrelated English wikipedia entities.
+    """
+    if language in _PROMPT_CACHE:
+        return _PROMPT_CACHE[language]
+
+    states = (
+        "('Telangana', 'Andhra Pradesh', 'India')"
+        if language in {"te", "hi"} else
+        "('India',)"
+    )
+    sql = f"""
+        SELECT canonical_name FROM entity_dictionary
+         WHERE entity_type IN ('person', 'organisation', 'place')
+           AND (state IS NULL OR state IN {states})
+           AND length(canonical_name) BETWEEN 4 AND 30
+         ORDER BY length(canonical_name) DESC
+         LIMIT 30
+    """
+    try:
+        conn = psycopg2.connect(_pg_url())
+        try:
+            with conn.cursor() as cur:
+                cur.execute(sql)
+                names = [r[0] for r in cur.fetchall()]
+        finally:
+            conn.close()
+        # Build prompt — include preface so Whisper knows the context.
+        preface = "Telugu Telangana politics news. Names: " if language == "te" else "Indian news. Names: "
+        prompt = preface + ", ".join(names)
+        _PROMPT_CACHE[language] = prompt
+        logger.info("prompt_terms[%s]: %d entities loaded", language, len(names))
+        return prompt
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("prompt_terms load failed for %s: %s", language, exc)
+        _PROMPT_CACHE[language] = ""
+        return ""
+
+
 async def _run_async_pipeline(
     yt_video_id: str,
     language: str,
     max_duration_sec: int | None,
+    *,
+    skip_l3: bool = False,
 ):
-    """Single async pipeline: download → L1 → L2 ‖ L3 → reconcile.
+    """Single async pipeline: download → L1 → L2 (and optionally L3) → reconcile.
 
     Everything inside one event loop so groq_manager's module-level
     asyncio.Lock stays valid throughout.
 
-    L1 is fast and sync (transcript-api call). L2 (Groq network) and
-    L3 (CPU-bound, run via asyncio.to_thread) execute concurrently.
+    Adaptive L3 strategy:
+      - `skip_l3=True` (live monitor) — L3 never runs; pipeline completes
+        on L1+L2 alone. Live windows must finish inside their budget;
+        local Whisper at ~0.5x real-time can't keep up.
+      - `skip_l3=False` (default, VOD ingest) — start L1 and L2 in
+        parallel. WAIT for L2 to return. If L2 produced ≥3 segments,
+        skip L3 (L2 is the largest Whisper model anyway via Groq's API,
+        higher-quality than our local medium). If L2 returns nothing or
+        errors, fall back to L3 so we don't ship a transcript-less
+        broadcast.
+      - This makes a 7-min VOD process in ~3 min instead of ~13 min on
+        clean Groq days, while keeping the safety net for Groq outages.
     """
     audio = await download_youtube_audio(yt_video_id, max_duration_sec=max_duration_sec)
 
+    # Build a Whisper bias prompt from the entity dictionary so the
+    # transcriber spells regional politicians correctly (instead of
+    # producing 'Pachhim Veng' for 'Paschim Banga' etc.).
+    prompt_terms = await asyncio.to_thread(_load_prompt_terms, language)
+
     # L1 is sync but I/O-bound; run via to_thread so it doesn't block
     l1_task = asyncio.create_task(asyncio.to_thread(fetch_l1_segments, yt_video_id, language))
-    l2_task = asyncio.create_task(fetch_l2_segments(audio.path, language=language))
-    l3_task = asyncio.create_task(asyncio.to_thread(fetch_l3_segments, audio.path, language))
+    l2_task = asyncio.create_task(
+        fetch_l2_segments(audio.path, language=language, prompt_terms=prompt_terms or None)
+    )
 
-    l1 = []
-    l2 = []
-    l3 = []
+    l1: list = []
+    l2: list = []
+    l3: list = []
     try:
         l1 = await l1_task
     except Exception as exc:  # noqa: BLE001
@@ -293,10 +365,24 @@ async def _run_async_pipeline(
         l2 = await l2_task
     except Exception as exc:  # noqa: BLE001
         logger.warning("L2 failed (async): %s", exc)
-    try:
-        l3 = await l3_task
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("L3 failed (async): %s", exc)
+
+    # Decide whether to run L3
+    run_l3 = False
+    if skip_l3:
+        logger.info("skip_l3=True (live monitor) — bypassing local Whisper")
+    elif len(l2) >= 3:
+        logger.info("L2 produced %d segments — adaptive L3 skipped", len(l2))
+    else:
+        logger.info("L2 produced %d segments (insufficient) — running L3 fallback", len(l2))
+        run_l3 = True
+
+    if run_l3:
+        def _l3_with_prompt() -> list:
+            return fetch_l3_segments(audio.path, language, prompt_terms=prompt_terms or None)
+        try:
+            l3 = await asyncio.to_thread(_l3_with_prompt)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("L3 fallback failed: %s", exc)
 
     reconciled = await _reconcile_async(l1, l2, l3, language=language)
     return audio, l1, l2, l3, reconciled

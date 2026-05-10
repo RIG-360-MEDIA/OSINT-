@@ -183,7 +183,9 @@ def live_monitor(
                 time.sleep(60)
                 continue
 
-            # Pull the next 30-second window through the pipeline
+            # Pull the next 30-second window through the pipeline.
+            # skip_l3=True so the window finishes inside its budget —
+            # local Whisper at ~0.5x real-time can't keep up with live.
             try:
                 process_broadcast.apply(   # SYNC call within this worker
                     args=[video_id, channel_id],
@@ -192,6 +194,7 @@ def live_monitor(
                         "title": ch["name"],
                         "is_live": True,
                         "max_duration_sec": _WINDOW_SEC,
+                        "skip_l3": True,
                     },
                 ).get(disable_sync_subtasks=False)
                 stats["windows_processed"] += 1

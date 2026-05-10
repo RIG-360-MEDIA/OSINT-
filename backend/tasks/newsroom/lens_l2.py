@@ -38,12 +38,21 @@ _MODEL_BY_LANG: dict[str, str] = {
 }
 
 
-async def fetch_l2_segments(audio_path: str, language: str = "te") -> list[L2Segment]:
+async def fetch_l2_segments(
+    audio_path: str,
+    language: str = "te",
+    *,
+    prompt_terms: str | None = None,
+) -> list[L2Segment]:
     """Send audio to Groq Whisper, return L2 segments.
 
     Args:
-        audio_path: local path to .m4a / .mp3 / .wav
-        language:   ISO-639-1; routes to multilingual model for non-en.
+        audio_path:   local path to .m4a / .mp3 / .wav
+        language:     ISO-639-1; routes to multilingual model for non-en.
+        prompt_terms: optional comma-separated proper-noun list to bias
+                      Whisper toward correct spellings of regional names
+                      (e.g. "Revanth Reddy, KCR, Bandi Sanjay, BRS").
+                      Whisper's `prompt` parameter handles ≤224 tokens.
 
     Returns:
         list of L2Segment. Empty list if Groq quota is exhausted (caller
@@ -57,15 +66,22 @@ async def fetch_l2_segments(audio_path: str, language: str = "te") -> list[L2Seg
         logger.warning("L2: Groq pool exhausted before transcription call")
         return []
 
+    create_kwargs: dict = {
+        "model": model,
+        "language": language if language in {"en", "te", "hi"} else None,
+        "response_format": "verbose_json",
+        "timestamp_granularities": ["segment"],
+        "temperature": 0.0,
+    }
+    if prompt_terms:
+        # Cap at ~200 chars so we stay well under Whisper's 224-token limit.
+        create_kwargs["prompt"] = prompt_terms[:200]
+
     try:
         with open(audio_path, "rb") as fh:
             response = await client.audio.transcriptions.create(
                 file=(audio_path, fh.read()),
-                model=model,
-                language=language if language in {"en", "te", "hi"} else None,
-                response_format="verbose_json",
-                timestamp_granularities=["segment"],
-                temperature=0.0,
+                **create_kwargs,
             )
     except Exception as exc:  # noqa: BLE001
         logger.warning("L2: Groq transcription failed: %s", exc)

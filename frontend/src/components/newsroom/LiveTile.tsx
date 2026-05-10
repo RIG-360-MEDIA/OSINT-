@@ -25,7 +25,7 @@ export function LiveTile({ tile, isLive, isBreaking }: Props) {
   const [showPlayer, setShowPlayer] = useState(false)
   const isActuallyLive = !!tile.current_live_video_id
   const top3 = tile.segments.slice(0, 3)
-  const showLiveStyle = isActuallyLive || isLive || isBreaking
+  const showLiveStyle: boolean = isActuallyLive || !!isLive || !!isBreaking
 
   return (
     <>

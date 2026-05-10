@@ -76,7 +76,7 @@ app = Celery(
         # /coverage/articles rebuild — RAG-integrated analyst surface tasks
         "backend.tasks.coverage",
         "backend.tasks.coverage.user_cards_task",
-        "backend.tasks.coverage.breaking_task",
+        "backend.tasks.coverage.pick_breaking_per_user_task",
         "backend.tasks.coverage.contradictions_task",
         "backend.tasks.coverage.top_stories_task",
         "backend.tasks.coverage.coverage_gaps_task",
@@ -139,8 +139,7 @@ app.config_from_object(
             "tasks.refresh_user_cards": {"queue": "nlp"},
             "tasks.retry_unrefreshed_cards": {"queue": "nlp"},
             "tasks.spawn_sub_cards": {"queue": "nlp"},
-            "tasks.detect_breaking_events": {"queue": "nlp"},
-            "tasks.classify_pending_breaking_clusters": {"queue": "nlp"},
+            "tasks.coverage.pick_breaking_per_user": {"queue": "nlp"},
             "tasks.refresh_contradictions": {"queue": "nlp"},
             "tasks.refresh_top_stories": {"queue": "nlp"},
             "tasks.refresh_coverage_gaps": {"queue": "nlp"},
@@ -415,18 +414,11 @@ app.config_from_object(
                 "schedule": timedelta(minutes=5),
                 "options": {"queue": "nlp"},
             },
-            "detect-breaking-events-every-15-min": {
-                "task": "tasks.detect_breaking_events",
-                "schedule": timedelta(minutes=15),
-                "options": {"queue": "nlp"},
-            },
-            # Backfill classification on clusters whose Stage-1 Groq call
-            # failed at detection time (quota contention with extraction).
-            # Without this, real Telangana / India clusters silently
-            # disappear whenever Groq is throttled.
-            "classify-pending-breaking-every-5-min": {
-                "task": "tasks.classify_pending_breaking_clusters",
-                "schedule": timedelta(minutes=5),
+            # Per-user breaking-news pick. One row per user in
+            # user_breaking_now. Replaces the DBSCAN cluster pipeline.
+            "pick-breaking-per-user-every-1-hour": {
+                "task": "tasks.coverage.pick_breaking_per_user",
+                "schedule": timedelta(minutes=60),
                 "options": {"queue": "nlp"},
             },
             # Translates pre-existing non-English quotes to English so

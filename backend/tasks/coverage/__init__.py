@@ -3,7 +3,7 @@ Celery task package for /coverage/articles analytics.
 
 Tasks:
     refresh_user_cards          (daily 01:30 UTC)
-    detect_breaking_events      (every 15 min)
+    pick_breaking_per_user      (every 60 min)
     refresh_contradictions      (daily 04:30 UTC)
     refresh_top_stories         (every 6h)
     refresh_coverage_gaps       (daily 05:00 UTC)
@@ -15,9 +15,9 @@ from backend.tasks.coverage.user_cards_task import (  # noqa: F401
     retry_unrefreshed_cards,
 )
 from backend.tasks.coverage.spawn_sub_cards_task import spawn_sub_cards  # noqa: F401
-from backend.tasks.coverage.breaking_task import (  # noqa: F401
-    detect_breaking_events,
-    classify_pending_breaking_clusters,
+# pick_breaking_per_user replaces the old DBSCAN cluster pipeline.
+from backend.tasks.coverage.pick_breaking_per_user_task import (  # noqa: F401
+    pick_breaking_per_user,
 )
 from backend.tasks.coverage.contradictions_task import refresh_contradictions  # noqa: F401
 from backend.tasks.coverage.top_stories_task import refresh_top_stories  # noqa: F401

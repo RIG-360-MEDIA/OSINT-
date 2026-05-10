@@ -1092,311 +1092,68 @@ async def breaking(
     user: dict = Depends(get_current_principal),
 ) -> dict:
     """
-    Active breaking clusters, ranked by per-user relevance score.
-
-    Replaces the previous binary tier-1/2-article-membership filter
-    (which dropped Tamil Nadu / West Bengal clusters because the
-    relevance scorer hadn't yet tier-1/2'd those exact articles for
-    the user, even though the user heavily tracked those entities).
-
-    Pipeline:
-        1. Load UserInterestProfile (cached 5 min).
-        2. Pull all active clusters + their member articles' entities
-           and geos in one query.
-        3. Score each cluster via backend.coverage.scoring.score_cluster.
-        4. Sort by score, drop below SURFACE_THRESHOLD, return top 5.
-
-    A new user with an empty profile returns an empty list — never
-    falls back to global.
+    Per-user current breaking-news pick. Reads from user_breaking_now,
+    which is refreshed every 60 minutes by
+    tasks.coverage.pick_breaking_per_user. Returns the {clusters: [...]}
+    shape the frontend BreakingBand consumes (single-element array).
     """
     _require_flag("FEATURE_BREAKING")
-    user_id = user["id"]
-    import datetime as _dt
-
     async with get_db() as db:
-        check = await db.execute(
-            text(
-                "SELECT 1 FROM information_schema.tables "
-                "WHERE table_name = 'breaking_clusters'"
-            )
-        )
-        if not check.fetchone():
-            return {"clusters": [], "personalised": True}
-
-        profile = await load_user_profile(user_id, db)
-        if profile.is_empty():
-            return {"clusters": [], "personalised": True}
-
-        # All active, validated, surfaceable clusters. The Stage-1 gate
-        # (event-quality classification done at cluster-creation time)
-        # filters out junk-clusters and trivial event types BEFORE we
-        # even score them per-user. We additionally accept old rows
-        # without classification (is_real_event IS NULL) only if their
-        # severity column is NULL too, so old data isn't silently hidden
-        # — but on the next 15-min cycle it'll be naturally replaced
-        # with classified rows.
-        cluster_rows = await db.execute(
+        result = await db.execute(
             text(
                 """
-                SELECT bc.id::text AS id, bc.headline, bc.sources_count,
-                       bc.member_article_ids,
-                       array_length(bc.member_article_ids, 1) AS volume,
-                       bc.window_start, bc.window_end, bc.created_at,
-                       bc.event_type, bc.severity, bc.shared_subject
-                FROM breaking_clusters bc
-                WHERE bc.is_active = TRUE
-                  -- Recency strictly on window_end (publication time
-                  -- of the latest member article). NOT created_at —
-                  -- created_at is when our detector first saw the
-                  -- cluster, which can be re-touched on every 15-min
-                  -- detector run, making old news look perpetually
-                  -- "fresh". window_end pins to actual news age.
-                  -- 90 min: balances "BREAKING means recent" against
-                  -- the inherent 30-60 min lag for 3 sources to all
-                  -- publish on the same regional event.
-                  AND bc.window_end > NOW() - INTERVAL '90 minutes'
-                  AND (
-                    -- Validated rows: keep only real events at
-                    -- non-trivial severity + non-trivial event_type.
-                    (bc.is_real_event = TRUE
-                     AND bc.severity IN ('medium', 'high', 'breaking')
-                     AND bc.event_type NOT IN (
-                       'sports_result', 'entertainment_release',
-                       'celebrity_news', 'routine_update'
-                     ))
-                    -- Pre-classification rows (created before migration
-                    -- 048 / before this code was deployed): excluded.
-                    -- They will decay out within 6 hours and be replaced.
-                  )
-                ORDER BY bc.created_at DESC
-                LIMIT 50
+                SELECT b.article_id::text                AS id,
+                       b.selected_at                     AS selected_at,
+                       b.source_tier                     AS source_tier,
+                       b.near_dup_sources                AS sources_count,
+                       b.candidates_count                AS candidates_count,
+                       b.decision_path                   AS decision_path,
+                       b.reason                          AS reason,
+                       b.headline_one_line               AS headline_one_line,
+                       b.why_for_user                    AS why_for_user,
+                       a.title                           AS title,
+                       a.lead_text_translated            AS title_en,
+                       a.url                             AS url,
+                       a.thumbnail_url                   AS thumbnail_url,
+                       a.published_at                    AS published_at,
+                       a.topic_category                  AS topic_category,
+                       s.name                            AS source_name
+                FROM user_breaking_now b
+                JOIN articles a ON a.id = b.article_id
+                LEFT JOIN sources s ON s.id = a.source_id
+                WHERE b.user_id = :uid
                 """
-            )
+            ),
+            {"uid": user["id"]},
         )
-        clusters = cluster_rows.fetchall()
+        row = result.first()
 
-        # Single batch fetch: entities + geo for all candidate articles.
-        all_member_ids: list[str] = []
-        for c in clusters:
-            for mid in (c.member_article_ids or []):
-                all_member_ids.append(str(mid))
+    if row is None:
+        return {"clusters": [], "personalised": True}
 
-        # No early return when clusters/member_ids are empty — let the
-        # function fall through to the developing-fallback below, so a
-        # user with no fresh validated cluster still gets their highest-
-        # relevance tier-1/2 article surfaced as a DEVELOPING item.
-        meta_by_id: dict[str, dict[str, Any]] = {}
-        if all_member_ids:
-            article_meta = await db.execute(
-                text(
-                    """
-                    SELECT id::text AS id, geo_primary, entities_extracted, topic_category
-                    FROM articles
-                    WHERE id::text = ANY(:ids)
-                    """
-                ),
-                {"ids": list(set(all_member_ids))},
-            )
-        else:
-            article_meta = None
-        for r in (article_meta.fetchall() if article_meta else []):
-            ents: set[str] = set()
-            ee = r.entities_extracted
-            if isinstance(ee, str):
-                try:
-                    ee = json.loads(ee)
-                except json.JSONDecodeError:
-                    ee = []
-            for elt in (ee or []):
-                if isinstance(elt, dict):
-                    name = elt.get("name") or elt.get("canonical_name")
-                    if name:
-                        ents.add(str(name).lower())
-            meta_by_id[r.id] = {
-                "geo": r.geo_primary,
-                "entities": ents,
-                "topic": r.topic_category,
-            }
+    title = (row.title or "").strip()
+    headline = (row.headline_one_line or "").strip() or title
 
-    # Score every cluster against the profile.
-    now = _dt.datetime.now(_dt.timezone.utc)
-    scored: list[tuple[float, Any, list]] = []  # (score, cluster_row, score_detail)
-    for c in clusters:
-        ids = [str(m) for m in (c.member_article_ids or [])]
-        cluster_entities: set[str] = set()
-        cluster_geos: list[str | None] = []
-        cluster_topics: list[str | None] = []
-        for mid in ids:
-            m = meta_by_id.get(mid)
-            if not m:
-                continue
-            cluster_entities |= m["entities"]
-            cluster_geos.append(m["geo"])
-            cluster_topics.append(m.get("topic"))
-
-        # Cluster age in minutes — anchored on window_end (most recent
-        # article in the cluster) so a cluster still receiving fresh
-        # reporting reads as young, even if its earliest member was old.
-        # Falls back to created_at if window_end isn't set.
-        anchor = c.window_end if hasattr(c, "window_end") and c.window_end \
-            else c.window_start or c.created_at
-        if anchor:
-            if anchor.tzinfo is None:
-                anchor = anchor.replace(tzinfo=_dt.timezone.utc)
-            age_min = max(0.0, (now - anchor).total_seconds() / 60.0)
-        else:
-            age_min = 0.0
-
-        s = score_cluster(
-            cluster_entities=cluster_entities,
-            cluster_geos=cluster_geos,
-            cluster_age_minutes=age_min,
-            sources_count=int(c.sources_count or 0),
-            profile=profile,
-            cluster_topics=cluster_topics,
-        )
-        # Soft per-user threshold: incidental matches (e.g. a foreign
-        # disaster covered by Indian press, where 'India' lights up an
-        # entity slot) score in the 0.20-0.25 range and stay shown for
-        # hours, frustrating users with a static band. Below 0.15 the
-        # cluster is almost certainly a coincidental match and should
-        # not occupy real-estate. Above 0.15 we keep it. If NO cluster
-        # qualifies, empty band is preferable to stale incidental.
-        if s.total >= 0.15:
-            scored.append((s.total, c, s))
-
-    scored.sort(key=lambda t: -t[0])
-    top = scored[:5]
-
-    cluster_items = [
-        {
-            "kind": "breaking",
-            "id": c.id,
-            "headline": c.headline,
-            "sources_count": c.sources_count,
-            "volume": c.volume,
-            "window_start": c.window_start.isoformat() if c.window_start else None,
-            "created_at": c.created_at.isoformat() if c.created_at else None,
-            "event_type": c.event_type,
-            "severity": c.severity,
-            "shared_subject": c.shared_subject,
-            "score": round(score_total, 3),
-            "matched_entities": list(detail.matched_entities),
-            "score_breakdown": {
-                "entity": round(detail.entity, 3),
-                "geo": round(detail.geo, 3),
-                "person": round(detail.person, 3),
-                "velocity": round(detail.velocity, 3),
-                "topic": round(detail.topic, 3),
-            },
-        }
-        for score_total, c, detail in top
-    ]
-
-    # Fallback: when no validated cluster meets the bar, surface the
-    # user's highest-relevance tier-1 article in the last 60 min as a
-    # single "DEVELOPING" item. Single source = lower verification, so
-    # marked distinctly. Regional papers (Mana Telangana, Telangana
-    # Today, Siasat) rarely herd-follow the same event, which means
-    # cluster-based detection misses real local breaking news. This
-    # path catches those.
-    if not cluster_items:
-        async with get_db() as db:
-            dev = await db.execute(
-                text(
-                    """
-                    SELECT a.id::text AS article_id, a.title,
-                           COALESCE(a.lead_text_translated,
-                                    a.lead_text_original) AS lead,
-                           a.published_at, a.thumbnail_url,
-                           s.name AS source_name, s.domain AS source_domain,
-                           uar.score_final, a.geo_primary
-                    FROM user_article_relevance uar
-                    JOIN articles a ON a.id = uar.article_id
-                    JOIN sources s ON s.id = a.source_id
-                    WHERE uar.user_id = :uid
-                      AND uar.relevance_tier IN (1, 2)
-                      AND a.published_at > NOW() - INTERVAL '60 minutes'
-                      -- Filter trivial topic categories. OTHER is a
-                      -- coarse catch-all that includes horoscopes,
-                      -- daily forecasts, lifestyle filler — not news.
-                      -- SPORTS results, ENTERTAINMENT releases also
-                      -- excluded. The remaining topics (POLITICS,
-                      -- GOVERNANCE, SECURITY, LEGAL, INFRASTRUCTURE,
-                      -- HEALTH, FINANCE, BUSINESS, INTERNATIONAL,
-                      -- ENVIRONMENT, AGRICULTURE, SOCIAL, etc.) are
-                      -- where actual breaking news lives.
-                      -- Topic filter: exclude obvious-junk categories.
-                      -- Keep SOCIAL because legitimate local news lands
-                      -- there (protests, civic issues, minority policy,
-                      -- etc.) more often than lifestyle filler.
-                      AND (a.topic_category IS NULL
-                           OR a.topic_category NOT IN (
-                             'SPORTS', 'ENTERTAINMENT', 'TECHNOLOGY'
-                           ))
-                      -- Title-pattern filter: catches the lifestyle
-                      -- filler that the coarse topic tagger lumps with
-                      -- legitimate content. Cheap LIKE checks across
-                      -- Telugu, Tamil, English variants of horoscope/
-                      -- forecast/wedding/match-result keywords.
-                      AND a.title NOT ILIKE '%horoscope%'
-                      AND a.title NOT ILIKE '%రాశి%'   -- Telugu zodiac
-                      AND a.title NOT ILIKE '%జాతక%'   -- Telugu astrology
-                      AND a.title NOT ILIKE '%forecast%'
-                      AND a.title NOT ILIKE '%toss%'
-                      AND a.title NOT ILIKE '%match%result%'
-                      -- NOTE: deliberately NOT filtering on is_duplicate.
-                      -- Dedup pipeline over-flags legitimate regional
-                      -- content; surfacing a "duplicate" is better
-                      -- than surfacing nothing.
-                    ORDER BY
-                      -- Tie-break: prefer articles whose geo matches
-                      -- the user's primary geo. Without this, all
-                      -- tier-2 candidates score identically (0.3) and
-                      -- the most-recently-published wins regardless of
-                      -- topical fit. With it, a Telangana article
-                      -- always beats a Maharashtra article for a
-                      -- Telangana-focused admin.
-                      (CASE WHEN CAST(:user_geo AS text) IS NOT NULL
-                            AND LOWER(a.geo_primary)
-                                = LOWER(CAST(:user_geo AS text))
-                            THEN 0 ELSE 1 END) ASC,
-                      uar.score_final DESC,
-                      a.published_at DESC
-                    LIMIT 1
-                    """
-                ),
-                {"uid": user_id, "user_geo": profile.geo_primary},
-            )
-            dev_row = dev.fetchone()
-        if dev_row:
-            # Translate title to English when source is non-English. Best
-            # effort — on Groq failure we leave display_title=None and the
-            # frontend falls back to the original headline.
-            display_title = await _translate_title_inline(dev_row.title)
-            cluster_items.append({
-                "kind": "developing",
-                "id": f"dev-{dev_row.article_id}",
-                "article_id": dev_row.article_id,
-                "headline": dev_row.title,
-                "display_title": display_title,
-                "lead": (dev_row.lead or "")[:240],
-                "source_name": dev_row.source_name,
-                "source_domain": dev_row.source_domain,
-                "thumbnail_url": dev_row.thumbnail_url,
-                "published_at": (
-                    dev_row.published_at.isoformat()
-                    if dev_row.published_at else None
-                ),
-                "score": round(float(dev_row.score_final), 3),
-                "sources_count": 1,
-            })
-
-    return {
-        "personalised": True,
-        "user_geo": profile.geo_primary,
-        "clusters": cluster_items,
+    cluster = {
+        "id":             row.id,
+        "headline":       headline,
+        "why_for_user":   row.why_for_user,
+        "display_title":  None,
+        "sources_count":  int(row.sources_count or 1),
+        "kind":           "breaking" if row.source_tier == 1 else "developing",
+        "published_at":   row.published_at.isoformat() if row.published_at else None,
+        "created_at":     row.selected_at.isoformat() if row.selected_at else None,
+        "source_name":    row.source_name,
+        "url":            row.url,
+        "thumbnail_url":  row.thumbnail_url,
+        "topic_category": row.topic_category,
+        "reason":         row.reason,
+        "decision_path":  row.decision_path,
+        "candidates_count": int(row.candidates_count or 0),
     }
+    return {"clusters": [cluster], "personalised": True}
+
+
 
 
 # ── Custom Cards ──────────────────────────────────────────────────────────────

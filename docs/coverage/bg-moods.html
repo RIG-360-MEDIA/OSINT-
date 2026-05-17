@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Background moods — ambient lighting on near-black</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Inter:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    background: #0a0a0e;
+    color: #ECEEF1;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .frame-header {
+    padding: 22px 32px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: #050508;
+  }
+  .frame-header h1 {
+    margin: 0 0 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 26px;
+    letter-spacing: -0.01em;
+  }
+  .frame-header p {
+    margin: 0; font-size: 13.5px;
+    color: #A8ADB8; max-width: 92ch;
+    line-height: 1.55;
+  }
+  .tip {
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.28em;
+    color: #5A6070; text-transform: uppercase;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    /* taller panels so the radials breathe and you can see the mood */
+    grid-auto-rows: minmax(560px, auto);
+  }
+
+  .panel {
+    position: relative;
+    padding: 28px 28px 36px;
+    border: 1px solid rgba(255,255,255,0.04);
+    overflow: hidden;
+    background: #06080C;
+  }
+
+  /* film-grain overlay shared across all */
+  .panel::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    opacity: 0.05; mix-blend-mode: overlay; z-index: 1;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/></svg>");
+  }
+
+  .label {
+    position: relative; z-index: 2;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: #FF2D2D;
+    margin-bottom: 4px;
+  }
+  .panel h2 {
+    position: relative; z-index: 2;
+    margin: 0 0 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 400; font-size: 20px;
+    letter-spacing: -0.005em;
+  }
+  .panel .desc {
+    position: relative; z-index: 2;
+    margin: 0 0 22px;
+    font-size: 13px;
+    color: #A8ADB8;
+    max-width: 60ch;
+    line-height: 1.55;
+  }
+
+  /* shared content */
+  .reading {
+    position: relative; z-index: 2;
+    margin: 22px 0 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 26px;
+    line-height: 1.18; letter-spacing: -0.012em;
+  }
+  .reading u { text-decoration: none; border-bottom: 1px solid #FF2D2D; padding-bottom: 1px; }
+  .editor {
+    position: relative; z-index: 2;
+    margin: 14px 0 0;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 14px; line-height: 1.55;
+    color: #A8ADB8;
+  }
+  .row-exp {
+    position: relative; z-index: 2;
+    display: grid; grid-template-columns: 60px 1fr;
+    gap: 14px; align-items: end;
+    margin-top: 22px;
+  }
+  .merc { position: relative; width: 60px; height: 120px; }
+  .merc .track {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    top: 0; bottom: 0; width: 2px;
+    background: rgba(255,255,255,0.07);
+  }
+  .merc .fill {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 6px; bottom: 0; height: 67%;
+    background: linear-gradient(0deg, #FF2D2D, rgba(255,45,45,0.55));
+    box-shadow: 0 0 16px #FF2D2D, 0 0 5px #FF2D2D;
+  }
+  .exp-num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 56px;
+    line-height: 0.9; letter-spacing: -0.03em;
+  }
+  .exp-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.28em;
+    color: #A8ADB8; text-transform: uppercase; margin-top: 4px;
+  }
+  .exp-meta b { color: #FF2D2D; }
+  .card {
+    position: relative; z-index: 2;
+    margin-top: 22px;
+    padding: 14px 14px 12px;
+    background: linear-gradient(180deg, rgba(15,15,17,0.92), rgba(8,8,10,0.92));
+    border: 1px solid rgba(255,255,255,0.07);
+    backdrop-filter: blur(2px);
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: #FF2D2D;
+  }
+  .card .cap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.36em;
+    color: #FF2D2D; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .card h4 {
+    margin: 0 0 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500; font-size: 15px; line-height: 1.32;
+  }
+  .card p {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px; color: #A8ADB8;
+    line-height: 1.55;
+  }
+
+  /* ═════════════════════════════════════════════════════════════
+     MOOD α — SURVEILLANCE COMMAND CENTER
+     near-black base + faint cyan-blue radial top-right + red radial bottom-left
+     ═════════════════════════════════════════════════════════════ */
+  .panel.alpha {
+    background:
+      radial-gradient(ellipse 800px 600px at 100% 0%, rgba(70,130,180,0.08), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 0% 100%, rgba(255,45,45,0.05), transparent 60%),
+      #06080C;
+  }
+
+  /* ═════════════════════════════════════════════════════════════
+     MOOD β — TWILIGHT DOSSIER
+     warm near-black + amber lamp + faint plum on the opposite side
+     ═════════════════════════════════════════════════════════════ */
+  .panel.beta {
+    background:
+      radial-gradient(ellipse 900px 650px at 100% 0%, rgba(220,160,90,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 0% 100%, rgba(120,60,90,0.06), transparent 60%),
+      #0A0807;
+  }
+
+  /* ═════════════════════════════════════════════════════════════
+     MOOD γ — DEEP-SPACE RECON  (THREE-COLOR AURORA)
+     deep-blue base + soft teal + magenta + faint red ember
+     ═════════════════════════════════════════════════════════════ */
+  .panel.gamma {
+    background:
+      radial-gradient(ellipse 700px 500px at 20% 10%, rgba(50,140,170,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 80% 40%, rgba(170,80,140,0.08), transparent 60%),
+      radial-gradient(ellipse 800px 600px at 50% 100%, rgba(255,45,45,0.05), transparent 65%),
+      #050614;
+  }
+  /* faint star-field for gamma */
+  .panel.gamma .stars {
+    position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background-image:
+      radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,0.5), transparent 50%),
+      radial-gradient(1px 1px at 32% 80%, rgba(255,255,255,0.4), transparent 50%),
+      radial-gradient(1px 1px at 50% 30%, rgba(255,255,255,0.5), transparent 50%),
+      radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.4), transparent 50%),
+      radial-gradient(1px 1px at 75% 15%, rgba(255,255,255,0.45), transparent 50%),
+      radial-gradient(1px 1px at 88% 60%, rgba(255,255,255,0.5), transparent 50%),
+      radial-gradient(1px 1px at 24% 50%, rgba(255,255,255,0.3), transparent 50%),
+      radial-gradient(1px 1px at 70% 85%, rgba(255,255,255,0.35), transparent 50%);
+  }
+
+  /* ═════════════════════════════════════════════════════════════
+     MOOD δ — ANALYST'S DESK AT 2AM  (single warm lamp + cool screen glow)
+     ═════════════════════════════════════════════════════════════ */
+  .panel.delta {
+    background:
+      radial-gradient(ellipse 900px 700px at 100% -10%, rgba(220,150,80,0.13), transparent 60%),
+      radial-gradient(ellipse 700px 500px at -10% 110%, rgba(70,120,170,0.08), transparent 60%),
+      #06080C;
+  }
+  /* edge vignette for delta */
+  .panel.delta .vignette {
+    position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.5) 100%);
+  }
+
+  .vote {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 22px 32px 32px;
+    background: #050508;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+  }
+  .vote h4 {
+    margin: 0 0 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.42em;
+    text-transform: uppercase;
+  }
+  .vote p {
+    margin: 0; font-family: 'Inter', sans-serif;
+    font-size: 12.5px; color: #A8ADB8;
+    line-height: 1.55;
+  }
+  .vote .a h4 { color: #6FA8C8; }
+  .vote .b h4 { color: #DCAB6F; }
+  .vote .c h4 { color: #AA5090; }
+  .vote .d h4 { color: #DC9650; }
+</style>
+</head>
+<body>
+
+<header class="frame-header">
+  <h1>Background moods — futuristic but lived-in</h1>
+  <p>All four panels use the same near-black base. The only difference is what colored light "leaks" onto it from the corners. Same content in each so you can directly feel which mood matches the product.</p>
+  <p class="tip">Tip — look at the corners. The radials are subtle; if you stare at them they look like nothing, but they change the entire perception of the room.</p>
+</header>
+
+<section class="grid">
+
+  <!-- α -->
+  <div class="panel alpha">
+    <div class="label">Mood α · Surveillance command center</div>
+    <h2>Cool blue top-right · Red leak bottom-left</h2>
+    <p class="desc">Reads like an ops room: one wall of monitors casts cool blue light, an alert console glows red. Cinematic but austere.</p>
+    <p class="reading">Three coordinated waves of anti-Dharani phrasing in <u>36 hours</u> — narrative is hardening.</p>
+    <p class="editor">Editor's note — 12 outlets carrying "47-item failure list" framing, up from 4 a week ago. National pickup confirmed today.</p>
+    <div class="row-exp">
+      <div class="merc"><div class="track"></div><div class="fill"></div></div>
+      <div>
+        <div class="exp-num">67</div>
+        <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+      </div>
+    </div>
+    <article class="card">
+      <div class="cap">Frame 01 · Adversarial</div>
+      <h4>"Dharani failure" — record-tampering as governance collapse</h4>
+      <p>Dominant in 8 of 12 outlets. Originated 24 Apr. Voice-share: 38%.</p>
+    </article>
+  </div>
+
+  <!-- β -->
+  <div class="panel beta">
+    <div class="label">Mood β · Twilight dossier</div>
+    <h2>Amber lamp top-right · Plum echo bottom-left</h2>
+    <p class="desc">Reads like a private library at dusk: warm lamplight from one corner, deep plum from the curtain across the room. Editorial, cozier.</p>
+    <p class="reading">Three coordinated waves of anti-Dharani phrasing in <u>36 hours</u> — narrative is hardening.</p>
+    <p class="editor">Editor's note — 12 outlets carrying "47-item failure list" framing, up from 4 a week ago. National pickup confirmed today.</p>
+    <div class="row-exp">
+      <div class="merc"><div class="track"></div><div class="fill"></div></div>
+      <div>
+        <div class="exp-num">67</div>
+        <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+      </div>
+    </div>
+    <article class="card">
+      <div class="cap">Frame 01 · Adversarial</div>
+      <h4>"Dharani failure" — record-tampering as governance collapse</h4>
+      <p>Dominant in 8 of 12 outlets. Originated 24 Apr. Voice-share: 38%.</p>
+    </article>
+  </div>
+
+  <!-- γ -->
+  <div class="panel gamma">
+    <div class="stars"></div>
+    <div class="label">Mood γ · Deep-space recon</div>
+    <h2>Teal · Magenta · Red ember · star-field</h2>
+    <p class="desc">Reads like a sci-fi mission display. Aurora-style. Three soft chromatic blobs + faint pinprick stars. Most "futuristic" but bordering on theatrical — strong identity, big personality.</p>
+    <p class="reading">Three coordinated waves of anti-Dharani phrasing in <u>36 hours</u> — narrative is hardening.</p>
+    <p class="editor">Editor's note — 12 outlets carrying "47-item failure list" framing, up from 4 a week ago. National pickup confirmed today.</p>
+    <div class="row-exp">
+      <div class="merc"><div class="track"></div><div class="fill"></div></div>
+      <div>
+        <div class="exp-num">67</div>
+        <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+      </div>
+    </div>
+    <article class="card">
+      <div class="cap">Frame 01 · Adversarial</div>
+      <h4>"Dharani failure" — record-tampering as governance collapse</h4>
+      <p>Dominant in 8 of 12 outlets. Originated 24 Apr. Voice-share: 38%.</p>
+    </article>
+  </div>
+
+  <!-- δ -->
+  <div class="panel delta">
+    <div class="vignette"></div>
+    <div class="label">Mood δ · Analyst's desk at 2am</div>
+    <h2>Warm desk lamp · Cool screen glow · vignette</h2>
+    <p class="desc">Reads like a single warm lamp on a wooden desk in a dark room + a monitor glowing cool blue. Edges fade to true black (vignette). Most cinematic — feels like a film frame. <em>My recommendation.</em></p>
+    <p class="reading">Three coordinated waves of anti-Dharani phrasing in <u>36 hours</u> — narrative is hardening.</p>
+    <p class="editor">Editor's note — 12 outlets carrying "47-item failure list" framing, up from 4 a week ago. National pickup confirmed today.</p>
+    <div class="row-exp">
+      <div class="merc"><div class="track"></div><div class="fill"></div></div>
+      <div>
+        <div class="exp-num">67</div>
+        <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+      </div>
+    </div>
+    <article class="card">
+      <div class="cap">Frame 01 · Adversarial</div>
+      <h4>"Dharani failure" — record-tampering as governance collapse</h4>
+      <p>Dominant in 8 of 12 outlets. Originated 24 Apr. Voice-share: 38%.</p>
+    </article>
+  </div>
+
+</section>
+
+<footer class="vote">
+  <div class="a">
+    <h4>α · Surveillance ops</h4>
+    <p>Cyber / Bourne-style command center. Strong intelligence-tool DNA. Cool dominant.</p>
+  </div>
+  <div class="b">
+    <h4>β · Twilight dossier</h4>
+    <p>Editorial / archive / library at dusk. Warmer, cozier, slower-paced.</p>
+  </div>
+  <div class="c">
+    <h4>γ · Deep-space recon</h4>
+    <p>Bold sci-fi aurora. Loudest personality. Risk: theatrical / gamey.</p>
+  </div>
+  <div class="d">
+    <h4>δ · Analyst's desk 2am</h4>
+    <p>Cinematic. Single warm lamp + cool screen glow + vignette. Most film-frame quality. My pick.</p>
+  </div>
+</footer>
+
+</body>
+</html>

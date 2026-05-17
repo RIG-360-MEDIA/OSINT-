@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Warm room — ambient warmth across the canvas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Inter:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    color: #ECEEF1;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    background: #0A0705;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     THE WARM ROOM
+     Six warm light sources distributed across the canvas + one thin
+     cool counter-light. The room IS warm; you live inside the lamp.
+     ════════════════════════════════════════════════════════════════ */
+  .stage {
+    position: relative; min-height: 100vh; overflow: hidden;
+    background:
+      /* 1 · oxblood spotlight, top-right (dominant) */
+      radial-gradient(ellipse 1400px 1100px at 100% -5%, rgba(170,75,32,0.28), transparent 55%),
+
+      /* 2 · amber lamp, top-left (counter-warm to balance the room) */
+      radial-gradient(ellipse 1100px 900px at 0% -5%, rgba(155,95,48,0.22), transparent 55%),
+
+      /* 3 · brass glint, mid-right (catches the eye at the rail) */
+      radial-gradient(ellipse 800px 550px at 95% 45%, rgba(212,156,82,0.14), transparent 60%),
+
+      /* 4 · deep wood wash, centre (anchors the canvas) */
+      radial-gradient(ellipse 1400px 1000px at 50% 55%, rgba(85,48,24,0.18), transparent 70%),
+
+      /* 5 · embered glow, bottom-right (warm corner echo) */
+      radial-gradient(ellipse 900px 700px at 100% 105%, rgba(135,72,30,0.22), transparent 60%),
+
+      /* 6 · ground heat, bottom-centre (soft warmth across the lower band) */
+      radial-gradient(ellipse 1300px 600px at 50% 100%, rgba(95,55,28,0.15), transparent 65%),
+
+      /* 7 · cool counterweight, bottom-left (thin, so the room doesn't go monochrome) */
+      radial-gradient(ellipse 600px 450px at -2% 100%, rgba(80,95,115,0.10), transparent 60%),
+
+      /* base warm near-black */
+      #0A0705;
+  }
+
+  /* ── Drifting glow blobs for sub-perceptible motion ──────────── */
+  .drift-1 {
+    position: absolute; top: -160px; right: 12%;
+    width: 720px; height: 720px; z-index: 0;
+    background: radial-gradient(closest-side, rgba(170,80,35,0.13), transparent 70%);
+    filter: blur(50px);
+    animation: drift1 60s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  .drift-2 {
+    position: absolute; top: 30%; right: -200px;
+    width: 600px; height: 600px; z-index: 0;
+    background: radial-gradient(closest-side, rgba(212,156,82,0.10), transparent 70%);
+    filter: blur(45px);
+    animation: drift2 80s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  .drift-3 {
+    position: absolute; bottom: -180px; left: 18%;
+    width: 700px; height: 700px; z-index: 0;
+    background: radial-gradient(closest-side, rgba(135,72,30,0.13), transparent 70%);
+    filter: blur(50px);
+    animation: drift3 75s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  .drift-4 {
+    position: absolute; top: 25%; left: -160px;
+    width: 580px; height: 580px; z-index: 0;
+    background: radial-gradient(closest-side, rgba(155,95,48,0.10), transparent 70%);
+    filter: blur(45px);
+    animation: drift4 90s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes drift1 {
+    0%   { transform: translate3d(0,0,0); }
+    100% { transform: translate3d(-120px, 80px, 0); }
+  }
+  @keyframes drift2 {
+    0%   { transform: translate3d(0,0,0); }
+    100% { transform: translate3d(-90px, -110px, 0); }
+  }
+  @keyframes drift3 {
+    0%   { transform: translate3d(0,0,0); }
+    100% { transform: translate3d(140px, -70px, 0); }
+  }
+  @keyframes drift4 {
+    0%   { transform: translate3d(0,0,0); }
+    100% { transform: translate3d(100px, 100px, 0); }
+  }
+
+  /* Scanlines, very subtle */
+  .stage::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background-image: repeating-linear-gradient(
+      to bottom, transparent 0, transparent 2px,
+      rgba(255,255,255,0.011) 3px, transparent 4px);
+  }
+  /* Grain — warm-tinted so the texture doesn't fight the room */
+  .stage::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    opacity: 0.09; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.75'/></svg>");
+  }
+  /* Gentle vignette — much lighter than before so the warmth survives at edges */
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.45) 100%);
+  }
+
+  /* ─── Content ────────────────────────────────────────────────── */
+  .container {
+    position: relative; z-index: 3;
+    max-width: 1320px; margin: 0 auto;
+    padding: 64px 60px 96px;
+  }
+
+  .head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-bottom: 22px;
+    border-bottom: 1px solid rgba(212,156,82,0.18);
+    margin-bottom: 42px;
+  }
+  .brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500; font-size: 13px;
+    letter-spacing: 0.46em; text-transform: uppercase;
+    color: #D49C52;
+  }
+  .head-right {
+    display: flex; gap: 22px; align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    color: #B8AFA0;
+    text-transform: uppercase;
+  }
+  .head-right .pip {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #FF2D2D; box-shadow: 0 0 8px #FF2D2D;
+    display: inline-block; margin-right: 8px; vertical-align: middle;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: 0.45; transform: scale(0.85); }
+  }
+  .head-right b { color: #F1ECE2; font-weight: 500; }
+
+  .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: #D49C52;
+    margin-bottom: 14px;
+  }
+
+  .reading-row {
+    display: grid; grid-template-columns: 1fr 260px;
+    gap: 56px; align-items: end;
+    margin-bottom: 26px;
+  }
+  .reading {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: clamp(32px, 3vw, 46px);
+    line-height: 1.12; letter-spacing: -0.018em;
+    color: #F4ECDD;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.55);
+  }
+  .reading u { text-decoration: none; border-bottom: 1px solid #FF2D2D; padding-bottom: 2px; }
+  .editor {
+    margin: 18px 0 0;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 16px; line-height: 1.6;
+    color: #CDBDA3;
+    max-width: 68ch;
+  }
+
+  /* exposure */
+  .exposure {
+    display: grid; grid-template-columns: 70px 1fr;
+    gap: 16px; align-items: end;
+    min-height: 180px;
+  }
+  .merc { position: relative; width: 70px; height: 160px; }
+  .merc .track {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    top: 0; bottom: 0; width: 2px;
+    background: rgba(255,255,255,0.10);
+  }
+  .merc .fill {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 6px; bottom: 0; height: 67%;
+    background: linear-gradient(0deg, #FF2D2D, rgba(255,45,45,0.55));
+    box-shadow: 0 0 24px #FF2D2D, 0 0 8px #FF2D2D;
+  }
+  .merc::after {
+    content: ''; position: absolute; left: -6px; right: -6px;
+    bottom: calc(67% - 7px); height: 14px;
+    background: radial-gradient(ellipse at center, rgba(255,45,45,0.45), transparent 70%);
+    filter: blur(4px); pointer-events: none;
+  }
+  .exp-num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 64px;
+    line-height: 0.88; letter-spacing: -0.04em;
+    color: #F4ECDD;
+    text-shadow: 0 0 28px rgba(255,45,45,0.20);
+  }
+  .exp-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.3em;
+    color: #CDBDA3; text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .exp-meta b { color: #FF2D2D; }
+  .exp-30d {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.32em;
+    color: #8E7E68; text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* rule */
+  .rule {
+    position: relative; height: 0;
+    border-top: 1px solid rgba(212,156,82,0.22);
+    margin: 48px 0 22px;
+  }
+  .rule span {
+    position: absolute; top: -8px; left: 0;
+    background: #0A0705;
+    padding-right: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.42em;
+    color: #D49C52; text-transform: uppercase;
+  }
+  .rule span::before { content: '/ '; color: #5E4A36; }
+
+  /* breaking band */
+  .band {
+    position: relative;
+    display: grid; grid-template-columns: 120px minmax(0,1fr) 240px;
+    min-height: 140px; margin: 22px 0;
+    background:
+      linear-gradient(180deg, rgba(255,45,45,0.10) 0%, rgba(14,8,6,0.94) 60%);
+    border: 1px solid #FF2D2D;
+    box-shadow:
+      inset 0 1px 0 rgba(255,80,80,0.22),
+      0 4px 28px rgba(255,45,45,0.12);
+    overflow: hidden;
+  }
+  .band::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #FF2D2D, transparent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .ind {
+    display: flex; align-items: center; justify-content: center;
+    border-right: 1px solid #FF2D2D;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.46em;
+    color: #F4ECDD; text-transform: uppercase;
+  }
+  .ind::after {
+    content: ''; position: absolute;
+    width: 110px; height: 110px;
+    background: radial-gradient(circle, rgba(255,45,45,0.55), transparent 70%);
+    filter: blur(18px); pointer-events: none;
+  }
+  .ind span { position: relative; z-index: 1; }
+  .band-body { padding: 22px 28px; display: flex; flex-direction: column; justify-content: center; gap: 8px; min-width: 0; }
+  .band-headline {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500; font-size: 28px;
+    line-height: 1.18; letter-spacing: -0.012em;
+    color: #F4ECDD;
+  }
+  .band-why {
+    margin: 0;
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 15px; line-height: 1.45;
+    color: #CDBDA3;
+  }
+  .band-meta {
+    padding: 22px 22px;
+    border-left: 1px solid rgba(212,156,82,0.20);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .band-meta .l { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.36em; color: #D49C52; text-transform: uppercase; }
+  .band-meta .s { font-family: 'Space Grotesk', sans-serif; font-size: 14px; color: #F4ECDD; }
+  .band-meta .a { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #8E7E68; letter-spacing: 0.3em; text-transform: uppercase; }
+
+  /* cards */
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  .card {
+    position: relative;
+    padding: 20px 20px 18px;
+    /* leather-aged surface */
+    background:
+      linear-gradient(135deg, rgba(80,42,22,0.55) 0%, rgba(14,10,8,0.92) 70%),
+      linear-gradient(180deg, rgba(26,18,14,0.95), rgba(10,7,5,0.95));
+    border: 1px solid rgba(212,156,82,0.25);
+    box-shadow:
+      inset 0 1px 0 rgba(212,156,82,0.14),
+      inset 0 0 0 1px rgba(0,0,0,0.5),
+      0 4px 20px rgba(0,0,0,0.45);
+    overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #FF2D2D 20%, #D49C52 70%, transparent);
+  }
+  .card::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to right, transparent 0, transparent 3px,
+      rgba(212,156,82,0.025) 3px, rgba(212,156,82,0.025) 4px);
+  }
+  .card .cap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.42em;
+    color: #D49C52; text-transform: uppercase; margin-bottom: 10px;
+  }
+  .card h4 {
+    margin: 0 0 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500; font-size: 17px; line-height: 1.28;
+    color: #F4ECDD;
+  }
+  .card p {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px; color: #CDBDA3;
+    line-height: 1.6;
+  }
+  .card .vs {
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.32em;
+    color: #D49C52; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- ambient drifting light blobs (sub-perceptible motion) -->
+  <div class="drift-1"></div>
+  <div class="drift-2"></div>
+  <div class="drift-3"></div>
+  <div class="drift-4"></div>
+  <div class="vignette"></div>
+
+  <div class="container">
+
+    <div class="head">
+      <span class="brand">ROBIN · COVERAGE</span>
+      <div class="head-right">
+        <span><span class="pip"></span>LIVE</span>
+        <span><b>14:30 IST</b> · MON 11 MAY</span>
+        <span>K. M. NAIDU · HYDERABAD</span>
+      </div>
+    </div>
+
+    <div class="label">Today's Reading</div>
+
+    <div class="reading-row">
+      <div>
+        <h1 class="reading">
+          Three coordinated waves of anti-Dharani phrasing in
+          <u>36 hours</u> — the opposition narrative is hardening.
+          Window to respond is closing.
+        </h1>
+        <p class="editor">
+          Editor's note — the Dharani arc has crossed Day 17. KTR's "47-item failure list" framing is now carried by 12 outlets, up from 4 a week ago. National pickup confirmed today. Watch the cabinet-reshuffle thread in the brewing horizon — Stage 2 of 4 and accelerating.
+        </p>
+      </div>
+      <div class="exposure">
+        <div class="merc"><div class="track"></div><div class="fill"></div></div>
+        <div>
+          <div class="exp-num">67</div>
+          <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+          <div class="exp-30d">30D HIGH 71 · LOW 19</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rule"><span>Breaking Now</span></div>
+
+    <div class="band">
+      <div class="ind"><span>BREAKING</span></div>
+      <div class="band-body">
+        <h2 class="band-headline">Petrol prices to surge in Hyderabad as Iran war pushes crude past $100/barrel</h2>
+        <p class="band-why">Could raise petrol prices in Hyderabad, affecting government's finance and governance — IOC, BPCL bleeding ₹1,700 cr/day.</p>
+      </div>
+      <div class="band-meta">
+        <span class="l">1 SOURCE</span>
+        <span class="s">DHARITRI</span>
+        <span class="a">1H AGO</span>
+      </div>
+    </div>
+
+    <div class="rule"><span>Today's Narrative Threads</span></div>
+
+    <div class="cards-row">
+      <article class="card">
+        <div class="cap">Frame 01 · Adversarial · Leading</div>
+        <h4>"Dharani failure" — record-tampering as systemic governance collapse</h4>
+        <p>Dominant in 8 of 12 outlets covering the arc this week. Originated 24 Apr on @TelanganaPolWatch. Mainstream pickup Day 14.</p>
+        <div class="vs">Voice-share · 38%</div>
+      </article>
+      <article class="card">
+        <div class="cap">Frame 02 · Aligned · Containing</div>
+        <h4>"Khammam ground-visit recovery" — CM personally responsive to farmers</h4>
+        <p>Lifted from −0.41 to −0.18 sentiment in 48h. 4 outlets carried positive framing.</p>
+        <div class="vs">Voice-share · 24%</div>
+      </article>
+      <article class="card">
+        <div class="cap">Frame 03 · Neutral · Routine</div>
+        <h4>"Cabinet expansion" — procedural coverage of portfolio reassignment</h4>
+        <p>12 outlets carry it as routine. Likely fades within 96h unless KTR escalates.</p>
+        <div class="vs">Voice-share · 18%</div>
+      </article>
+    </div>
+
+    <div class="rule"><span>Sentiment · Revanth Reddy · 14d</span></div>
+    <div style="padding: 18px 22px; background: rgba(14,8,6,0.5); border: 1px solid rgba(212,156,82,0.12);">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+        <h6 style="margin:0; font-family:'Space Grotesk',sans-serif; font-size:13px; color:#F4ECDD; font-weight:500;">
+          Sentiment toward Revanth Reddy
+        </h6>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.28em; color:#CDBDA3; text-transform:uppercase;">
+          30D AVG <b style="color:#FF2D2D;">−0.18</b> · today <b style="color:#FF2D2D;">−0.34</b>
+        </span>
+      </div>
+      <svg viewBox="0 0 800 100" preserveAspectRatio="none" style="width:100%; height:120px;">
+        <defs>
+          <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#FF2D2D" stop-opacity="0.25"/>
+            <stop offset="1" stop-color="#FF2D2D" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="50" x2="800" y2="50" stroke="rgba(212,156,82,0.10)" />
+        <path d="M0,42 L57,38 L114,46 L171,52 L228,48 L285,54 L342,60 L399,58 L456,62 L513,68 L570,66 L627,72 L684,76 L741,82 L800,84 L800,100 L0,100 Z" fill="url(#sg)" />
+        <path d="M0,42 L57,38 L114,46 L171,52 L228,48 L285,54 L342,60 L399,58 L456,62 L513,68 L570,66 L627,72 L684,76 L741,82 L800,84" stroke="#FF2D2D" stroke-width="1.4" fill="none" />
+        <circle cx="285" cy="54" r="3" fill="#FF2D2D" />
+        <circle cx="513" cy="68" r="3" fill="#FF2D2D" />
+        <circle cx="800" cy="84" r="4" fill="#FF2D2D" stroke="#F4ECDD" stroke-width="0.5" />
+      </svg>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

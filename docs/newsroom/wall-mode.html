@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>THE NEWSROOM — Wall Mode</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Inter:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:        #000000;
+    --bg-2:      #050505;
+    --bg-3:      #0A0A0A;
+    --panel:     rgba(10,10,12,0.72);
+    --bone:      #ECEEF1;
+    --bone-2:    #A8ADB8;
+    --dim:       #5A6070;
+    --dim-2:     #2E3340;
+    --red:       #FF2D2D;
+    --red-soft:  rgba(255,45,45,0.55);
+    --red-hair:  rgba(255,45,45,0.30);
+    --red-glow:  rgba(255,45,45,0.10);
+    --display:   'Space Grotesk','Inter',system-ui,sans-serif;
+    --mono:      'JetBrains Mono',ui-monospace,monospace;
+    --italic:    'Inter',system-ui,sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--bone);
+    font-family: var(--display);
+    font-feature-settings: 'ss01','ss02','cv11';
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* ------------- ATMOSPHERE ------------- */
+  .grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 60;
+    opacity: 0.05; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/></svg>");
+  }
+  .drift-glow {
+    position: fixed; top: -160px; right: -160px; width: 720px; height: 720px;
+    background: radial-gradient(closest-side, rgba(255,45,45,0.08), transparent 70%);
+    filter: blur(20px); pointer-events: none; z-index: 1;
+    animation: drift 60s ease-in-out infinite alternate;
+  }
+  @keyframes drift {
+    0%   { transform: translate3d(0,0,0); }
+    100% { transform: translate3d(-120px,80px,0); }
+  }
+  .scanline {
+    position: fixed; inset: 0; pointer-events: none; z-index: 55;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 2px,
+        rgba(255,255,255,0.012) 3px,
+        transparent 4px
+      );
+  }
+  .vignette {
+    position: fixed; inset: 0; pointer-events: none; z-index: 2;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.55) 100%);
+  }
+
+  /* ------------- STATUS BAR ------------- */
+  .status {
+    position: relative; z-index: 10;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    height: 44px;
+    padding: 0 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(10px);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--bone-2);
+  }
+  .status .left { display: flex; align-items: center; gap: 28px; }
+  .status .right { display: flex; align-items: center; gap: 18px; color: var(--dim); }
+  .brand {
+    color: var(--bone); font-family: var(--display); font-weight: 500;
+    letter-spacing: 0.36em; font-size: 11px;
+  }
+  .pip {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--red);
+    box-shadow: 0 0 10px var(--red);
+    animation: pulse 1.6s ease-in-out infinite;
+    display: inline-block; vertical-align: middle; margin-right: 8px;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: 0.45; transform: scale(0.85); }
+  }
+  .chip-breaking {
+    color: var(--red);
+    border: 1px solid var(--red-hair);
+    padding: 4px 10px;
+    background: rgba(255,45,45,0.05);
+  }
+  .center-clock {
+    text-align: center; color: var(--bone-2);
+  }
+  .center-clock b { color: var(--bone); font-weight: 500; letter-spacing: 0.42em; }
+
+  /* ------------- MODE SWITCHER ------------- */
+  .modes {
+    position: relative; z-index: 10;
+    display: flex; gap: 0;
+    padding: 0 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    background: rgba(0,0,0,0.4);
+  }
+  .mode {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.42em;
+    text-transform: uppercase; color: var(--dim);
+    padding: 14px 22px;
+    border-bottom: 2px solid transparent;
+    transition: color .3s, border-color .3s;
+    cursor: pointer; user-select: none;
+  }
+  .mode .num { color: var(--dim-2); margin-right: 10px; }
+  .mode:hover { color: var(--bone-2); }
+  .mode.active {
+    color: var(--bone);
+    border-bottom-color: var(--red);
+  }
+  .mode.active .num { color: var(--red); }
+
+  /* ------------- HERO STRIP ------------- */
+  .hero {
+    position: relative; z-index: 5;
+    padding: 36px 28px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 32px;
+  }
+  .hero h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 300;
+    font-size: clamp(40px, 5.5vw, 72px);
+    letter-spacing: -0.02em;
+    line-height: 0.96;
+    color: var(--bone);
+  }
+  .hero h1 b {
+    font-weight: 500; color: var(--red);
+    font-style: normal;
+  }
+  .hero .sub {
+    margin-top: 14px;
+    font-family: var(--italic); font-style: italic;
+    font-size: 16px; color: var(--bone-2);
+    max-width: 640px; line-height: 1.5;
+  }
+  .hero .meta {
+    display: flex; flex-direction: column; gap: 10px;
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--dim);
+    text-align: right;
+  }
+  .hero .meta b { color: var(--bone); font-weight: 500; }
+  .hero .meta .num {
+    font-family: var(--display); font-size: 28px;
+    color: var(--bone); letter-spacing: -0.01em;
+    font-weight: 300;
+  }
+
+  /* zone separator */
+  .zone-rule {
+    position: relative; z-index: 5;
+    margin: 18px 28px 8px;
+    border-top: 1px solid var(--red-hair);
+    height: 1px;
+  }
+  .zone-label {
+    position: absolute; top: -7px; left: 0;
+    background: var(--bg); padding-right: 14px;
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.42em; text-transform: uppercase;
+    color: var(--red);
+  }
+  .zone-label::before { content: '/ '; color: var(--dim); }
+
+  /* ------------- VIDEO WALL ------------- */
+  .wall {
+    position: relative; z-index: 5;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding: 24px 28px 16px;
+  }
+  .tile {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(180deg, #0c0c0e 0%, #060608 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform .32s cubic-bezier(0.2,0.7,0.3,1), border-color .32s, box-shadow .32s;
+  }
+  .tile:hover {
+    transform: translateY(-2px);
+    border-color: var(--red-hair);
+    box-shadow: 0 12px 36px rgba(255,45,45,0.12);
+  }
+  /* fake "video" frame: muted color block w/ noise + flicker */
+  .tile .frame {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(255,255,255,0.06), transparent 60%),
+      linear-gradient(135deg, #1a1416 0%, #060608 100%);
+  }
+  .tile.t-2 .frame { background: linear-gradient(135deg,#0e1218,#040408); }
+  .tile.t-3 .frame { background: linear-gradient(135deg,#1a0d10,#060608); }
+  .tile.t-4 .frame { background: linear-gradient(135deg,#0c1212,#040508); }
+  .tile.t-5 .frame { background: linear-gradient(135deg,#181214,#060608); }
+  .tile.t-6 .frame { background: linear-gradient(135deg,#100d18,#050508); }
+  .tile.t-7 .frame { background: linear-gradient(135deg,#1a1612,#060508); }
+  .tile.t-8 .frame { background: linear-gradient(135deg,#101418,#040608); }
+  .tile.t-9 .frame { background: linear-gradient(135deg,#181010,#060608); }
+
+  /* corner brackets */
+  .br {
+    position: absolute; width: 14px; height: 14px;
+    border-color: rgba(255,255,255,0.18); transition: border-color .32s;
+  }
+  .br.tl { top:6px; left:6px; border-top: 1px solid; border-left: 1px solid; }
+  .br.tr { top:6px; right:6px; border-top: 1px solid; border-right: 1px solid; }
+  .br.bl { bottom:6px; left:6px; border-bottom: 1px solid; border-left: 1px solid; }
+  .br.br2 { bottom:6px; right:6px; border-bottom: 1px solid; border-right: 1px solid; }
+  .tile:hover .br { border-color: var(--red); }
+
+  /* live chip on tile */
+  .tile .live {
+    position: absolute; top: 12px; left: 12px;
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.36em; text-transform: uppercase;
+    color: var(--bone);
+    background: rgba(0,0,0,0.55);
+    border: 1px solid var(--red-hair);
+    padding: 4px 8px;
+    backdrop-filter: blur(4px);
+  }
+  .tile .channel {
+    position: absolute; top: 12px; right: 14px;
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.32em; color: var(--bone-2);
+    text-transform: uppercase;
+  }
+  /* caption ticker — bottom of each tile */
+  .tile .caption {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 12px 14px 10px;
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.85) 60%);
+    color: var(--bone);
+    font-family: var(--mono); font-size: 10.5px;
+    line-height: 1.5; letter-spacing: 0.04em;
+    min-height: 64px;
+  }
+  .tile .caption .who {
+    color: var(--red); margin-right: 8px;
+    font-weight: 500;
+  }
+  .tile .caption .text {
+    color: var(--bone);
+  }
+
+  /* fake waveform under caption */
+  .tile .wave {
+    position: absolute; left: 14px; right: 14px; bottom: 70px;
+    height: 14px; display: flex; gap: 2px; align-items: end;
+    opacity: 0.55;
+  }
+  .tile .wave i {
+    flex: 1; background: var(--red); display: block;
+    animation: bar 1.2s ease-in-out infinite;
+  }
+  @keyframes bar {
+    0%,100% { height: 20%; }
+    50%     { height: 90%; }
+  }
+
+  /* breaking flag */
+  .tile.breaking { border-color: var(--red); }
+  .tile.breaking .live {
+    background: var(--red); color: var(--bg); border-color: var(--red);
+  }
+  .tile.breaking::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    box-shadow: inset 0 0 0 1px var(--red), 0 0 24px rgba(255,45,45,0.25);
+  }
+
+  /* ------------- SIDE COLUMN: WHAT THEY'RE SAYING ------------- */
+  .grid-2col {
+    position: relative; z-index: 5;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    padding: 28px;
+    align-items: start;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(8px);
+    padding: 22px;
+  }
+  .panel h3 {
+    margin: 0 0 14px;
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.42em; text-transform: uppercase;
+    color: var(--red);
+    border-bottom: 1px solid var(--red-hair);
+    padding-bottom: 10px;
+  }
+  .panel h3 .count { color: var(--bone-2); float: right; font-weight: 400; }
+
+  .quote {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .quote:last-child { border-bottom: none; }
+  .quote .head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .quote .speaker {
+    font-family: var(--display); font-weight: 500; font-size: 13px;
+    color: var(--bone);
+  }
+  .quote .channel-tag {
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.32em; color: var(--dim);
+    text-transform: uppercase;
+  }
+  .quote .body {
+    font-family: var(--italic); font-style: italic;
+    font-size: 14px; line-height: 1.55;
+    color: var(--bone-2);
+    border-left: 2px solid var(--red);
+    padding-left: 12px;
+    margin: 4px 0 6px;
+  }
+  .quote .ts {
+    font-family: var(--mono); font-size: 9.5px;
+    letter-spacing: 0.32em; color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  /* DOSSIER snapshot side */
+  .dossier-strip { display: flex; flex-direction: column; gap: 14px; }
+  .dossier-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .dossier-row:last-child { border: none; }
+  .dossier-row .name {
+    font-family: var(--display); font-size: 14px;
+    font-weight: 500; color: var(--bone);
+  }
+  .dossier-row .delta {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+  }
+  .delta.up   { color: var(--red); }
+  .delta.flat { color: var(--dim); }
+
+  /* ------------- TICKER ------------- */
+  .ticker {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    height: 36px; z-index: 50;
+    background: rgba(0,0,0,0.85);
+    border-top: 1px solid var(--red-hair);
+    display: flex; align-items: center;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+  }
+  .ticker .label {
+    flex: 0 0 auto; padding: 0 18px;
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.42em; text-transform: uppercase;
+    color: var(--bg); background: var(--red);
+    height: 100%; display: flex; align-items: center;
+  }
+  .ticker .track {
+    flex: 1; overflow: hidden; white-space: nowrap;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--bone-2); letter-spacing: 0.04em;
+  }
+  .ticker .track-inner {
+    display: inline-block; padding-left: 100%;
+    animation: marquee 60s linear infinite;
+  }
+  .ticker .track-inner span {
+    margin-right: 56px;
+  }
+  .ticker .track-inner b {
+    color: var(--red); font-weight: 500; margin-right: 10px;
+    font-family: var(--display);
+  }
+  @keyframes marquee {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+
+  /* tiny cursor red-dot trail */
+  .cursor-dot {
+    position: fixed; pointer-events: none; z-index: 100;
+    width: 6px; height: 6px; background: var(--red); border-radius: 50%;
+    box-shadow: 0 0 14px var(--red);
+    transform: translate(-50%, -50%);
+    transition: transform .08s ease-out;
+    opacity: 0.85;
+  }
+
+  /* responsive */
+  @media (max-width: 1100px) {
+    .wall { grid-template-columns: repeat(2, 1fr); }
+    .grid-2col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- atmosphere layers -->
+<div class="drift-glow"></div>
+<div class="vignette"></div>
+<div class="scanline"></div>
+<div class="grain"></div>
+
+<!-- top status -->
+<div class="status">
+  <div class="left">
+    <span class="brand">RIG · NEWSROOM</span>
+    <span><span class="pip"></span>8 LIVE</span>
+    <span class="chip-breaking">3 BREAKING</span>
+    <span>YOUR BEAT · TELANGANA POLITICS</span>
+  </div>
+  <div class="center-clock">
+    <b>14:30 IST</b> &nbsp;·&nbsp; THU 09 MAY
+  </div>
+  <div class="right">
+    <span>Q · COMMAND</span>
+    <span>⌘K SEARCH</span>
+    <span>P · PAUSE</span>
+  </div>
+</div>
+
+<!-- mode switcher -->
+<div class="modes">
+  <div class="mode active"><span class="num">01</span>WALL</div>
+  <div class="mode"><span class="num">02</span>STREAM</div>
+  <div class="mode"><span class="num">03</span>ECHO</div>
+  <div class="mode"><span class="num">04</span>DOSSIER</div>
+  <div class="mode"><span class="num">05</span>BRIEF</div>
+</div>
+
+<!-- hero strip -->
+<section class="hero">
+  <div>
+    <h1>Eight rooms.<br/>One story <b>breaking</b>.</h1>
+    <p class="sub">
+      Every channel that touches your beat, transcribed and translated as it speaks.
+      Three signals just escalated &mdash; the wall is tracking them.
+    </p>
+  </div>
+  <div class="meta">
+    <div><span class="num">8</span></div>
+    <div>Live channels</div>
+    <div style="margin-top:8px;"><b>3</b> &middot; Breaking</div>
+    <div><b>2,847</b> &middot; Captions / 24h</div>
+  </div>
+</section>
+
+<!-- zone separator -->
+<div class="zone-rule"><span class="zone-label">Wall</span></div>
+
+<!-- video wall -->
+<section class="wall">
+
+  <!-- BREAKING tile -->
+  <div class="tile breaking t-1">
+    <div class="frame"></div>
+    <span class="br tl"></span><span class="br tr"></span>
+    <span class="br bl"></span><span class="br br2"></span>
+    <div class="live"><span class="pip" style="background:#000;box-shadow:none;"></span>BREAKING · LIVE</div>
+    <div class="channel">TV9 TELUGU</div>
+    <div class="wave">
+      <i style="animation-delay:0s"></i><i style="animation-delay:.1s"></i>
+      <i style="animation-delay:.2s"></i><i style="animation-delay:.3s"></i>
+      <i style="animation-delay:.15s"></i><i style="animation-delay:.05s"></i>
+      <i style="animation-delay:.25s"></i><i style="animation-delay:.35s"></i>
+      <i style="animation-delay:.18s"></i><i style="animation-delay:.08s"></i>
+      <i style="animation-delay:.22s"></i><i style="animation-delay:.32s"></i>
+    </div>
+    <div class="caption">
+      <span class="who">REVANTH:</span><span class="text">"&hellip;the central allocation has been blocked, this is a direct attack on Telangana's farmers&hellip;"</span>
+    </div>
+  </div>
+
+  <div class="tile t-2">
+    <div class="frame"></div>
+    <span class="br tl"></span><span class="br tr"></span>
+    <span class="br bl"></span><span class="br br2"></span>
+    <div class="live"><span class="pip"></span>LIVE</div>
+    <div class="channel">NTV TELUGU</div>
+    <div class="caption">
+      <span class="who">ANCHOR:</span><span class="text">"&hellip;BRS leaders meeting at Telangana Bhavan in fifteen minutes&hellip;"</span>
+    </div>
+  </div>
+
+  <div class="tile breaking t-3">
+    <div class="frame"></div>
+    <span class="br tl"></span><span class="br tr"></span>
+    <span class="br bl"></span><span class="br br2"></span>
+    <div class="live"><span class="pip" style="background:#000;box-shadow:none;"></span>BREAKING</div>
+    <div class="channel">SAKSHI TV</div>
+    <div class="caption">
+      <span class="who">KTR:</span><span class="text">"This government has failed in every single promise &mdash; Dharani, fee reimbursement, Rythu Bandhu&hellip;"</span>
+    </div>
+  </div>
+
+  <div class="tile t-4">
+    <div class="frame"></div>
+    <span class="br tl"></span><span class="br tr"></span>
+    <span class="br bl"></span><span class="br br2"></span>
+    <div class="live"><span class="pip"></span>LIVE</div>
+    <div class="channel">V6 NEWS</div>
+    <div class="caption">
+      <span class="who">REPORTER:</span><span class="text">"Heavy police deployment near Pragathi Bhavan as protesters gather&hellip;"</span>
+    </div>
+  </div>
+
+  <div class="tile breaking t-5">
+    <div class="frame"></div>
+    <span class="br tl"></span><span class="br tr"></span>
+    <span class="br bl"></span><span class="br br2"></span>
+    <div class="live"><span class="pip" style="background:#000;box-shadow:none;"></span>BREAKING</div>
+    <div class="channel">TV5 NEWS</div>
+    <div class="caption">
+      <span class="who">REVANTH:</span><span class="text">"We will not back down. The High Court has spoken &mdash; the centre must respond&hellip;"</span>
+    </div>
+  </div>
+
+  <div class="tile t-6">
+    <div class="frame"></div>
+    <span class="br tl"></span><span class="br tr"></span>
+    <span class="br bl"></span><span class="br br2"></span>
+    <div class="live"><span class="pip"></span>LIVE</div>
+    <div class="channel">10TV</div>
+    <div class="caption">
+      <span class="who">ANALYST:</span><span class="text">"&hellip;the political stakes here go beyond Telangana &mdash; this is signal to Karnataka&hellip;"</span>
+    </div>
+  </div>
+
+  <div class="tile t-7">
+    <div class="frame"></div>
+    <span class="br tl"></span><span class="br tr"></span>
+    <span class="br bl"></span><span class="br br2"></span>
+    <div class="live"><span class="pip"></span>LIVE</div>
+    <div class="channel">HMTV</div>
+    <div class="caption">
+      <span class="who">PANEL:</span><span class="text">"&hellip;BJP state leadership has been notably silent for the past four hours&hellip;"</span>
+    </div>
+  </div>
+
+  <div class="tile t-8">
+    <div class="frame"></div>
+    <span class="br tl"></span><span class="br tr"></span>
+    <span class="br bl"></span><span class="br br2"></span>
+    <div class="live"><span class="pip"></span>LIVE</div>
+    <div class="channel">ABN ANDHRA JYOTI</div>
+    <div class="caption">
+      <span class="who">ANCHOR:</span><span class="text">"&hellip;cross-state coverage now &mdash; AP CM has issued a supportive statement&hellip;"</span>
+    </div>
+  </div>
+
+  <div class="tile t-9">
+    <div class="frame"></div>
+    <span class="br tl"></span><span class="br tr"></span>
+    <span class="br bl"></span><span class="br br2"></span>
+    <div class="live"><span class="pip"></span>LIVE</div>
+    <div class="channel">RAJ NEWS</div>
+    <div class="caption">
+      <span class="who">CORRESPONDENT:</span><span class="text">"Crowds at Khairatabad growing &mdash; party workers from neighbouring districts arriving&hellip;"</span>
+    </div>
+  </div>
+
+</section>
+
+<!-- echo + dossier -->
+<div class="zone-rule"><span class="zone-label">Echo &middot; Dossier</span></div>
+
+<section class="grid-2col">
+  <div class="panel">
+    <h3>What they're saying about you <span class="count">12 quotes &middot; last hour</span></h3>
+
+    <div class="quote">
+      <div class="head">
+        <span class="speaker">K. T. Rama Rao</span>
+        <span class="channel-tag">SAKSHI TV &middot; 14:24</span>
+      </div>
+      <div class="body">"Revanth Reddy government is hiding behind central allocations &mdash; the truth is they have failed to implement Dharani."</div>
+      <div class="ts">+ 3 channels carrying this clip</div>
+    </div>
+
+    <div class="quote">
+      <div class="head">
+        <span class="speaker">Bandi Sanjay Kumar</span>
+        <span class="channel-tag">TV9 &middot; 14:18</span>
+      </div>
+      <div class="body">"BJP supports the farmers &mdash; but this is also a question of how Congress manages its alliance with the centre."</div>
+      <div class="ts">+ 1 channel carrying this clip</div>
+    </div>
+
+    <div class="quote">
+      <div class="head">
+        <span class="speaker">Anchor &middot; V6 News</span>
+        <span class="channel-tag">V6 &middot; 14:11</span>
+      </div>
+      <div class="body">"&hellip;analysts are asking whether this is the moment Revanth Reddy's first-year honeymoon ends&hellip;"</div>
+      <div class="ts">Editorial framing &middot; flagged</div>
+    </div>
+
+    <div class="quote">
+      <div class="head">
+        <span class="speaker">Harish Rao</span>
+        <span class="channel-tag">NTV &middot; 13:58</span>
+      </div>
+      <div class="body">"Every Congress promise to Telangana has been broken &mdash; we have a list, we will publish it tomorrow."</div>
+      <div class="ts">+ 2 channels carrying this clip</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Dossier &middot; Today <span class="count">5 entities</span></h3>
+    <div class="dossier-strip">
+      <div class="dossier-row">
+        <span class="name">Revanth Reddy</span>
+        <span class="delta up">&uarr; 47 mentions</span>
+      </div>
+      <div class="dossier-row">
+        <span class="name">KTR</span>
+        <span class="delta up">&uarr; 31 mentions</span>
+      </div>
+      <div class="dossier-row">
+        <span class="name">Bandi Sanjay</span>
+        <span class="delta up">&uarr; 18 mentions</span>
+      </div>
+      <div class="dossier-row">
+        <span class="name">Harish Rao</span>
+        <span class="delta flat">&mdash; 14 mentions</span>
+      </div>
+      <div class="dossier-row">
+        <span class="name">KCR</span>
+        <span class="delta flat">&mdash; 8 mentions</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- bottom ticker -->
+<div class="ticker">
+  <div class="label">Stream</div>
+  <div class="track">
+    <div class="track-inner">
+      <span><b>14:30</b>TV9 &middot; Revanth: "central allocation blocked, direct attack on Telangana's farmers"</span>
+      <span><b>14:24</b>SAKSHI &middot; KTR: "Dharani has failed, fee reimbursement has failed"</span>
+      <span><b>14:18</b>TV9 &middot; Bandi: "BJP supports the farmers, this is about Congress alliance"</span>
+      <span><b>14:11</b>V6 &middot; "Analysts ask whether the honeymoon is ending"</span>
+      <span><b>13:58</b>NTV &middot; Harish: "Every Congress promise to Telangana has been broken"</span>
+      <span><b>13:42</b>TV5 &middot; Police deployment near Pragathi Bhavan</span>
+      <span><b>13:30</b>10TV &middot; Cross-state implications: signal to Karnataka</span>
+    </div>
+  </div>
+</div>
+
+<!-- cursor dot -->
+<div class="cursor-dot" id="cd"></div>
+<script>
+  const dot = document.getElementById('cd');
+  document.addEventListener('mousemove', (e) => {
+    dot.style.left = e.clientX + 'px';
+    dot.style.top  = e.clientY + 'px';
+  });
+</script>
+
+</body>
+</html>

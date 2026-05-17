@@ -208,6 +208,15 @@ class TieredFetcher:
                 return rss_summary[:LEAD_TEXT_MAX_CHARS], 0
             return None, -1
 
+        # Try Tier 1 (trafilatura) first for ALL non-hard domains, including
+        # JS-rendered ones. Empirical audit (2026-05-10) showed trafilatura
+        # cleanly extracts content from 12/15 previously-broken JS-tagged
+        # sources. Falling through to Tier 3 only when trafilatura returns
+        # nothing keeps the JS escape hatch for genuine SPA cases.
+        text = await self._tier1_trafilatura(url)
+        if text and len(text) >= MIN_TEXT_LENGTH:
+            return text[:LEAD_TEXT_MAX_CHARS], 1
+
         if domain_type == "js":
             text = await self._tier3_crawl4ai(url)
             if text and len(text) >= MIN_TEXT_LENGTH:
@@ -215,11 +224,6 @@ class TieredFetcher:
             if rss_summary and len(rss_summary) > 50:
                 return rss_summary[:LEAD_TEXT_MAX_CHARS], 0
             return None, -1
-
-        # normal + soft: try Tier 1 first
-        text = await self._tier1_trafilatura(url)
-        if text and len(text) >= MIN_TEXT_LENGTH:
-            return text[:LEAD_TEXT_MAX_CHARS], 1
 
         # Tier 2 — Googlebot spoof (soft-paywall sites only)
         if domain_type == "soft":

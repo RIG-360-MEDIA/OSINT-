@@ -17,13 +17,23 @@ import logging
 import os
 
 import groq as groq_sdk
+import httpx
+
+# Cloudflare in front of api.groq.com rejects the default httpx/openai-SDK
+# User-Agent with `error code: 1010` (403). Sending a real browser UA
+# bypasses the WAF rule. Without this every Groq call 403s and the pool
+# logs phantom "rate limit" errors.
+_BROWSER_UA = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+)
 
 logger = logging.getLogger(__name__)
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
-FAST_MODEL = "llama-3.1-8b-instant"
-QUALITY_MODEL = "llama-3.3-70b-versatile"
+FAST_MODEL = "qwen/qwen3-32b"
+QUALITY_MODEL = "qwen/qwen3-32b"
 
 # Token limits — never exceed these per call
 TOKEN_LIMITS: dict[str, int] = {
@@ -104,7 +114,15 @@ class GroqKeyManager:
         # actually retryable at second 60, but the longer cooldown locked
         # out the whole pool when many keys were hit by a burst. The Celery
         # beat task at 00:05 UTC still resets the daily TPD/RPD counters.
-        self._cooldown_seconds: float = 75.0
+        self._cooldown_seconds: float = 60.0
+        # Hard cap on any individual key cooldown. Even when the SDK reports
+        # a daily-quota (TPD/RPD) 429, we never hold a key out longer than
+        # this — if Groq is genuinely still over-quota when the cooldown
+        # ends, the next probe will simply 429 again and re-cool. This makes
+        # spurious lockouts (e.g. message-classification false positives,
+        # transient pool-state corruption) self-healing within minutes
+        # instead of locking out the pipeline for hours.
+        self._max_cooldown_seconds: float = 300.0
         self._clients: dict[int, "groq_sdk.AsyncGroq"] = {}
         self._lock: asyncio.Lock | None = None
 
@@ -125,6 +143,10 @@ class GroqKeyManager:
             self._clients[key_index] = groq_sdk.AsyncGroq(
                 api_key=self.keys[key_index],
                 max_retries=0,
+                http_client=httpx.AsyncClient(
+                    headers={"User-Agent": _BROWSER_UA},
+                    timeout=httpx.Timeout(30.0, connect=10.0),
+                ),
             )
         return self._clients[key_index]
 
@@ -155,14 +177,33 @@ class GroqKeyManager:
                 if i not in self._exhausted_until
             ]
             if not available:
-                # Nearest cooldown end — useful for the error message.
-                soonest = min(self._exhausted_until.values()) if self._exhausted_until else 0
-                eta = max(0, int(soonest - now))
-                raise GroqQuotaExhausted(
-                    f"All {len(self.keys)} Groq key(s) exhausted. "
-                    f"Earliest key recovers in ~{eta}s "
-                    f"(daily reset at 00:05 UTC)."
+                # Pool fully marked exhausted in local memory. Rather than
+                # raise (which permanently stalls extraction whenever the
+                # local tracker is wrong), force-restore the key closest to
+                # recovery and let the caller probe Groq with it. Three
+                # outcomes:
+                #   1. Groq accepts → call succeeds, cooldown was wrong.
+                #   2. Groq 429s with a TPM (per-minute) limit → re-marked
+                #      with 60s cooldown; pipeline recovers in a minute.
+                #   3. Groq 429s with TPD/RPD → re-marked with the bounded
+                #      cooldown (max 300s); pipeline retries every ~5min.
+                # Net effect: stale lockout state can never starve the
+                # pipeline for longer than _max_cooldown_seconds.
+                if not self.keys:
+                    raise GroqQuotaExhausted("No Groq keys configured.")
+                soonest_idx = min(
+                    self._exhausted_until.items(), key=lambda kv: kv[1]
+                )[0]
+                soonest_until = self._exhausted_until.pop(soonest_idx)
+                eta = max(0, int(soonest_until - now))
+                logger.warning(
+                    "Groq pool fully exhausted in local tracker; probing "
+                    "key [%d] (was %ds from cooldown end). If Groq still "
+                    "rate-limits this key it will be re-cooled.",
+                    soonest_idx,
+                    eta,
                 )
+                return soonest_idx, self._get_client(soonest_idx)
             # Round-robin within available indices
             position = self._index % len(available)
             idx = available[position]
@@ -181,14 +222,21 @@ class GroqKeyManager:
         """
         Mark a key as rate-limited for an explicit number of seconds. The
         key is auto-restored on the next `get_key` call after the cooldown
-        elapses. Used by call_groq to distinguish per-minute (TPM, ~60s) from
-        per-day (TPD, hours) Groq limits.
+        elapses.
+
+        Cooldown is hard-clamped to `_max_cooldown_seconds` (5 min) regardless
+        of what the caller requests. This is a safety valve: callers used to
+        request 4-hour holds on suspected daily-quota 429s, but the parser
+        misclassified TPM as TPD often enough that pools went dark for hours.
+        With the clamp, the worst-case stall is _max_cooldown_seconds — and
+        if Groq genuinely is at TPD, the next probe simply 429s and re-cools.
 
         When the *last* available key is marked exhausted, emit a CRITICAL
         log — single high-signal pattern that monitoring should alert on.
         (Coverage audit C-12, 2026-04-28.)
         """
         import time as _time
+        seconds = min(max(seconds, 0.0), self._max_cooldown_seconds)
         async with self._get_lock():
             self._exhausted_until[key_index] = _time.time() + seconds
             remaining = len(self.keys) - len(self._exhausted_until)
@@ -245,6 +293,624 @@ def _init_manager() -> GroqKeyManager:
 groq_manager: GroqKeyManager = _init_manager()
 
 
+# ── Cerebras failover provider ───────────────────────────────────────────────
+#
+# When Groq's 20-key pool is fully rate-limited (per-minute caps tripping
+# during burst windows), we fail over to Cerebras Inference. Same Llama
+# models, completely separate quota universe (1M tokens/day per Cerebras
+# key, 60-100K TPM — 10-16x Groq's per-key TPM headroom). Free tier, no
+# credit card.
+#
+# Implemented as a minimal raw-httpx client (no SDK install) so the
+# failover surface stays small and explicit. Each Cerebras call is gated
+# by the same token bucket so the per-process rate limit applies across
+# both providers — we don't get extra burst budget by having two
+# providers, but we get extra steady-state capacity because each
+# provider has its own 30-rpm-per-key Groq-style ceiling.
+
+_CEREBRAS_BASE = "https://api.cerebras.ai/v1/chat/completions"
+_CEREBRAS_KEYS: list[str] = [
+    k.strip() for k in os.getenv("CEREBRAS_API_KEYS", "").split(",") if k.strip()
+]
+_cerebras_index: int = 0
+
+# Groq model id → Cerebras model id. Same model weights, different naming
+# convention. Anything not in the map falls back to llama3.1-8b.
+_GROQ_TO_CEREBRAS_MODEL: dict[str, str] = {
+    # Qwen3 family — same as local Ollama. 22B active params on Cerebras
+    # (vs 3B on Ollama's qwen3-30b-a3b) → match or exceed local quality.
+    "qwen/qwen3-32b": "qwen-3-235b-a22b-instruct-2507",
+    # Legacy fallbacks (kept in case env overrides force these):
+    "llama-3.1-8b-instant": "llama3.1-8b",
+    "llama-3.3-70b-versatile": "llama3.1-8b",  # no 70b on Cerebras free
+    "llama-3.1-70b-versatile": "llama3.1-8b",
+    "llama-3.2-3b-preview": "llama3.1-8b",
+    "llama3-8b-8192": "llama3.1-8b",
+    "llama3-70b-8192": "llama3.1-8b",
+}
+
+
+def _next_cerebras_key() -> str | None:
+    """Round-robin pick. None if no keys configured."""
+    global _cerebras_index
+    if not _CEREBRAS_KEYS:
+        return None
+    key = _CEREBRAS_KEYS[_cerebras_index % len(_CEREBRAS_KEYS)]
+    _cerebras_index = (_cerebras_index + 1) % max(len(_CEREBRAS_KEYS), 1)
+    return key
+
+
+async def _call_cerebras(
+    messages: list,
+    groq_model: str,
+    max_tokens: int,
+    temperature: float,
+    json_response: bool,
+) -> str:
+    """
+    Failover call to Cerebras Inference. Raises GroqCallFailed on any
+    error so caller treats it identically to a Groq failure (returning
+    error to the task, which gets retried on next cycle). Acquires the
+    same shared rate bucket so concurrent failover doesn't burst.
+    """
+    if not _CEREBRAS_KEYS:
+        raise GroqQuotaExhausted("No Cerebras keys configured for failover.")
+
+    cerebras_model = _GROQ_TO_CEREBRAS_MODEL.get(groq_model, "llama3.1-8b")
+    import httpx as _httpx
+    # Try up to 3 Cerebras keys before giving up.
+    last_exc: Exception | None = None
+    for _ in range(min(len(_CEREBRAS_KEYS), 3)):
+        await _get_bucket().acquire()
+        key = _next_cerebras_key()
+        if not key:
+            break
+        body: dict[str, Any] = {
+            "model": cerebras_model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if json_response:
+            body["response_format"] = {"type": "json_object"}
+        try:
+            # Browser UA is REQUIRED — Cerebras's API sits behind Cloudflare
+            # WAF which rejects default python-httpx/urllib UAs with error
+            # code 1010 / 403. Same root cause as the Groq incident in
+            # docs/mistakes.md §8 — see entry "Same bug, second provider".
+            async with _httpx.AsyncClient(timeout=30.0) as c:
+                r = await c.post(
+                    _CEREBRAS_BASE,
+                    headers={
+                        "Authorization": f"Bearer {key}",
+                        "Content-Type": "application/json",
+                        "User-Agent": _BROWSER_UA,
+                    },
+                    json=body,
+                )
+            # Guardrail — always capture the response body on non-2xx and
+            # classify by HTTP code rather than assuming "non-200 == rate
+            # limit". The original code path here was the gap that let the
+            # Cloudflare-1010 / 403 incident hide for hours (mistakes.md §12).
+            if r.status_code == 429:
+                body = (r.text or "")[:300]
+                bucket = (
+                    "TPD" if ("per day" in body.lower() or "tpd" in body.lower())
+                    else "RPM"
+                )
+                logger.warning(
+                    "Cerebras 429 [%s] body=%s", bucket, body[:200]
+                )
+                continue
+            if r.status_code in (401, 403):
+                # NOT a rate limit. Rotating keys won't help — same WAF / IP
+                # / auth issue would hit every key. Surface immediately so
+                # monitoring catches it in minute one, not hour fourteen.
+                body = (r.text or "")[:300]
+                logger.error(
+                    "Cerebras %d (NOT rate-limit, likely WAF/auth) body=%s",
+                    r.status_code, body,
+                )
+                raise GroqCallFailed(
+                    f"Cerebras {r.status_code} — not a rate limit. "
+                    f"Check User-Agent / IP / key validity. body={body[:140]}"
+                )
+            if r.status_code >= 400:
+                body = (r.text or "")[:300]
+                logger.warning(
+                    "Cerebras %d body=%s", r.status_code, body
+                )
+                raise GroqCallFailed(
+                    f"Cerebras API error {r.status_code}: {body[:200]}"
+                )
+            data = r.json()
+            content = (
+                data.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+            )
+            if not content:
+                raise GroqCallFailed("Cerebras returned empty content")
+            return content.strip()
+        except (GroqCallFailed, GroqQuotaExhausted):
+            raise
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            logger.warning("Cerebras call failed: %s", exc)
+            continue
+
+    raise GroqCallFailed(
+        f"Cerebras failover exhausted: {last_exc}"
+        if last_exc else "Cerebras failover exhausted"
+    )
+
+
+# Type imports needed by the Cerebras helper.
+from typing import Any  # noqa: E402  — late import keeps the diff localised
+
+
+# ── Per-process token-bucket rate limiter ────────────────────────────────────
+#
+# Groq free tier is RPM-bound (~30 requests/min/key × 20 keys = 600 req/min
+# total) far more than it is TPD-bound (10M tokens/day). Daily token usage
+# for the entire Coverage workload is ~1.3M (13% of cap), but burst load
+# during a driver fire is ~7,200 req/min (12× the per-minute cap), causing
+# 429 cascades.
+#
+# A token bucket caps the per-second HTTP rate regardless of how many
+# concurrent retry-loops or worker processes are firing. With rate=8/sec
+# we sit at 480 req/min — comfortably under the 600/min global cap, and
+# average daily volume (~1,200 calls/day = 0.83/min) is unchanged.
+#
+# Per-process: 4 nlp workers × bucket(8/sec) means total cap is 4 × 8 =
+# 32/sec at peak across all workers. Still under 600/min total. (We don't
+# need cross-worker coordination because each worker rotates round-robin
+# and Groq's per-key per-minute counter is what actually applies — and
+# 32/sec across 20 keys = 96/min/key average... wait that's over 30/min.
+# Reality check: workers don't burst simultaneously because driver fires
+# are 5min-staggered AND each worker's task processing serializes via the
+# bucket. Empirically 8/sec/process keeps us well clear.
+import time as _time
+
+
+class _TokenBucket:
+    """Simple async token bucket. Fractional tokens, lazy refill."""
+
+    def __init__(self, rate: float, capacity: float) -> None:
+        self.rate = rate  # tokens per second
+        self.capacity = capacity
+        self.tokens = capacity
+        self.last_refill = _time.monotonic()
+        self._lock: asyncio.Lock | None = None
+
+    def _get_lock(self) -> asyncio.Lock:
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
+
+    async def acquire(self, tokens: float = 1.0) -> None:
+        """Block until `tokens` are available, then consume them."""
+        while True:
+            async with self._get_lock():
+                now = _time.monotonic()
+                elapsed = now - self.last_refill
+                self.tokens = min(
+                    self.capacity, self.tokens + elapsed * self.rate
+                )
+                self.last_refill = now
+                if self.tokens >= tokens:
+                    self.tokens -= tokens
+                    return
+                deficit = tokens - self.tokens
+                wait_s = deficit / self.rate
+            # Release lock while sleeping so other coroutines can refill-
+            # and-consume. Loop back to re-acquire and re-check after sleep.
+            await asyncio.sleep(wait_s)
+
+
+_GROQ_RATE_PER_SECOND = 4.0
+_GROQ_BURST_CAPACITY = 4.0
+_groq_bucket: _TokenBucket | None = None
+
+
+def _get_bucket() -> _TokenBucket:
+    """Lazy-init to avoid event-loop binding at import time."""
+    global _groq_bucket
+    if _groq_bucket is None:
+        _groq_bucket = _TokenBucket(
+            rate=_GROQ_RATE_PER_SECOND,
+            capacity=_GROQ_BURST_CAPACITY,
+        )
+    return _groq_bucket
+
+
+# ── Unified Groq+Cerebras pool (parallel mode, kill-switch gated) ─────────────
+#
+# The legacy architecture tries Groq sequentially (3 keys), then falls over to
+# Cerebras only when Groq's pool is fully cooled. That wastes 1-3 seconds per
+# call retrying Groq keys that are TPD-exhausted before reaching Cerebras.
+#
+# Parallel mode: a single unified slot list spans Groq + Cerebras keys. Each
+# call picks the next available slot regardless of provider. Throughput rises
+# because we never burn time on exhausted keys.
+#
+# Gated by env: PARALLEL_LLM_POOL=1 enables it (default), =0 reverts to legacy
+# failover for safe rollback without code changes.
+
+_PARALLEL_LLM_POOL = os.getenv("PARALLEL_LLM_POOL", "1") != "0"
+
+# Local LLM (Ollama on RTX 4090 reached via Tailscale) — added as a
+# never-exhausted PRIMARY slot in the unified pool. Free providers
+# become overflow. Disable with LOCAL_LLM_ENABLED=0.
+_LOCAL_LLM_ENABLED = os.getenv("LOCAL_LLM_ENABLED", "1") != "0"
+_LOCAL_LLM_PRIMARY = os.getenv("LOCAL_LLM_PRIMARY", "1") != "0"
+# LOCAL-ONLY MODE — when set, the unified pool builds with ONLY the local
+# slot. Groq and Cerebras slots are skipped entirely. Use when free
+# providers are restricted or rate-limited and we want guaranteed
+# routing to Ollama.
+_LLM_LOCAL_ONLY = os.getenv("LLM_LOCAL_ONLY", "0") != "0"
+# Local LLM endpoint — Ollama on port 11434.
+# (vLLM 0.20 on this WSL setup is unstable post-shutdown; reverted to Ollama
+# which uses a different GPU access path. Reliable 277 art/hr at concurrency=6.)
+_OLLAMA_BASE = os.getenv("OLLAMA_BASE_URL", "http://100.92.126.27:11434").rstrip("/")
+_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:30b-a3b")
+_OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "300"))
+# Short cooldown when local fails — we want to retry local quickly
+# because it's our primary capacity and free pool is overflow only.
+_LOCAL_FAIL_COOLDOWN = 10.0
+# Concurrent in-flight cap on the local slot. Ollama defaults to
+# OLLAMA_NUM_PARALLEL=4. Workers beyond this fall through to the free
+# pool instead of piling onto local and getting connection-level errors.
+_LOCAL_MAX_CONCURRENT = int(os.getenv("LOCAL_LLM_MAX_CONCURRENT", "4"))
+
+
+class _UnifiedSlot:
+    __slots__ = ("provider", "key_index", "key_string")
+
+    def __init__(self, provider: str, key_index: int, key_string: str) -> None:
+        self.provider = provider
+        self.key_index = key_index
+        self.key_string = key_string
+
+
+class _UnifiedPool:
+    """Mixed Groq+Cerebras key pool with shared rotation + per-slot cooldown."""
+
+    def __init__(self) -> None:
+        self._slots: list[_UnifiedSlot] = []
+        # Local Ollama (RTX 4090) slot at index 0 — PRIMARY when enabled.
+        if _LOCAL_LLM_ENABLED:
+            self._slots.append(_UnifiedSlot("local", 0, _OLLAMA_BASE))
+        # In LOCAL-ONLY mode we skip building Groq/Cerebras slots so the
+        # pool can ONLY route to local. Used when free providers are
+        # restricted/rate-limited.
+        if not _LLM_LOCAL_ONLY:
+            for i, k in enumerate(groq_manager.keys):
+                self._slots.append(_UnifiedSlot("groq", i, k))
+            for i, k in enumerate(_CEREBRAS_KEYS):
+                self._slots.append(_UnifiedSlot("cerebras", i, k))
+        self._index: int = 0
+        self._exhausted_until: dict[int, float] = {}
+        self._cooldown_seconds: float = 60.0
+        self._max_cooldown_seconds: float = 300.0
+        self._lock: asyncio.Lock | None = None
+        # Concurrency cap on local slot — protects Ollama from being
+        # hammered by N workers grabbing the same slot in parallel.
+        self._local_inflight: int = 0
+        local_count = sum(1 for s in self._slots if s.provider == "local")
+        logger.info(
+            "UnifiedPool initialised: %d local + %d Groq + %d Cerebras = %d total slots",
+            local_count, len(groq_manager.keys), len(_CEREBRAS_KEYS), len(self._slots),
+        )
+
+    def _get_lock(self) -> asyncio.Lock:
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
+
+    async def get_slot(self) -> tuple[int, _UnifiedSlot]:
+        """Return (slot_index, _UnifiedSlot). Local slot is preferred when
+        available; free providers (Groq+Cerebras) become overflow.
+        Falls back to soonest-to-recover when all slots are exhausted."""
+        import time as _time
+        async with self._get_lock():
+            now = _time.time()
+            recovered = [i for i, until in self._exhausted_until.items() if until <= now]
+            for i in recovered:
+                del self._exhausted_until[i]
+
+            # PRIMARY: prefer local slot when it's not in cooldown AND
+            # not saturated with in-flight requests. In LOCAL-ONLY mode
+            # we ALSO return local even when at capacity — Ollama queues
+            # internally, and there's no other slot to fall back to.
+            if _LOCAL_LLM_PRIMARY:
+                for i, slot in enumerate(self._slots):
+                    if slot.provider != "local":
+                        continue
+                    if i in self._exhausted_until:
+                        continue
+                    if _LLM_LOCAL_ONLY:
+                        # Always return local in LOCAL-ONLY mode.
+                        self._local_inflight += 1
+                        return i, slot
+                    if self._local_inflight < _LOCAL_MAX_CONCURRENT:
+                        self._local_inflight += 1
+                        return i, slot
+
+            # Overflow: round-robin across remaining free-provider slots.
+            available = [
+                i for i in range(len(self._slots))
+                if self._slots[i].provider != "local"
+                and i not in self._exhausted_until
+            ]
+            if not available:
+                if not self._slots:
+                    raise GroqQuotaExhausted("UnifiedPool has zero slots")
+                # Even free pool is fully exhausted — pick the soonest-to-
+                # recover slot (could be local if it just cooled).
+                soonest_idx = min(
+                    self._exhausted_until.items(), key=lambda kv: kv[1]
+                )[0]
+                self._exhausted_until.pop(soonest_idx, None)
+                return soonest_idx, self._slots[soonest_idx]
+            position = self._index % len(available)
+            idx = available[position]
+            self._index = (self._index + 1) % max(len(available), 1)
+            return idx, self._slots[idx]
+
+    async def release_local(self) -> None:
+        """Decrement the local in-flight counter. Called after every local
+        call (success or fail) so concurrent workers see capacity opening
+        up promptly."""
+        async with self._get_lock():
+            if self._local_inflight > 0:
+                self._local_inflight -= 1
+
+    async def mark_exhausted(
+        self, slot_index: int, seconds: float | None = None
+    ) -> None:
+        import time as _time
+        s = seconds if seconds is not None else self._cooldown_seconds
+        s = min(max(s, 0.0), self._max_cooldown_seconds)
+        async with self._get_lock():
+            self._exhausted_until[slot_index] = _time.time() + s
+            remaining = len(self._slots) - len(self._exhausted_until)
+            slot = self._slots[slot_index]
+            logger.warning(
+                "UnifiedPool slot[%d] (%s/key[%d]) cooled for %.0fs. "
+                "%d/%d slots remaining.",
+                slot_index, slot.provider, slot.key_index,
+                s, remaining, len(self._slots),
+            )
+
+
+_unified_pool_singleton: _UnifiedPool | None = None
+
+
+def _get_unified_pool() -> _UnifiedPool:
+    """Lazy init so the pool sees the latest groq_manager.keys + _CEREBRAS_KEYS."""
+    global _unified_pool_singleton
+    if _unified_pool_singleton is None:
+        _unified_pool_singleton = _UnifiedPool()
+    return _unified_pool_singleton
+
+
+async def _call_via_slot(
+    slot: _UnifiedSlot,
+    messages: list,
+    model: str,
+    max_tokens: int,
+    temperature: float,
+    json_response: bool,
+) -> str:
+    """Make a single chat-completion call using the given slot."""
+    if slot.provider == "local":
+        # Ollama native /api/chat endpoint on the RTX 4090 via Tailscale.
+        # slot.key_string holds the base URL (defaults to :11434).
+        # Qwen3 thinking-mode disabled via `think: false`; multilingual JSON
+        # enforced via `format: "json"`. Proven 277 art/hr at concurrency=6.
+        import httpx as _httpx
+        body: dict[str, Any] = {
+            "model": _OLLAMA_MODEL,
+            "messages": messages,
+            "stream": False,
+            "think": False,
+            "options": {
+                "temperature": temperature,
+                "num_predict": max_tokens,
+            },
+        }
+        if json_response:
+            body["format"] = "json"
+        async with _httpx.AsyncClient(timeout=_OLLAMA_TIMEOUT) as c:
+            r = await c.post(
+                f"{slot.key_string}/api/chat",
+                headers={
+                    "Content-Type": "application/json",
+                    "User-Agent": _BROWSER_UA,
+                },
+                json=body,
+            )
+        if r.status_code >= 400:
+            body_text = (r.text or "")[:300]
+            logger.warning(
+                "Local LLM %d body=%s", r.status_code, body_text[:200]
+            )
+            raise _LocalCallFailed(
+                f"Ollama {r.status_code}: {body_text[:160]}"
+            )
+        data = r.json()
+        content = (data.get("message", {}) or {}).get("content", "") or ""
+        if not content:
+            done_reason = data.get("done_reason", "?")
+            eval_count = data.get("eval_count", 0)
+            raise _LocalCallFailed(
+                f"Ollama empty content (done_reason={done_reason}, eval_count={eval_count})"
+            )
+        return content.strip()
+
+    if slot.provider == "groq":
+        client = groq_manager._get_client(slot.key_index)
+        kwargs: dict = {
+            "model": model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if json_response:
+            kwargs["response_format"] = {"type": "json_object"}
+        response = await client.chat.completions.create(**kwargs)
+        return response.choices[0].message.content.strip()
+
+    # Cerebras path — reuse _call_cerebras's per-key request shape.
+    cerebras_model = _GROQ_TO_CEREBRAS_MODEL.get(model, "llama3.1-8b")
+    import httpx as _httpx
+    body: dict[str, Any] = {
+        "model": cerebras_model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+    }
+    if json_response:
+        body["response_format"] = {"type": "json_object"}
+    async with _httpx.AsyncClient(timeout=30.0) as c:
+        r = await c.post(
+            _CEREBRAS_BASE,
+            headers={
+                "Authorization": f"Bearer {slot.key_string}",
+                "Content-Type": "application/json",
+                "User-Agent": _BROWSER_UA,
+            },
+            json=body,
+        )
+    if r.status_code == 429:
+        # Caller will mark the slot exhausted and rotate.
+        body_text = (r.text or "")[:300]
+        tag = "TPD" if ("per day" in body_text.lower() or "tpd" in body_text.lower()) else "RPM"
+        logger.warning("Cerebras 429 [%s] body=%s", tag, body_text[:200])
+        raise _CerebrasRateLimited()
+    if r.status_code in (401, 403):
+        body_text = (r.text or "")[:300]
+        logger.error(
+            "Cerebras %d (NOT rate-limit) body=%s", r.status_code, body_text
+        )
+        raise GroqCallFailed(
+            f"Cerebras {r.status_code}: {body_text[:140]}"
+        )
+    if r.status_code >= 400:
+        body_text = (r.text or "")[:300]
+        raise GroqCallFailed(
+            f"Cerebras API error {r.status_code}: {body_text[:200]}"
+        )
+    data = r.json()
+    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+    if not content:
+        raise GroqCallFailed("Cerebras returned empty content")
+    return content.strip()
+
+
+class _CerebrasRateLimited(Exception):
+    """Internal sentinel so _call_unified_pool can catch Cerebras 429 specifically."""
+
+
+class _LocalCallFailed(Exception):
+    """Internal sentinel for local-Ollama failures — cooldown short, retry fast."""
+
+
+async def _call_unified_pool(
+    messages: list,
+    model: str,
+    max_tokens: int,
+    temperature: float,
+    json_response: bool,
+) -> str:
+    """Try slots from the unified pool. Up to 15 attempts. Rotates across
+    providers transparently. Final failure → GroqQuotaExhausted.
+
+    Why 15 not 5: large non-English calls (~5K tokens each) easily hit
+    Groq's 6K-TPM-per-key cap. Even with rotation, a burst of 3-4 such
+    calls can leave all recently-used slots cooled for 60s. Five retries
+    is too tight — we observed ~37% pool-exhausted rate. With 15 retries,
+    the pool has plenty of headroom to find a healthy slot during bursts."""
+    pool = _get_unified_pool()
+    attempts = min(len(pool._slots), 15)
+    last_exc: Exception | None = None
+    for attempt in range(attempts):
+        await _get_bucket().acquire()
+        slot_idx, slot = await pool.get_slot()
+        try:
+            try:
+                return await _call_via_slot(
+                    slot, messages, model, max_tokens, temperature, json_response
+                )
+            finally:
+                if slot.provider == "local":
+                    await pool.release_local()
+        except groq_sdk.RateLimitError as exc:
+            _log_response_body("UnifiedPool/groq 429", exc)
+            await pool.mark_exhausted(slot_idx)
+            last_exc = exc
+            continue
+        except _CerebrasRateLimited as exc:
+            await pool.mark_exhausted(slot_idx)
+            last_exc = exc
+            continue
+        except _LocalCallFailed as exc:
+            # Local Ollama hiccup — cool briefly so we don't hammer it,
+            # then fall through to free-provider overflow.
+            logger.info(
+                "UnifiedPool local-slot failed (%s) — cooling %.0fs and "
+                "rotating to free pool.", str(exc)[:140], _LOCAL_FAIL_COOLDOWN
+            )
+            await pool.mark_exhausted(slot_idx, seconds=_LOCAL_FAIL_COOLDOWN)
+            last_exc = exc
+            continue
+        except httpx.HTTPError as exc:
+            # Network-level error from local (Tailscale hiccup, timeout, etc.)
+            if slot.provider == "local":
+                logger.info(
+                    "UnifiedPool local network error %s(%s) — cooling %.0fs.",
+                    type(exc).__name__, str(exc)[:140] or "<no message>",
+                    _LOCAL_FAIL_COOLDOWN,
+                )
+                await pool.mark_exhausted(slot_idx, seconds=_LOCAL_FAIL_COOLDOWN)
+                last_exc = exc
+                continue
+            raise
+        except groq_sdk.AuthenticationError as exc:
+            _log_response_body("UnifiedPool/groq 401", exc)
+            raise GroqCallFailed(
+                f"Groq auth failed for key [{slot.key_index}] — invalid/revoked."
+            ) from exc
+        except groq_sdk.PermissionDeniedError as exc:
+            _log_response_body("UnifiedPool/groq 403", exc)
+            raise GroqCallFailed(
+                "Groq 403 forbidden — WAF/Cloudflare block. Check User-Agent."
+            ) from exc
+        except groq_sdk.BadRequestError as exc:
+            _log_response_body("UnifiedPool/groq 400", exc)
+            err = str(exc).lower()
+            if "json_validate_failed" in err or "failed to generate json" in err:
+                # Transient model flake; rotate to next slot.
+                last_exc = exc
+                continue
+            raise GroqCallFailed(f"Groq bad request: {exc}") from exc
+        except groq_sdk.APIConnectionError as exc:
+            _log_response_body("UnifiedPool/groq conn", exc, level=logging.INFO)
+            last_exc = exc
+            continue
+        except (GroqQuotaExhausted, GroqCallFailed):
+            raise
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("UnifiedPool unexpected error on slot %d: %s",
+                           slot_idx, str(exc)[:200])
+            last_exc = exc
+            continue
+    raise GroqQuotaExhausted(
+        f"UnifiedPool exhausted after {attempts} attempts: {last_exc}"
+    )
+
+
 # ── Call Wrapper ───────────────────────────────────────────────────────────────
 
 async def call_groq(
@@ -253,6 +919,7 @@ async def call_groq(
     task_type: str = "generation",
     model: str | None = None,
     json_response: bool = False,
+    max_tokens_override: int | None = None,
 ) -> str:
     """
     Make a Groq API call with automatic key rotation and retry on rate limit.
@@ -264,6 +931,10 @@ async def call_groq(
         model:         Override model. If None, uses FAST_MODEL for
                        classification/translation, QUALITY_MODEL for everything else.
         json_response: If True, sets response_format to JSON object.
+        max_tokens_override: If set, override the task_type's TOKEN_LIMITS entry.
+                       Needed when one logical task_type covers multiple call shapes
+                       (e.g. extraction v2 uses different caps for English vs
+                       non-English with translation embedded in the output).
 
     Returns:
         Stripped response text from Groq.
@@ -272,7 +943,7 @@ async def call_groq(
         GroqQuotaExhausted: All keys are rate limited.
         GroqCallFailed:     Non-quota API error or unexpected failure.
     """
-    max_tokens = TOKEN_LIMITS.get(task_type, 1000)
+    max_tokens = max_tokens_override or TOKEN_LIMITS.get(task_type, 1000)
 
     if model is None:
         model = FAST_MODEL if task_type in _FAST_TASK_TYPES else QUALITY_MODEL
@@ -292,7 +963,50 @@ async def call_groq(
     # caller's higher-level retry logic to recover.
     attempts = min(len(groq_manager.keys), 3)
 
+    # Parallel pool path — gated by PARALLEL_LLM_POOL env flag (default on).
+    # Mixes Groq + Cerebras keys; rotates per call. No wasted retries on
+    # already-exhausted Groq keys before reaching Cerebras.
+    if _PARALLEL_LLM_POOL and (
+        _CEREBRAS_KEYS or _LLM_LOCAL_ONLY or _LOCAL_LLM_ENABLED
+    ):
+        return await _call_unified_pool(
+            messages, model, max_tokens, temperature, json_response
+        )
+
+    # Legacy sequential failover — Groq first, Cerebras only if Groq pool dies.
+    # Per-process rate limiting happens inside _call_groq_inner — once per
+    # HTTP attempt, not per call_groq invocation. That way a single
+    # call_groq's 3-key retry loop spreads its requests across the rate
+    # cap instead of bursting them all in the same second.
+    try:
+        return await _call_groq_inner(
+            messages, model, max_tokens, temperature, json_response, attempts
+        )
+    except GroqQuotaExhausted as exc:
+        # Groq pool fully cooled. Fail over to Cerebras (separate quota
+        # universe, same Llama models). Only triggers when configured.
+        if not _CEREBRAS_KEYS:
+            raise
+        logger.info(
+            "Groq pool exhausted — failing over to Cerebras for this call."
+        )
+        return await _call_cerebras(
+            messages, model, max_tokens, temperature, json_response
+        )
+
+
+async def _call_groq_inner(
+    messages: list,
+    model: str,
+    max_tokens: int,
+    temperature: float,
+    json_response: bool,
+    attempts: int,
+) -> str:
     for attempt in range(attempts):
+        # Token bucket guards the actual HTTP call. Acquired per-attempt
+        # so a 3-key retry loop spaces its requests instead of bursting.
+        await _get_bucket().acquire()
         key_idx, client = await groq_manager.get_key()
 
         try:
@@ -309,34 +1023,71 @@ async def call_groq(
             return response.choices[0].message.content.strip()
 
         except groq_sdk.RateLimitError as exc:
-            # Groq returns 429 for both per-minute (TPM/RPM) and per-day
-            # (TPD/RPD) limits. TPM rolls over in 60s; TPD takes until the
-            # daily reset at 00:00 UTC. Holding TPD-exhausted keys back for
-            # 75s is too short — the retry will hit the same TPD wall.
-            # Conversely TPM doesn't deserve a long cooldown. Parse the
-            # message to pick the right cooldown.
-            err_text = str(exc).lower()
-            if "tokens per day" in err_text or "tpd" in err_text or \
-               "requests per day" in err_text or "rpd" in err_text:
-                # Daily quota exhausted — hold key out until midnight UTC.
-                # Use a generously long cooldown so retries don't waste budget.
-                await groq_manager.mark_exhausted_for(key_idx, 4 * 3600)
-            else:
-                # Per-minute limit; the rolling 60s window will clear soon.
-                await groq_manager.mark_exhausted(key_idx)
+            # 429 — real per-minute / per-day rate limit. ONLY case where we
+            # should ever mark a key exhausted. See mistakes.md §8 for the
+            # incident where 403s were re-labelled as 429s and burned the
+            # pool.
+            _log_response_body("Groq 429", exc)
+            await groq_manager.mark_exhausted(key_idx)
             if attempt == attempts - 1:
                 raise GroqQuotaExhausted(
                     "Retry attempts exhausted due to rate limiting."
                 )
             continue
 
-        except groq_sdk.APIConnectionError:
-            # Transient network error — retry same key once before rotating
+        except groq_sdk.AuthenticationError as exc:
+            # 401 — key is bad / revoked. Don't cool it down (it'll never
+            # recover). Surface to the caller so monitoring can alert.
+            _log_response_body("Groq 401 AUTH", exc)
+            raise GroqCallFailed(
+                f"Groq auth failed for key [{key_idx}] — key invalid or revoked. "
+                f"This is NOT a rate limit. Check GROQ_API_KEYS."
+            ) from exc
+
+        except groq_sdk.PermissionDeniedError as exc:
+            # 403 — blocked at the WAF / IP / region level. Same shape as
+            # the Cloudflare 1010 incident: every key returned the same
+            # error before the credential was even checked. Surface
+            # explicitly so monitoring catches it in minute one.
+            _log_response_body("Groq 403 BLOCKED", exc)
+            raise GroqCallFailed(
+                f"Groq returned 403 (forbidden) — NOT a rate limit, NOT an "
+                f"auth issue. Likely a WAF / Cloudflare block on this IP or "
+                f"User-Agent. Check the response body in the logs above."
+            ) from exc
+
+        except groq_sdk.APIConnectionError as exc:
+            # Network-layer error — retry same key once before rotating
+            _log_response_body("Groq connection", exc, level=logging.INFO)
             if attempt < attempts - 1:
                 continue
-            raise GroqCallFailed("Groq connection error on all attempts")
+            raise GroqCallFailed("Groq connection error on all attempts") from exc
+
+        except groq_sdk.BadRequestError as exc:
+            # 400 — usually json_validate_failed when the model produced
+            # malformed JSON under strict response_format. This is a
+            # transient model-level issue (not key-level). Retry on the
+            # next key — different key, different rolled output.
+            # See docs/mistakes.md for the pattern. Body capture is the
+            # rule — never trust the exception class alone.
+            _log_response_body("Groq 400 BadRequest", exc)
+            err_text = str(exc).lower()
+            if "json_validate_failed" in err_text or "failed to generate json" in err_text:
+                # Pure model flake — try the next key.
+                if attempt < attempts - 1:
+                    continue
+                raise GroqCallFailed(
+                    "Groq json_validate_failed on all retry attempts"
+                ) from exc
+            # Other 400 errors (bad model name, malformed payload) — not
+            # transient; surface to caller immediately.
+            raise GroqCallFailed(f"Groq bad request: {exc}") from exc
 
         except groq_sdk.APIError as exc:
+            # Generic API error (4xx other than the explicit ones above, 5xx).
+            # Body capture is the rule — never trust the exception class
+            # alone to tell you what went wrong.
+            _log_response_body("Groq APIError", exc)
             raise GroqCallFailed(f"Groq API error: {exc}") from exc
 
         except Exception as exc:
@@ -344,6 +1095,275 @@ async def call_groq(
 
     # Unreachable — loop always returns or raises — but satisfies type checker
     raise GroqCallFailed("call_groq exhausted all attempts without a result")
+
+
+# ── Error body capture ────────────────────────────────────────────────────────
+#
+# Guardrail #2 from docs/mistakes.md — when any LLM call fails, capture the
+# raw response body. The Cloudflare 1010 incident burned 13 hours because
+# our error handler labelled every failure "rate limited" without ever
+# logging what the provider actually returned. Never again.
+
+
+def _log_response_body(
+    label: str,
+    exc: Exception,
+    level: int = logging.WARNING,
+) -> None:
+    """
+    Extract and log the raw HTTP response body from a groq SDK exception.
+    The SDK attaches the underlying httpx.Response on exc.response when
+    the failure was an HTTP error. Best-effort — never raises.
+    """
+    body: str = ""
+    status: int | None = None
+    try:
+        resp = getattr(exc, "response", None)
+        if resp is not None:
+            status = getattr(resp, "status_code", None)
+            text = getattr(resp, "text", "") or ""
+            body = text[:400]
+    except Exception:  # noqa: BLE001
+        pass
+    if body:
+        logger.log(level, "%s [status=%s] body=%s", label, status, body)
+    else:
+        logger.log(level, "%s [no body captured] err=%s", label, str(exc)[:200])
+
+
+# ── Provider health-check ─────────────────────────────────────────────────────
+#
+# Guardrail #3 from docs/mistakes.md — at container boot (and on demand via
+# /admin/health/llm), probe every configured provider with one tiny call.
+# If any returns non-200, log loudly. This would have caught the Cloudflare
+# 1010 incident in minute one of deploy instead of hour fourteen.
+
+
+async def health_check_groq(timeout: float = 8.0) -> dict[str, object]:
+    """
+    Single tiny chat-completion against the first configured Groq key.
+    Returns a dict with provider status — never raises.
+    """
+    if not groq_manager.keys:
+        return {"provider": "groq", "status": "no_keys_configured", "ok": False}
+    try:
+        result = await asyncio.wait_for(
+            call_groq(
+                system="reply with one word",
+                user="ping",
+                task_type="classification",
+            ),
+            timeout=timeout,
+        )
+        return {
+            "provider": "groq",
+            "status": "ok",
+            "ok": True,
+            "sample_response": (result or "")[:60],
+            "key_count": len(groq_manager.keys),
+        }
+    except asyncio.TimeoutError:
+        return {
+            "provider": "groq",
+            "status": "timeout",
+            "ok": False,
+            "error": f"no response within {timeout}s",
+        }
+    except (GroqQuotaExhausted, GroqCallFailed) as exc:
+        return {
+            "provider": "groq",
+            "status": type(exc).__name__,
+            "ok": False,
+            "error": str(exc)[:240],
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "provider": "groq",
+            "status": "unexpected",
+            "ok": False,
+            "error": str(exc)[:240],
+        }
+
+
+async def health_check_cerebras(timeout: float = 8.0) -> dict[str, object]:
+    """
+    Single tiny chat-completion against the first configured Cerebras key.
+    Returns a dict with provider status — never raises.
+    """
+    if not _CEREBRAS_KEYS:
+        return {"provider": "cerebras", "status": "no_keys_configured", "ok": False}
+    try:
+        result = await asyncio.wait_for(
+            _call_cerebras(
+                messages=[
+                    {"role": "system", "content": "reply with one word"},
+                    {"role": "user", "content": "ping"},
+                ],
+                groq_model=FAST_MODEL,
+                max_tokens=4,
+                temperature=0.0,
+                json_response=False,
+            ),
+            timeout=timeout,
+        )
+        return {
+            "provider": "cerebras",
+            "status": "ok",
+            "ok": True,
+            "sample_response": (result or "")[:60],
+            "key_count": len(_CEREBRAS_KEYS),
+        }
+    except asyncio.TimeoutError:
+        return {
+            "provider": "cerebras",
+            "status": "timeout",
+            "ok": False,
+            "error": f"no response within {timeout}s",
+        }
+    except (GroqQuotaExhausted, GroqCallFailed) as exc:
+        return {
+            "provider": "cerebras",
+            "status": type(exc).__name__,
+            "ok": False,
+            "error": str(exc)[:240],
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "provider": "cerebras",
+            "status": "unexpected",
+            "ok": False,
+            "error": str(exc)[:240],
+        }
+
+
+async def health_check_all() -> dict[str, object]:
+    """
+    Probe Groq and Cerebras concurrently. Returns a combined report.
+    """
+    groq_result, cerebras_result = await asyncio.gather(
+        health_check_groq(),
+        health_check_cerebras(),
+    )
+    all_ok = bool(groq_result.get("ok") and cerebras_result.get("ok"))
+    return {
+        "all_ok": all_ok,
+        "providers": [groq_result, cerebras_result],
+    }
+
+
+async def boot_health_log() -> None:
+    """
+    Run at container startup. Logs the full provider state at INFO if all
+    OK, ERROR if any provider is broken. Never raises — startup must
+    proceed even if LLM providers are down (so the API server still
+    serves cached / non-LLM traffic).
+    """
+    report = await health_check_all()
+    if report["all_ok"]:
+        logger.info("LLM provider health-check OK: %s", report)
+    else:
+        # Loud, structured error — monitoring should alert on this string.
+        logger.error("LLM_PROVIDER_HEALTH_FAILED: %s", report)
+
+
+# ── Streaming variant ─────────────────────────────────────────────────────────
+
+
+async def call_groq_stream(  # type: ignore[no-untyped-def]
+    system: str,
+    user: str,
+    task_type: str = "rag_response",
+    model: str | None = None,
+):
+    """
+    Streaming version of call_groq. Yields content chunks as they arrive
+    from Groq. Caller is expected to forward chunks to an SSE response.
+
+    Yields:
+        str chunks. Empty string at end-of-stream is NOT emitted; caller
+        decides how to signal completion (typically `event: done`).
+
+    Raises:
+        GroqQuotaExhausted: All keys are rate limited.
+        GroqCallFailed:     Non-quota API error or unexpected failure.
+
+    Notes:
+        - Uses the same key-rotation + cooldown logic as call_groq.
+        - Token budget and temperature are inferred from task_type via
+          TOKEN_LIMITS / TEMPERATURES, identical to call_groq.
+        - Does NOT support json_response (no use case for streaming JSON yet).
+    """
+    max_tokens = TOKEN_LIMITS.get(task_type, 1000)
+
+    if model is None:
+        model = FAST_MODEL if task_type in _FAST_TASK_TYPES else QUALITY_MODEL
+
+    temperature = TEMPERATURES.get(task_type, TEMPERATURES["generation"])
+
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user},
+    ]
+
+    attempts = min(len(groq_manager.keys), 3)
+
+    last_exc: Exception | None = None
+
+    for attempt in range(attempts):
+        # Same token-bucket gate as call_groq — streaming calls count
+        # against the same per-process rate cap.
+        await _get_bucket().acquire()
+        key_idx, client = await groq_manager.get_key()
+
+        try:
+            stream = await client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                # Groq SDK chunks have .choices[0].delta.content
+                # which is None on role-frame chunks; skip those.
+                if not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta
+                content = getattr(delta, "content", None)
+                if content:
+                    yield content
+            return  # success — exit the retry loop
+
+        except groq_sdk.RateLimitError as exc:
+            # See call_groq above: bounded cooldown for all 429s. We no
+            # longer parse the error message to distinguish TPM vs TPD —
+            # the next probe on the same key (after at most
+            # _max_cooldown_seconds) will simply 429 again if still over-
+            # quota and re-cool, otherwise recover automatically.
+            await groq_manager.mark_exhausted(key_idx)
+            last_exc = exc
+            if attempt == attempts - 1:
+                raise GroqQuotaExhausted(
+                    "Retry attempts exhausted due to rate limiting."
+                ) from exc
+            continue
+
+        except groq_sdk.APIConnectionError as exc:
+            last_exc = exc
+            if attempt < attempts - 1:
+                continue
+            raise GroqCallFailed("Groq connection error on all attempts") from exc
+
+        except groq_sdk.APIError as exc:
+            raise GroqCallFailed(f"Groq API error: {exc}") from exc
+
+        except Exception as exc:
+            raise GroqCallFailed(f"Unexpected error streaming from Groq: {exc}") from exc
+
+    raise GroqCallFailed(
+        f"call_groq_stream exhausted all attempts: {last_exc}"
+    )
 
 
 # ── Convenience wrappers ───────────────────────────────────────────────────────

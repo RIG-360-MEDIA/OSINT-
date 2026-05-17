@@ -44,7 +44,7 @@
   --font-display: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
   --font-mono:    'DM Mono', ui-monospace, 'Cascadia Code', monospace;
 
-  --topbar-h:    86px;
+  --topbar-h:    96px;
   --dateline-h:  36px;
   --masthead-h:  122px; /* topbar + dateline */
 
@@ -680,6 +680,243 @@ body::before {
 /* Selection */
 ::selection { background: var(--rig-gold); color: var(--rig-paper); }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   ONYX THEME — futuristic dark mode for /coverage and future migrated pages.
+   Opt-in via data-theme="onyx" on the page wrapper (not the <html> root).
+   Other pages keep their parchment/light/night theme.
+   ────────────────────────────────────────────────────────────────────────── */
+[data-theme='onyx'] {
+  /* Surfaces */
+  --onyx-bg:           #000000;
+  --onyx-bg-2:         #050505;
+  --onyx-bg-3:         #0A0A0A;
+  --onyx-panel:        #000000;
+
+  /* Text — cooler, classier, more readable than the warm cream of v1.
+     "Bone" is now a near-white #ECEEF1 with a slight cool tint. */
+  --onyx-bone:         #ECEEF1;
+  --onyx-bone-2:       #A8ADB8;
+  --onyx-dim:          #5A6070;
+  --onyx-dim-2:        #2E3340;
+
+  /* Accents — RED ONLY (cinematic redesign pass).
+     Strict three-colour discipline: black surfaces, red accents, white text.
+     Legacy --onyx-cyan* and --onyx-live tokens remain defined but aliased
+     to red so existing components flip palette without touching their code.
+     The DEVELOPING band variant (which used cyan to differentiate from
+     red BREAKING) handles its own bone/white treatment in BreakingBand.tsx. */
+  --onyx-red:          #FF2D2D;
+  --onyx-red-soft:     rgba(255, 45, 45, 0.55);
+  --onyx-red-hair:     rgba(255, 45, 45, 0.30);
+  --onyx-cyan:         var(--onyx-red);
+  --onyx-cyan-soft:    var(--onyx-red-hair);
+  --onyx-cyan-glow:    rgba(255, 45, 45, 0.45);
+  --onyx-live:         var(--onyx-red);
+
+  /* Rules */
+  --onyx-rule:         rgba(255, 45, 45, 0.55);
+  --onyx-rule-hair:    rgba(255, 45, 45, 0.20);
+  --onyx-rule-dim:     rgba(236, 238, 241, 0.08);
+
+  /* Fonts — techie + classy: Space Grotesk for display, Inter for body
+     copy (highly readable), JetBrains Mono for labels and timestamps.
+     `--onyx-italic` is repointed to Inter so existing components that
+     applied font-style: italic still render in a clean readable face. */
+  --onyx-display:  'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --onyx-body:     'Inter', system-ui, -apple-system, sans-serif;
+  --onyx-mono:     'JetBrains Mono', 'DM Mono', ui-monospace, monospace;
+  --onyx-italic:   'Inter', system-ui, sans-serif;
+
+  color-scheme: dark;
+}
+
+/* When applied to a page wrapper, override page-level chrome */
+[data-theme='onyx'] {
+  background: var(--onyx-bg);
+  color: var(--onyx-bone);
+  font-family: var(--onyx-body);
+}
+
+/* ── Onyx typography helpers ─────────────────────────────────────────────── */
+.onyx-display {
+  font-family: var(--onyx-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--onyx-bone);
+}
+.onyx-display-tight { letter-spacing: -0.035em; }
+
+.onyx-mono {
+  font-family: var(--onyx-mono);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--onyx-dim);
+}
+.onyx-mono-bone { color: var(--onyx-bone-2); }
+
+.onyx-italic {
+  font-family: var(--onyx-italic);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--onyx-bone-2);
+  line-height: 1.5;
+}
+
+.onyx-hairline { border: none; border-top: 1px solid var(--onyx-red); }
+.onyx-hairline-dim { border: none; border-top: 1px solid var(--onyx-rule-hair); }
+
+/* ── Onyx animations ─────────────────────────────────────────────────────── */
+@keyframes onyx-scanline {
+  0%   { top: -2px; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+@keyframes onyx-flicker {
+  0%, 100%   { opacity: 1; }
+  47%, 49%   { opacity: 1; }
+  48%        { opacity: 0.85; }
+  72%        { opacity: 0.92; }
+}
+@keyframes onyx-pulse-cyan {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+@keyframes onyx-grain-shift {
+  0%   { transform: translate(0, 0); }
+  10%  { transform: translate(-2%, -3%); }
+  20%  { transform: translate(-4%, 2%); }
+  30%  { transform: translate(2%, -4%); }
+  40%  { transform: translate(-1%, 5%); }
+  50%  { transform: translate(-3%, -2%); }
+  60%  { transform: translate(3%, 1%); }
+  70%  { transform: translate(-3%, 3%); }
+  80%  { transform: translate(2%, -4%); }
+  90%  { transform: translate(-4%, -1%); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes onyx-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes onyx-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes onyx-counter-flicker {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+@keyframes onyx-blink {
+  0%, 49%, 100% { opacity: 1; }
+  50%, 99%      { opacity: 0; }
+}
+
+/* ── Onyx grain — disabled. Component still mounts but renders nothing. */
+.onyx-grain {
+  display: none !important;
+}
+
+/* ── Onyx scanline (sweep through hovered tile) ──────────────────────────── */
+.onyx-scanline {
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--onyx-cyan) 50%, transparent 100%);
+  box-shadow: 0 0 14px var(--onyx-cyan-glow);
+  pointer-events: none;
+  opacity: 0;
+}
+.onyx-panel:hover .onyx-scanline {
+  animation: onyx-scanline 1.6s cubic-bezier(0.55, 0, 0.45, 1) forwards;
+}
+
+/* ── Onyx panel base ─────────────────────────────────────────────────────── */
+.onyx-panel {
+  position: relative;
+  background: var(--onyx-panel);
+  border: 1px solid var(--onyx-red-hair);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.onyx-panel:hover {
+  border-color: var(--onyx-cyan);
+  box-shadow:
+    0 0 0 1px var(--onyx-cyan-soft),
+    0 0 32px -4px var(--onyx-cyan-soft),
+    inset 0 0 60px -20px var(--onyx-cyan-soft);
+  transform: translateY(-2px);
+}
+
+/* Cursor-tracking radial spotlight on hover */
+.onyx-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    240px circle at var(--mx, 50%) var(--my, 50%),
+    var(--onyx-cyan-soft) 0%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  z-index: 1;
+}
+.onyx-panel:hover::before { opacity: 1; }
+
+/* ── Onyx ticker ────────────────────────────────────────────────────────── */
+.onyx-ticker {
+  display: flex;
+  width: max-content;
+  animation: onyx-marquee 80s linear infinite;
+}
+.onyx-ticker:hover { animation-play-state: paused; }
+
+/* ── Onyx live dot ──────────────────────────────────────────────────────── */
+.onyx-live-dot {
+  width: 6px; height: 6px;
+  background: var(--onyx-live);
+  box-shadow: 0 0 8px var(--onyx-live);
+  animation: onyx-pulse-cyan 1.4s ease-in-out infinite;
+}
+
+/* ── Onyx entrance stagger ──────────────────────────────────────────────── */
+.onyx-fade-up { animation: onyx-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.onyx-flicker { animation: onyx-flicker 4s linear infinite; }
+
+/* Panel "ENTER →" affordance — wakes up on parent hover */
+.onyx-panel-enter-label,
+.onyx-panel-enter-arrow {
+  transition: color 0.4s ease, transform 0.4s ease;
+}
+.onyx-panel:hover .onyx-panel-enter-label,
+.onyx-panel:hover .onyx-panel-enter-arrow {
+  color: var(--onyx-bone);
+}
+.onyx-panel:hover .onyx-panel-enter-arrow {
+  transform: translateX(6px);
+  display: inline-block;
+}
+
+/* ── Onyx selection ─────────────────────────────────────────────────────── */
+[data-theme='onyx'] ::selection {
+  background: var(--onyx-cyan);
+  color: var(--onyx-bg);
+}
+
+[data-theme='onyx'] ::-webkit-scrollbar       { width: 6px; height: 6px; }
+[data-theme='onyx'] ::-webkit-scrollbar-track { background: transparent; }
+[data-theme='onyx'] ::-webkit-scrollbar-thumb { background: var(--onyx-rule-hair); }
+[data-theme='onyx'] ::-webkit-scrollbar-thumb:hover { background: var(--onyx-red); }
+
+/* Disable parchment body grain inside onyx scope */
+[data-theme='onyx']::before { display: none; }
+
+
 /* ── Topbar responsive helpers ───────────────────────────────────────────
    Hide low-priority chips at narrower viewports so the high-signal ones
    (escalating, brief-ready) and the nav links never overlap. Hide the
@@ -694,3 +931,27 @@ body::before {
   .rig-chip-mq-mid  { display: none; }
 }
 header > nav::-webkit-scrollbar { display: none; }
+
+
+/* ── Cinematic-redesign animations ───────────────────────────────────────
+   onyx-drift-glow — slow parallax for ambient red glow at top-right of page.
+   Converts otherwise-empty header background into "between-frame quiet". */
+@keyframes onyx-drift-glow {
+  0%, 100% { transform: translate(0, 0)         scale(1);    opacity: 1;   }
+  25%      { transform: translate(-60px, 30px)  scale(1.04); opacity: 0.85; }
+  50%      { transform: translate(-100px, -20px) scale(0.96); opacity: 1.05; }
+  75%      { transform: translate(-30px, -50px) scale(1.02); opacity: 0.9;  }
+}
+
+/* onyx-flicker-text — used by BREAKING / DEVELOPING indicator lights */
+@keyframes onyx-flicker-text {
+  0%, 92%, 100% { opacity: 1; }
+  93%, 95%      { opacity: 0.4; }
+  94%           { opacity: 1; }
+}
+
+/* onyx-hud-pulse — corner-bracket faint breathing for cinematic alerts */
+@keyframes onyx-hud-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1;    }
+}

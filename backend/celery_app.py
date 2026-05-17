@@ -67,6 +67,21 @@ app = Celery(
         "backend.tasks.collectors.tgspdcl_power_task",
         "backend.tasks.collectors.welfare_coverage_task",
         "backend.tasks.collectors.acled_sink_task",
+        # Daily LLM-generated summaries for the /coverage hub panels
+        "backend.tasks.coverage_summary_task",
+        # /coverage/articles rebuild — RAG-integrated analyst surface tasks
+        "backend.tasks.coverage",
+        "backend.tasks.coverage.user_cards_task",
+        # Note: breaking_task is on a different branch and not deployed here.
+        "backend.tasks.coverage.contradictions_task",
+        "backend.tasks.coverage.top_stories_task",
+        "backend.tasks.coverage.coverage_gaps_task",
+        "backend.tasks.coverage.notifications_task",
+        "backend.tasks.coverage.claims_quotes_task",
+        # Periodic byline backfill — runs every 6h, HTML-only, no LLM cost
+        "backend.tasks.substrate.byline_periodic_task",
+        # Periodic tweet enrichment — catches v1→v2 upgrades + retries
+        "backend.tasks.substrate.tweet_periodic_task",
     ],
 )
 
@@ -112,6 +127,20 @@ app.config_from_object(
             "tasks.auto_promote_subjects": {"queue": "social"},
             "tasks.aggregate_social_sentiment_daily": {"queue": "nlp"},
             "tasks.collect_newspapers": {"queue": "documents"},
+            "tasks.refresh_coverage_summaries": {"queue": "nlp"},
+            # /coverage/articles rebuild
+            "tasks.refresh_user_cards": {"queue": "nlp"},
+            "tasks.retry_unrefreshed_cards": {"queue": "nlp"},
+            "tasks.spawn_sub_cards": {"queue": "nlp"},
+            "tasks.detect_breaking_events": {"queue": "nlp"},
+            "tasks.classify_pending_breaking_clusters": {"queue": "nlp"},
+            "tasks.refresh_contradictions": {"queue": "nlp"},
+            "tasks.refresh_top_stories": {"queue": "nlp"},
+            "tasks.refresh_coverage_gaps": {"queue": "nlp"},
+            "tasks.evaluate_notification_rules": {"queue": "nlp"},
+            "tasks.extract_claims_quotes_for_article": {"queue": "nlp"},
+            "tasks.extract_pending_claims_quotes": {"queue": "nlp"},
+            "tasks.translate_pending_quotes": {"queue": "nlp"},
             # CM Page tasks. Heavy LLM work routes to `nlp`; cheap
             # aggregation/refresh work routes to `social` to avoid
             # competing with article NLP for the nlp pool.
@@ -124,6 +153,10 @@ app.config_from_object(
             "tasks.cm.refresh_risk_window": {"queue": "nlp"},
             "tasks.cm.backfill_newspaper_sentiment": {"queue": "nlp"},
             "tasks.cm.compute_exploitation_index": {"queue": "social"},
+            # Byline backfill — pure HTTP fetching, light parsing, no LLM.
+            # Routes to collectors so it shares I/O with HTML scraping.
+            "tasks.backfill_bylines_periodic": {"queue": "collectors"},
+            "tasks.backfill_tweets_periodic": {"queue": "collectors"},
             "tasks.cm.refresh_voice_share": {"queue": "social"},
             "tasks.cm.refresh_issue_hourly": {"queue": "social"},
             "tasks.cm.refresh_constituency_heatmap": {"queue": "social"},
@@ -157,6 +190,22 @@ app.config_from_object(
             },
             "collect-html-every-6-hours": {
                 "task": "tasks.collect_html",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "collectors"},
+            },
+            # Periodic byline backfill — every 6h, processes up to 1500
+            # extraction_version=2 articles missing byline per tick.
+            # HTML-only extraction (JSON-LD → meta → CSS selectors),
+            # zero LLM cost. Naturally drains as articles get filled in.
+            "backfill-bylines-every-6h": {
+                "task": "tasks.backfill_bylines_periodic",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "collectors"},
+            },
+            # Periodic tweet content enrichment — every 6h, free oEmbed,
+            # catches v1→v2 upgrades and any transient failures.
+            "backfill-tweets-every-6h": {
+                "task": "tasks.backfill_tweets_periodic",
                 "schedule": timedelta(hours=6),
                 "options": {"queue": "collectors"},
             },
@@ -322,6 +371,85 @@ app.config_from_object(
                 # long RSS scrapes) onto `documents` queue (2 workers,
                 # dedicated for heavy I/O like newspapers + govt PDFs).
                 "options": {"queue": "documents"},
+            },
+            "refresh-coverage-summaries-daily-0415-utc": {
+                # Regenerates the 2-3 line summary shown beneath each
+                # panel on the /coverage hub. Five small Groq calls
+                # (FAST_MODEL, ~150 tokens each), all under 30 s.
+                # Slotted at 04:15 UTC so it runs after the night's
+                # collection is settled but before the 04:30 newspaper
+                # window. See backend/tasks/coverage_summary_task.py.
+                "task": "tasks.refresh_coverage_summaries",
+                "schedule": crontab(hour=4, minute=15),
+                "options": {"queue": "nlp"},
+            },
+            # ── /coverage/articles rebuild — analytics tasks ──
+            # All gated by per-task FEATURE_* env flags so disabling
+            # is a config flip, no beat reload needed.
+            "refresh-user-cards-daily-0130-utc": {
+                "task": "tasks.refresh_user_cards",
+                "schedule": crontab(hour=1, minute=30),
+                "options": {"queue": "nlp"},
+            },
+            # Fast-retry driver — picks up cards that were created
+            # during a Groq-quota dip and never got their summary
+            # generated. Runs every 5 min, capped at 5 cards/fire.
+            "retry-unrefreshed-user-cards-every-5-min": {
+                "task": "tasks.retry_unrefreshed_cards",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
+            },
+            "detect-breaking-events-every-15-min": {
+                "task": "tasks.detect_breaking_events",
+                "schedule": timedelta(minutes=15),
+                "options": {"queue": "nlp"},
+            },
+            # Backfill classification on clusters whose Stage-1 Groq call
+            # failed at detection time (quota contention with extraction).
+            # Without this, real Telangana / India clusters silently
+            # disappear whenever Groq is throttled.
+            "classify-pending-breaking-every-5-min": {
+                "task": "tasks.classify_pending_breaking_clusters",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
+            },
+            # Translates pre-existing non-English quotes to English so
+            # the Recent Quotes panel renders readable text. Quotes
+            # extracted post-migration-049 already include translations
+            # at extract time; this driver only catches the legacy backlog.
+            "translate-pending-quotes-every-5-min": {
+                "task": "tasks.translate_pending_quotes",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
+            },
+            "refresh-contradictions-daily-0430-utc": {
+                "task": "tasks.refresh_contradictions",
+                "schedule": crontab(hour=4, minute=30),
+                "options": {"queue": "nlp"},
+            },
+            "refresh-top-stories-every-2h": {
+                "task": "tasks.refresh_top_stories",
+                "schedule": timedelta(hours=2),
+                "options": {"queue": "nlp"},
+            },
+            "refresh-coverage-gaps-daily-0500-utc": {
+                "task": "tasks.refresh_coverage_gaps",
+                "schedule": crontab(hour=5, minute=0),
+                "options": {"queue": "nlp"},
+            },
+            "evaluate-notification-rules-every-15-min": {
+                "task": "tasks.evaluate_notification_rules",
+                "schedule": timedelta(minutes=15),
+                "options": {"queue": "nlp"},
+            },
+            "extract-pending-claims-quotes-every-5-min": {
+                # Foundational extraction driver. process_nlp_batch never
+                # fires per-article extraction itself, so without this the
+                # claims_extracted=FALSE backlog grows forever. Scans the
+                # unextracted pile, queues 50 articles per fire. Always on.
+                "task": "tasks.extract_pending_claims_quotes",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
             },
             # ── CM Page political-intelligence schedule ──
             #

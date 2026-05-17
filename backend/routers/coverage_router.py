@@ -555,3 +555,158 @@ async def get_article(
             "geo_multiplier": float(row.geo_multiplier_applied or 1.0),
             "sentiment_for_user": row.sentiment_for_user or "NEUTRAL",
         }
+
+
+# ── /coverage hub endpoints ───────────────────────────────────────────────────
+#
+# These power the new /coverage *hub* page (the five-panel landing). Each
+# panel needs:
+#   - total indexed count
+#   - count added in last 24h
+#   - latest item (title + collected_at)
+#   - LLM-generated daily summary (read from coverage_panel_summaries)
+#
+# Refresh of the summary itself happens in tasks.refresh_coverage_summaries
+# (Celery beat, daily at 04:15 UTC). This endpoint just reads the cached
+# row plus computes counts/latest live.
+#
+# Ticker is a separate endpoint that returns the freshest single item from
+# each of the five streams, polled every 30s by the frontend marquee.
+
+# Per-pillar table & column map. Kept here (single source of truth) so the
+# panels and ticker queries stay aligned and the SQL stays readable.
+_PILLAR_QUERIES: dict[str, dict[str, str]] = {
+    "articles": {
+        "table":      "articles",
+        "title_col":  "title",
+        "where":      "is_duplicate IS NOT TRUE",
+    },
+    "newspaper": {
+        "table":      "newspaper_clippings",
+        "title_col":  "headline",
+        "where":      "headline IS NOT NULL",
+    },
+    "tv": {
+        "table":      "youtube_clips",
+        "title_col":  "video_title",
+        "where":      "TRUE",
+    },
+    "social": {
+        "table":      "social_posts",
+        # post_text can be long; truncate at SQL layer to keep payload small
+        "title_col":  "LEFT(post_text, 180)",
+        "where":      "TRUE",
+    },
+    "govt": {
+        "table":      "govt_documents",
+        "title_col":  "title",
+        "where":      "TRUE",
+    },
+}
+
+
+@coverage_router.get("/panels")
+async def get_coverage_panels(
+    _user: dict = Depends(get_current_principal),
+) -> dict:
+    """
+    Return the five panel objects for the /coverage hub.
+
+    Each panel: { slug, total_count, new_count, latest, summary }
+
+    Counts and latest are computed live; summary is read from the
+    coverage_panel_summaries cache table (refreshed daily by cron).
+    """
+    panels: list[dict] = []
+    async with get_db() as db:
+        # Fetch all summaries in one shot
+        summaries_result = await db.execute(
+            text("SELECT slug, summary FROM coverage_panel_summaries")
+        )
+        summaries: dict[str, str] = {
+            row.slug: row.summary for row in summaries_result.fetchall()
+        }
+
+        # Per-pillar count + latest in parallel-ish (sequential under one
+        # session but each query is small and uses indexed columns)
+        for slug, cfg in _PILLAR_QUERIES.items():
+            stats_q = text(f"""
+                SELECT
+                  COUNT(*) AS total_count,
+                  COUNT(*) FILTER (
+                    WHERE collected_at > NOW() - INTERVAL '24 hours'
+                  ) AS new_count
+                FROM {cfg['table']}
+                WHERE {cfg['where']}
+            """)
+            latest_q = text(f"""
+                SELECT
+                  {cfg['title_col']} AS title,
+                  collected_at
+                FROM {cfg['table']}
+                WHERE {cfg['where']}
+                  AND collected_at IS NOT NULL
+                ORDER BY collected_at DESC
+                LIMIT 1
+            """)
+            stats_row = (await db.execute(stats_q)).fetchone()
+            latest_row = (await db.execute(latest_q)).fetchone()
+
+            panels.append({
+                "slug": slug,
+                "total_count": int(stats_row.total_count) if stats_row else 0,
+                "new_count":   int(stats_row.new_count)   if stats_row else 0,
+                "latest": (
+                    {
+                        "title":         (latest_row.title or "")[:240],
+                        "collected_at":  latest_row.collected_at.isoformat()
+                                         if latest_row.collected_at else None,
+                    }
+                    if latest_row and latest_row.title else None
+                ),
+                "summary": summaries.get(slug, ""),
+            })
+
+    return {"panels": panels}
+
+
+@coverage_router.get("/ticker")
+async def get_coverage_ticker(
+    _user: dict = Depends(get_current_principal),
+) -> dict:
+    """
+    Return the single freshest item from each of the five streams.
+
+    Used by the marquee on /coverage. Items are merged client-side into
+    one continuous scroll. Kept dead simple — each stream is one
+    LIMIT 1 lookup against an indexed `collected_at`.
+    """
+    items: list[dict] = []
+    async with get_db() as db:
+        for slug, cfg in _PILLAR_QUERIES.items():
+            q = text(f"""
+                SELECT
+                  {cfg['title_col']} AS title,
+                  collected_at
+                FROM {cfg['table']}
+                WHERE {cfg['where']}
+                  AND collected_at IS NOT NULL
+                ORDER BY collected_at DESC
+                LIMIT 1
+            """)
+            row = (await db.execute(q)).fetchone()
+            if row and row.title:
+                items.append({
+                    "slug":          slug,
+                    "title":         row.title[:200],
+                    "collected_at":  row.collected_at.isoformat()
+                                     if row.collected_at else None,
+                })
+
+    # Sort newest-first so the marquee leads with what just arrived
+    items.sort(
+        key=lambda it: it.get("collected_at") or "",
+        reverse=True,
+    )
+
+    return {"items": items}

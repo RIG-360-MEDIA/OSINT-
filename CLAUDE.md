@@ -3,6 +3,21 @@
 Project context for any Claude session working in this repo. Read this
 before touching infrastructure or making assumptions about how things run.
 
+## New session? Read docs/onboarding/00-README.md first.
+
+A complete onboarding folder lives at `docs/onboarding/` (11 numbered
+files, ~5-10 minutes of reading). It covers the architecture, current
+state, known issues, future plans, and operational procedures in depth.
+Start there and come back here when you need the higher-level rules
+below. Quick links:
+
+- [docs/onboarding/00-README.md](docs/onboarding/00-README.md) — entry point.
+- [docs/onboarding/01-architecture.md](docs/onboarding/01-architecture.md) — system topology.
+- [docs/onboarding/02-substrate-pipeline.md](docs/onboarding/02-substrate-pipeline.md) — v3 extraction.
+- [docs/onboarding/05-llm-infrastructure.md](docs/onboarding/05-llm-infrastructure.md) — the LLM pool.
+- [docs/onboarding/06-operations-runbook.md](docs/onboarding/06-operations-runbook.md) — common ops tasks.
+- [docs/onboarding/07-known-issues.md](docs/onboarding/07-known-issues.md) — current frustrations.
+
 ## What this project is
 
 RIG Surveillance — a multi-pillar intelligence aggregator. Backend is a

@@ -17,15 +17,12 @@ interface NavLink {
 // order shown in the nav. The slug *must* match a value in
 // `KNOWN_PAGES` in `backend/auth/auth_middleware.py`.
 const BASE_NAV_LINKS: ReadonlyArray<NavLink> = [
-  { path: '/brief',        label: 'The Brief',       slug: 'brief' },
-  { path: '/coverage',     label: 'Articles',        slug: 'coverage' },
-  { path: '/threads',      label: 'Threads',         slug: 'threads' },
-  { path: '/clips',        label: 'TV',              slug: 'clips' },
-  { path: '/cuttings',     label: 'Newspaper',       slug: 'cuttings' },
-  { path: '/signals',      label: 'Social Media',    slug: 'signals' },
-  { path: '/documents',    label: 'Govt Docs',       slug: 'documents' },
-  { path: '/analyst',      label: 'Chat System',     slug: 'analyst' },
-  { path: '/worldmonitor', label: 'Live Monitoring', slug: 'worldmonitor' },
+  // Top nav intentionally minimal — Brief is the home, Coverage is the
+  // hub for all five pillars (Articles, TV, Newspaper, Social, Govt Docs).
+  // Other rooms (threads, analyst, worldmonitor) reachable via direct URL
+  // or future entry points; not exposed in the main nav.
+  { path: '/brief',    label: 'The Brief', slug: 'brief' },
+  { path: '/coverage', label: 'Coverage',  slug: 'coverage' },
 ]
 
 // `slug` here is unused for routing (admin is super_admin-only at the
@@ -132,10 +129,10 @@ export default function Navigation() {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0px',
+          gap: '36px',
           flex: 1,
           minWidth: 0,
-          justifyContent: 'space-between',
+          justifyContent: 'flex-start',
           marginRight: '12px',
           flexWrap: 'nowrap',
         }}

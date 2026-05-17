@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Oxblood + Gunmetal + Brass — full power</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Inter:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    background: #07050A;
+    color: #ECEEF1;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ─── Stage = the full background ────────────────────────────── */
+  .stage {
+    position: relative;
+    min-height: 100vh;
+    overflow: hidden;
+    /* Three layered ambient washes on warm near-black */
+    background:
+      /* center deep-wood wash for richness underneath */
+      radial-gradient(ellipse 1200px 900px at 50% 50%, rgba(80,40,18,0.16), transparent 70%),
+      /* oxblood spotlight, top-right */
+      radial-gradient(ellipse 1400px 1100px at 100% -5%, rgba(170,75,32,0.28), transparent 55%),
+      /* brass glint, just below the oxblood centre */
+      radial-gradient(ellipse 600px 400px at 78% 18%, rgba(212,156,82,0.13), transparent 60%),
+      /* gunmetal counter-light from bottom-left */
+      radial-gradient(ellipse 1300px 1000px at -5% 110%, rgba(100,118,140,0.20), transparent 55%),
+      /* aurora hint of plum smoke up-left, anchors the warm/cool tension */
+      radial-gradient(ellipse 700px 500px at 8% 12%, rgba(90,50,80,0.10), transparent 60%),
+      /* solid base */
+      #08060A;
+  }
+
+  /* Layered scanline + grain on top so the bg has *material* */
+  .stage::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent 2px,
+      rgba(255,255,255,0.012) 3px, transparent 4px
+    );
+  }
+  .stage::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    opacity: 0.10; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.75'/></svg>");
+  }
+
+  /* Strong edge vignette to seal the film frame */
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.65) 100%);
+  }
+
+  /* drifting glow for ambient motion (very slow, sub-perceptible) */
+  .drift-warm {
+    position: absolute; top: -200px; right: -200px;
+    width: 800px; height: 800px; z-index: 0;
+    background: radial-gradient(closest-side, rgba(170,75,32,0.12), transparent 70%);
+    filter: blur(40px);
+    animation: drift 60s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  .drift-cool {
+    position: absolute; bottom: -200px; left: -200px;
+    width: 800px; height: 800px; z-index: 0;
+    background: radial-gradient(closest-side, rgba(100,118,140,0.10), transparent 70%);
+    filter: blur(40px);
+    animation: drift 80s ease-in-out infinite alternate-reverse;
+    pointer-events: none;
+  }
+  @keyframes drift {
+    0%   { transform: translate3d(0,0,0); }
+    100% { transform: translate3d(-180px,120px,0); }
+  }
+
+  /* ─── Content ────────────────────────────────────────────────── */
+  .container {
+    position: relative; z-index: 3;
+    max-width: 1320px; margin: 0 auto;
+    padding: 64px 60px 80px;
+  }
+
+  .head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-bottom: 22px;
+    border-bottom: 1px solid rgba(212,156,82,0.16);
+    margin-bottom: 42px;
+  }
+  .brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500; font-size: 13px;
+    letter-spacing: 0.46em; text-transform: uppercase;
+    color: #D49C52;
+  }
+  .head-right {
+    display: flex; gap: 22px; align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    color: #A8ADB8;
+    text-transform: uppercase;
+  }
+  .head-right .pip {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #FF2D2D; box-shadow: 0 0 8px #FF2D2D;
+    display: inline-block; margin-right: 8px; vertical-align: middle;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: 0.45; transform: scale(0.85); }
+  }
+  .head-right b { color: #ECEEF1; font-weight: 500; }
+
+  .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: #D49C52;
+    margin-bottom: 14px;
+  }
+
+  /* reading row */
+  .reading-row {
+    display: grid; grid-template-columns: 1fr 260px;
+    gap: 56px; align-items: end;
+    margin-bottom: 22px;
+  }
+  .reading {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: clamp(32px, 3vw, 46px);
+    line-height: 1.12; letter-spacing: -0.018em;
+    color: #F1ECE2;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+  }
+  .reading u { text-decoration: none; border-bottom: 1px solid #FF2D2D; padding-bottom: 2px; }
+  .editor {
+    margin: 18px 0 0;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 16px; line-height: 1.6;
+    color: #C4B19A;
+    max-width: 68ch;
+  }
+
+  /* exposure */
+  .exposure {
+    display: grid; grid-template-columns: 70px 1fr;
+    gap: 16px; align-items: end;
+    min-height: 180px;
+  }
+  .merc {
+    position: relative; width: 70px; height: 160px;
+  }
+  .merc .track {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    top: 0; bottom: 0; width: 2px;
+    background: rgba(255,255,255,0.08);
+  }
+  .merc .fill {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 6px; bottom: 0; height: 67%;
+    background: linear-gradient(0deg, #FF2D2D, rgba(255,45,45,0.55));
+    box-shadow: 0 0 24px #FF2D2D, 0 0 8px #FF2D2D;
+  }
+  .merc::after {
+    content: ''; position: absolute; left: -4px; right: -4px;
+    bottom: calc(67% - 6px); height: 14px;
+    background: radial-gradient(ellipse at center, rgba(255,45,45,0.5), transparent 70%);
+    filter: blur(4px);
+    pointer-events: none;
+  }
+  .exp-num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 64px;
+    line-height: 0.88; letter-spacing: -0.04em;
+    color: #F1ECE2;
+    text-shadow: 0 0 24px rgba(255,45,45,0.18);
+  }
+  .exp-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.3em;
+    color: #C4B19A; text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .exp-meta b { color: #FF2D2D; }
+  .exp-30d {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.32em;
+    color: #8A7E6E; text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ─── Cards ──────────────────────────────────────────────────── */
+  .rule {
+    position: relative; height: 0;
+    border-top: 1px solid rgba(212,156,82,0.20);
+    margin: 48px 0 22px;
+  }
+  .rule span {
+    position: absolute; top: -8px; left: 0;
+    background: #08060A;
+    padding-right: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.42em;
+    color: #D49C52; text-transform: uppercase;
+  }
+  .rule span::before { content: '/ '; color: #5A4A36; }
+
+  .cards-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+
+  .card {
+    position: relative;
+    padding: 20px 20px 18px;
+    background:
+      linear-gradient(135deg, rgba(80,42,22,0.55) 0%, rgba(12,9,8,0.92) 70%),
+      linear-gradient(180deg, rgba(24,18,14,0.95), rgba(8,6,5,0.95));
+    border: 1px solid rgba(212,156,82,0.22);
+    box-shadow:
+      inset 0 1px 0 rgba(212,156,82,0.10),
+      inset 0 0 0 1px rgba(0,0,0,0.6),
+      0 4px 20px rgba(0,0,0,0.55);
+    overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #FF2D2D 20%, #D49C52 70%, transparent);
+  }
+  /* faint vertical scratched-leather texture */
+  .card::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent 0, transparent 3px,
+      rgba(212,156,82,0.025) 3px, rgba(212,156,82,0.025) 4px);
+  }
+  .card .cap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.42em;
+    color: #D49C52; text-transform: uppercase; margin-bottom: 10px;
+  }
+  .card h4 {
+    margin: 0 0 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500; font-size: 17px; line-height: 1.28;
+    color: #F1ECE2;
+  }
+  .card p {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px; color: #C4B19A;
+    line-height: 1.6;
+  }
+  .card .vs {
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.32em;
+    color: #D49C52; text-transform: uppercase;
+  }
+
+  /* breaking band */
+  .band {
+    position: relative;
+    display: grid; grid-template-columns: 120px minmax(0,1fr) 240px;
+    min-height: 140px; margin: 22px 0;
+    background:
+      linear-gradient(180deg, rgba(255,45,45,0.08) 0%, rgba(8,6,8,0.94) 60%);
+    border: 1px solid #FF2D2D;
+    box-shadow:
+      inset 0 1px 0 rgba(255,80,80,0.20),
+      0 4px 24px rgba(255,45,45,0.10);
+    overflow: hidden;
+  }
+  .band::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, #FF2D2D, transparent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .ind {
+    display: flex; align-items: center; justify-content: center;
+    border-right: 1px solid #FF2D2D;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.46em;
+    color: #F1ECE2; text-transform: uppercase;
+  }
+  .ind::after {
+    content: ''; position: absolute;
+    width: 110px; height: 110px;
+    background: radial-gradient(circle, rgba(255,45,45,0.50), transparent 70%);
+    filter: blur(18px); pointer-events: none;
+  }
+  .ind span { position: relative; z-index: 1; }
+  .band-body { padding: 22px 28px; display: flex; flex-direction: column; justify-content: center; gap: 8px; min-width: 0; }
+  .band-headline {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500; font-size: 28px;
+    line-height: 1.18; letter-spacing: -0.012em;
+    color: #F1ECE2;
+  }
+  .band-why {
+    margin: 0;
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 15px; line-height: 1.45;
+    color: #C4B19A;
+  }
+  .band-meta {
+    padding: 22px 22px;
+    border-left: 1px solid rgba(212,156,82,0.18);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .band-meta .l { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.36em; color: #D49C52; text-transform: uppercase; }
+  .band-meta .s { font-family: 'Space Grotesk', sans-serif; font-size: 14px; color: #F1ECE2; }
+  .band-meta .a { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #8A7E6E; letter-spacing: 0.3em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="drift-warm"></div>
+  <div class="drift-cool"></div>
+  <div class="vignette"></div>
+
+  <div class="container">
+
+    <div class="head">
+      <span class="brand">ROBIN · COVERAGE</span>
+      <div class="head-right">
+        <span><span class="pip"></span>LIVE</span>
+        <span><b>14:30 IST</b> · MON 11 MAY</span>
+        <span>K. M. NAIDU · HYDERABAD</span>
+      </div>
+    </div>
+
+    <div class="label">Today's Reading</div>
+
+    <div class="reading-row">
+      <div>
+        <h1 class="reading">
+          Three coordinated waves of anti-Dharani phrasing in
+          <u>36 hours</u> — the opposition narrative is hardening.
+          Window to respond is closing.
+        </h1>
+        <p class="editor">
+          Editor's note — the Dharani arc has crossed Day 17. KTR's "47-item failure list" framing is now carried by 12 outlets, up from 4 a week ago. National pickup confirmed today. Watch the cabinet-reshuffle thread in the brewing horizon — Stage 2 of 4 and accelerating.
+        </p>
+      </div>
+      <div class="exposure">
+        <div class="merc"><div class="track"></div><div class="fill"></div></div>
+        <div>
+          <div class="exp-num">67</div>
+          <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+          <div class="exp-30d">30D HIGH 71 · LOW 19</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rule"><span>Breaking Now</span></div>
+
+    <div class="band">
+      <div class="ind"><span>BREAKING</span></div>
+      <div class="band-body">
+        <h2 class="band-headline">Petrol prices to surge in Hyderabad as Iran war pushes crude past $100/barrel</h2>
+        <p class="band-why">Could raise petrol prices in Hyderabad, affecting government's finance and governance — IOC, BPCL bleeding ₹1,700 cr/day.</p>
+      </div>
+      <div class="band-meta">
+        <span class="l">1 SOURCE</span>
+        <span class="s">DHARITRI</span>
+        <span class="a">1H AGO</span>
+      </div>
+    </div>
+
+    <div class="rule"><span>Today's Narrative Threads</span></div>
+
+    <div class="cards-row">
+      <article class="card">
+        <div class="cap">Frame 01 · Adversarial · Leading</div>
+        <h4>"Dharani failure" — record-tampering as systemic governance collapse</h4>
+        <p>Dominant in 8 of 12 outlets covering the arc this week. Originated 24 Apr on @TelanganaPolWatch. Mainstream pickup Day 14.</p>
+        <div class="vs">Voice-share · 38%</div>
+      </article>
+      <article class="card">
+        <div class="cap">Frame 02 · Aligned · Containing</div>
+        <h4>"Khammam ground-visit recovery" — CM personally responsive to farmers</h4>
+        <p>Lifted from −0.41 to −0.18 sentiment in 48h. 4 outlets carried positive framing.</p>
+        <div class="vs">Voice-share · 24%</div>
+      </article>
+      <article class="card">
+        <div class="cap">Frame 03 · Neutral · Routine</div>
+        <h4>"Cabinet expansion" — procedural coverage of portfolio reassignment</h4>
+        <p>12 outlets carry it as routine. Likely fades within 96h unless KTR escalates.</p>
+        <div class="vs">Voice-share · 18%</div>
+      </article>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

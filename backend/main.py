@@ -144,6 +144,42 @@ async def warmup_labse() -> None:
     _asyncio.create_task(_asyncio.to_thread(_warm_sync))
 
 
+@app.on_event("startup")
+async def llm_provider_health_check_on_boot() -> None:
+    """Probe every configured LLM provider at boot, log loudly on failure.
+
+    Guardrail #3 from docs/mistakes.md. The Cloudflare 1010 incident burned
+    13 hours because nothing tested the LLM providers at startup; a single
+    successful probe at boot would have surfaced the problem in minute one.
+
+    Fire-and-forget — startup must succeed even if providers are down so
+    the rest of the API (cached endpoints, non-LLM routes) still serves.
+    """
+    import asyncio as _asyncio
+    async def _probe() -> None:
+        try:
+            from backend.nlp.groq_client import boot_health_log
+            await boot_health_log()
+        except Exception as exc:  # noqa: BLE001
+            import logging as _logging
+            _logging.getLogger(__name__).error(
+                "LLM_PROVIDER_HEALTH_FAILED: probe crashed: %s", exc
+            )
+    _asyncio.create_task(_probe())
+
+
+@app.get("/admin/health/llm")
+async def admin_llm_health() -> dict:
+    """On-demand LLM provider health probe.
+
+    Returns the same structure as the boot probe — one tiny call per
+    configured provider, with status + sample response. Use this from a
+    monitoring dashboard or curl to verify provider state.
+    """
+    from backend.nlp.groq_client import health_check_all
+    return await health_check_all()
+
+
 @app.get("/debug/groq-status")
 async def groq_status() -> dict:
     """Shows Groq key pool health. Used by debug dashboard in P08."""

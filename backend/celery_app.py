@@ -60,12 +60,16 @@ app = Celery(
         # /coverage/articles rebuild — RAG-integrated analyst surface tasks
         "backend.tasks.coverage",
         "backend.tasks.coverage.user_cards_task",
-        "backend.tasks.coverage.breaking_task",
+        # Note: breaking_task is on a different branch and not deployed here.
         "backend.tasks.coverage.contradictions_task",
         "backend.tasks.coverage.top_stories_task",
         "backend.tasks.coverage.coverage_gaps_task",
         "backend.tasks.coverage.notifications_task",
         "backend.tasks.coverage.claims_quotes_task",
+        # Periodic byline backfill — runs every 6h, HTML-only, no LLM cost
+        "backend.tasks.substrate.byline_periodic_task",
+        # Periodic tweet enrichment — catches v1→v2 upgrades + retries
+        "backend.tasks.substrate.tweet_periodic_task",
     ],
 )
 
@@ -137,6 +141,10 @@ app.config_from_object(
             "tasks.cm.refresh_risk_window": {"queue": "nlp"},
             "tasks.cm.backfill_newspaper_sentiment": {"queue": "nlp"},
             "tasks.cm.compute_exploitation_index": {"queue": "social"},
+            # Byline backfill — pure HTTP fetching, light parsing, no LLM.
+            # Routes to collectors so it shares I/O with HTML scraping.
+            "tasks.backfill_bylines_periodic": {"queue": "collectors"},
+            "tasks.backfill_tweets_periodic": {"queue": "collectors"},
             "tasks.cm.refresh_voice_share": {"queue": "social"},
             "tasks.cm.refresh_issue_hourly": {"queue": "social"},
             "tasks.cm.refresh_constituency_heatmap": {"queue": "social"},
@@ -154,6 +162,22 @@ app.config_from_object(
             },
             "collect-html-every-6-hours": {
                 "task": "tasks.collect_html",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "collectors"},
+            },
+            # Periodic byline backfill — every 6h, processes up to 1500
+            # extraction_version=2 articles missing byline per tick.
+            # HTML-only extraction (JSON-LD → meta → CSS selectors),
+            # zero LLM cost. Naturally drains as articles get filled in.
+            "backfill-bylines-every-6h": {
+                "task": "tasks.backfill_bylines_periodic",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "collectors"},
+            },
+            # Periodic tweet content enrichment — every 6h, free oEmbed,
+            # catches v1→v2 upgrades and any transient failures.
+            "backfill-tweets-every-6h": {
+                "task": "tasks.backfill_tweets_periodic",
                 "schedule": timedelta(hours=6),
                 "options": {"queue": "collectors"},
             },

@@ -47,7 +47,6 @@ export function RightRail({ onContradictionsClick, onArticleClick }: RightRailPr
       }}
     >
       <ContradictionsPill onClick={onContradictionsClick} />
-      <WatchlistPanel />
       <QuotesPanel onArticleClick={onArticleClick} />
       <TimeTravelPanel onArticleClick={onArticleClick} />
       <CoverageGapsPanel />

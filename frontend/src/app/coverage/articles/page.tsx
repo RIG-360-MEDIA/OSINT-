@@ -39,6 +39,12 @@ import { TopFiveStories } from '@/components/coverage/TopFiveStories'
 import { RightRail } from '@/components/coverage/RightRail'
 import { ContradictionsDrawer } from '@/components/coverage/ContradictionsDrawer'
 import { CardDetailView } from '@/components/coverage/CardDetailView'
+import { EditorsNote } from '@/components/coverage/EditorsNote'
+import { NarrativeThreads } from '@/components/coverage/NarrativeThreads'
+import { NotableQuotes } from '@/components/coverage/NotableQuotes'
+import { SentimentTrajectory } from '@/components/coverage/SentimentTrajectory'
+import { CompetitorMentions } from '@/components/coverage/CompetitorMentions'
+import { BrewingHorizon } from '@/components/coverage/BrewingHorizon'
 import {
   DEFAULT_FILTERS,
   type ArticleFilters,
@@ -314,6 +320,21 @@ function ArticlesInner() {
         }}
       />
 
+      {/* Breaking band — full-width hero strip, sits above the 2-col grid */}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 5,
+          maxWidth: '1320px',
+          margin: '0 auto',
+          padding: '0 56px',
+        }}
+      >
+        <EditorsNote />
+        <div style={{ height: 28 }} />
+        <BreakingBand />
+      </div>
+
       <main
         className="coverage-articles-grid"
         style={{
@@ -321,7 +342,7 @@ function ArticlesInner() {
           zIndex: 5,
           maxWidth: '1320px',
           margin: '0 auto',
-          padding: '0 56px 96px',
+          padding: '24px 56px 96px',
           display: 'grid',
           gridTemplateColumns: 'minmax(0, 1fr) 320px',
           gap: '64px',
@@ -330,8 +351,6 @@ function ArticlesInner() {
       >
         {/* Center column */}
         <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '64px' }}>
-          <BreakingBand />
-
           <ZoneSeparator label="TRACK" />
           <CustomCardsRow
             onOpenCreate={() => setCreateCardOpen(true)}
@@ -339,12 +358,27 @@ function ArticlesInner() {
             refreshTick={cardsRefreshTick}
           />
 
+          <ZoneSeparator label="THREADS" />
+          <NarrativeThreads />
+
+          <ZoneSeparator label="QUOTES" />
+          <NotableQuotes />
+
           <ZoneSeparator label="TODAY" />
           <TopFiveStories
             onRead={openArticle}
             onCompareToggle={toggleCompare}
             selectedForCompare={compareIds}
           />
+
+          <ZoneSeparator label="EXPOSURE" />
+          <SentimentTrajectory />
+
+          <ZoneSeparator label="WATCH" />
+          <CompetitorMentions />
+
+          <ZoneSeparator label="BREWING" />
+          <BrewingHorizon />
 
           <ZoneSeparator label="FEED" />
           <FeedSection

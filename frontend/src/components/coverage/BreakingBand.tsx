@@ -28,6 +28,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 interface BreakingCluster {
   id: string
   headline: string
+  why_for_user?: string | null
   display_title?: string | null
   sources_count: number
   volume?: number
@@ -36,8 +37,6 @@ interface BreakingCluster {
   kind?: 'breaking' | 'developing'
   published_at?: string | null
   source_name?: string | null
-  // Comma-separated list of source names (when known) for the ticker.
-  // Falls back to the headline source if not provided.
 }
 
 export function BreakingBand() {
@@ -87,13 +86,7 @@ export function BreakingBand() {
     ? `${ageMinutes}M AGO`
     : `${Math.floor(ageMinutes / 60)}H AGO`
 
-  // Show original headline + English translation when they differ
-  const norm = (s: string) =>
-    s.toLowerCase().replace(/[\s\p{P}]+/gu, '').trim()
-  const showTranslation =
-    !!cluster.display_title &&
-    cluster.display_title.trim().length > 0 &&
-    norm(cluster.display_title) !== norm(cluster.headline)
+  const whyText = (cluster.why_for_user || '').trim()
 
   // Source list for the ticker. The current API only exposes
   // sources_count + a single source_name on developing items, so use that
@@ -111,7 +104,7 @@ export function BreakingBand() {
       style={{
         position: 'relative',
         display: 'grid',
-        gridTemplateColumns: '140px minmax(0, 1fr) 260px',
+        gridTemplateColumns: '120px minmax(0, 1fr) 220px',
         minHeight: '140px',
         marginTop: '24px',
         background:
@@ -238,26 +231,37 @@ export function BreakingBand() {
           style={{
             margin: 0,
             fontFamily: 'var(--onyx-display)',
-            fontSize: '28px',
+            fontSize: '26px',
             lineHeight: 1.18,
             letterSpacing: '-0.012em',
             fontWeight: 500,
             color: 'var(--onyx-bone)',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            wordBreak: 'break-word',
           }}
         >
           {cluster.headline}
         </h2>
-        {showTranslation && (
+        {whyText && (
           <p
             style={{
               margin: 0,
+              fontFamily: 'var(--onyx-italic)',
+              fontStyle: 'italic',
               fontSize: '14px',
               lineHeight: 1.45,
-              color: 'var(--onyx-dim)',
-              maxWidth: '70ch',
+              color: 'var(--onyx-bone-2)',
+              maxWidth: '72ch',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
             }}
           >
-            {cluster.display_title}
+            {whyText}
           </p>
         )}
         <span

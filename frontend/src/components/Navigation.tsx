@@ -4,49 +4,28 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { useAccess, type PageSlug } from '@/lib/access'
 import { ThemeToggle } from './theme/ThemeToggle'
 
 interface NavLink {
   path: string
   label: string
-  slug: PageSlug  // matches the slug in allowed_pages from /api/me/access
+  slug: string  // page slug — currently unused while nav is empty during reset
 }
 
-// FRONTEND RESET (2026-05-18) — brief / coverage / clips / cuttings / documents /
-// analyst / signals / threads / worldmonitor / landing routes were removed.
-// New app pages (Brief, Map, Analytics) will be added back here as they ship
-// via the docs/new-chat-prompts/ sessions.
+// FRONTEND RESET (2026-05-19) — brief / coverage / clips / cuttings / documents /
+// analyst / signals / threads / worldmonitor / landing / admin / onboarding
+// routes were all removed. Surviving routes are /, /landing, /login, /signup.
+// New app pages will be added back here as they ship via the
+// docs/new-chat-prompts/ sessions.
 const BASE_NAV_LINKS: ReadonlyArray<NavLink> = []
-
-// `slug` here is unused for routing (admin is super_admin-only at the
-// backend) but we keep the field for type consistency.
-const ADMIN_NAV_LINK: NavLink = {
-  path: '/admin',
-  label: 'Admin',
-  slug: 'brief',  // unused — admin shows for super_admin only
-}
 
 export default function Navigation() {
   const pathname = usePathname()
   const router = useRouter()
-  const { access, loading: accessLoading } = useAccess()
   const [userInitial, setUserInitial] = useState<string>('')
 
-  // Filter the nav so users only see links to pages they can actually open.
-  //   - Super_admins: every page + the Admin link.
-  //   - Regular users: only pages in their allowed_pages set.
-  //   - While access is still loading: show every base page optimistically
-  //     so the nav doesn't flash empty on first paint. Backend gates still
-  //     enforce permissions on the data even if a stale link is clicked.
-  const navLinks = useMemo<ReadonlyArray<NavLink>>(() => {
-    if (accessLoading || !access) return BASE_NAV_LINKS
-    if (access.role === 'super_admin') {
-      return [...BASE_NAV_LINKS, ADMIN_NAV_LINK]
-    }
-    const allowed = new Set(access.allowed_pages)
-    return BASE_NAV_LINKS.filter((l) => allowed.has(l.slug))
-  }, [access, accessLoading])
+  // Nav is empty during the frontend reset — no pages to link to.
+  const navLinks: ReadonlyArray<NavLink> = useMemo(() => BASE_NAV_LINKS, [])
 
   useEffect(() => {
     const supabase = createClient()

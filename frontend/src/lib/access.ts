@@ -13,16 +13,10 @@ import { createClient } from '@/lib/supabase/client'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
 
-export type PageSlug =
-  | 'coverage'
-  | 'clips'
-  | 'cuttings'
-  | 'threads'
-  | 'signals'
-  | 'documents'
-  | 'brief'
-  | 'analyst'
-  | 'worldmonitor'
+// FRONTEND RESET (2026-05-19) — all gated pages were removed.
+// PageSlug is kept as a type alias so any client code that still imports it
+// keeps compiling; populate with surviving slugs as the new app pages ship.
+export type PageSlug = string
 
 export interface Access {
   user_id: string

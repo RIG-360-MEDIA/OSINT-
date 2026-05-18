@@ -79,7 +79,9 @@ export default function SignupPage() {
       return
     }
 
-    router.push('/onboarding')
+    // Frontend reset (2026-05-19): /onboarding has been removed.
+    // Send new users to the root landing page until the new app pages ship.
+    router.push('/')
   }
 
   const alreadyRegistered = error.includes('already registered')

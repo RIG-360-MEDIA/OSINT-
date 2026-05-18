@@ -6,8 +6,6 @@ import { createClient } from '@/lib/supabase/client'
 import { VideoBackground } from '@/components/ui/video-background'
 import styles from '@/components/auth/auth.module.css'
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
-
 function CompassGlyph() {
   return (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -59,7 +57,7 @@ export default function LoginPage() {
     setError('')
 
     const supabase = createClient()
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (authError) {
       setError(authError.message)
@@ -67,35 +65,10 @@ export default function LoginPage() {
       return
     }
 
-    const token = data.session?.access_token
-    try {
-      // Use /api/me/access (role-aware) instead of onboarding/status so
-      // super_admins land on /admin instead of being trapped at /onboarding.
-      const res = await fetch(`${API}/api/me/access`, {
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: 'include',
-      })
-      if (!res.ok) {
-        // D-07: on backend error, prefer /onboarding (a public route) over
-        // /brief — middleware would bounce a profile-less user back to
-        // /onboarding anyway, so going there directly avoids a visible
-        // redirect flash.
-        router.push('/onboarding')
-        return
-      }
-      const access = (await res.json()) as {
-        role: 'user' | 'super_admin'
-        has_profile: boolean
-        has_entities: boolean
-      }
-      if (access.role === 'super_admin') {
-        router.push('/admin')
-        return
-      }
-      router.push(access.has_profile && access.has_entities ? '/brief' : '/onboarding')
-    } catch {
-      router.push('/onboarding')
-    }
+    // Frontend reset (2026-05-19): only surviving routes are /, /landing,
+    // /login, /signup. No /admin or /onboarding to branch into — send everyone
+    // home and let the (eventual) landing flow drive the next step.
+    router.push('/')
   }
 
   return (

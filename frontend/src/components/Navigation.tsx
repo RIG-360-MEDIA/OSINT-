@@ -13,17 +13,11 @@ interface NavLink {
   slug: PageSlug  // matches the slug in allowed_pages from /api/me/access
 }
 
-// Each link carries the page slug it gates on. Order in this array is the
-// order shown in the nav. The slug *must* match a value in
-// `KNOWN_PAGES` in `backend/auth/auth_middleware.py`.
-const BASE_NAV_LINKS: ReadonlyArray<NavLink> = [
-  // Top nav intentionally minimal — Brief is the home, Coverage is the
-  // hub for all five pillars (Articles, TV, Newspaper, Social, Govt Docs).
-  // Other rooms (threads, analyst, worldmonitor) reachable via direct URL
-  // or future entry points; not exposed in the main nav.
-  { path: '/brief',    label: 'The Brief', slug: 'brief' },
-  { path: '/coverage', label: 'Coverage',  slug: 'coverage' },
-]
+// FRONTEND RESET (2026-05-18) — brief / coverage / clips / cuttings / documents /
+// analyst / signals / threads / worldmonitor / landing routes were removed.
+// New app pages (Brief, Map, Analytics) will be added back here as they ship
+// via the docs/new-chat-prompts/ sessions.
+const BASE_NAV_LINKS: ReadonlyArray<NavLink> = []
 
 // `slug` here is unused for routing (admin is super_admin-only at the
 // backend) but we keep the field for type consistency.
@@ -95,7 +89,7 @@ export default function Navigation() {
     >
       {/* ── Wordmark ────────────────────────────────────────────── */}
       <Link
-        href="/brief"
+        href="/"
         aria-label="Robin OSINT"
         style={{
           display: 'inline-flex',

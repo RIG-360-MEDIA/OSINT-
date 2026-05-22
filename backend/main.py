@@ -22,22 +22,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.routers.admin_router import admin_router
-from backend.routers.analyst_router import analyst_router
-from backend.routers.brief_router import brief_router
-from backend.routers.coverage_router import coverage_router
-from backend.routers.coverage_articles_router import coverage_articles_router
-from backend.routers.debug_router import debug_router
-from backend.routers.onboarding_router import onboarding_router
-from backend.routers.clippings_router import clippings_router, newspapers_router
-from backend.routers.clips_router import clips_router
-from backend.routers.documents_router import documents_router
 from backend.routers.me_router import me_router
-from backend.routers.cm_router import cm_router
-from backend.routers.cm_v2_router import cm_v2_router
+from backend.routers.observe_router import observe_router
 from backend.routers.rbac_admin_router import rbac_admin_router
-from backend.routers.signals_router import signals_router
-from backend.routers.thread_router import thread_router
-from backend.routers.worldmonitor_router import worldmonitor_router
 from backend.middleware.impersonation_audit import ImpersonationAuditMiddleware
 from backend.middleware.request_id import RequestIdMiddleware
 
@@ -48,23 +35,9 @@ app = FastAPI(
 )
 
 app.include_router(admin_router)
-app.include_router(analyst_router)
-app.include_router(debug_router)
-app.include_router(onboarding_router)
-app.include_router(brief_router)
-app.include_router(coverage_router)
-app.include_router(coverage_articles_router)
-app.include_router(clippings_router)
-app.include_router(newspapers_router)
-app.include_router(clips_router)
-app.include_router(documents_router)
-app.include_router(signals_router)
-app.include_router(thread_router)
-app.include_router(worldmonitor_router)
-app.include_router(cm_router)
-app.include_router(cm_v2_router)
 app.include_router(me_router)
 app.include_router(rbac_admin_router)
+app.include_router(observe_router)
 
 # Audit logger — must be added AFTER routers are configured. ASGI middleware
 # wraps the whole app, so registration order doesn't affect routing.
@@ -72,18 +45,6 @@ app.add_middleware(ImpersonationAuditMiddleware)
 # Request-Id middleware: stamps every request with an X-Request-Id and
 # exposes it via contextvar for log-line correlation.
 app.add_middleware(RequestIdMiddleware)
-
-# Dossier feature — entity enrichment over free OSINT sources.
-# Gated behind DOSSIER_ENABLED so it stays invisible to existing API surface
-# when off. try/except ensures a missing dossier dependency cannot prevent
-# the rest of the backend from booting.
-if os.getenv("DOSSIER_ENABLED", "false").lower() == "true":
-    try:
-        from backend.routers.dossier_router import dossier_router as _dossier_router
-        app.include_router(_dossier_router)
-    except Exception as _dx:
-        import logging as _dlog
-        _dlog.getLogger(__name__).warning(f"Dossier router failed to load: {_dx}")
 
 # CORS allow-list: comma-separated origins via CORS_ALLOWED_ORIGINS env var.
 # Default keeps local dev origins working; production must override.

@@ -1,0 +1,37 @@
+{
+  "frozen_at": "1779470472.0719087",
+  "input": "docs\\quality\\judge_5k_results.jsonl",
+  "size_requested": 200,
+  "size_actual": 200,
+  "candidates_pool": 1253,
+  "source_counts": {
+    "Joy Online (Ghana)": 5,
+    "Sunday Guardian": 5,
+    "PE Wire \u2014 India": 4,
+    "ABC News Australia": 4,
+    "Hindustan Times": 4,
+    "The Guardian \u2014 UK News": 3,
+    "Hindu Business Line \u2014 Markets": 3,
+    "BBC News \u2014 UK": 3,
+    "Economic Times": 3,
+    "BBC World News": 3,
+    "TASS \u2014 Defence": 3,
+    "Siasat Daily": 3,
+    "The Hindu \u2014 Security": 3,
+    "Foreign Affairs": 3,
+    "The Age (Australia)": 3,
+    "The Hindu \u2014 Sport": 3,
+    "St Lucia Times": 3,
+    "Punch Nigeria": 3,
+    "Splash 247": 3,
+    "BBC News \u2014 Business": 3
+  },
+  "language_counts": {
+    "en": 187,
+    "te": 6,
+    "hi": 4,
+    "null": 1,
+    "ne": 1,
+    "bn": 1
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "sampled": 5000,
+  "successes": 2188,
+  "errors": 2812,
+  "median_scores": {
+    "primary_subject_score": 10.0,
+    "summary_executive_score": 9.0,
+    "article_type_score": 10.0,
+    "actors_score": 10.0,
+    "event_dates_score": 8.0,
+    "overall_score": 9.0
+  },
+  "p25_scores": {
+    "primary_subject_score": 10.0,
+    "summary_executive_score": 8.0,
+    "article_type_score": 10.0,
+    "actors_score": 9.0,
+    "event_dates_score": 6.0,
+    "overall_score": 8.0
+  }
+}

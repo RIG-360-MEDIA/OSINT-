@@ -39,6 +39,12 @@ import { TopFiveStories } from '@/components/coverage/TopFiveStories'
 import { RightRail } from '@/components/coverage/RightRail'
 import { ContradictionsDrawer } from '@/components/coverage/ContradictionsDrawer'
 import { CardDetailView } from '@/components/coverage/CardDetailView'
+import { EditorsNote } from '@/components/coverage/EditorsNote'
+import { NarrativeThreads } from '@/components/coverage/NarrativeThreads'
+import { NotableQuotes } from '@/components/coverage/NotableQuotes'
+import { SentimentTrajectory } from '@/components/coverage/SentimentTrajectory'
+import { CompetitorMentions } from '@/components/coverage/CompetitorMentions'
+import { BrewingHorizon } from '@/components/coverage/BrewingHorizon'
 import {
   DEFAULT_FILTERS,
   type ArticleFilters,
@@ -324,6 +330,8 @@ function ArticlesInner() {
           padding: '0 56px',
         }}
       >
+        <EditorsNote />
+        <div style={{ height: 28 }} />
         <BreakingBand />
       </div>
 
@@ -350,12 +358,27 @@ function ArticlesInner() {
             refreshTick={cardsRefreshTick}
           />
 
+          <ZoneSeparator label="THREADS" />
+          <NarrativeThreads />
+
+          <ZoneSeparator label="QUOTES" />
+          <NotableQuotes />
+
           <ZoneSeparator label="TODAY" />
           <TopFiveStories
             onRead={openArticle}
             onCompareToggle={toggleCompare}
             selectedForCompare={compareIds}
           />
+
+          <ZoneSeparator label="EXPOSURE" />
+          <SentimentTrajectory />
+
+          <ZoneSeparator label="WATCH" />
+          <CompetitorMentions />
+
+          <ZoneSeparator label="BREWING" />
+          <BrewingHorizon />
 
           <ZoneSeparator label="FEED" />
           <FeedSection

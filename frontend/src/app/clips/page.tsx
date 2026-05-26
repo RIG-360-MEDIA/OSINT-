@@ -15,7 +15,15 @@
  */
 
 import { NewsroomLayout } from '@/components/newsroom/NewsroomLayout'
+import { OnyxTopBar } from '@/components/coverage/OnyxTopBar'
 
 export default function ClipsPage() {
-  return <NewsroomLayout />
+  return (
+    <>
+      <OnyxTopBar />
+      <div data-theme="onyx" style={{ paddingTop: 'var(--topbar-h)' }}>
+        <NewsroomLayout />
+      </div>
+    </>
+  )
 }

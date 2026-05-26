@@ -96,6 +96,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
       DATABASE_URL_SYNC: postgresql://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
       GROQ_API_KEYS: ${GROQ_API_KEYS:-}
+      CEREBRAS_API_KEYS: ${CEREBRAS_API_KEYS:-}
       DOSSIER_ENABLED: ${DOSSIER_ENABLED:-false}
       SEARXNG_URL: ${SEARXNG_URL:-http://rig-searxng:8080}
       OPENSANCTIONS_API_KEY: ${OPENSANCTIONS_API_KEY:-}

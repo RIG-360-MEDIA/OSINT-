@@ -54,14 +54,17 @@ async def _entities_with_recent_volume() -> list[str]:
         result = await db.execute(
             text(
                 """
-                SELECT DISTINCT ac.subject_entity_id::text AS entity_id,
+                SELECT LOWER(TRIM(ac.subject_text)) AS entity_id,
                        COUNT(*) AS volume
                 FROM article_claims ac
                 JOIN articles a ON a.id = ac.article_id
-                WHERE ac.subject_entity_id IS NOT NULL
+                WHERE ac.subject_text IS NOT NULL
+                  AND LENGTH(TRIM(ac.subject_text)) BETWEEN 4 AND 80
+                  AND LOWER(TRIM(ac.subject_text)) NOT IN
+                      ('article','story','report','piece','news','we','they','officials','the article','this article')
                   AND a.collected_at > NOW() - make_interval(hours => :hrs)
-                GROUP BY ac.subject_entity_id
-                HAVING COUNT(*) >= :min_count
+                GROUP BY LOWER(TRIM(ac.subject_text))
+                HAVING COUNT(DISTINCT a.source_id) >= :min_count
                 ORDER BY COUNT(*) DESC
                 LIMIT 50
                 """
@@ -84,7 +87,7 @@ async def _candidate_claim_pairs(entity_id: str) -> list[tuple[dict, dict]]:
                        a.source_id::text AS source_id
                 FROM article_claims ac
                 JOIN articles a ON a.id = ac.article_id
-                WHERE ac.subject_entity_id = :eid
+                WHERE LOWER(TRIM(ac.subject_text)) = :eid
                   AND a.collected_at > NOW() - make_interval(hours => :hrs)
                 ORDER BY ac.article_id, ac.confidence DESC
                 LIMIT 12
@@ -169,7 +172,7 @@ async def _persist_contradiction(
             {
                 "a": a["claim_id"],
                 "b": b["claim_id"],
-                "e": entity_id,
+                "e": None,  # entity_id FK NULL — we now key by subject_text
                 "s": finding["summary"],
                 "c": finding["confidence"],
             },

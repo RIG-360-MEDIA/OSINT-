@@ -222,7 +222,9 @@ async def _collect_newspapers() -> None:
                     embed_text = (text_translated or body)[:512]
                     embedding: list[float] | None = None
                     try:
-                        embedding = generate_embedding(embed_text)
+                        from backend.nlp.embed_guard import safe_embed_input  # T15
+                        _safe_input = safe_embed_input(embed_text, text_translated, body)
+                        embedding = generate_embedding(_safe_input) if _safe_input else None
                     except Exception as e:
                         logger.debug(f"Embedding failed: {e}")
 

@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { VideoBackground } from '@/components/ui/video-background'
@@ -44,6 +44,10 @@ const FEATURES: { num: string; text: string }[] = [
 
 export default function LoginPage() {
   const router = useRouter()
+  const search = useSearchParams()
+  const rawNext = search.get('next') ?? ''
+  // Only honor same-origin internal paths to prevent open redirect.
+  const safeNext = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : null
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -89,10 +93,14 @@ export default function LoginPage() {
         has_entities: boolean
       }
       if (access.role === 'super_admin') {
-        router.push('/admin')
+        router.push(safeNext ?? '/admin')
         return
       }
-      router.push(access.has_profile && access.has_entities ? '/brief' : '/onboarding')
+      if (access.has_profile && access.has_entities) {
+        router.push(safeNext ?? '/brief')
+      } else {
+        router.push('/onboarding')
+      }
     } catch {
       router.push('/onboarding')
     }

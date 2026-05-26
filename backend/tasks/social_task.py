@@ -228,7 +228,11 @@ async def _mark_collected(db, monitor_id: str) -> None:
 def _safe_embed(text_value: str) -> list[float] | None:
     try:
         from backend.nlp.nlp_embedding import generate_embedding
-        return generate_embedding(text_value)
+        from backend.nlp.embed_guard import safe_embed_input  # T15
+        _safe = safe_embed_input(text_value)
+        if _safe is None:
+            return None
+        return generate_embedding(_safe)
     except Exception as exc:
         logger.debug("embedding failed: %s", exc)
         return None

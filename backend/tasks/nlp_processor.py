@@ -291,7 +291,9 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
     duplicate_of: str | None = None
 
     if has_good_text:
-        embedding = precomputed_embedding or generate_embedding(working_text)
+        from backend.nlp.embed_guard import safe_embed_input  # T15
+        _safe_input = safe_embed_input(working_text)
+        embedding = precomputed_embedding or (generate_embedding(_safe_input) if _safe_input else None)
         if embedding:
             dup_id = await check_semantic_duplicate(
                 embedding=embedding,

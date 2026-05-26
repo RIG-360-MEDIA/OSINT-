@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Black variants — pick the surface</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Inter:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    background: #0a0a0e;
+    color: #ECEEF1;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── Header ─────────────────────────────────────────────────── */
+  .frame-header {
+    padding: 22px 32px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: #050508;
+  }
+  .frame-header h1 {
+    margin: 0 0 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 26px;
+    letter-spacing: -0.01em;
+  }
+  .frame-header p {
+    margin: 0; font-size: 13.5px;
+    color: #A8ADB8; max-width: 90ch;
+    line-height: 1.55;
+  }
+  .tip {
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.28em;
+    color: #5A6070; text-transform: uppercase;
+  }
+
+  /* ─── Grid ──────────────────────────────────────────────────── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    min-height: calc(100vh - 86px);
+  }
+
+  /* ─── Panel skeleton ────────────────────────────────────────── */
+  .panel {
+    position: relative;
+    padding: 24px 22px 48px;
+    border-right: 1px solid rgba(255,255,255,0.04);
+    overflow: hidden;
+  }
+  .panel:last-child { border-right: none; }
+
+  .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: #FF2D2D;
+    margin-bottom: 4px;
+  }
+  .panel h2 {
+    margin: 0 0 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 400; font-size: 18px;
+    letter-spacing: -0.005em;
+  }
+  .hex {
+    margin: 0 0 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #A8ADB8;
+    letter-spacing: 0.16em;
+  }
+
+  .reading {
+    margin: 22px 0 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 20px;
+    line-height: 1.22; letter-spacing: -0.012em;
+  }
+  .reading u { text-decoration: none; border-bottom: 1px solid #FF2D2D; padding-bottom: 1px; }
+
+  .editor {
+    margin: 12px 0 0;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 13.5px; line-height: 1.55;
+    color: #A8ADB8;
+  }
+
+  .row-exp {
+    display: grid; grid-template-columns: 56px 1fr;
+    gap: 12px; align-items: end;
+    margin-top: 22px;
+  }
+  .merc { position: relative; width: 56px; height: 110px; }
+  .merc .track {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    top: 0; bottom: 0; width: 2px;
+    background: rgba(255,255,255,0.07);
+  }
+  .merc .fill {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 6px; bottom: 0; height: 67%;
+    background: linear-gradient(0deg, #FF2D2D, rgba(255,45,45,0.55));
+    box-shadow: 0 0 16px #FF2D2D, 0 0 5px #FF2D2D;
+  }
+  .exp-num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 48px;
+    line-height: 0.9; letter-spacing: -0.03em;
+  }
+  .exp-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.28em;
+    color: #A8ADB8; text-transform: uppercase; margin-top: 3px;
+  }
+  .exp-meta b { color: #FF2D2D; }
+
+  /* shared card */
+  .card {
+    margin-top: 22px;
+    padding: 14px 14px 12px;
+    background: linear-gradient(180deg, rgba(15,15,17,0.95), rgba(8,8,10,0.95));
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: #FF2D2D;
+  }
+  .card .cap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.36em;
+    color: #FF2D2D; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .card h4 {
+    margin: 0 0 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500; font-size: 14px; line-height: 1.32;
+  }
+  .card p {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px; color: #A8ADB8;
+    line-height: 1.5;
+  }
+
+  /* ── Variant backgrounds ─────────────────────────────────── */
+  .v0 { background: #000000; }
+  .v1 { background: #06080C; }                          /* cool */
+  .v2 { background: #0A0807; }                          /* warm */
+  .v3 { background: #0A0A0A; }                          /* neutral */
+
+  /* Optional subtle radial mood — toggle on/off per variant.
+     The cool variant pairs with a faint blue radial; warm with
+     a brass radial. Helps simulate the full B-palette feel. */
+  .v1::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 90% -10%, rgba(70,110,150,0.05), transparent 60%),
+      radial-gradient(ellipse at -10% 110%, rgba(70,110,150,0.04), transparent 60%);
+  }
+  .v2::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 90% -10%, rgba(196,154,108,0.05), transparent 60%),
+      radial-gradient(ellipse at -10% 110%, rgba(196,154,108,0.04), transparent 60%);
+  }
+
+  /* footer commentary */
+  .vote {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 18px 32px 32px;
+    background: #050508;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+  }
+  .vote h4 {
+    margin: 0 0 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.42em;
+    color: #FF2D2D; text-transform: uppercase;
+  }
+  .vote p {
+    margin: 0; font-family: 'Inter', sans-serif;
+    font-size: 12.5px; color: #A8ADB8;
+    line-height: 1.55;
+  }
+</style>
+</head>
+<body>
+
+<header class="frame-header">
+  <h1>Four blacks — same content, different surface</h1>
+  <p>Same hero block rendered on four background values. Look at the bone text and the red mercury column on each — notice where edges feel calmer, where the surface feels like a real material vs. a void.</p>
+  <p class="tip">Tip — scan slowly. Look at the editor's note paragraph in each panel and notice eye-strain on #000 vs. the near-blacks. The difference is subliminal at first.</p>
+</header>
+
+<section class="grid">
+
+  <!-- ════════ V0 — Pure black ════════ -->
+  <div class="panel v0">
+    <div class="label">Variant 0 · current</div>
+    <h2>Pure black</h2>
+    <p class="hex">#000000</p>
+
+    <p class="reading">
+      Three coordinated waves of anti-Dharani phrasing in <u>36 hours</u> —
+      narrative is hardening.
+    </p>
+    <p class="editor">Editor's note — KTR's "47-item failure list" framing now carried by 12 outlets, up from 4 a week ago. National pickup confirmed today.</p>
+
+    <div class="row-exp">
+      <div class="merc"><div class="track"></div><div class="fill"></div></div>
+      <div>
+        <div class="exp-num">67</div>
+        <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+      </div>
+    </div>
+
+    <article class="card">
+      <div class="cap">Frame 01 · Adversarial</div>
+      <h4>"Dharani failure" — record-tampering as governance collapse</h4>
+      <p>Dominant in 8 of 12 outlets. Originated 24 Apr. Voice-share: 38%.</p>
+    </article>
+  </div>
+
+  <!-- ════════ V1 — Cool near-black ════════ -->
+  <div class="panel v1">
+    <div class="label">Variant 1 · cool</div>
+    <h2>Cool near-black</h2>
+    <p class="hex">#06080C</p>
+
+    <p class="reading">
+      Three coordinated waves of anti-Dharani phrasing in <u>36 hours</u> —
+      narrative is hardening.
+    </p>
+    <p class="editor">Editor's note — KTR's "47-item failure list" framing now carried by 12 outlets, up from 4 a week ago. National pickup confirmed today.</p>
+
+    <div class="row-exp">
+      <div class="merc"><div class="track"></div><div class="fill"></div></div>
+      <div>
+        <div class="exp-num">67</div>
+        <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+      </div>
+    </div>
+
+    <article class="card">
+      <div class="cap">Frame 01 · Adversarial</div>
+      <h4>"Dharani failure" — record-tampering as governance collapse</h4>
+      <p>Dominant in 8 of 12 outlets. Originated 24 Apr. Voice-share: 38%.</p>
+    </article>
+  </div>
+
+  <!-- ════════ V2 — Warm near-black ════════ -->
+  <div class="panel v2">
+    <div class="label">Variant 2 · warm</div>
+    <h2>Warm near-black</h2>
+    <p class="hex">#0A0807</p>
+
+    <p class="reading">
+      Three coordinated waves of anti-Dharani phrasing in <u>36 hours</u> —
+      narrative is hardening.
+    </p>
+    <p class="editor">Editor's note — KTR's "47-item failure list" framing now carried by 12 outlets, up from 4 a week ago. National pickup confirmed today.</p>
+
+    <div class="row-exp">
+      <div class="merc"><div class="track"></div><div class="fill"></div></div>
+      <div>
+        <div class="exp-num">67</div>
+        <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+      </div>
+    </div>
+
+    <article class="card">
+      <div class="cap">Frame 01 · Adversarial</div>
+      <h4>"Dharani failure" — record-tampering as governance collapse</h4>
+      <p>Dominant in 8 of 12 outlets. Originated 24 Apr. Voice-share: 38%.</p>
+    </article>
+  </div>
+
+  <!-- ════════ V3 — Neutral near-black ════════ -->
+  <div class="panel v3">
+    <div class="label">Variant 3 · neutral</div>
+    <h2>Neutral near-black</h2>
+    <p class="hex">#0A0A0A</p>
+
+    <p class="reading">
+      Three coordinated waves of anti-Dharani phrasing in <u>36 hours</u> —
+      narrative is hardening.
+    </p>
+    <p class="editor">Editor's note — KTR's "47-item failure list" framing now carried by 12 outlets, up from 4 a week ago. National pickup confirmed today.</p>
+
+    <div class="row-exp">
+      <div class="merc"><div class="track"></div><div class="fill"></div></div>
+      <div>
+        <div class="exp-num">67</div>
+        <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+      </div>
+    </div>
+
+    <article class="card">
+      <div class="cap">Frame 01 · Adversarial</div>
+      <h4>"Dharani failure" — record-tampering as governance collapse</h4>
+      <p>Dominant in 8 of 12 outlets. Originated 24 Apr. Voice-share: 38%.</p>
+    </article>
+  </div>
+
+</section>
+
+<footer class="vote">
+  <div>
+    <h4>V0 · Pure</h4>
+    <p>What you have today. Reads as a digital void. Text edges vibrate. Surface has no material.</p>
+  </div>
+  <div>
+    <h4>V1 · Cool</h4>
+    <p>Faint blue undertone — surveillance-room / Linear / Stripe DNA. Modern. Cinematic. <em>My recommendation.</em></p>
+  </div>
+  <div>
+    <h4>V2 · Warm</h4>
+    <p>Faint brown undertone — leather dossier / oak-panelled library. Editorial. Slightly cozier.</p>
+  </div>
+  <div>
+    <h4>V3 · Neutral</h4>
+    <p>No tint, just barely-lifted from pure. Safest if you don't want chromatic personality.</p>
+  </div>
+</footer>
+
+</body>
+</html>

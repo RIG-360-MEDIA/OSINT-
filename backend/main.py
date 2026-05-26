@@ -22,6 +22,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.routers.admin_router import admin_router
+from backend.routers.analyst_router import analyst_router
+from backend.routers.brief_router import brief_router
+from backend.routers.coverage_router import coverage_router
+from backend.routers.coverage_articles_router import coverage_articles_router
+from backend.routers.debug_router import debug_router
+from backend.routers.onboarding_router import onboarding_router
+from backend.routers.clippings_router import clippings_router, newspapers_router
+from backend.routers.clips_router import clips_router
+from backend.routers.documents_router import documents_router
 from backend.routers.me_router import me_router
 from backend.routers.observe_router import observe_router
 from backend.routers.brief_router import brief_router
@@ -36,6 +45,20 @@ app = FastAPI(
 )
 
 app.include_router(admin_router)
+app.include_router(analyst_router)
+app.include_router(debug_router)
+app.include_router(onboarding_router)
+app.include_router(brief_router)
+app.include_router(coverage_router)
+app.include_router(coverage_articles_router)
+app.include_router(clippings_router)
+app.include_router(newspapers_router)
+app.include_router(clips_router)
+app.include_router(documents_router)
+app.include_router(signals_router)
+app.include_router(thread_router)
+app.include_router(worldmonitor_router)
+app.include_router(cm_router)
 app.include_router(me_router)
 app.include_router(rbac_admin_router)
 app.include_router(observe_router)

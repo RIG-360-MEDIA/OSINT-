@@ -99,7 +99,7 @@ async def reprocess_one(db, article: dict[str, Any]) -> str:
                 register_emotion        = COALESCE(:re, register_emotion),
                 register_is_breaking    = :rb,
                 full_text_translated    = COALESCE(:tr, full_text_translated),
-                extraction_version      = 3,
+                extraction_version      = 2,
                 quotes_extracted        = TRUE,
                 claims_extracted        = TRUE
             WHERE id = :id
@@ -133,7 +133,7 @@ async def reprocess_one(db, article: dict[str, Any]) -> str:
 # v1 articles. After the re-pass finishes, every ok article will be at v2.
 WHERE_V2_NEEDED = (
     "substrate_status = 'ok' "
-    "AND (extraction_version IS NULL OR extraction_version < 3) "
+    "AND (extraction_version IS NULL OR extraction_version < 2) "
     "AND full_text_scraped IS NOT NULL "
     "AND char_length(full_text_scraped) >= 60"
 )

@@ -223,7 +223,7 @@ export function OnyxTopBar() {
             </Link>
           )
         })}
-        {/* Sliding indicator pill — animates left + width on route change */}
+        {/* Sliding indicator — animates left + width on route change */}
         <div
           aria-hidden="true"
           style={{

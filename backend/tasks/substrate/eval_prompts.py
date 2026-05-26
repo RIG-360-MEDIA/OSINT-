@@ -1,20 +1,19 @@
 """
-JSON-extraction prompt evaluation harness — v2 (Ollama backend).
+JSON-extraction prompt evaluation harness.
 
 Self-contained — does NOT touch run_corpus_pass.py production logic.
 
-Selects a 100-article stratified sample, runs 6 prompt variants (baseline +
-A..E) through Ollama `qwen3:30b-a3b` running on TRIJYA-7 (RTX 4090) over
-Tailscale at http://100.92.126.27:11434, captures quality/latency metrics,
-writes raw outputs to /tmp/eval_v2_raw.jsonl and a summary table to
-/tmp/eval_v2_summary.txt.
+Selects a 200-article stratified sample, runs 6 prompt variants (baseline +
+A..E) through Cerebras `qwen-3-235b-a22b-instruct-2507`, captures
+quality/latency metrics, writes raw outputs to /tmp/eval_raw.jsonl and a
+summary table to /tmp/eval_summary.txt.
 
 Run inside the rig-backend container:
 
     docker exec rig-backend python3 -u -m backend.tasks.substrate.eval_prompts
 
-The script saves partial progress to /tmp/eval_v2_raw.jsonl every 50
-completions so a crash mid-run does not lose results.
+The script saves partial progress to /tmp/eval_raw.jsonl every 50 completions
+so a crash mid-run does not lose results.
 """
 from __future__ import annotations
 
@@ -30,8 +29,12 @@ from pathlib import Path
 from typing import Any
 
 import asyncpg
-import httpx
 
+from backend.nlp.groq_client import (
+    GroqCallFailed,
+    GroqQuotaExhausted,
+    _call_cerebras,
+)
 from backend.tasks.substrate.run_corpus_pass import (
     GROQ_SYS,
     GROQ_SYS_NON_ENGLISH,
@@ -51,16 +54,15 @@ logger = logging.getLogger("eval_prompts")
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────
 
-EVAL_MODEL = "qwen3:30b-a3b"                    # Ollama model on TRIJYA-7
-OLLAMA_URL = "http://100.92.126.27:11434/api/chat"
+EVAL_MODEL = "qwen-3-235b-a22b-instruct-2507"   # Cerebras uniform model
 EVAL_TASK_TYPE = "profile_extraction"
-CONCURRENCY = 2                                  # match OLLAMA_NUM_PARALLEL=2
-SAMPLE_SIZE_TARGET = 100
+CONCURRENCY = 8
+SAMPLE_SIZE_TARGET = 200
 PARTIAL_FLUSH_EVERY = 50
 
-OUTPUT_RAW = Path("/tmp/eval_v2_raw.jsonl")
-OUTPUT_SUMMARY = Path("/tmp/eval_v2_summary.txt")
-SAMPLE_IDS_PATH = Path("/tmp/eval_v2_sample_ids.txt")
+OUTPUT_RAW = Path("/tmp/eval_raw.jsonl")
+OUTPUT_SUMMARY = Path("/tmp/eval_summary.txt")
+SAMPLE_IDS_PATH = Path("/tmp/eval_sample_ids.txt")
 
 META_INTRO_PHRASES = (
     "the article", "this article", "it is about",
@@ -174,13 +176,22 @@ PROMPT_C = PROMPT_B.replace(_INDIA_ANCHOR_BLOCK, _STATE_VS_CITY_RULE)
 
 _OUTPUT_PROTOCOL = """
 
-INTERNAL CHECKLIST (do this mentally before emitting JSON, do NOT include in output):
-- type_check: Which article_type from the enum, based on whether this is news/analysis/opinion/explainer/listicle/etc.?
-- style_check: Which rhetorical_style, based on tone words?
-- location_check: Is this state-wide news or city-specific? If state-wide, leave city=null.
+OUTPUT PROTOCOL (mandatory two-section response):
+First emit a short REASONING section, then a JSON section. The post-processor will strip
+the REASONING block and parse the JSON block only.
 
-Output ONLY the JSON object. Do NOT include the checklist or any reasoning in the output.
-"""
+Format:
+REASONING:
+type_pick: <chosen article_type> because <one short clause>
+style_pick: <chosen rhetorical_style> because <one short clause citing a trigger word/phrase>
+location_scope: <state|city|national|none> because <one short clause>
+
+JSON:
+{<the full JSON object exactly matching the schema above>}
+
+The JSON block MUST be valid JSON parseable by Python's json.loads. Do NOT wrap it
+in markdown fences. The REASONING block is three lines and is for grounding only —
+keep each line under 25 words."""
 
 PROMPT_D = PROMPT_B + _OUTPUT_PROTOCOL
 
@@ -293,37 +304,37 @@ async def select_sample(conn: asyncpg.Connection) -> list[int]:
             "language_iso='en' AND (LOWER(title) LIKE '%telangana%' OR LOWER(title) LIKE '%andhra%' "
             "OR LOWER(title) LIKE '%kcr%' OR LOWER(title) LIKE '%jagan%' OR LOWER(title) LIKE '%revanth%' "
             "OR LOWER(title) LIKE '%politics%' OR LOWER(title) LIKE '%cabinet%' OR LOWER(title) LIKE '%assembly%')",
-            20, "english_political",
+            40, "english_political",
         ),
-        ("language_iso='te'", 15, "telugu"),
+        ("language_iso='te'", 30, "telugu"),
         (
             "language_iso='en' AND (LOWER(title) LIKE '%opinion%' OR LOWER(title) LIKE '%editorial%' "
             "OR LOWER(title) LIKE '%column%' OR LOWER(title) LIKE '%op-ed%')",
-            10, "english_opinion",
+            20, "english_opinion",
         ),
         (
             "article_type='sports_result' OR LOWER(title) LIKE '%recipe%' OR LOWER(title) LIKE '%cricket%' "
             "OR LOWER(title) LIKE '%match%' OR LOWER(title) LIKE '%recipe%'",
-            10, "sports_recipe",
+            20, "sports_recipe",
         ),
         (
             "language_iso='en' AND LENGTH(full_text_scraped) > 4000",
-            10, "long_features",
+            20, "long_features",
         ),
         (
             "language_iso='en' AND LENGTH(full_text_scraped) BETWEEN 200 AND 600",
-            10, "short_news",
+            20, "short_news",
         ),
         (
             f"language_iso='en' AND {not_india_clause}",
-            10, "international",
+            20, "international",
         ),
         (
             "language_iso='en' AND (LOWER(title) LIKE '%cabinet%' OR LOWER(title) LIKE '%scheme%' "
             "OR LOWER(title) LIKE '%budget%' OR LOWER(title) LIKE '%policy%' OR LOWER(title) LIKE '%state%')",
-            10, "state_policy",
+            20, "state_policy",
         ),
-        ("language_iso='hi'", 5, "hindi"),
+        ("language_iso='hi'", 10, "hindi"),
     ]
 
     picked: list[str] = []
@@ -388,44 +399,6 @@ async def fetch_articles(
 # CALL + METRICS
 # ─────────────────────────────────────────────────────────────────────
 
-class OllamaCallFailed(RuntimeError):
-    """Raised when Ollama HTTP call fails or returns malformed body."""
-
-
-async def call_ollama(
-    system_prompt: str,
-    user_msg: str,
-    max_tokens: int = 4000,
-) -> tuple[str, float]:
-    """Send a chat request to Ollama on TRIJYA-7. Returns (content, latency_ms)."""
-    body = {
-        "model": EVAL_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_msg},
-        ],
-        "stream": False,
-        "think": False,
-        "format": "json",
-        "options": {
-            "num_predict": max_tokens,
-            "num_ctx": 8192,
-            "temperature": 0.1,
-        },
-    }
-    t0 = time.perf_counter()
-    async with httpx.AsyncClient(timeout=180) as client:
-        r = await client.post(OLLAMA_URL, json=body)
-        r.raise_for_status()
-        data = r.json()
-    latency_ms = (time.perf_counter() - t0) * 1000.0
-    msg = data.get("message") or {}
-    content = msg.get("content") if isinstance(msg, dict) else None
-    if not isinstance(content, str):
-        raise OllamaCallFailed(f"missing message.content; keys={list(data.keys())}")
-    return content, latency_ms
-
-
 @dataclass
 class CallResult:
     prompt: str
@@ -489,13 +462,21 @@ async def run_one(
             f"TITLE: {title}\n\nBODY:\n{body}\n\n"
             "Return ONLY the JSON object."
         )
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
         try:
-            raw, _ = await call_ollama(
-                system_prompt=sys_prompt,
-                user_msg=user_prompt,
+            # Force Cerebras direct so every prompt hits the same model.
+            # Variant D needs REASONING+JSON two-block format → json_response=False.
+            raw = await _call_cerebras(
+                messages=messages,
+                groq_model="qwen/qwen3-32b",   # maps to qwen-3-235b-a22b-instruct-2507
                 max_tokens=max_tokens,
+                temperature=0.3,
+                json_response=(prompt_name != "D"),
             )
-        except Exception as exc:  # noqa: BLE001 - capture all backend errors
+        except (GroqCallFailed, GroqQuotaExhausted, Exception) as exc:
             latency = int((time.monotonic() - start) * 1000)
             return CallResult(
                 prompt=prompt_name,
@@ -767,7 +748,7 @@ async def main() -> None:
         lang = (art.get("language_iso") or "en").lower()
         is_non_english = lang != "en"
         prompt_map = PROMPTS_NON_ENGLISH if is_non_english else PROMPTS_ENGLISH
-        max_tokens = 4500 if is_non_english else 4000
+        max_tokens = 4500 if is_non_english else 3000
         for prompt_name, sys_prompt in prompt_map.items():
             tasks.append(asyncio.create_task(
                 run_one(sem, prompt_name, sys_prompt, art, max_tokens),
@@ -776,12 +757,7 @@ async def main() -> None:
     raw_rows: list[dict[str, Any]] = []
     done = 0
     for fut in asyncio.as_completed(tasks):
-        try:
-            res = await fut
-        except Exception as exc:  # noqa: BLE001 - defensive; run_one should catch
-            logger.error("task raised (prompt_name lost): %s", exc)
-            done += 1
-            continue
+        res = await fut
         done += 1
         # Re-lookup the title for primary-subject classification.
         title = next(

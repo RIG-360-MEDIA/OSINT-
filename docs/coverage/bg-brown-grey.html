@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Black + Brown + Grey — leather & concrete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Inter:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    background: #0a0a0e;
+    color: #ECEEF1;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .frame-header {
+    padding: 22px 32px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: #050508;
+  }
+  .frame-header h1 {
+    margin: 0 0 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 26px;
+    letter-spacing: -0.01em;
+  }
+  .frame-header p {
+    margin: 0; font-size: 13.5px;
+    color: #A8ADB8; max-width: 92ch;
+    line-height: 1.55;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: minmax(640px, auto);
+  }
+  .panel {
+    position: relative; overflow: hidden;
+    padding: 32px 28px 40px;
+    border: 1px solid rgba(255,255,255,0.04);
+    background: #0A0807;
+  }
+
+  /* film grain overlay everywhere */
+  .panel::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    opacity: 0.06; mix-blend-mode: overlay; z-index: 1;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/></svg>");
+  }
+
+  .label {
+    position: relative; z-index: 2;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: #C49A6C;
+    margin-bottom: 4px;
+  }
+  .panel h2 {
+    position: relative; z-index: 2;
+    margin: 0 0 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 400; font-size: 20px;
+    letter-spacing: -0.005em;
+  }
+  .panel .desc {
+    position: relative; z-index: 2;
+    margin: 0 0 18px;
+    font-size: 13px;
+    color: #A8ADB8;
+    max-width: 60ch;
+    line-height: 1.55;
+  }
+
+  .swatches {
+    position: relative; z-index: 2;
+    display: flex; gap: 22px; margin: 4px 0 22px;
+  }
+  .swatch {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .swatch .sw {
+    width: 36px; height: 36px; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+  }
+  .swatch .nm {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px; color: #A8ADB8;
+    letter-spacing: 0.18em; text-transform: uppercase;
+  }
+
+  /* shared content */
+  .reading {
+    position: relative; z-index: 2;
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 24px;
+    line-height: 1.2; letter-spacing: -0.012em;
+  }
+  .reading u { text-decoration: none; border-bottom: 1px solid #FF2D2D; padding-bottom: 1px; }
+  .editor {
+    position: relative; z-index: 2;
+    margin: 14px 0 0;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 14px; line-height: 1.55;
+    color: #A8ADB8;
+  }
+  .row-exp {
+    position: relative; z-index: 2;
+    display: grid; grid-template-columns: 56px 1fr;
+    gap: 14px; align-items: end;
+    margin-top: 22px;
+  }
+  .merc { position: relative; width: 56px; height: 110px; }
+  .merc .track {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    top: 0; bottom: 0; width: 2px;
+    background: rgba(255,255,255,0.07);
+  }
+  .merc .fill {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 6px; bottom: 0; height: 67%;
+    background: linear-gradient(0deg, #FF2D2D, rgba(255,45,45,0.55));
+    box-shadow: 0 0 16px #FF2D2D, 0 0 5px #FF2D2D;
+  }
+  .exp-num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 52px;
+    line-height: 0.9; letter-spacing: -0.03em;
+  }
+  .exp-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.28em;
+    color: #A8ADB8; text-transform: uppercase; margin-top: 4px;
+  }
+  .exp-meta b { color: #FF2D2D; }
+  .card {
+    position: relative; z-index: 2;
+    margin-top: 22px;
+    padding: 14px 14px 12px;
+    /* leather-tinted card */
+    background:
+      linear-gradient(135deg, rgba(60,40,25,0.45) 0%, rgba(12,10,9,0.92) 70%),
+      linear-gradient(180deg, rgba(20,16,12,0.95), rgba(8,6,5,0.95));
+    border: 1px solid rgba(155,115,75,0.16);
+    box-shadow: inset 0 1px 0 rgba(155,115,75,0.08);
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, #FF2D2D, #C49A6C 65%, transparent);
+  }
+  .card .cap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.36em;
+    color: #C49A6C; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .card h4 {
+    margin: 0 0 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500; font-size: 15px; line-height: 1.32;
+  }
+  .card p {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px; color: #A8ADB8;
+    line-height: 1.55;
+  }
+
+  /* ═════════════════════════════════════════════════════════════
+     PANEL 1 — SUBTLE  ·  leather & concrete, quietly
+     warm near-black base, faint brown radial top-right,
+     cool concrete-grey radial bottom-left
+     ═════════════════════════════════════════════════════════════ */
+  .panel.subtle {
+    background:
+      radial-gradient(ellipse 900px 700px at 100% 0%, rgba(155,105,65,0.10), transparent 60%),
+      radial-gradient(ellipse 800px 600px at 0% 100%, rgba(120,125,135,0.07), transparent 60%),
+      #0A0807;
+  }
+  /* vignette so the edges still feel like a film frame */
+  .panel.subtle .vignette {
+    position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.4) 100%);
+  }
+
+  /* ═════════════════════════════════════════════════════════════
+     PANEL 2 — BOLDER  ·  oxblood + gunmetal
+     stronger brown wash, bolder grey wash, the leather feels old
+     and the concrete feels cold. More dramatic.
+     ═════════════════════════════════════════════════════════════ */
+  .panel.bold {
+    background:
+      radial-gradient(ellipse 1000px 800px at 100% 0%, rgba(185,115,70,0.18), transparent 55%),
+      radial-gradient(ellipse 900px 700px at 0% 100%, rgba(110,120,135,0.13), transparent 55%),
+      radial-gradient(ellipse 700px 500px at 50% 50%, rgba(60,35,20,0.10), transparent 70%),
+      #0B0807;
+  }
+  .panel.bold .vignette {
+    position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.55) 100%);
+  }
+
+  /* footer */
+  .vote {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 22px 32px 32px;
+    background: #050508;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+  }
+  .vote h4 {
+    margin: 0 0 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.42em;
+    color: #C49A6C; text-transform: uppercase;
+  }
+  .vote p {
+    margin: 0; font-family: 'Inter', sans-serif;
+    font-size: 13px; color: #A8ADB8;
+    line-height: 1.55;
+  }
+</style>
+</head>
+<body>
+
+<header class="frame-header">
+  <h1>Background mood — Black + Brown + Grey</h1>
+  <p>Same content rendered in two intensities of a leather-and-concrete combination. The base is warm near-black; the brown is a faint leather glow from one corner; the grey is cool concrete from the opposite corner. Film grain on top. Vignette to the edges.</p>
+</header>
+
+<section class="grid">
+
+  <!-- ════════ PANEL 1 — SUBTLE ════════ -->
+  <div class="panel subtle">
+    <div class="vignette"></div>
+    <div class="label">Variant 1 · Subtle · my pick</div>
+    <h2>Leather glow + concrete shadow + grain</h2>
+    <p class="desc">Reads like a leather-bound dossier on a concrete desk — warm light from a single lamp, cool shadow from the room. Quiet. Hours of comfort.</p>
+    <div class="swatches">
+      <div class="swatch"><div class="sw" style="background:#0A0807"></div><div class="nm">Base</div></div>
+      <div class="swatch"><div class="sw" style="background:#5A3D27"></div><div class="nm">Leather</div></div>
+      <div class="swatch"><div class="sw" style="background:#787D87"></div><div class="nm">Concrete</div></div>
+      <div class="swatch"><div class="sw" style="background:#ECEEF1"></div><div class="nm">Bone</div></div>
+      <div class="swatch"><div class="sw" style="background:#FF2D2D"></div><div class="nm">Red</div></div>
+    </div>
+
+    <p class="reading">Three coordinated waves of anti-Dharani phrasing in <u>36 hours</u> — narrative is hardening.</p>
+    <p class="editor">Editor's note — KTR's "47-item failure list" framing carried by 12 outlets, up from 4 a week ago. National pickup confirmed today.</p>
+    <div class="row-exp">
+      <div class="merc"><div class="track"></div><div class="fill"></div></div>
+      <div>
+        <div class="exp-num">67</div>
+        <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+      </div>
+    </div>
+    <article class="card">
+      <div class="cap">Frame 01 · Adversarial</div>
+      <h4>"Dharani failure" — record-tampering as governance collapse</h4>
+      <p>Dominant in 8 of 12 outlets. Originated 24 Apr. Voice-share: 38%.</p>
+    </article>
+  </div>
+
+  <!-- ════════ PANEL 2 — BOLD ════════ -->
+  <div class="panel bold">
+    <div class="vignette"></div>
+    <div class="label">Variant 2 · Bolder · dramatic</div>
+    <h2>Oxblood + gunmetal, dialed up</h2>
+    <p class="desc">Same DNA, more presence. The leather is older / darker / richer; the concrete is colder. Feels like a 1970s thriller-film set. More personality per glance, but louder over hours of use.</p>
+    <div class="swatches">
+      <div class="swatch"><div class="sw" style="background:#0B0807"></div><div class="nm">Base</div></div>
+      <div class="swatch"><div class="sw" style="background:#7A4626"></div><div class="nm">Oxblood</div></div>
+      <div class="swatch"><div class="sw" style="background:#6F7886"></div><div class="nm">Gunmetal</div></div>
+      <div class="swatch"><div class="sw" style="background:#3C2410"></div><div class="nm">Deep wood</div></div>
+      <div class="swatch"><div class="sw" style="background:#FF2D2D"></div><div class="nm">Red</div></div>
+    </div>
+
+    <p class="reading">Three coordinated waves of anti-Dharani phrasing in <u>36 hours</u> — narrative is hardening.</p>
+    <p class="editor">Editor's note — KTR's "47-item failure list" framing carried by 12 outlets, up from 4 a week ago. National pickup confirmed today.</p>
+    <div class="row-exp">
+      <div class="merc"><div class="track"></div><div class="fill"></div></div>
+      <div>
+        <div class="exp-num">67</div>
+        <div class="exp-meta"><b>▲ +26</b> vs yesterday</div>
+      </div>
+    </div>
+    <article class="card">
+      <div class="cap">Frame 01 · Adversarial</div>
+      <h4>"Dharani failure" — record-tampering as governance collapse</h4>
+      <p>Dominant in 8 of 12 outlets. Originated 24 Apr. Voice-share: 38%.</p>
+    </article>
+  </div>
+
+</section>
+
+<footer class="vote">
+  <div>
+    <h4>Variant 1 · Subtle</h4>
+    <p>Faint leather glow top-right, faint concrete shadow bottom-left, vignette edges, film grain. Reads as "dossier on a desk in a quiet room." <em>My recommendation.</em></p>
+  </div>
+  <div>
+    <h4>Variant 2 · Bolder</h4>
+    <p>Same idea, stronger saturation. Reads as "private cigar lounge / 1970s thriller film frame." More personality but harder to live in for long sessions.</p>
+  </div>
+</footer>
+
+</body>
+</html>

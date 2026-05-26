@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Robin · Coverage — v3 (expanded palette)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&family=Inter:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  /* ════════════════════════════════════════════════════════════════
+     v3 — palette expanded, each new colour has ONE job
+     ────────────────────────────────────────────────────────────
+     PALETTE (8 colours, each semantic):
+       bone        primary text
+       cream       editorial / quote body (warmer than bone)
+       dim         secondary text
+       faint       tertiary text / borders
+       brass       markers · navigation · value tokens · chapter feel
+       sage        positive states · recovery · aligned framing
+       periwinkle  cool · distant · time-archival · fading
+       red         alert · breaking · negative · the one strong accent
+     ════════════════════════════════════════════════════════════════ */
+  :root {
+    --bg-recessed:  #06040 2;
+    --bg-base:      #0A0705;
+    --bg-raised:    #110C09;
+
+    --hairline:       rgba(255,255,255,0.045);
+    --hairline-mid:   rgba(255,255,255,0.10);
+    --hairline-hot:   rgba(255,48,48,0.12);
+    --hairline-brass: rgba(212,160,86,0.22);
+
+    --text-bone:    #ECE6D8;
+    --text-cream:   #F4E8CD;
+    --text-dim:     #847A6C;
+    --text-faint:   #4E463C;
+
+    --brass:        #D4A056;
+    --brass-soft:   rgba(212,160,86,0.55);
+    --sage:         #7FB28E;
+    --periwinkle:   #6E7E96;
+    --accent:       #FF3030;
+    --accent-soft:  rgba(255,48,48,0.55);
+
+    --z-major: 112px;
+    --z-mid:    72px;
+    --z-minor:  36px;
+    --z-tight:  14px;
+  }
+  *,*::before,*::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    color: var(--text-bone);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background: var(--bg-base);
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--brass); color: var(--bg-base); }
+
+  /* ─── Warm room ──────────────────────────────────────────── */
+  .stage {
+    position: relative;
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 1800px 1200px at 50% 0%, rgba(145,70,32,0.10), transparent 60%),
+      radial-gradient(ellipse 1600px 1000px at 0% 60%, rgba(120,60,28,0.07), transparent 60%),
+      radial-gradient(ellipse 1600px 1000px at 100% 60%, rgba(120,60,28,0.07), transparent 60%),
+      radial-gradient(ellipse 1800px 1000px at 50% 110%, rgba(95,52,24,0.09), transparent 60%),
+      var(--bg-base);
+  }
+  .stage::before {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+    opacity:0.25;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='1' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.85  0 0 0 0 0.75  0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .container {
+    position: relative; z-index: 3;
+    max-width: 1320px; margin: 0 auto;
+    padding: 56px 56px 96px;
+  }
+
+  /* ─── Topbar ─────────────────────────────────────────────── */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: var(--z-major);
+  }
+  .brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500; font-size: 12px;
+    letter-spacing: 0.46em; text-transform: uppercase;
+    color: var(--brass);
+  }
+  .topbar-right {
+    display: flex; gap: 28px; align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.28em;
+    color: var(--text-dim); text-transform: uppercase;
+  }
+  .pip-static {
+    display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent); margin-right: 8px; vertical-align: middle;
+  }
+  .topbar-right b { color: var(--text-bone); font-weight: 500; }
+
+  /* ─── Zone label — brass now (chapter-marker feel) ───────── */
+  .zone-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.44em;
+    text-transform: uppercase;
+    color: var(--brass);
+    margin-bottom: var(--z-minor);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .zone-label::before {
+    content: '';
+    width: 24px; height: 1px;
+    background: var(--brass-soft);
+  }
+  .zone { margin-bottom: var(--z-major); }
+  .zone:last-child { margin-bottom: 0; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: minmax(0, 62fr) minmax(0, 38fr);
+    gap: 64px;
+    align-items: start;
+  }
+
+  /* ════════ ZONE 1 — Today's Reading ════════ */
+  .timestamp {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.36em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    color: var(--text-faint);
+  }
+  .timestamp .time { color: var(--brass); font-weight: 500; }
+  .timestamp .day  { color: var(--periwinkle); }
+  .lede {
+    margin: 0 0 28px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300;
+    font-size: clamp(40px, 4vw, 56px);
+    line-height: 1.06;
+    letter-spacing: -0.024em;
+    color: var(--text-bone);
+  }
+  .lede u {
+    text-decoration: none;
+    position: relative;
+    padding-bottom: 3px;
+  }
+  .lede u::after {
+    content: '';
+    position: absolute; left: 0; bottom: 0;
+    width: 100%; height: 1px;
+    background: var(--accent);
+    transform-origin: left center;
+    animation: draw-in 700ms cubic-bezier(0.4, 0, 0.2, 1) 400ms both;
+  }
+  @keyframes draw-in {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  .editors {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    font-style: italic;
+    font-size: 15px; line-height: 1.62;
+    color: var(--text-dim);
+    max-width: 56ch;
+  }
+  .editors em { color: var(--text-cream); font-style: italic; font-weight: 500; }
+
+  .exposure {
+    display: grid; gap: 4px;
+    padding-top: 4px;
+  }
+  .exp-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.44em;
+    color: var(--brass); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .exp-num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 60px;
+    line-height: 0.92; letter-spacing: -0.04em;
+    color: var(--text-bone);
+  }
+  .exp-delta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.18em;
+    color: var(--accent); text-transform: uppercase;
+    margin-top: 10px;
+  }
+  .exp-spark { margin-top: 18px; width: 100%; height: 36px; }
+  .exp-range {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; letter-spacing: 0.30em;
+    color: var(--periwinkle); text-transform: uppercase;
+    margin-top: 14px;
+  }
+
+  /* ════════ ZONE 2 — Breaking ════════ */
+  .breaking {
+    background: var(--bg-recessed);
+    border: 1px solid var(--hairline-hot);
+    padding: 32px 36px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 36px;
+    align-items: center;
+  }
+  .breaking-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.48em;
+    color: var(--accent); text-transform: uppercase;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .breaking-tag::before {
+    content: ''; display: inline-block;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: 0.4; transform: scale(0.7); }
+  }
+  .breaking h2 {
+    margin: 0;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 400; font-size: 30px;
+    line-height: 1.18; letter-spacing: -0.014em;
+    color: var(--text-bone);
+  }
+  .breaking-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.28em;
+    color: var(--text-dim); text-transform: uppercase;
+    text-align: right;
+    line-height: 1.7;
+  }
+  .breaking-meta .src { color: var(--brass); font-weight: 500; }
+
+  /* ════════ ZONE 3 — Notable Quotes ════════ */
+  .quotes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+  }
+  .quote { display: grid; gap: 18px; }
+  .quote-mark {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic; font-size: 56px;
+    line-height: 0.6;
+    color: var(--accent);
+    letter-spacing: -0.04em;
+  }
+  .quote.aligned .quote-mark { color: var(--sage); }
+  .quote-body {
+    margin: 0;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 26px; line-height: 1.32;
+    letter-spacing: -0.008em;
+    color: var(--text-cream);
+  }
+  .quote-attrib {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.32em;
+    color: var(--text-dim); text-transform: uppercase;
+  }
+  .quote-attrib .who { color: var(--brass); font-weight: 500; }
+  .quote.aligned .quote-attrib .who { color: var(--sage); }
+
+  /* ════════ ZONE 4 — Threads + Watchlist + Sentiment ════════ */
+  .threads { display: grid; gap: 32px; }
+  .thread {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: 24px; align-items: baseline;
+  }
+  .thread-rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.28em;
+    color: var(--brass);
+    font-weight: 500;
+  }
+  .thread-body h3 {
+    margin: 0 0 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 400; font-size: 19px;
+    line-height: 1.32; letter-spacing: -0.006em;
+    color: var(--text-bone);
+  }
+  .thread-body p {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px; line-height: 1.62;
+    color: var(--text-dim);
+    max-width: 56ch;
+  }
+  .thread-vs {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.22em;
+    color: var(--text-dim); text-transform: uppercase;
+    text-align: right;
+  }
+  .thread-vs b {
+    display: block;
+    color: var(--text-bone); font-weight: 500;
+    font-size: 18px; letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+  /* per-thread accent: adversarial=red, aligned=sage, routine=periwinkle */
+  .thread.adv .thread-vs b   { color: var(--accent); }
+  .thread.algn .thread-vs b  { color: var(--sage); }
+  .thread.rout .thread-vs b  { color: var(--periwinkle); }
+
+  /* Watchlist */
+  .watch {
+    background: var(--bg-raised);
+    border: 1px solid var(--hairline);
+    padding: 8px 22px;
+  }
+  .watch-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 18px;
+    align-items: center;
+    padding: 18px 0;
+  }
+  .watch-row + .watch-row { border-top: 1px solid var(--hairline); }
+  .watch-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px; color: var(--text-bone);
+  }
+  .watch-spark svg { display: block; }
+  .watch-state {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; letter-spacing: 0.30em;
+    text-transform: uppercase;
+    min-width: 80px; text-align: right;
+    color: var(--text-dim);
+  }
+  .watch-state.hot   { color: var(--accent); }
+  .watch-state.up    { color: var(--sage); }
+  .watch-state.cool  { color: var(--periwinkle); }
+
+  /* Sentiment — flush */
+  .sentiment { padding: 32px 0 0; }
+  .sentiment h4 {
+    margin: 0 0 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 400; font-size: 14px;
+    color: var(--text-bone);
+  }
+  .sentiment-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.26em;
+    color: var(--text-dim); text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .sentiment-meta b { color: var(--accent); }
+  .sentiment svg { width: 100%; height: 64px; display: block; }
+
+  /* ════════ ZONE 5 — Custom Cards (top-strip colour codes role) ════════ */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  .card {
+    border: 1px solid var(--hairline);
+    padding: 22px 20px 20px;
+    background: transparent;
+    cursor: pointer;
+    transition: border-color 200ms ease, transform 200ms ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background: var(--brass);
+  }
+  .card.alert::before { background: var(--accent); }
+  .card.aligned::before { background: var(--sage); }
+  .card.cool::before { background: var(--periwinkle); }
+  .card:hover { transform: translateY(-2px); }
+  .card.alert:hover   { border-color: var(--accent-soft); }
+  .card.aligned:hover { border-color: rgba(127,178,142,0.55); }
+  .card.cool:hover    { border-color: rgba(110,126,150,0.55); }
+  .card:not(.alert):not(.aligned):not(.cool):hover { border-color: var(--brass-soft); }
+
+  .card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; letter-spacing: 0.36em;
+    color: var(--text-dim); text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-label::before {
+    content: '';
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--brass);
+  }
+  .card.alert .card-label::before   { background: var(--accent); }
+  .card.aligned .card-label::before { background: var(--sage); }
+  .card.cool .card-label::before    { background: var(--periwinkle); }
+  .card h4 {
+    margin: 0 0 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 400; font-size: 16px;
+    line-height: 1.32; letter-spacing: -0.005em;
+    color: var(--text-bone);
+  }
+  .card p {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px; line-height: 1.55;
+    color: var(--text-dim);
+  }
+  .card-meta {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--hairline);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.28em;
+    color: var(--periwinkle); text-transform: uppercase;
+  }
+  .card.add {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-style: dashed;
+    border-color: var(--hairline-mid);
+    color: var(--text-dim);
+    gap: 12px;
+    min-height: 180px;
+  }
+  .card.add::before { display: none; }
+  .card.add .plus {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300; font-size: 32px;
+    color: var(--brass);
+    line-height: 1;
+  }
+  .card.add .lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: var(--brass);
+  }
+  .card.add:hover { border-color: var(--brass-soft); }
+
+  /* ════════ ZONE 6 — Brewing Horizon ════════ */
+  .brewing {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 56px;
+  }
+  .brew-item { display: grid; gap: 10px; }
+  .brew-stage {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.32em;
+    color: var(--text-dim); text-transform: uppercase;
+  }
+  .brew-stage b { font-weight: 500; }
+  .brew-item h4 {
+    margin: 2px 0 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    line-height: 1.28;
+  }
+  .brew-item p {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.55;
+  }
+  /* Cresting → red (imminent) */
+  .brew-item.s3 h4 { font-size: 21px; color: var(--text-bone); }
+  .brew-item.s3 p  { font-size: 13.5px; color: var(--text-dim); }
+  .brew-item.s3 .brew-stage b { color: var(--accent); }
+  /* Accelerating → brass (warming) */
+  .brew-item.s2 h4 { font-size: 17px; color: var(--text-bone); }
+  .brew-item.s2 p  { font-size: 12.5px; color: var(--text-dim); }
+  .brew-item.s2 .brew-stage b { color: var(--brass); }
+  /* Emerging → periwinkle (distant) */
+  .brew-item.s1 h4 { font-size: 15px; color: var(--text-dim); }
+  .brew-item.s1 p  { font-size: 12px; color: var(--text-faint); }
+  .brew-item.s1 .brew-stage b { color: var(--periwinkle); }
+
+  /* ════════ ZONE 7 — Feed ════════ */
+  .feed-row {
+    display: grid;
+    grid-template-columns: 100px 1fr 120px;
+    gap: 24px;
+    align-items: baseline;
+    padding: 14px 0;
+  }
+  .feed-row + .feed-row { border-top: 1px solid var(--hairline); }
+  .feed-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.28em;
+    color: var(--brass); text-transform: uppercase;
+    font-weight: 500;
+  }
+  .feed-headline {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 400; font-size: 15px;
+    color: var(--text-bone);
+    line-height: 1.42;
+  }
+  .feed-source {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.22em;
+    color: var(--text-dim); text-transform: uppercase;
+    text-align: right;
+  }
+  .feed-more {
+    margin-top: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.42em;
+    color: var(--brass); text-transform: uppercase;
+    cursor: pointer;
+  }
+  .feed-more:hover { color: var(--accent); }
+
+  /* ════════ ZONE 8 — Brief footer ════════ */
+  .brief-footer {
+    margin-top: var(--z-major);
+    padding: 28px 0 0;
+    border-top: 1px solid var(--hairline);
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .brief-link {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 400; font-size: 17px;
+    color: var(--text-bone);
+    cursor: pointer;
+  }
+  .brief-link b { color: var(--brass); font-weight: 500; }
+  .brief-link .arrow { color: var(--accent); }
+  .brief-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.32em;
+    color: var(--periwinkle); text-transform: uppercase;
+  }
+
+  /* tiny legend strip at the very top of the page so the user sees the palette job */
+  .legend {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    margin-bottom: 38px;
+    padding: 14px 16px;
+    border: 1px dashed var(--hairline-mid);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; letter-spacing: 0.26em;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+  .legend .swatch {
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .legend .dot {
+    width: 10px; height: 10px; display: inline-block;
+  }
+  .legend .l-brass .dot     { background: var(--brass); }
+  .legend .l-sage  .dot     { background: var(--sage); }
+  .legend .l-peri  .dot     { background: var(--periwinkle); }
+  .legend .l-red   .dot     { background: var(--accent); }
+  .legend .l-cream .dot     { background: var(--text-cream); }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="container">
+
+    <!-- legend strip — remove in production -->
+    <div class="legend">
+      <span class="swatch l-brass"><span class="dot"></span>Brass · markers · time · value</span>
+      <span class="swatch l-red"><span class="dot"></span>Red · alert · breaking · negative</span>
+      <span class="swatch l-sage"><span class="dot"></span>Sage · recovery · aligned</span>
+      <span class="swatch l-peri"><span class="dot"></span>Periwinkle · cool · fading · archival</span>
+      <span class="swatch l-cream"><span class="dot"></span>Cream · quote body · editorial italic</span>
+    </div>
+
+    <!-- ════ TOPBAR ════ -->
+    <div class="topbar">
+      <span class="brand">ROBIN · COVERAGE</span>
+      <div class="topbar-right">
+        <span><span class="pip-static"></span>LIVE</span>
+        <span><b>14:30 IST</b> · MON 11 MAY</span>
+        <span>K. M. NAIDU · HYDERABAD</span>
+      </div>
+    </div>
+
+    <!-- ════ ZONE 1 — Today's Reading ════ -->
+    <section class="zone">
+      <div class="zone-label">Today's Reading</div>
+      <div class="two-col">
+        <div>
+          <div class="timestamp"><span class="time">14:30 IST</span> · <span class="day">DAY 17 OF DHARANI ARC</span></div>
+          <h1 class="lede">
+            Three coordinated waves of anti-Dharani phrasing in <u>36 hours</u> — the opposition narrative is hardening. Window to respond is closing.
+          </h1>
+          <p class="editors">
+            Editor's note — KTR's <em>"47-item failure list"</em> framing is now carried by 12 outlets, up from 4 a week ago. National pickup confirmed today. Watch the cabinet-reshuffle thread in Brewing — Stage 2 of 4 and accelerating.
+          </p>
+        </div>
+        <aside class="exposure">
+          <div class="exp-label">Exposure Index</div>
+          <div class="exp-num" id="exp-num">67</div>
+          <div class="exp-delta">▲ +26 vs yesterday</div>
+          <svg class="exp-spark" viewBox="0 0 200 36" preserveAspectRatio="none">
+            <polyline fill="none" stroke="rgba(255,48,48,0.7)" stroke-width="1.2"
+              points="0,28 14,24 28,30 42,22 56,20 70,24 84,17 98,18 112,12 126,14 140,8 154,10 168,6 182,5 200,3" />
+          </svg>
+          <div class="exp-range">30D HIGH 71 · LOW 19</div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ════ ZONE 2 — Breaking ════ -->
+    <section class="zone">
+      <div class="zone-label">Breaking Now</div>
+      <div class="breaking">
+        <span class="breaking-tag">Breaking</span>
+        <h2>Petrol prices to surge in Hyderabad as Iran war pushes crude past $100/barrel</h2>
+        <div class="breaking-meta">
+          <span class="src">DHARITRI</span><br>1H AGO · 1 SOURCE
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ ZONE 3 — Notable Quotes ════ -->
+    <section class="zone">
+      <div class="zone-label">Notable Quotes · 24h</div>
+      <div class="quotes">
+        <figure class="quote">
+          <span class="quote-mark">"</span>
+          <blockquote class="quote-body">The Dharani portal is not a software failure. It is a confession.</blockquote>
+          <figcaption class="quote-attrib"><span class="who">KTR</span> · @KTRBRS · Telugu / Telangana · 4h ago</figcaption>
+        </figure>
+        <figure class="quote aligned">
+          <span class="quote-mark">"</span>
+          <blockquote class="quote-body">Khammam farmers have my number. They will call me before they call the press.</blockquote>
+          <figcaption class="quote-attrib"><span class="who">Revanth Reddy</span> · Sakshi · 11h ago</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ════ ZONE 4 — Threads + Watchlist + Sentiment ════ -->
+    <section class="zone">
+      <div class="zone-label">Narrative Threads</div>
+      <div class="two-col">
+        <div class="threads">
+          <article class="thread adv">
+            <span class="thread-rank">01</span>
+            <div class="thread-body">
+              <h3>"Dharani failure" — record-tampering as systemic governance collapse</h3>
+              <p>Dominant in 8 of 12 outlets covering the arc this week. Originated 24 Apr on @TelanganaPolWatch. Mainstream pickup Day 14.</p>
+            </div>
+            <div class="thread-vs"><b>38%</b>Voice-share</div>
+          </article>
+          <article class="thread algn">
+            <span class="thread-rank">02</span>
+            <div class="thread-body">
+              <h3>"Khammam ground-visit recovery" — CM personally responsive to farmers</h3>
+              <p>Lifted from −0.41 to −0.18 sentiment in 48h. 4 outlets carried positive framing.</p>
+            </div>
+            <div class="thread-vs"><b>24%</b>Voice-share</div>
+          </article>
+          <article class="thread rout">
+            <span class="thread-rank">03</span>
+            <div class="thread-body">
+              <h3>"Cabinet expansion" — procedural coverage of portfolio reassignment</h3>
+              <p>12 outlets carry it as routine. Likely fades within 96h unless KTR escalates.</p>
+            </div>
+            <div class="thread-vs"><b>18%</b>Voice-share</div>
+          </article>
+        </div>
+
+        <aside>
+          <div class="watch">
+            <div class="watch-row">
+              <span class="watch-name">KTR</span>
+              <span class="watch-spark">
+                <svg width="80" height="20" viewBox="0 0 80 20"><polyline fill="none" stroke="#FF3030" stroke-width="1.2" points="0,16 10,15 20,14 30,12 40,10 50,8 60,6 70,4 80,3"/></svg>
+              </span>
+              <span class="watch-state hot">Rising · 3×</span>
+            </div>
+            <div class="watch-row">
+              <span class="watch-name">KCR</span>
+              <span class="watch-spark">
+                <svg width="80" height="20" viewBox="0 0 80 20"><polyline fill="none" stroke="#847A6C" stroke-width="1.2" points="0,12 10,11 20,13 30,12 40,11 50,12 60,13 70,12 80,11"/></svg>
+              </span>
+              <span class="watch-state">Quiet</span>
+            </div>
+            <div class="watch-row">
+              <span class="watch-name">Bandi Sanjay</span>
+              <span class="watch-spark">
+                <svg width="80" height="20" viewBox="0 0 80 20"><polyline fill="none" stroke="#7FB28E" stroke-width="1.2" points="0,14 10,12 20,11 30,10 40,9 50,8 60,8 70,7 80,7"/></svg>
+              </span>
+              <span class="watch-state up">Rising</span>
+            </div>
+            <div class="watch-row">
+              <span class="watch-name">Owaisi</span>
+              <span class="watch-spark">
+                <svg width="80" height="20" viewBox="0 0 80 20"><polyline fill="none" stroke="#6E7E96" stroke-width="1.2" points="0,6 10,8 20,10 30,11 40,12 50,13 60,14 70,15 80,16"/></svg>
+              </span>
+              <span class="watch-state cool">Fading</span>
+            </div>
+            <div class="watch-row">
+              <span class="watch-name">Etala Rajender</span>
+              <span class="watch-spark">
+                <svg width="80" height="20" viewBox="0 0 80 20"><polyline fill="none" stroke="#847A6C" stroke-width="1.2" points="0,11 10,11 20,12 30,11 40,11 50,12 60,11 70,11 80,12"/></svg>
+              </span>
+              <span class="watch-state">Quiet</span>
+            </div>
+          </div>
+
+          <div class="sentiment">
+            <h4>Sentiment · Revanth Reddy</h4>
+            <div class="sentiment-meta">14D · TODAY <b>−0.34</b></div>
+            <svg viewBox="0 0 240 60" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#FF3030" stop-opacity="0.18"/>
+                  <stop offset="1" stop-color="#FF3030" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,22 L20,18 L40,26 L60,30 L80,28 L100,32 L120,36 L140,34 L160,38 L180,42 L200,40 L220,46 L240,50 L240,60 L0,60 Z" fill="url(#sg)" />
+              <path d="M0,22 L20,18 L40,26 L60,30 L80,28 L100,32 L120,36 L140,34 L160,38 L180,42 L200,40 L220,46 L240,50" stroke="#FF3030" stroke-width="1.2" fill="none" />
+            </svg>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ════ ZONE 5 — Custom Cards (top-strip codes role) ════ -->
+    <section class="zone">
+      <div class="zone-label">Tracked Subjects</div>
+      <div class="cards">
+        <article class="card alert">
+          <div class="card-label">Adversarial · 12 sources</div>
+          <h4>Dharani portal arc</h4>
+          <p>Day 17. KTR's "47-item failure list" framing carried by 12 outlets, up from 4 a week ago.</p>
+          <div class="card-meta">Updated 1h ago</div>
+        </article>
+        <article class="card aligned">
+          <div class="card-label">Aligned · 8 sources</div>
+          <h4>Revanth Reddy — political moves</h4>
+          <p>Khammam recovery lifting sentiment. National desks now drafting his profile for next-cycle coverage.</p>
+          <div class="card-meta">Updated 2h ago</div>
+        </article>
+        <article class="card cool">
+          <div class="card-label">Developing · 4 sources</div>
+          <h4>Cabinet reshuffle pressure</h4>
+          <p>Brewing Stage 2. Two regional papers floating reshuffle framing. Not picked up nationally yet.</p>
+          <div class="card-meta">Updated 6h ago</div>
+        </article>
+        <button class="card add">
+          <span class="plus">+</span>
+          <span class="lbl">Track Subject</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ════ ZONE 6 — Brewing Horizon ════ -->
+    <section class="zone">
+      <div class="zone-label">Brewing Horizon</div>
+      <div class="brewing">
+        <div class="brew-item s3">
+          <span class="brew-stage">Stage <b>3 / 4</b> · Cresting</span>
+          <h4>Crude-price domestic impact</h4>
+          <p>BPCL/IOC losses now in 3 financial dailies. Political framing imminent — expect opposition pickup by Wed.</p>
+        </div>
+        <div class="brew-item s2">
+          <span class="brew-stage">Stage <b>2 / 4</b> · Accelerating</span>
+          <h4>Cabinet reshuffle pressure</h4>
+          <p>KTR escalation patterns suggest a forced cabinet announcement within 7-10 days.</p>
+        </div>
+        <div class="brew-item s1">
+          <span class="brew-stage">Stage <b>1 / 4</b> · Emerging</span>
+          <h4>Telangana SC seat redistricting</h4>
+          <p>Two regional papers floating the framing. Not picked up nationally yet — watch next 72h.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ ZONE 7 — Feed ════ -->
+    <section class="zone">
+      <div class="zone-label">Feed · Last 6 hours</div>
+      <div>
+        <div class="feed-row">
+          <span class="feed-time">13:18 IST</span>
+          <span class="feed-headline">KTR demands judicial probe into Dharani record alterations during BRS rule transition</span>
+          <span class="feed-source">Sakshi</span>
+        </div>
+        <div class="feed-row">
+          <span class="feed-time">12:54 IST</span>
+          <span class="feed-headline">Telangana cabinet meeting deferred again as portfolio negotiations continue, sources confirm</span>
+          <span class="feed-source">Deccan Chronicle</span>
+        </div>
+        <div class="feed-row">
+          <span class="feed-time">12:30 IST</span>
+          <span class="feed-headline">Bandi Sanjay slams Congress over law-and-order in interior Telangana districts</span>
+          <span class="feed-source">Eenadu</span>
+        </div>
+        <div class="feed-row">
+          <span class="feed-time">11:47 IST</span>
+          <span class="feed-headline">Hyderabad water-tariff revision proposal lands on CM's desk, urban-affairs ministry confirms</span>
+          <span class="feed-source">Telangana Today</span>
+        </div>
+        <div class="feed-row">
+          <span class="feed-time">11:12 IST</span>
+          <span class="feed-headline">Khammam farmer-collective issues statement of support after Revanth ground visit</span>
+          <span class="feed-source">Namasthe Telangana</span>
+        </div>
+        <div class="feed-row">
+          <span class="feed-time">10:38 IST</span>
+          <span class="feed-headline">Iran-Israel crude spike: Hyderabad fuel retailers brace for price revision by week-end</span>
+          <span class="feed-source">Dharitri</span>
+        </div>
+        <div class="feed-row">
+          <span class="feed-time">10:05 IST</span>
+          <span class="feed-headline">Owaisi cautions against "communal undertone" in Telangana redistricting discourse</span>
+          <span class="feed-source">Siasat</span>
+        </div>
+        <div class="feed-more">Show all 247 · today ▸</div>
+      </div>
+    </section>
+
+    <!-- ════ ZONE 8 — Brief footer ════ -->
+    <div class="brief-footer">
+      <span class="brief-link">Today's Brief — <b>8 stories</b> · 4 min read <span class="arrow">▸</span></span>
+      <span class="brief-meta">Compiled 14:30 IST · MON 11 MAY</span>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  (function(){
+    const el = document.getElementById('exp-num');
+    if (!el) return;
+    const target = parseInt(el.textContent, 10);
+    const dur = 900;
+    const t0 = performance.now();
+    el.textContent = '0';
+    function tick(t){
+      const p = Math.min((t - t0) / dur, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * eased);
+      if (p < 1) requestAnimationFrame(tick);
+      else el.textContent = target;
+    }
+    requestAnimationFrame(tick);
+  })();
+</script>
+
+</body>
+</html>

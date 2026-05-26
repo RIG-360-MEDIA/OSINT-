@@ -77,13 +77,39 @@ async def _fetch_article(article_id: str) -> dict[str, Any] | None:
 
 
 async def _resolve_entity_id(name: str) -> str | None:
+    """Resolve speaker name -> entity_dictionary.id.
+
+    Match order (priority):
+      1. exact canonical_name match  (e.g. "Narendra Modi")
+      2. exact alias match           (e.g. "Modi" -> Narendra Modi)
+      3. NULL (no match)
+
+    Patched 2026-05-25: previously did canonical-only; missed ~98% of speakers
+    that use short names or titles. Now also checks the `aliases` ARRAY column.
+    Conflicts (same alias for multiple entities) resolved by ORDER BY:
+    persons before others, then by canonical_name length (longer = more specific).
+    """
+    if not name or len(name.strip()) < 2:
+        return None
     async with get_db() as db:
         result = await db.execute(
             text(
-                "SELECT id::text FROM entity_dictionary "
-                "WHERE LOWER(canonical_name) = LOWER(:n) LIMIT 1"
+                """
+                SELECT id::text
+                  FROM entity_dictionary
+                 WHERE LOWER(canonical_name) = LOWER(:n)
+                    OR EXISTS (
+                       SELECT 1 FROM unnest(aliases) AS a
+                        WHERE LOWER(a) = LOWER(:n)
+                    )
+                 ORDER BY
+                   (LOWER(canonical_name) = LOWER(:n)) DESC,
+                   (entity_type = 'person') DESC,
+                   LENGTH(canonical_name) DESC
+                 LIMIT 1
+                """
             ),
-            {"n": name},
+            {"n": name.strip()},
         )
         row = result.fetchone()
     return row[0] if row else None
@@ -140,8 +166,8 @@ async def _persist(article_id: str, parsed: dict[str, Any]) -> dict[str, int]:
                        quote_text, is_direct,
                        quote_text_en, speaker_name_en, translated_at)
                     VALUES (:a, :sp, :se, :qt, :d,
-                            :qt_en, :sp_en,
-                            CASE WHEN :qt_en IS NOT NULL
+                            :qt_en::text, :sp_en::text,
+                            CASE WHEN :qt_en::text IS NOT NULL
                                  THEN NOW() ELSE NULL END)
                     """
                 ),
@@ -354,11 +380,14 @@ async def _translate_pending_run() -> dict[str, int]:
         result = await db.execute(
             text(
                 """
-                SELECT id::text AS id, speaker_name, quote_text
-                FROM article_quotes
-                WHERE quote_text_en IS NULL
-                  AND extracted_at > NOW() - INTERVAL '60 days'
-                ORDER BY extracted_at DESC
+                SELECT q.id::text AS id, q.speaker_name, q.quote_text
+                FROM article_quotes q
+                JOIN articles a ON a.id = q.article_id
+                WHERE q.quote_text_en IS NULL
+                  AND q.extracted_at > NOW() - INTERVAL '60 days'
+                  AND a.language_iso IS NOT NULL
+                  AND a.language_iso <> 'en'   -- B2: skip English quotes
+                ORDER BY q.extracted_at DESC
                 LIMIT :lim
                 """
             ),

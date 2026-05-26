@@ -26,68 +26,41 @@ app = Celery(
         "backend.tasks",
         "backend.tasks.collector_tasks",
         "backend.tasks.nlp_processor",
-        "backend.tasks.relevance_task",
-        "backend.tasks.backfill_task",
         "backend.tasks.dict_reload_task",
-        "backend.tasks.thread_task",
-        "backend.tasks.youtube_task",
-        "backend.tasks.govt_task",
-        "backend.tasks.govt_relevance_task",
-        "backend.tasks.govt_doctor_task",
-        "backend.tasks.social_task",
-        "backend.tasks.social_briefing_task",
-        "backend.tasks.social_intel_task",
-        "backend.tasks.newspaper_task",
-        # Playwright-based og:image backfill (post-deploy thumbnail gap)
-        "backend.tasks.thumbnail_task",
-        # Playwright Telugu-daily scraper (Eenadu / Sakshi / AJ — no public RSS)
-        "backend.collectors.telugu_scraper",
         # SearXNG-fallback thumbnail finder (fix for post-deploy og:image gap)
         "backend.tasks.thumbnail_task",
-        # Daily brief auto-generation (P10 / fix-brief-prod-readiness P1.5)
-        "backend.tasks.brief_task",
-        # Brief quality scorecard cron (fix-brief-prod-readiness P2.10)
-        "backend.tasks.brief_quality_task",
-        # CM Page political-intelligence tasks
-        "backend.tasks.cm.stance_task",
-        "backend.tasks.cm.speakers_task",
-        "backend.tasks.cm.issues_task",
-        "backend.tasks.cm.dissent_task",
-        "backend.tasks.cm.counter_narrative_task",
-        "backend.tasks.cm.refresh_views_task",
-        "backend.tasks.cm.risk_window_task",
-        "backend.tasks.cm.promise_task",
-        "backend.tasks.cm.backfill_newspaper_sentiment_task",
-        "backend.tasks.cm.exploitation_index_task",
-        # CM Page v2 — district resolution + LLM auto-publish stack
-        "backend.tasks.cm.backfill_district_geo",
-        "backend.tasks.cm.lead_headline_task",
-        "backend.tasks.cm.analysis_column_task",
-        "backend.tasks.cm.action_queue_task",
-        # CM Page v2 — external-source collectors (atlas layers)
+        # External-source collectors (atlas layers) — kept per cleanup spec
         "backend.tasks.collectors.mandi_agmarknet_task",
         "backend.tasks.collectors.cpcb_aqi_task",
         "backend.tasks.collectors.imd_weather_task",
         "backend.tasks.collectors.tgspdcl_power_task",
         "backend.tasks.collectors.welfare_coverage_task",
         "backend.tasks.collectors.acled_sink_task",
-        # Daily LLM-generated summaries for the /coverage hub panels
-        "backend.tasks.coverage_summary_task",
-        # /coverage/articles rebuild — RAG-integrated analyst surface tasks
-        "backend.tasks.coverage",
-        "backend.tasks.coverage.user_cards_task",
-        "backend.tasks.coverage.pick_breaking_per_user_task",
-        "backend.tasks.coverage.contradictions_task",
-        "backend.tasks.coverage.top_stories_task",
-        "backend.tasks.coverage.coverage_gaps_task",
-        "backend.tasks.coverage.notifications_task",
-        "backend.tasks.coverage.claims_quotes_task",
-        # THE NEWSROOM — multi-channel TV/YouTube intelligence (Phase 0+).
-        # Tasks split across three queues:
-        #   whisper — yt-dlp / Groq Whisper / local ASR / live HLS pulls
-        #   nlp     — Cerebras reconcile / quote / breaking-cluster gating
-        #   brief   — daily newsroom digest
-        "backend.tasks.newsroom",
+        # Periodic byline backfill — runs every 6h, HTML-only, no LLM cost
+        "backend.tasks.substrate.byline_periodic_task",
+        # Periodic tweet enrichment — catches v1→v2 upgrades + retries
+        "backend.tasks.substrate.tweet_periodic_task",
+        # Nightly gold-set regression for the data-quality observability stack
+        "backend.tasks.quality_regression_task",
+        # 15-min postfix that keeps NEW articles clean (lang + is_future)
+        "backend.tasks.quality_postfix_task",
+        # Daily quality comparator — new articles vs backfilled baseline
+        "backend.tasks.quality_compare_task",
+        # 30-min event-cluster importance refresh (T5)
+        "backend.tasks.cluster_importance_task",
+        # Hourly entity-mention aggregator (T6)
+        "backend.tasks.entity_mention_task",
+        # Nightly v2→v3 upgrade pass (translation + register fields)
+        "backend.tasks.v3_upgrade_task",
+        # Newsroom (live monitoring + extract + briefing) — was missing,
+        # causing "unregistered task" errors after every container restart.
+        "backend.tasks.newsroom.check_liveness",
+        "backend.tasks.newsroom.detect_breaking",
+        "backend.tasks.newsroom.extract_quotes",
+        "backend.tasks.newsroom.generate_daily_brief",
+        "backend.tasks.newsroom.live_digest",
+        "backend.tasks.newsroom.live_monitor",
+        "backend.tasks.newsroom.process_broadcast",
     ],
 )
 
@@ -104,101 +77,25 @@ app.config_from_object(
             "tasks.collect_rss": {"queue": "collectors"},
             "tasks.collect_rss_direct": {"queue": "collectors"},
             "tasks.collect_html": {"queue": "collectors"},
+            "tasks.quality.gold_regression": {"queue": "nlp"},
+            "tasks.quality.postfix": {"queue": "nlp"},
+            "tasks.quality.compare": {"queue": "nlp"},
+            "tasks.quality.cluster_importance": {"queue": "nlp"},
+            "tasks.quality.entity_mentions": {"queue": "nlp"},
+            "tasks.quality.v3_upgrade": {"queue": "nlp"},
             "tasks.fetch_og_images_batch": {"queue": "collectors"},
-            "tasks.scrape_telugu_dailies": {"queue": "collectors"},
-            "tasks.collect_youtube": {"queue": "youtube"},
-            "tasks.collect_govt_documents": {"queue": "documents"},
-            "tasks.govt_collection_doctor": {"queue": "documents"},
-            # Newspaper collection moved off the busy `collectors` queue
-            # (which has concurrency=1 and is regularly blocked by
-            # 30-60 minute RSS scrapes). Lives on `documents` queue
-            # alongside govt-doc collection — both are heavy I/O and
-            # benefit from the dedicated 2-worker pool there.
-            "tasks.score_govt_doc_relevance": {"queue": "relevance"},
-            "tasks.score_govt_doc_for_all_users": {"queue": "relevance"},
             "tasks.process_nlp_batch": {"queue": "nlp"},
-            "tasks.score_relevance_batch": {"queue": "relevance"},
-            "tasks.score_unscored_articles": {"queue": "relevance"},
-            "tasks.backfill_user_relevance": {"queue": "relevance"},
-            "tasks.generate_all_briefs": {"queue": "brief"},
-            "tasks.generate_brief_for_user": {"queue": "brief"},
-            "tasks.score_brief_quality": {"queue": "brief"},
-            "tasks.collect_reddit": {"queue": "social"},
-            "tasks.collect_telegram": {"queue": "social"},
-            "tasks.backfill_social_entity_matches": {"queue": "social"},
-            "tasks.translate_pending_social_posts": {"queue": "social"},
-            "tasks.cluster_recent_social_posts": {"queue": "social"},
-            "tasks.recompute_social_baselines": {"queue": "social"},
-            "tasks.detect_social_events": {"queue": "social"},
-            "tasks.compose_social_summary": {"queue": "social"},
-            "tasks.auto_promote_subjects": {"queue": "social"},
-            "tasks.aggregate_social_sentiment_daily": {"queue": "nlp"},
-            "tasks.collect_newspapers": {"queue": "documents"},
-            "tasks.refresh_coverage_summaries": {"queue": "nlp"},
-            # /coverage/articles rebuild
-            "tasks.refresh_user_cards": {"queue": "nlp"},
-            "tasks.retry_unrefreshed_cards": {"queue": "nlp"},
-            "tasks.spawn_sub_cards": {"queue": "nlp"},
-            "tasks.coverage.pick_breaking_per_user": {"queue": "nlp"},
-            "tasks.refresh_contradictions": {"queue": "nlp"},
-            "tasks.refresh_top_stories": {"queue": "nlp"},
-            "tasks.refresh_coverage_gaps": {"queue": "nlp"},
-            "tasks.evaluate_notification_rules": {"queue": "nlp"},
-            "tasks.extract_claims_quotes_for_article": {"queue": "nlp"},
-            "tasks.extract_pending_claims_quotes": {"queue": "nlp"},
-            "tasks.translate_pending_quotes": {"queue": "nlp"},
-            # CM Page tasks. Heavy LLM work routes to `nlp`; cheap
-            # aggregation/refresh work routes to `social` to avoid
-            # competing with article NLP for the nlp pool.
-            "tasks.cm.tag_stance": {"queue": "nlp"},
-            "tasks.cm.extract_speakers": {"queue": "nlp"},
-            "tasks.cm.cluster_issues": {"queue": "nlp"},
-            "tasks.cm.score_dissent": {"queue": "nlp"},
-            "tasks.cm.generate_counter_narratives": {"queue": "nlp"},
-            "tasks.cm.score_promise_status": {"queue": "nlp"},
-            "tasks.cm.refresh_risk_window": {"queue": "nlp"},
-            "tasks.cm.backfill_newspaper_sentiment": {"queue": "nlp"},
-            "tasks.cm.compute_exploitation_index": {"queue": "social"},
-            "tasks.cm.refresh_voice_share": {"queue": "social"},
-            "tasks.cm.refresh_issue_hourly": {"queue": "social"},
-            "tasks.cm.refresh_constituency_heatmap": {"queue": "social"},
-            # CM Page v2 — district resolution backfill on `nlp` (gazetteer
-            # match against entities_extracted; no re-NER, low cost).
-            "tasks.cm.backfill_district_geo": {"queue": "nlp"},
-            # CM Page v2 — LLM auto-publish stack on `nlp`.
-            "tasks.cm.lead_headline": {"queue": "nlp"},
-            "tasks.cm.analysis_column": {"queue": "nlp"},
-            "tasks.cm.action_queue": {"queue": "nlp"},
-            # CM Page v2 — external-source collectors. Routed to the
-            # dedicated `collectors` queue so heavy LLM/article NLP work
-            # never blocks them and they never block article ingest.
+            # Byline / tweet substrate backfill — pure HTTP fetching, light
+            # parsing, no LLM. Shares the collectors queue with HTML scraping.
+            "tasks.backfill_bylines_periodic": {"queue": "collectors"},
+            "tasks.backfill_tweets_periodic": {"queue": "collectors"},
+            # External-source collectors (atlas layers) — kept per cleanup spec.
             "tasks.collectors.mandi_agmarknet": {"queue": "collectors"},
             "tasks.collectors.cpcb_aqi":        {"queue": "collectors"},
             "tasks.collectors.imd_weather":     {"queue": "collectors"},
             "tasks.collectors.tgspdcl_power":   {"queue": "collectors"},
             "tasks.collectors.welfare_coverage":{"queue": "collectors"},
             "tasks.collectors.acled_sink":      {"queue": "collectors"},
-            # ── THE NEWSROOM ──
-            # Whisper queue: ASR + live HLS pulls. Concurrency=1 because L3
-            # local ASR (IndicConformer / Faster-Whisper) is CPU-bound and a
-            # single live monitor task can run for hours streaming HLS.
-            "tasks.newsroom.ping": {"queue": "whisper"},
-            "tasks.newsroom.lens_l1_yt_captions": {"queue": "whisper"},
-            "tasks.newsroom.lens_l2_groq_whisper": {"queue": "whisper"},
-            "tasks.newsroom.lens_l3_local_asr": {"queue": "whisper"},
-            "tasks.newsroom.diarise": {"queue": "whisper"},
-            "tasks.newsroom.process_broadcast": {"queue": "whisper"},
-            "tasks.newsroom.live_monitor": {"queue": "whisper"},
-            "tasks.newsroom.enqueue_live_monitors": {"queue": "whisper"},
-            # NLP queue: LLM-heavy reconcile / quote / breaking-cluster gate.
-            "tasks.newsroom.reconcile": {"queue": "nlp"},
-            "tasks.newsroom.phonetic_snap": {"queue": "nlp"},
-            "tasks.newsroom.extract_quotes": {"queue": "nlp"},
-            "tasks.newsroom.detect_breaking": {"queue": "nlp"},
-            # Brief queue: daily newsroom digest (Phase 8).
-            "tasks.newsroom.generate_daily_brief": {"queue": "brief"},
-            # Liveness probe (every 5 min) — checks each 24x7 channel.
-            "tasks.newsroom.check_liveness": {"queue": "whisper"},
         },
         "beat_schedule": {
             "collect-rss-every-15-min": {
@@ -216,7 +113,22 @@ app.config_from_object(
                 "schedule": timedelta(hours=6),
                 "options": {"queue": "collectors"},
             },
-            # Playwright og:image batch — opens one Chromium, processes
+            # Periodic byline backfill — every 6h, processes up to 1500
+            # extraction_version=2 articles missing byline per tick.
+            # HTML-only extraction (JSON-LD → meta → CSS selectors),
+            # zero LLM cost. Naturally drains as articles get filled in.
+            "backfill-bylines-every-6h": {
+                "task": "tasks.backfill_bylines_periodic",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "collectors"},
+            },
+            # Periodic tweet content enrichment — every 6h, free oEmbed,
+            # catches v1→v2 upgrades and any transient failures.
+            "backfill-tweets-every-6h": {
+                "task": "tasks.backfill_tweets_periodic",
+                "schedule": timedelta(hours=6),
+                "options": {"queue": "collectors"},
+            },
             # Backfill missing og:image thumbnails using Playwright (real
             # browser bypasses anti-bot rejection of httpx from data-center
             # IPs). Single batch task per fire — opens 1 Chromium, processes
@@ -226,341 +138,22 @@ app.config_from_object(
                 "schedule": timedelta(minutes=10),
                 "options": {"queue": "collectors"},
             },
-            # Telugu-daily scraper: hits Eenadu (×33 districts), Sakshi/AJ
-            # are config-stubbed in the module pending bot bypass work.
-            "scrape-telugu-dailies-every-30-min": {
-                "task": "tasks.scrape_telugu_dailies",
-                "schedule": timedelta(minutes=30),
-                "options": {"queue": "collectors"},
-            },
             "process-nlp-every-30-seconds": {
                 "task": "tasks.process_nlp_batch",
                 "schedule": timedelta(seconds=30),
                 "options": {"queue": "nlp"},
-            },
-            "generate-briefs-daily": {
-                "task": "tasks.generate_all_briefs",
-                "schedule": crontab(hour=0, minute=30),
-                "options": {"queue": "brief"},
-            },
-            # Brief quality rubric scorecard — runs once a day, ~30 min
-            # after the daily fan-out so yesterday's briefs are already
-            # in the table. fix/brief-prod-readiness P2.10.
-            "score-brief-quality-daily": {
-                "task": "tasks.score_brief_quality",
-                "schedule": crontab(hour=1, minute=0),
-                "options": {"queue": "brief"},
             },
             "reset-groq-keys-daily": {
                 "task": "tasks.reset_groq_keys",
                 "schedule": crontab(hour=0, minute=5),
                 "options": {"queue": "default"},
             },
-            "score-unscored-every-30-min": {
-                "task": "tasks.score_unscored_articles",
-                "schedule": timedelta(minutes=30),
-                "options": {"queue": "relevance"},
-            },
             "check-entity-dict-every-5-min": {
                 "task": "tasks.check_entity_dict_version",
                 "schedule": timedelta(minutes=5),
                 "options": {"queue": "nlp"},
             },
-            "assign-threads-every-5-min": {
-                "task": "tasks.assign_new_article_threads",
-                "schedule": timedelta(minutes=5),
-                "options": {"queue": "nlp"},
-            },
-            "nightly-thread-recluster": {
-                "task": "tasks.nightly_thread_recluster",
-                "schedule": crontab(hour=2, minute=0),
-                "options": {"queue": "nlp"},
-            },
-            "collect-youtube-every-2h": {
-                # Bumped from 6h → 2h: at the old cadence the wires were
-                # showing day-old clips even when fresh content existed
-                # on monitored channels. The YouTube transcript fetch is
-                # the slow step (~30-60s per video) but happens on the
-                # dedicated `youtube` queue, so it never blocks anything.
-                "task": "tasks.collect_youtube",
-                "schedule": timedelta(hours=2),
-                "options": {"queue": "youtube"},
-            },
-            # Govt docs and newspapers historically fired once a day on a
-            # crontab. When that single window missed (worker busy / blip)
-            # the pillar went silent for 24h. Both now fire every 12 hours
-            # so a missed window self-heals on the next tick. The collector
-            # itself dedupes by URL so re-running is a no-op when there's
-            # nothing new — cheap.
-            "collect-govt-docs-every-12h": {
-                "task": "tasks.collect_govt_documents",
-                "schedule": timedelta(hours=12),
-                "options": {"queue": "documents"},
-            },
-            "govt-doctor-every-12h": {
-                "task": "tasks.govt_collection_doctor",
-                "schedule": timedelta(hours=12),
-                "options": {"queue": "documents"},
-            },
-            # ── Tiered cadence per platform ──
-            "collect-reddit-hot-every-15-min": {
-                "task": "tasks.collect_reddit",
-                "schedule": timedelta(minutes=15),
-                "kwargs": {"tier": "hot"},
-                "options": {"queue": "social"},
-            },
-            "collect-reddit-warm-every-1-hour": {
-                "task": "tasks.collect_reddit",
-                "schedule": timedelta(hours=1),
-                "kwargs": {"tier": "warm"},
-                "options": {"queue": "social"},
-            },
-            "collect-reddit-cold-every-6-hours": {
-                "task": "tasks.collect_reddit",
-                "schedule": timedelta(hours=6),
-                "kwargs": {"tier": "cold"},
-                "options": {"queue": "social"},
-            },
-            "collect-telegram-hot-every-15-min": {
-                "task": "tasks.collect_telegram",
-                "schedule": timedelta(minutes=15),
-                "kwargs": {"tier": "hot"},
-                "options": {"queue": "social"},
-            },
-            "collect-telegram-warm-every-1-hour": {
-                "task": "tasks.collect_telegram",
-                "schedule": timedelta(hours=1),
-                "kwargs": {"tier": "warm"},
-                "options": {"queue": "social"},
-            },
-            "collect-telegram-cold-every-6-hours": {
-                "task": "tasks.collect_telegram",
-                "schedule": timedelta(hours=6),
-                "kwargs": {"tier": "cold"},
-                "options": {"queue": "social"},
-            },
-            "translate-social-posts-every-10-min": {
-                "task": "tasks.translate_pending_social_posts",
-                "schedule": timedelta(minutes=10),
-                "options": {"queue": "social"},
-            },
-            "cluster-social-posts-every-15-min": {
-                "task": "tasks.cluster_recent_social_posts",
-                "schedule": timedelta(minutes=15),
-                "options": {"queue": "social"},
-            },
-            "auto-promote-social-subjects-nightly": {
-                "task": "tasks.auto_promote_subjects",
-                "schedule": crontab(hour=2, minute=0),
-                "options": {"queue": "social"},
-            },
-            "recompute-social-baselines-nightly": {
-                "task": "tasks.recompute_social_baselines",
-                "schedule": crontab(hour=2, minute=30),
-                "options": {"queue": "social"},
-            },
-            "detect-social-events-every-30-min": {
-                "task": "tasks.detect_social_events",
-                "schedule": timedelta(minutes=30),
-                "options": {"queue": "social"},
-            },
-            "compose-social-summary-every-6-hours": {
-                "task": "tasks.compose_social_summary",
-                "schedule": timedelta(hours=6),
-                "options": {"queue": "social"},
-            },
-            "aggregate-social-sentiment-hourly": {
-                "task": "tasks.aggregate_social_sentiment_daily",
-                "schedule": crontab(minute=15),
-                "options": {"queue": "nlp"},
-            },
-            "collect-newspapers-daily-0430-utc": {
-                "task": "tasks.collect_newspapers",
-                # 04:30 UTC = 10:00 IST — most Indian dailies publish their
-                # e-paper editions by mid-morning. Daily crontab (not 12h
-                # timedelta) so a missed fire isn't repeated within the
-                # same calendar day, and the next fire time isn't reset
-                # by container restarts.
-                "schedule": crontab(hour=4, minute=30),
-                # Moved off `collectors` queue (concurrency=1, blocked by
-                # long RSS scrapes) onto `documents` queue (2 workers,
-                # dedicated for heavy I/O like newspapers + govt PDFs).
-                "options": {"queue": "documents"},
-            },
-            "refresh-coverage-summaries-daily-0415-utc": {
-                # Regenerates the 2-3 line summary shown beneath each
-                # panel on the /coverage hub. Five small Groq calls
-                # (FAST_MODEL, ~150 tokens each), all under 30 s.
-                # Slotted at 04:15 UTC so it runs after the night's
-                # collection is settled but before the 04:30 newspaper
-                # window. See backend/tasks/coverage_summary_task.py.
-                "task": "tasks.refresh_coverage_summaries",
-                "schedule": crontab(hour=4, minute=15),
-                "options": {"queue": "nlp"},
-            },
-            # ── /coverage/articles rebuild — analytics tasks ──
-            # All gated by per-task FEATURE_* env flags so disabling
-            # is a config flip, no beat reload needed.
-            "refresh-user-cards-daily-0130-utc": {
-                "task": "tasks.refresh_user_cards",
-                "schedule": crontab(hour=1, minute=30),
-                "options": {"queue": "nlp"},
-            },
-            # Fast-retry driver — picks up cards that were created
-            # during a Groq-quota dip and never got their summary
-            # generated. Runs every 5 min, capped at 5 cards/fire.
-            "retry-unrefreshed-user-cards-every-5-min": {
-                "task": "tasks.retry_unrefreshed_cards",
-                "schedule": timedelta(minutes=5),
-                "options": {"queue": "nlp"},
-            },
-            # Per-user breaking-news pick. One row per user in
-            # user_breaking_now. Replaces the DBSCAN cluster pipeline.
-            "pick-breaking-per-user-every-1-hour": {
-                "task": "tasks.coverage.pick_breaking_per_user",
-                "schedule": timedelta(minutes=60),
-                "options": {"queue": "nlp"},
-            },
-            # Translates pre-existing non-English quotes to English so
-            # the Recent Quotes panel renders readable text. Quotes
-            # extracted post-migration-049 already include translations
-            # at extract time; this driver only catches the legacy backlog.
-            "translate-pending-quotes-every-5-min": {
-                "task": "tasks.translate_pending_quotes",
-                "schedule": timedelta(minutes=5),
-                "options": {"queue": "nlp"},
-            },
-            "refresh-contradictions-daily-0430-utc": {
-                "task": "tasks.refresh_contradictions",
-                "schedule": crontab(hour=4, minute=30),
-                "options": {"queue": "nlp"},
-            },
-            "refresh-top-stories-every-2h": {
-                "task": "tasks.refresh_top_stories",
-                "schedule": timedelta(hours=2),
-                "options": {"queue": "nlp"},
-            },
-            "refresh-coverage-gaps-daily-0500-utc": {
-                "task": "tasks.refresh_coverage_gaps",
-                "schedule": crontab(hour=5, minute=0),
-                "options": {"queue": "nlp"},
-            },
-            "evaluate-notification-rules-every-15-min": {
-                "task": "tasks.evaluate_notification_rules",
-                "schedule": timedelta(minutes=15),
-                "options": {"queue": "nlp"},
-            },
-            "extract-pending-claims-quotes-every-5-min": {
-                # Foundational extraction driver. process_nlp_batch never
-                # fires per-article extraction itself, so without this the
-                # claims_extracted=FALSE backlog grows forever. Scans the
-                # unextracted pile, queues 50 articles per fire. Always on.
-                "task": "tasks.extract_pending_claims_quotes",
-                "schedule": timedelta(minutes=5),
-                "options": {"queue": "nlp"},
-            },
-            # ── CM Page political-intelligence schedule ──
-            #
-            # Heavy LLM work runs on `nlp`; cheap aggregations on `social`.
-            # Frequencies match the per-section TTLs in
-            # backend/nlp/cm/cache.py so the cache is rarely warmer than
-            # the underlying data.
-            "cm-tag-stance-every-5-min": {
-                "task": "tasks.cm.tag_stance",
-                "schedule": timedelta(minutes=5),
-                "options": {"queue": "nlp"},
-            },
-            "cm-extract-speakers-every-10-min": {
-                "task": "tasks.cm.extract_speakers",
-                "schedule": timedelta(minutes=10),
-                "options": {"queue": "nlp"},
-            },
-            "cm-cluster-issues-incremental-2h": {
-                "task": "tasks.cm.cluster_issues",
-                "schedule": timedelta(hours=2),
-                "options": {"queue": "nlp"},
-            },
-            "cm-cluster-issues-daily": {
-                "task": "tasks.cm.cluster_issues",
-                "schedule": crontab(hour=3, minute=0),
-                "options": {"queue": "nlp"},
-            },
-            "cm-score-dissent-daily": {
-                "task": "tasks.cm.score_dissent",
-                "schedule": crontab(hour=4, minute=0),
-                "options": {"queue": "nlp"},
-            },
-            "cm-generate-counter-narratives-daily": {
-                "task": "tasks.cm.generate_counter_narratives",
-                "schedule": crontab(hour=5, minute=0),
-                "options": {"queue": "nlp"},
-            },
-            "cm-score-promise-status-daily": {
-                "task": "tasks.cm.score_promise_status",
-                "schedule": crontab(hour=6, minute=0),
-                "options": {"queue": "nlp"},
-            },
-            "cm-refresh-risk-window-every-6h": {
-                "task": "tasks.cm.refresh_risk_window",
-                "schedule": timedelta(hours=6),
-                "options": {"queue": "nlp"},
-            },
-            "cm-backfill-newspaper-sentiment-daily": {
-                "task": "tasks.cm.backfill_newspaper_sentiment",
-                "schedule": crontab(hour=1, minute=30),
-                "options": {"queue": "nlp"},
-            },
-            "cm-refresh-issue-hourly-every-30-min": {
-                "task": "tasks.cm.refresh_issue_hourly",
-                "schedule": timedelta(minutes=30),
-                "options": {"queue": "social"},
-            },
-            "cm-refresh-voice-share-every-6h": {
-                "task": "tasks.cm.refresh_voice_share",
-                "schedule": timedelta(hours=6),
-                "options": {"queue": "social"},
-            },
-            "cm-compute-exploitation-index-every-2h": {
-                "task": "tasks.cm.compute_exploitation_index",
-                "schedule": timedelta(hours=2),
-                "options": {"queue": "social"},
-            },
-            "cm-refresh-constituency-heatmap-daily": {
-                "task": "tasks.cm.refresh_constituency_heatmap",
-                "schedule": crontab(hour=2, minute=15),
-                "options": {"queue": "social"},
-            },
-            # ── CM Page v2 — district backfill (resilience) ──
-            #
-            # Nightly catch-up for any articles processed before the
-            # district-resolution NLP step shipped, plus any rows that
-            # got an entities update later. Idempotent ON CONFLICT.
-            "cm-backfill-district-geo-nightly": {
-                "task": "tasks.cm.backfill_district_geo",
-                "schedule": crontab(hour=3, minute=30),
-                "options": {"queue": "nlp"},
-            },
-            # ── CM Page v2 — LLM auto-publish stack ──
-            "cm-lead-headlines-every-5-min": {
-                "task": "tasks.cm.lead_headline",
-                "schedule": timedelta(minutes=5),
-                "options": {"queue": "nlp"},
-            },
-            "cm-analysis-column-hourly": {
-                # Bumped from 3x/day to hourly per user request — gives
-                # the LLM more chances to land a valid draft if a single
-                # call hits a Groq rate-limit wall. The cite-id gate
-                # still rejects unsubstantiated drafts.
-                "task": "tasks.cm.analysis_column",
-                "schedule": timedelta(hours=1),
-                "options": {"queue": "nlp"},
-            },
-            "cm-action-queue-every-15-min": {
-                "task": "tasks.cm.action_queue",
-                "schedule": timedelta(minutes=15),
-                "options": {"queue": "nlp"},
-            },
-            # ── CM Page v2 — external scrapers ──
+            # ── External scrapers (atlas layers) — kept per cleanup spec ──
             "collectors-mandi-agmarknet-every-4h": {
                 "task": "tasks.collectors.mandi_agmarknet",
                 "schedule": timedelta(hours=4),
@@ -591,74 +184,61 @@ app.config_from_object(
                 "schedule": timedelta(hours=6),
                 "options": {"queue": "collectors"},
             },
-            # ── THE NEWSROOM beat schedule ──
-            "newsroom-extract-quotes-every-5-min": {
-                "task": "tasks.newsroom.extract_quotes",
-                "schedule": timedelta(minutes=5),
+            # Nightly gold-set regression — 21:30 UTC = 03:00 IST
+            "quality-gold-regression-nightly": {
+                "task": "tasks.quality.gold_regression",
+                "schedule": crontab(hour=21, minute=30),
                 "options": {"queue": "nlp"},
             },
-            "newsroom-enqueue-live-monitors-every-5-min": {
-                "task": "tasks.newsroom.enqueue_live_monitors",
-                "schedule": timedelta(minutes=5),
-                "options": {"queue": "whisper"},
-            },
-            "newsroom-detect-breaking-every-2-min": {
-                "task": "tasks.newsroom.detect_breaking",
-                "schedule": timedelta(minutes=2),
+            # 15-min postfix keeps NEW articles auto-clean
+            "quality-postfix-every-15-min": {
+                "task": "tasks.quality.postfix",
+                "schedule": timedelta(minutes=15),
+                "kwargs": {"lookback_hours": 1},
                 "options": {"queue": "nlp"},
             },
-            "newsroom-daily-brief-0030-utc": {
-                "task": "tasks.newsroom.generate_daily_brief",
-                "schedule": crontab(hour=0, minute=30),
-                "options": {"queue": "brief"},
+            # Daily new-vs-baseline comparison — 22:00 UTC = 03:30 IST
+            "quality-compare-daily": {
+                "task": "tasks.quality.compare",
+                "schedule": crontab(hour=22, minute=0),
+                "options": {"queue": "nlp"},
             },
-
-            "newsroom-check-liveness-every-5-min": {
-                "task": "tasks.newsroom.check_liveness",
-                "schedule": timedelta(minutes=5),
-                "options": {"queue": "whisper"},
+            # Event-cluster importance refresh every 30 min
+            "cluster-importance-every-30-min": {
+                "task": "tasks.quality.cluster_importance",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "nlp"},
+            },
+            # Entity-mention aggregator every 60 min
+            "entity-mentions-every-60-min": {
+                "task": "tasks.quality.entity_mentions",
+                "schedule": timedelta(minutes=60),
+                "options": {"queue": "nlp"},
+            },
+            # Nightly v3 upgrade — 22:30 UTC = 04:00 IST (heavy batch)
+            "v3-upgrade-nightly": {
+                "task": "tasks.quality.v3_upgrade",
+                "schedule": crontab(hour=22, minute=30, day_of_week=0),  # weekly Sun — backfill only
+                "options": {"queue": "nlp"},
+            },
+            # Fast-loop v3 upgrade every 2h — catches new articles within
+            # 2h of substrate completion instead of waiting for nightly.
+            # B-fix 2026-05-26: nightly run hit SoftTimeLimitExceeded so
+            # new articles sat at v2 for up to 24h before being upgraded.
+            "v3-upgrade-fast-loop": {
+                "task": "tasks.quality.v3_upgrade",
+                "schedule": timedelta(hours=2),
+                "options": {"queue": "nlp"},
+            },
+            # Daily contradiction detection — 23:00 UTC = 04:30 IST
+            "contradictions-daily": {
+                "task": "tasks.refresh_contradictions",
+                "schedule": crontab(hour=23, minute=0),
+                "options": {"queue": "nlp"},
             },
         },
     }
 )
-
-
-# ── Per-fork state reset (cold-start deadlock fix) ────────────────────
-#
-# Celery prefork copies module state across the fork(). The Groq SDK's
-# AsyncGroq client is httpx-async under the hood; when the parent
-# process touches groq_manager (e.g. for any Groq call) it caches an
-# AsyncGroq instance whose internal asyncio primitives are bound to the
-# parent's event loop. After fork, the child inherits that cached
-# instance pointing at a now-dead loop. The very first `await
-# client.chat.completions.create(...)` in the child hangs forever.
-#
-# Same story for the asyncio.Lock that GroqKeyManager uses for round-
-# robin key picking.
-#
-# Reproduction (2026-05-09): tasks.newsroom.process_broadcast hung
-# reliably as the first task after a fresh worker fork; same task
-# succeeded when the worker had already been processing a backlog,
-# because some prior call had refreshed the cached state inside the
-# child's own loop. See feedback_newsroom_cold_start_deadlock.md.
-#
-# Reset both on every fork so the FIRST groq call in a child creates
-# fresh, child-loop-bound state.
-from celery.signals import worker_process_init, worker_ready
-
-
-@worker_process_init.connect
-def _reset_groq_after_fork(**_kw) -> None:  # noqa: D401, ANN001
-    try:
-        from backend.nlp.groq_client import groq_manager
-        groq_manager._lock = None
-        groq_manager._clients = {}
-    except Exception:  # noqa: BLE001
-        # Never crash the worker on an init hook
-        import logging
-        logging.getLogger(__name__).warning(
-            "groq state reset on fork failed", exc_info=True,
-        )
 
 
 # ── Worker boot self-checks ─────────────────────────────────────
@@ -667,6 +247,7 @@ def _reset_groq_after_fork(**_kw) -> None:  # noqa: D401, ANN001
 # (SEBI, SCI, NGT, MCA, ADB, IMF, UN, CERC, PNGRB) do not silently
 # return zero rows on every collection. Logs CRITICAL on failure but
 # does not abort the worker — httpx-direct adapters still need to run.
+from celery.signals import worker_ready
 
 
 @worker_ready.connect

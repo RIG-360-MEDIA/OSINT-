@@ -64,17 +64,30 @@ async def download_youtube_audio(
     yt_video_id: str,
     *,
     max_duration_sec: int | None = None,
+    is_live: bool = False,
 ) -> AudioFile:
     """Download a YouTube video's audio track to /tmp.
 
     Uses the yt_dlp Python API (matches backend.collectors.youtube_collector
     pattern) with cookies + proxy. Caller is responsible for cleanup().
+
+    For live streams (is_live=True) the match_filter `duration <= N`
+    rejects every entry (live = unbounded duration). Instead we resolve
+    the HLS manifest via yt-dlp `extract_info(download=False)` and
+    capture exactly max_duration_sec via ffmpeg `-t`, which works
+    whether the source is live or VOD-with-DVR.
     """
     import yt_dlp                                  # imported lazily
 
     url = f"https://www.youtube.com/watch?v={yt_video_id}"
     tmpdir = tempfile.mkdtemp(prefix=f"newsroom_{yt_video_id}_")
     audio_path = os.path.join(tmpdir, f"{yt_video_id}.m4a")
+
+    if is_live:
+        return await _capture_live_window(
+            yt_video_id, url, tmpdir, audio_path,
+            max_duration_sec=max_duration_sec or 30,
+        )
 
     # Format selector: prefer m4a, fall through to any audio-only stream,
     # last fallback is any stream that contains audio (production-tested
@@ -152,6 +165,113 @@ async def download_youtube_audio(
             raise FileNotFoundError(
                 f"yt-dlp produced no audio file for {yt_video_id} in {tmpdir}"
             )
+
+    duration = _probe_duration_sec(audio_path)
+    return AudioFile(
+        path=audio_path,
+        duration_sec=duration,
+        yt_video_id=yt_video_id,
+        yt_video_url=url,
+    )
+
+
+async def _capture_live_window(
+    yt_video_id: str,
+    url: str,
+    tmpdir: str,
+    audio_path: str,
+    *,
+    max_duration_sec: int,
+) -> AudioFile:
+    """Resolve HLS manifest via yt-dlp, capture N seconds via ffmpeg.
+
+    yt-dlp's match_filter rejects live streams because duration is
+    None/Inf. Instead we ask yt-dlp for the audio manifest URL only
+    (download=False) and let ffmpeg `-t` cut a fixed window — works
+    for both pure live and live-with-DVR.
+    """
+    import yt_dlp
+
+    ydl_opts: dict = {
+        "format":      "bestaudio[ext=m4a]/bestaudio/best[acodec!=none]/best",
+        "quiet":       True,
+        "no_warnings": True,
+        "socket_timeout": 20,
+        "retries":           2,
+        "extractor_retries": 1,
+        "skip_download":    True,
+    }
+    cp = _cookies_path()
+    if cp:
+        ydl_opts["cookiefile"] = cp
+    pu = _proxy_url()
+    if pu:
+        ydl_opts["proxy"] = pu
+
+    await throttle_async()
+
+    def _resolve() -> str:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+        if not info:
+            raise RuntimeError(f"yt-dlp returned no info for {yt_video_id}")
+        manifest = info.get("url")
+        if not manifest and info.get("requested_formats"):
+            manifest = info["requested_formats"][0].get("url")
+        if not manifest:
+            raise RuntimeError(f"yt-dlp returned no manifest URL for {yt_video_id}")
+        return manifest
+
+    try:
+        manifest_url = await asyncio.wait_for(asyncio.to_thread(_resolve), timeout=30)
+    except asyncio.TimeoutError:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        record_block()
+        raise RuntimeError(f"yt-dlp manifest resolve for {yt_video_id} timed out")
+    except Exception as exc:
+        if _is_bot_wall(exc):
+            record_block()
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise RuntimeError(
+            f"yt-dlp manifest resolve failed for {yt_video_id}: {exc}"
+        ) from exc
+
+    ffmpeg_cmd = [
+        "ffmpeg", "-y", "-loglevel", "error",
+        "-i", manifest_url,
+        "-t", str(max_duration_sec),
+        "-vn",
+        "-acodec", "aac", "-b:a", "128k",
+        audio_path,
+    ]
+    try:
+        await asyncio.wait_for(
+            asyncio.to_thread(
+                subprocess.run, ffmpeg_cmd,
+                check=True, capture_output=True, text=True,
+            ),
+            timeout=max_duration_sec * 3 + 60,
+        )
+    except asyncio.TimeoutError:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise RuntimeError(
+            f"ffmpeg live capture for {yt_video_id} exceeded "
+            f"{max_duration_sec * 3 + 60}s"
+        )
+    except subprocess.CalledProcessError as exc:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise RuntimeError(
+            f"ffmpeg live capture failed for {yt_video_id}: "
+            f"{(exc.stderr or '').strip()[:300]}"
+        ) from exc
+
+    record_success()
+
+    if not os.path.exists(audio_path) or os.path.getsize(audio_path) < 1024:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        raise FileNotFoundError(
+            f"ffmpeg produced no audio for live {yt_video_id}"
+        )
 
     duration = _probe_duration_sec(audio_path)
     return AudioFile(

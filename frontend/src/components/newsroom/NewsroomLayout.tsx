@@ -108,51 +108,95 @@ export function NewsroomLayout() {
         fontFamily: '"Inter", system-ui, -apple-system, sans-serif',
       }}
     >
-      {/* Status bar */}
+      {/* Newsroom sub-bar — sits directly below the global Onyx top bar */}
       <header style={{
-        position: 'sticky', top: 0, zIndex: 60,
-        background: 'rgba(0, 0, 0, 0.92)',
-        backdropFilter: 'blur(8px)',
-        borderBottom: '1px solid rgba(168, 173, 184, 0.18)',
-        padding: '10px 28px',
-        display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
+        position: 'sticky',
+        top: 'var(--topbar-h, 56px)',
+        zIndex: 60,
+        background: 'rgba(8, 8, 10, 0.92)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 45, 45, 0.18)',
+        padding: '0 28px',
+        height: 44,
+        display: 'flex', alignItems: 'center', gap: 18,
       }}>
-        <p style={{
-          margin: 0,
-          font: '500 11px/1 var(--onyx-mono)',
-          color: 'var(--onyx-red)',
-          letterSpacing: '0.32em',
-          textTransform: 'uppercase',
-        }}>The Newsroom</p>
-        <span style={{
-          font: '400 10px/1 var(--onyx-mono)',
-          color: 'var(--onyx-bone-2)',
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-        }}>
-          {liveCount == null ? '· ·' : `${liveCount} live`} · {' '}
-          {breakingCount == null ? '· ·' : `${breakingCount} breaking`} · {' '}
-          {sseAlive ? <span style={{ color: 'var(--onyx-red)' }}>stream connected</span> : 'polling'}
-        </span>
+        {/* Section label + status */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
+          <span style={{
+            font: '500 11px/1 var(--onyx-mono)',
+            color: 'var(--onyx-red)',
+            letterSpacing: '0.34em',
+            textTransform: 'uppercase',
+          }}>The Newsroom</span>
+          <span style={{
+            font: '400 9.5px/1 var(--onyx-mono)',
+            color: 'rgba(168, 173, 184, 0.72)',
+            letterSpacing: '0.20em',
+            textTransform: 'uppercase',
+          }}>
+            {liveCount == null ? '· · ·' : `${liveCount} live`}
+            <span style={{ margin: '0 8px', opacity: 0.4 }}>·</span>
+            {breakingCount == null ? '· ·' : `${breakingCount} breaking`}
+            <span style={{ margin: '0 8px', opacity: 0.4 }}>·</span>
+            <span style={{ color: sseAlive ? 'var(--onyx-red)' : 'rgba(168, 173, 184, 0.72)' }}>
+              {sseAlive ? 'stream' : 'polling'}
+            </span>
+          </span>
+        </div>
+
         <span style={{ flex: 1 }} />
-        <nav role="tablist" aria-label="Newsroom mode" style={{ display: 'flex', gap: 4 }}>
-          {NEWSROOM_MODES.map((m) => (
-            <button
-              key={m.id}
-              role="tab"
-              className="onyx-mode-tab"
-              aria-current={mode === m.id ? 'page' : undefined}
-              onClick={() => setMode(m.id)}
-              title={`Switch to ${m.label} (${m.key})`}
-            >{m.label} <span style={{ opacity: 0.45, marginLeft: 4 }}>{m.key}</span></button>
-          ))}
+
+        {/* Mode tabs — clean horizontal segmented control */}
+        <nav role="tablist" aria-label="Newsroom mode" style={{
+          display: 'flex',
+          gap: 0,
+          border: '1px solid rgba(168, 173, 184, 0.14)',
+          borderRadius: 0,
+          overflow: 'hidden',
+        }}>
+          {NEWSROOM_MODES.map((m, i) => {
+            const active = mode === m.id
+            return (
+              <button
+                key={m.id}
+                role="tab"
+                aria-current={active ? 'page' : undefined}
+                onClick={() => setMode(m.id)}
+                title={`Switch to ${m.label} (press ${m.key})`}
+                style={{
+                  appearance: 'none',
+                  background: active ? 'rgba(255, 45, 45, 0.12)' : 'transparent',
+                  color: active ? 'var(--onyx-red)' : 'rgba(236, 238, 241, 0.78)',
+                  border: 0,
+                  borderLeft: i === 0 ? 0 : '1px solid rgba(168, 173, 184, 0.10)',
+                  padding: '0 14px',
+                  height: 28,
+                  font: '500 10.5px/1 var(--onyx-mono)',
+                  letterSpacing: '0.20em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  transition: 'background 120ms ease, color 120ms ease',
+                }}
+              >
+                {m.label}
+                <span style={{
+                  font: '400 9px/1 var(--onyx-mono)',
+                  opacity: active ? 0.7 : 0.35,
+                }}>{m.key}</span>
+              </button>
+            )
+          })}
         </nav>
       </header>
 
-      {/* Active mode */}
+      {/* Active mode — top padding clears the sticky sub-bar height + breathing room */}
       <main style={{
         maxWidth: 1480, margin: '0 auto',
-        padding: '20px 28px',
+        padding: '28px 28px 20px',
         position: 'relative', zIndex: 1,
       }}>
         <View />

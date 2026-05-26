@@ -135,7 +135,10 @@ def process_broadcast(
         # (groq_manager has a module-level asyncio.Lock; multiple
         # asyncio.run() calls would attach it to a dead loop)
         audio, l1, l2, l3, reconciled = asyncio.run(
-            _run_async_pipeline(yt_video_id, language, max_duration_sec, skip_l3=skip_l3)
+            _run_async_pipeline(
+                yt_video_id, language, max_duration_sec,
+                skip_l3=skip_l3, is_live=is_live,
+            )
         )
         stats["audio_duration_sec"] = audio.duration_sec
         stats["lens_status"]["l1"] = f"ok ({len(l1)} segs)" if l1 else "empty"
@@ -322,6 +325,7 @@ async def _run_async_pipeline(
     max_duration_sec: int | None,
     *,
     skip_l3: bool = False,
+    is_live: bool = False,
 ):
     """Single async pipeline: download → L1 → L2 (and optionally L3) → reconcile.
 
@@ -341,7 +345,9 @@ async def _run_async_pipeline(
       - This makes a 7-min VOD process in ~3 min instead of ~13 min on
         clean Groq days, while keeping the safety net for Groq outages.
     """
-    audio = await download_youtube_audio(yt_video_id, max_duration_sec=max_duration_sec)
+    audio = await download_youtube_audio(
+        yt_video_id, max_duration_sec=max_duration_sec, is_live=is_live,
+    )
 
     # Build a Whisper bias prompt from the entity dictionary so the
     # transcriber spells regional politicians correctly (instead of

@@ -37,6 +37,11 @@ export interface NewsroomSegmentSummary {
   speaker_entity_id?: string | null
 }
 
+export interface NewsroomDigestStory {
+  headline: string
+  blurb?: string
+}
+
 export interface NewsroomWallTile {
   channel_id: string
   channel_name: string
@@ -49,6 +54,10 @@ export interface NewsroomWallTile {
   last_live_at?: string | null
   last_live_check_at?: string | null
   segments: NewsroomSegmentSummary[]
+  digest_summary?: string
+  digest_phrases?: string[]
+  digest_stories?: NewsroomDigestStory[]
+  digest_generated_at?: string | null
 }
 
 export interface NewsroomWallResponse {

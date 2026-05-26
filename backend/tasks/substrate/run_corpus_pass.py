@@ -420,10 +420,21 @@ def parse_html(html: str, article_url: str) -> dict[str, Any]:
         lang = soup.html["lang"].split("-")[0].lower()[:5]
 
     # ─── canonical url ────────────────────────────────────────────────
+    # 2026-05-26: reject homepage-collapse (some sources serve
+    # <link rel=canonical href=https://site/> on every article — corrupted
+    # 1,222 rows before we caught it).
     canonical = None
     link = soup.find("link", rel="canonical")
     if link and link.get("href"):
-        canonical = link["href"]
+        cand = (link["href"] or "").strip()
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(cand)
+            path = (parsed.path or "").rstrip("/")
+            if path and len(path) > 1:
+                canonical = cand
+        except Exception:
+            canonical = None
 
     # ─── og / twitter image (hero) ───────────────────────────────────
     hero_url = None
@@ -789,7 +800,7 @@ async def process_one(db, article: dict[str, Any]) -> dict[str, Any]:
             text(
                 "UPDATE articles SET substrate_processed_at=now(), "
                 "substrate_status='junk', article_type='other', "
-                "extraction_version=2 WHERE id=:id"
+                "extraction_version=3 WHERE id=:id"
             ),
             {"id": aid},
         )
@@ -847,7 +858,7 @@ async def process_one(db, article: dict[str, Any]) -> dict[str, Any]:
             language=structural["lang"],
             hero_url=structural["hero_url"],
             status="junk" if quality == "low" or title_says_junk(title) else "ok",
-            extraction_version=2,
+            extraction_version=3,
         )
         await _persist_structural(db, aid, structural)
         await db.commit()
@@ -915,7 +926,7 @@ async def process_one(db, article: dict[str, Any]) -> dict[str, Any]:
         register_is_breaking=register_is_breaking,
         english_translation=english_translation,
         byline=byline,
-        extraction_version=2,
+        extraction_version=3,
     )
     await _persist_structural(db, aid, structural)
     await _persist_locations(db, aid, locations)
@@ -961,7 +972,7 @@ async def _update_article(
     register_is_breaking: bool = False,
     english_translation: str | None = None,
     byline: str | None = None,
-    extraction_version: int = 2,
+    extraction_version: int = 3,
 ) -> None:
     await db.execute(
         text(

@@ -59,6 +59,16 @@ app = Celery(
         "backend.tasks.substrate.byline_periodic_task",
         # Periodic tweet enrichment — catches v1→v2 upgrades + retries
         "backend.tasks.substrate.tweet_periodic_task",
+        # Newsroom (live monitoring + extract + briefing) — must be imported
+        # so @app.task decorators register the task names. Without this beat
+        # fires unregistered task errors every 5 min.
+        "backend.tasks.newsroom.check_liveness",
+        "backend.tasks.newsroom.detect_breaking",
+        "backend.tasks.newsroom.extract_quotes",
+        "backend.tasks.newsroom.generate_daily_brief",
+        "backend.tasks.newsroom.live_digest",
+        "backend.tasks.newsroom.live_monitor",
+        "backend.tasks.newsroom.process_broadcast",
     ],
 )
 

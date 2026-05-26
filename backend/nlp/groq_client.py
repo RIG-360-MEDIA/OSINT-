@@ -557,7 +557,7 @@ _OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:30b-a3b")
 _OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "300"))
 # Short cooldown when local fails — we want to retry local quickly
 # because it's our primary capacity and free pool is overflow only.
-_LOCAL_FAIL_COOLDOWN = 10.0
+_LOCAL_FAIL_COOLDOWN = 0.0  # 2026-05-26: zero cooldown — network errors retry immediately
 # Concurrent in-flight cap on the local slot. Ollama defaults to
 # OLLAMA_NUM_PARALLEL=4. Workers beyond this fall through to the free
 # pool instead of piling onto local and getting connection-level errors.

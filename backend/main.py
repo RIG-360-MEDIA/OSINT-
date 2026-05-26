@@ -35,6 +35,10 @@ from backend.routers.me_router import me_router
 from backend.routers.observe_router import observe_router
 from backend.routers.brief_router import brief_router
 from backend.routers.rbac_admin_router import rbac_admin_router
+from backend.routers.signals_router import signals_router
+from backend.routers.worldmonitor_router import worldmonitor_router
+from backend.routers.thread_router import thread_router
+from backend.routers.cm_router import cm_router
 from backend.middleware.impersonation_audit import ImpersonationAuditMiddleware
 from backend.middleware.request_id import RequestIdMiddleware
 

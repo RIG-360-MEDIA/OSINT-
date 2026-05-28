@@ -102,7 +102,7 @@ async def _one_cluster(db, ec_row: Any, rank_idx: int) -> dict[str, Any]:
                ec_row.canonical_description or "")
 
     lens_rows = (await db.execute(text("""
-        SELECT DISTINCT ON (s.name) s.name AS outlet, a.language_detected AS lang,
+        SELECT DISTINCT ON (s.name) s.name AS outlet, a.language_iso AS lang,
                LEFT(aq.quote_text, 180) AS quote
           FROM article_events ae
           JOIN articles a ON a.id = ae.article_id

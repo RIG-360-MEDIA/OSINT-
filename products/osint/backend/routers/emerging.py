@@ -55,13 +55,13 @@ async def get_emerging(limit: int = 5) -> dict[str, Any]:
             WITH today AS (
               SELECT entity_text, SUM(n_mentions_total) AS today_n
                 FROM entity_mention_daily
-               WHERE date = CURRENT_DATE
+               WHERE date = analytics.now_sim_date()
                GROUP BY entity_text
             ),
             yesterday AS (
               SELECT entity_text, SUM(n_mentions_total) AS yest_n
                 FROM entity_mention_daily
-               WHERE date = CURRENT_DATE - 1
+               WHERE date = analytics.now_sim_date() - 1
                GROUP BY entity_text
             )
             SELECT t.entity_text,

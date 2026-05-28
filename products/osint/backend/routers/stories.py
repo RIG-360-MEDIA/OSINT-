@@ -41,7 +41,7 @@ async def _one_cluster(db, ec_row: Any, rank_idx: int) -> dict[str, Any]:
          WHERE ae.event_cluster_id = CAST(:cid AS uuid)
            AND a.title IS NOT NULL
            AND LENGTH(a.title) >= 20
-           AND a.collected_at >= NOW() - INTERVAL '7 days'
+           AND a.collected_at >= analytics.now_sim() - INTERVAL '7 days'
          ORDER BY a.collected_at DESC LIMIT 1
     """), {"cid": cluster_id})).fetchone()
     headline = (fresh_headline.title[:160] if fresh_headline
@@ -53,7 +53,7 @@ async def _one_cluster(db, ec_row: Any, rank_idx: int) -> dict[str, Any]:
           FROM article_events ae
           JOIN articles a ON a.id = ae.article_id
          WHERE ae.event_cluster_id = CAST(:cid AS uuid)
-           AND a.collected_at >= NOW() - INTERVAL '7 days'
+           AND a.collected_at >= analytics.now_sim() - INTERVAL '7 days'
     """), {"cid": cluster_id})).fetchone()
 
     sent = (await db.execute(text("""
@@ -82,7 +82,7 @@ async def _one_cluster(db, ec_row: Any, rank_idx: int) -> dict[str, Any]:
           FROM article_events ae
           JOIN articles a ON a.id = ae.article_id
          WHERE ae.event_cluster_id = CAST(:cid AS uuid)
-           AND a.collected_at >= NOW() - INTERVAL '12 hours'
+           AND a.collected_at >= analytics.now_sim() - INTERVAL '12 hours'
          GROUP BY 1 ORDER BY 1
     """), {"cid": cluster_id})).fetchall()
     bars = [int(r.n) for r in mom_rows]
@@ -176,7 +176,7 @@ async def get_stories(limit: int = 5) -> dict[str, Any]:
                AND EXISTS (
                  SELECT 1 FROM article_events ae JOIN articles a ON a.id = ae.article_id
                   WHERE ae.event_cluster_id = ec.id
-                    AND a.collected_at >= NOW() - INTERVAL '7 days'
+                    AND a.collected_at >= analytics.now_sim() - INTERVAL '7 days'
                )
              ORDER BY ec.importance_score DESC, ec.last_updated_at DESC NULLS LAST
              LIMIT :lim

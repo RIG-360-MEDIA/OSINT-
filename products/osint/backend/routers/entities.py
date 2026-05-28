@@ -104,26 +104,26 @@ async def _one_entity(db, cfg: dict[str, Any]) -> dict[str, Any]:
         WITH today_claims AS (
           SELECT COUNT(*) AS n FROM article_claims ac
             JOIN articles a ON a.id = ac.article_id
-           WHERE a.collected_at >= NOW() - INTERVAL '24 hours'
+           WHERE a.collected_at >= analytics.now_sim() - INTERVAL '24 hours'
              AND ({or_claims})
         ),
         today_quotes AS (
           SELECT COUNT(*) AS n FROM article_quotes aq
             JOIN articles a ON a.id = aq.article_id
-           WHERE a.collected_at >= NOW() - INTERVAL '24 hours'
+           WHERE a.collected_at >= analytics.now_sim() - INTERVAL '24 hours'
              AND ({or_quotes})
         ),
         baseline AS (
           SELECT COALESCE(SUM(n_mentions_total)::float /
                           NULLIF(COUNT(DISTINCT date), 0), 0) AS avg_n
             FROM entity_mention_daily
-           WHERE date BETWEEN CURRENT_DATE - 8 AND CURRENT_DATE - 1
+           WHERE date BETWEEN analytics.now_sim_date() - 8 AND analytics.now_sim_date() - 1
              AND ({" OR ".join([f"entity_text LIKE :p{i}" for i, _ in enumerate(patterns)])})
         ),
         sentiment_today AS (
           SELECT AVG(intensity) AS s FROM article_stances asn
             JOIN articles a ON a.id = asn.article_id
-           WHERE a.collected_at >= NOW() - INTERVAL '24 hours'
+           WHERE a.collected_at >= analytics.now_sim() - INTERVAL '24 hours'
              AND asn.intensity IS NOT NULL
              AND ({or_stances})
         )
@@ -144,7 +144,7 @@ async def _one_entity(db, cfg: dict[str, Any]) -> dict[str, Any]:
          WHERE ({or_quotes})
            AND LENGTH(aq.quote_text) >= 30
            AND aq.quote_text !~ '^[A-Z][a-z]+,\s+[A-Z][a-z]+\s*$'
-           AND a.collected_at >= NOW() - INTERVAL '7 days'
+           AND a.collected_at >= analytics.now_sim() - INTERVAL '7 days'
          ORDER BY LEAST(LENGTH(aq.quote_text), 240) DESC,
                   a.collected_at DESC
          LIMIT 1
@@ -154,7 +154,7 @@ async def _one_entity(db, cfg: dict[str, Any]) -> dict[str, Any]:
         SELECT date_trunc('hour', a.collected_at) AS hour, COUNT(*) AS n
           FROM article_claims ac
           JOIN articles a ON a.id = ac.article_id
-         WHERE a.collected_at >= NOW() - INTERVAL '15 hours'
+         WHERE a.collected_at >= analytics.now_sim() - INTERVAL '15 hours'
            AND ({or_claims})
          GROUP BY 1 ORDER BY 1
     """), params)).fetchall()

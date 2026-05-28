@@ -22,7 +22,7 @@ async def get_kpi() -> dict[str, Any]:
             WITH last24 AS (
               SELECT a.id, a.language_detected, a.source_id
                 FROM articles a
-               WHERE a.collected_at >= NOW() - INTERVAL '24 hours'
+               WHERE a.collected_at >= analytics.now_sim() - INTERVAL '24 hours'
                  AND a.substrate_status = 'ok'
             )
             SELECT
@@ -38,7 +38,7 @@ async def get_kpi() -> dict[str, Any]:
         langs = (await db.execute(text("""
             SELECT UPPER(language_detected) AS code, COUNT(*) AS n
               FROM articles
-             WHERE collected_at >= NOW() - INTERVAL '24 hours'
+             WHERE collected_at >= analytics.now_sim() - INTERVAL '24 hours'
                AND substrate_status='ok'
                AND language_detected IS NOT NULL
              GROUP BY 1 ORDER BY 2 DESC LIMIT 6

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>RIG OSINT · Morning Brief · Print</title>
+<meta name="description" content="RIG OSINT — Morning Brief. Print export." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500" />
+
+<link rel="stylesheet" href="styles.css" />
+
+<style>
+  /* ─────────────── PRINT-READY OVERRIDES ─────────────── */
+  html, body {
+    background: #050507 !important;
+    color: #e8e6e0 !important;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Stop the .shell zoom so layout prints at full 1:1 scale */
+  .shell { zoom: 1 !important; }
+
+  /* Force all section reveals to fully visible (kill scroll-gated animations) */
+  .shell > section.section,
+  .shell > section.section.in-view,
+  .reveal,
+  .reveal.in,
+  .kpi-tile,
+  .we-card,
+  .ds-row,
+  .bs-action,
+  .ts-story,
+  .cm-issue,
+  .bs-blind-card,
+  .bs-sev,
+  .bs-divergence-list li,
+  .tl-node,
+  .we-bar,
+  .ds-bar {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  /* Disable all keyframe animations globally for print */
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Drop sticky / fixed positioning so everything flows */
+  .topbar { position: relative !important; }
+  .atmosphere { display: none !important; }   /* fixed background, would block print */
+  body::before { display: none !important; }
+  .status-band .status-sweep,
+  .mood-scan,
+  .mood-glow-bl,
+  .brief-scan,
+  .topbar-progress { display: none !important; }
+
+  /* Sticky/relative topbar inside flow */
+  .topbar { box-shadow: none; }
+
+  @page { size: A3 landscape; margin: 10mm; }
+
+  @media print {
+    @page { size: A3 landscape; margin: 10mm; }
+
+    html, body {
+      background: #050507 !important;
+      color: #e8e6e0 !important;
+      width: auto;
+    }
+
+    /* Section page-break behavior */
+    .shell > section.section,
+    .if-section {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      margin-top: 18px !important;
+    }
+
+    /* Major sections start on new pages for clean chapter feel */
+    .we-section,
+    .ds-section,
+    .bs-section,
+    .hz-section,
+    .cm-section,
+    .if-section {
+      break-before: page;
+      page-break-before: always;
+    }
+
+    /* But avoid breaks inside individual cards */
+    .we-card,
+    .ds-row,
+    .bs-panel,
+    .hz-panel,
+    .cm-panel,
+    .ts-stories-card,
+    .ts-timeline-card,
+    .ts-geo-card,
+    .ts-integrity-card,
+    .mood-card,
+    .if-rail,
+    .bs-blind-card,
+    .cm-issue,
+    .hz-event,
+    .tl-node,
+    .kpi-tile,
+    .ts-story {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    /* Hide elements that don't make sense in print */
+    .topbar-progress,
+    .atmosphere,
+    .status-sweep,
+    .mood-scan,
+    .brief-scan,
+    .mood-glow-bl { display: none !important; }
+
+    /* Remove hover transforms / shadows that won't render meaningfully */
+    *:hover { transform: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="data.js"></script>
+<script type="text/babel" src="primitives.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+<script type="text/babel" data-presets="env,react">
+  // Wait for React to mount + Babel to finish + fonts to load, then print
+  (async () => {
+    // Wait for fonts
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch (e) {}
+    }
+
+    // Wait for the React app to mount (#root has children)
+    const waitForApp = () => new Promise((resolve) => {
+      const check = () => {
+        const root = document.getElementById('root');
+        if (root && root.children.length > 0) { resolve(); return; }
+        requestAnimationFrame(check);
+      };
+      check();
+    });
+    await waitForApp();
+
+    // Force all sections to be "in-view" so reveal animations resolve immediately
+    document.querySelectorAll('.shell > section.section').forEach((s) => s.classList.add('in-view'));
+
+    // Safety delay so layout settles
+    await new Promise((r) => setTimeout(r, 800));
+
+    window.print();
+  })();
+</script>
+</body>
+</html>

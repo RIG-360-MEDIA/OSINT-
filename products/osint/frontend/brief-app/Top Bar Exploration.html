@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RIG OSINT — Top Bar Exploration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+
+<style>
+:root {
+  --bg-base: #050507;
+  --bg-1: #0a0a0e;
+  --bg-2: #0e0e14;
+  --line: rgba(255,255,255,0.06);
+  --line-2: rgba(255,255,255,0.10);
+  --line-3: rgba(255,255,255,0.16);
+  --text-1: #e8e6e0;
+  --text-2: rgba(232,230,224,0.62);
+  --text-3: rgba(232,230,224,0.40);
+  --text-4: rgba(232,230,224,0.28);
+  --amber: #e9c46a;
+  --amber-deep: #c89339;
+  --amber-soft: rgba(233,196,106,0.10);
+  --crimson: #c8201c;
+  --crimson-soft: rgba(200,32,28,0.85);
+  --green: #5fd47b;
+  --font-serif: 'Fraunces', serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { background: var(--bg-base); }
+
+body {
+  color: var(--text-1);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  padding: 32px 0 96px;
+  background-image:
+    radial-gradient(900px 500px at 50% -200px, rgba(200,32,28,0.05), transparent 60%),
+    linear-gradient(180deg, var(--bg-base) 0%, var(--bg-1) 100%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Subtle grain */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.5;
+}
+
+/* Faint blueprint grid */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 96px 96px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 0%, transparent 75%);
+          mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 0%, transparent 75%);
+}
+
+.page-wrap {
+  position: relative; z-index: 1;
+  max-width: 1480px; margin: 0 auto; padding: 0 28px;
+}
+
+/* Page header */
+.page-head { padding: 16px 0 36px; }
+.page-eyebrow {
+  font-family: var(--font-mono); font-size: 10.5px;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--amber);
+}
+.page-head h1 {
+  margin-top: 14px;
+  font-family: var(--font-serif); font-weight: 500;
+  font-size: clamp(2rem, 3.4vw, 3rem); letter-spacing: -0.025em;
+  line-height: 1.05;
+  text-wrap: pretty;
+}
+.page-head .lead {
+  margin-top: 18px;
+  font-family: var(--font-sans); font-size: 14.5px; line-height: 1.55;
+  color: var(--text-2); max-width: 720px;
+}
+
+/* Variation block */
+.variant { margin-bottom: 88px; }
+.variant-head {
+  display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap;
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.variant-tag {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--amber);
+  padding: 5px 10px;
+  border: 1px solid rgba(233,196,106,0.35);
+  background: rgba(233,196,106,0.04);
+  border-radius: 2px;
+}
+.variant-name {
+  font-family: var(--font-serif); font-weight: 500; font-size: 22px;
+  letter-spacing: -0.012em;
+}
+.variant-desc {
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.06em; color: var(--text-3);
+  margin-left: auto;
+}
+
+/* Common: ⌘K kbd */
+.kbd {
+  display: inline-flex; align-items: center;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-3);
+  padding: 3px 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  background: rgba(255,255,255,0.02);
+}
+
+/* Below-fold preview hint */
+.fold-hint {
+  margin-top: 28px;
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-4);
+  display: flex; align-items: center; gap: 16px;
+}
+.fold-hint::after {
+  content: ''; flex: 1; height: 1px; background: var(--line);
+}
+
+/* ═══════════════════════════════════════════════════
+   VARIANT A — OPERATIONAL  (close to spec reference)
+   ═══════════════════════════════════════════════════ */
+.bar-a {
+  position: relative;
+  height: 76px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.018) 0%, transparent 100%);
+  display: flex; align-items: center;
+  padding: 0 22px;
+  gap: 24px;
+}
+/* Soft amber wash from top edge */
+.bar-a::before {
+  content: '';
+  position: absolute; top: 0; left: 20%; right: 20%; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(233,196,106,0.35), transparent);
+  pointer-events: none;
+}
+.bar-a::after {
+  content: '';
+  position: absolute; inset: 0; border-radius: 4px;
+  box-shadow: 0 0 80px rgba(233,196,106,0.04) inset;
+  pointer-events: none;
+}
+
+.bar-a .wm {
+  font-family: var(--font-serif); font-weight: 500;
+  font-size: 38px; letter-spacing: -0.02em; line-height: 1;
+  color: var(--text-1);
+}
+.bar-a .osint {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--amber);
+  padding: 5px 10px;
+  border: 1px solid rgba(233,196,106,0.42);
+  border-radius: 2px;
+  background: rgba(233,196,106,0.04);
+  align-self: center;
+}
+
+.bar-a .ask {
+  flex: 1;
+  height: 44px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 14px 0 16px;
+  border: 1px solid rgba(233,196,106,0.18);
+  border-radius: 3px;
+  background: rgba(233,196,106,0.018);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 240ms ease, background 240ms ease, box-shadow 240ms ease;
+}
+.bar-a .ask:focus-within {
+  border-color: rgba(233,196,106,0.55);
+  background: rgba(233,196,106,0.04);
+  box-shadow:
+    0 0 0 3px rgba(233,196,106,0.04),
+    0 0 28px rgba(233,196,106,0.10);
+}
+.bar-a .ask .spark { color: var(--amber); flex: none; }
+.bar-a .ask input {
+  flex: 1; min-width: 0;
+  background: transparent; border: none; outline: none;
+  color: var(--text-1);
+  font-family: var(--font-sans); font-size: 14.5px;
+}
+.bar-a .ask input::placeholder { color: var(--text-3); }
+
+.bar-a .send {
+  height: 44px;
+  padding: 0 20px;
+  display: inline-flex; align-items: center; gap: 10px;
+  background: linear-gradient(180deg, rgba(200,32,28,0.16), rgba(200,32,28,0.08));
+  border: 1px solid rgba(200,32,28,0.65);
+  border-radius: 3px;
+  color: #ff8a86;
+  font-family: var(--font-sans);
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: inset 0 0 18px rgba(200,32,28,0.10);
+  transition: background 200ms ease, box-shadow 200ms ease, color 200ms ease;
+}
+.bar-a .send:hover {
+  background: linear-gradient(180deg, rgba(200,32,28,0.24), rgba(200,32,28,0.14));
+  box-shadow: inset 0 0 18px rgba(200,32,28,0.18), 0 0 24px rgba(200,32,28,0.22);
+  color: #ffb0ad;
+}
+
+.bar-a .ic-btn {
+  width: 40px; height: 40px;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  background: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-2);
+  cursor: pointer;
+  position: relative;
+  transition: border-color 200ms ease, color 200ms ease;
+}
+.bar-a .ic-btn:hover {
+  border-color: rgba(233,196,106,0.45);
+  color: var(--amber);
+}
+.bar-a .ic-btn .bdot {
+  position: absolute; top: 7px; right: 7px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--crimson);
+  box-shadow: 0 0 8px rgba(200,32,28,0.8);
+}
+
+.bar-a .avatar {
+  position: relative;
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(233,196,106,0.55);
+  background:
+    linear-gradient(135deg, #2c2c38 0%, #14141a 100%);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-serif); font-weight: 500; font-size: 16px;
+  color: var(--text-1);
+  cursor: pointer;
+  padding: 0;
+}
+.bar-a .avatar .online {
+  position: absolute; bottom: -1px; right: -1px;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 2px solid var(--bg-base);
+  box-shadow: 0 0 8px rgba(95,212,123,0.55);
+}
+.bar-a .chev {
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+}
+
+/* Ribbon A */
+.ribbon-a {
+  position: relative;
+  height: 60px;
+  border: 1px solid var(--line);
+  border-top: 1px solid rgba(255,255,255,0.025);
+  border-radius: 0 0 4px 4px;
+  background: rgba(255,255,255,0.012);
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr 1.2fr 1fr;
+  overflow: hidden;
+}
+.ribbon-a .cell {
+  position: relative;
+  padding: 0 22px;
+  display: flex; align-items: center; gap: 14px;
+  border-right: 1px solid var(--line);
+}
+.ribbon-a .cell:last-child { border-right: none; }
+.ribbon-a .ic-w {
+  width: 28px; height: 28px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--amber);
+}
+.ribbon-a .text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ribbon-a .lbl {
+  font-family: var(--font-mono); font-size: 10px;
+  font-weight: 600; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--text-2);
+  white-space: nowrap;
+}
+.ribbon-a .val {
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ribbon-a .integrity .val { color: var(--green); font-family: var(--font-mono); font-weight: 600; }
+.ribbon-a .next .val { color: var(--crimson); font-family: var(--font-mono); font-weight: 600; }
+.ribbon-a .lang-list {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-sans); font-size: 13px; color: var(--text-1);
+}
+.ribbon-a .lang-list .dot {
+  display: inline-block; width: 3px; height: 3px;
+  border-radius: 50%; background: var(--amber); opacity: 0.7;
+}
+.ribbon-a .gdot {
+  display: inline-block; width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 10px rgba(95,212,123,0.55);
+  animation: breathe 2.4s ease-in-out infinite;
+  flex: none;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* ═══════════════════════════════════════════════════
+   VARIANT B — EDITORIAL (Fraunces-forward, restraint)
+   ═══════════════════════════════════════════════════ */
+.bar-b {
+  position: relative;
+  height: 68px;
+  display: flex; align-items: center;
+  gap: 24px;
+  padding: 0 4px 0 4px;
+  border-bottom: 1px solid var(--line);
+}
+.bar-b::before {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(200,32,28,0.45) 30%, rgba(233,196,106,0.45) 70%, transparent 100%);
+}
+.bar-b .wm {
+  font-family: var(--font-serif); font-weight: 500;
+  font-size: 30px; letter-spacing: -0.02em; line-height: 1;
+}
+.bar-b .osint {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--amber); padding: 0; line-height: 1;
+  align-self: center;
+  margin-left: -4px;
+}
+.bar-b .osint::before {
+  content: '·';
+  margin-right: 8px; color: var(--text-4);
+}
+
+.bar-b .ask {
+  flex: 1; max-width: 560px;
+  height: 38px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: transparent;
+  transition: border-color 200ms ease, background 200ms ease;
+}
+.bar-b .ask:focus-within {
+  border-color: rgba(233,196,106,0.45);
+  background: rgba(255,255,255,0.018);
+}
+.bar-b .ask .spark { color: var(--text-3); }
+.bar-b .ask:focus-within .spark { color: var(--amber); }
+.bar-b .ask input {
+  flex: 1; min-width: 0;
+  background: transparent; border: none; outline: none;
+  color: var(--text-1);
+  font-family: var(--font-serif); font-style: italic; font-size: 14px;
+}
+.bar-b .ask input::placeholder { color: var(--text-3); }
+
+.bar-b .send {
+  height: 38px;
+  padding: 0 18px;
+  background: transparent;
+  border: 1px solid rgba(200,32,28,0.55);
+  border-radius: 2px;
+  color: #ff8a86;
+  font-family: var(--font-sans);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  cursor: pointer;
+  transition: background 200ms ease, color 200ms ease;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.bar-b .send:hover {
+  background: rgba(200,32,28,0.12);
+  color: #ffb6b3;
+}
+.bar-b .ic-btn {
+  width: 34px; height: 34px;
+  border: none;
+  background: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+.bar-b .ic-btn:hover { color: var(--amber); }
+
+.bar-b .avatar {
+  position: relative;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(233,196,106,0.5);
+  background: #0a0a0e;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-serif); font-weight: 500; font-size: 13px;
+  color: var(--text-1);
+  cursor: pointer;
+  padding: 0;
+  margin-left: 6px;
+}
+.bar-b .avatar .online {
+  position: absolute; bottom: -1px; right: -1px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 2px solid var(--bg-base);
+}
+
+/* Ribbon B (text-heavy, no big icons) */
+.ribbon-b {
+  display: flex; align-items: center; gap: 0;
+  height: 38px;
+  padding: 0 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-2);
+  letter-spacing: 0.06em;
+}
+.ribbon-b .seg {
+  display: inline-flex; align-items: baseline; gap: 8px;
+  padding: 0 22px;
+  height: 100%;
+  position: relative;
+}
+.ribbon-b .seg + .seg::before {
+  content: '';
+  position: absolute; left: 0; top: 25%; bottom: 25%;
+  width: 1px; background: var(--line);
+}
+.ribbon-b .seg:first-child { padding-left: 0; }
+.ribbon-b .seg.right { margin-left: auto; padding-right: 0; }
+.ribbon-b .seg.right + .seg.right::before { display: none; }
+.ribbon-b .seg .k {
+  font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.ribbon-b .seg .v {
+  font-family: var(--font-mono); font-size: 11.5px;
+  color: var(--text-1); font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.ribbon-b .seg.live .v { color: var(--green); }
+.ribbon-b .seg.next .v { color: var(--crimson); font-weight: 600; }
+.ribbon-b .gdot {
+  display: inline-block; width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: breathe 2.4s ease-in-out infinite;
+  margin-right: 6px;
+}
+
+/* ═══════════════════════════════════════════════════
+   VARIANT C — CINEMATIC (with motion + waveform)
+   ═══════════════════════════════════════════════════ */
+.bar-c-wrap {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background:
+    radial-gradient(800px 200px at 50% 100%, rgba(200,32,28,0.05), transparent 70%),
+    linear-gradient(180deg, rgba(255,255,255,0.015), transparent);
+  overflow: hidden;
+}
+.bar-c-wrap::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(233,196,106,0.45) 50%, transparent);
+}
+
+.bar-c {
+  position: relative;
+  height: 74px;
+  display: flex; align-items: center;
+  padding: 0 24px;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.bar-c .wm {
+  font-family: var(--font-serif); font-weight: 500;
+  font-size: 34px; letter-spacing: -0.022em; line-height: 1;
+  position: relative;
+}
+.bar-c .wm::after {
+  content: '';
+  position: absolute; bottom: -4px; left: 0; width: 100%; height: 1px;
+  background: linear-gradient(90deg, var(--amber), transparent);
+  opacity: 0.4;
+}
+.bar-c .osint {
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--bg-base);
+  background: var(--crimson);
+  padding: 4px 8px;
+  border-radius: 2px;
+  align-self: center;
+  position: relative;
+  overflow: hidden;
+}
+.bar-c .osint::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%);
+  animation: shimmer 5s ease-in-out infinite;
+  animation-delay: 1.4s;
+}
+
+.bar-c .ask {
+  flex: 1; max-width: 620px;
+  height: 44px;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 14px 0 16px;
+  border: 1px solid rgba(233,196,106,0.22);
+  border-radius: 3px;
+  background: rgba(0,0,0,0.4);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 240ms ease, box-shadow 240ms ease;
+}
+.bar-c .ask::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(233,196,106,0.10), transparent);
+  transform: translateX(-100%);
+  animation: scan-sweep 6s ease-in-out infinite;
+  animation-delay: 1s;
+  pointer-events: none;
+}
+.bar-c .ask:focus-within {
+  border-color: rgba(233,196,106,0.6);
+  box-shadow:
+    0 0 0 3px rgba(233,196,106,0.05),
+    0 0 36px rgba(233,196,106,0.14);
+}
+.bar-c .ask .spark { color: var(--amber); flex: none; }
+.bar-c .ask input {
+  flex: 1; min-width: 0;
+  background: transparent; border: none; outline: none;
+  color: var(--text-1);
+  font-family: var(--font-sans); font-size: 14.5px;
+  position: relative; z-index: 1;
+}
+.bar-c .ask input::placeholder { color: var(--text-3); }
+
+.bar-c .send {
+  height: 44px;
+  padding: 0 20px;
+  display: inline-flex; align-items: center; gap: 10px;
+  background: linear-gradient(180deg, rgba(200,32,28,0.18), rgba(200,32,28,0.10));
+  border: 1px solid rgba(200,32,28,0.7);
+  border-radius: 3px;
+  color: #ffb0ad;
+  font-family: var(--font-sans);
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: inset 0 0 22px rgba(200,32,28,0.12), 0 0 18px rgba(200,32,28,0.10);
+  animation: send-breathe 4s ease-in-out infinite;
+  transition: color 200ms ease, box-shadow 200ms ease;
+}
+.bar-c .send:hover {
+  color: #fff;
+  box-shadow: inset 0 0 22px rgba(200,32,28,0.18), 0 0 28px rgba(200,32,28,0.30);
+}
+
+.bar-c .ic-btn {
+  width: 40px; height: 40px;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  background: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-2);
+  cursor: pointer;
+  position: relative;
+  transition: border-color 200ms ease, color 200ms ease;
+}
+.bar-c .ic-btn:hover {
+  border-color: rgba(233,196,106,0.45);
+  color: var(--amber);
+}
+.bar-c .ic-btn .bdot {
+  position: absolute; top: 6px; right: 6px;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--crimson);
+  box-shadow: 0 0 8px rgba(200,32,28,0.7);
+  animation: pulse-dot 2.2s ease-in-out infinite;
+}
+
+.bar-c .avatar {
+  position: relative;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: #0a0a0e;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-serif); font-weight: 500; font-size: 16px;
+  color: var(--text-1);
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  isolation: isolate;
+}
+.bar-c .avatar::before {
+  content: '';
+  position: absolute; inset: -1.5px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, var(--amber), transparent 30%, transparent 70%, var(--amber));
+  animation: spin-ring 6s linear infinite;
+  z-index: -1;
+  opacity: 0.5;
+}
+.bar-c .avatar::after {
+  content: '';
+  position: absolute; inset: 1.5px;
+  border-radius: 50%;
+  background: #0a0a0e;
+  z-index: -1;
+}
+.bar-c .avatar .online {
+  position: absolute; bottom: -1px; right: -1px;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 2px solid var(--bg-base);
+  box-shadow: 0 0 8px rgba(95,212,123,0.55);
+}
+
+/* Ribbon C (over waveform) */
+.ribbon-c {
+  position: relative;
+  height: 64px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: transparent;
+  z-index: 1;
+}
+.ribbon-c .cell {
+  position: relative; z-index: 2;
+  padding: 0 22px;
+  display: flex; align-items: center; gap: 14px;
+}
+.ribbon-c .cell + .cell::before {
+  content: ''; position: absolute; left: 0; top: 18%; bottom: 18%;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--line-2), transparent);
+}
+.ribbon-c .ic-w {
+  width: 26px; height: 26px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--amber);
+}
+.ribbon-c .text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ribbon-c .lbl {
+  font-family: var(--font-mono); font-size: 10px;
+  font-weight: 600; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--text-2);
+  white-space: nowrap;
+}
+.ribbon-c .val {
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ribbon-c .next .val { color: var(--crimson); font-family: var(--font-mono); font-weight: 600; }
+.ribbon-c .integrity .val { color: var(--green); font-family: var(--font-mono); font-weight: 600; }
+.ribbon-c .lang-list {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-sans); font-size: 13px; color: var(--text-1);
+}
+.ribbon-c .lang-list .dot {
+  display: inline-block; width: 3px; height: 3px;
+  border-radius: 50%; background: var(--amber); opacity: 0.7;
+  animation: lang-breathe 3s ease-in-out infinite;
+}
+.ribbon-c .lang-list .dot:nth-child(2) { animation-delay: 0.6s; }
+.ribbon-c .lang-list .dot:nth-child(4) { animation-delay: 1.2s; }
+.ribbon-c .lang-list .dot:nth-child(6) { animation-delay: 1.8s; }
+.ribbon-c .gdot {
+  display: inline-block; width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 10px rgba(95,212,123,0.55);
+  animation: breathe 2.4s ease-in-out infinite;
+  flex: none;
+}
+
+/* Waveform layer (Variant C) */
+.wave-layer {
+  position: relative;
+  height: 96px;
+  background:
+    linear-gradient(180deg, transparent, rgba(200,32,28,0.04) 65%, transparent);
+  overflow: hidden;
+}
+.wave-layer svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+.wave-line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.wave-line.l1 { stroke: rgba(233,196,106,0.55); stroke-width: 1.2; animation: wave-drift-1 22s linear infinite; }
+.wave-line.l2 { stroke: rgba(200,32,28,0.45);  stroke-width: 1; animation: wave-drift-2 28s linear infinite; }
+.wave-line.l3 { stroke: rgba(233,196,106,0.22); stroke-width: 0.8; animation: wave-drift-3 35s linear infinite; }
+.wave-line.l4 { stroke: rgba(95,212,123,0.18); stroke-width: 0.8; animation: wave-drift-1 19s linear infinite reverse; }
+
+/* Red sweep across bottom edge */
+.bottom-sweep {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--crimson), transparent);
+  opacity: 0;
+  width: 30%;
+  animation: edge-sweep 9s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+/* Animations */
+@keyframes scan-sweep {
+  0%   { transform: translateX(-100%); }
+  40%  { transform: translateX(100%); }
+  100% { transform: translateX(100%); }
+}
+@keyframes shimmer {
+  0%, 70%   { transform: translateX(-150%); }
+  85%, 100% { transform: translateX(150%); }
+}
+@keyframes send-breathe {
+  0%, 100% { box-shadow: inset 0 0 22px rgba(200,32,28,0.12), 0 0 18px rgba(200,32,28,0.10); }
+  50%      { box-shadow: inset 0 0 22px rgba(200,32,28,0.18), 0 0 26px rgba(200,32,28,0.22); }
+}
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 8px rgba(200,32,28,0.7); opacity: 1; }
+  50%      { box-shadow: 0 0 14px rgba(200,32,28,1); opacity: 0.7; }
+}
+@keyframes spin-ring {
+  to { transform: rotate(360deg); }
+}
+@keyframes lang-breathe {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+@keyframes wave-drift-1 { from { transform: translateX(0); } to { transform: translateX(-25%); } }
+@keyframes wave-drift-2 { from { transform: translateX(0); } to { transform: translateX(-25%); } }
+@keyframes wave-drift-3 { from { transform: translateX(0); } to { transform: translateX(-25%); } }
+@keyframes edge-sweep {
+  0%, 30%, 100% { transform: translateX(-30vw); opacity: 0; }
+  45%           { transform: translateX(50vw); opacity: 1; }
+  70%           { transform: translateX(150vw); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Reveal animations */
+.reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 700ms ease 100ms, transform 700ms cubic-bezier(0.2,0.7,0.3,1) 100ms;
+}
+.reveal.in { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── Icons (minimal Lucide-style strokes) ─────────────────── */
+const Icon = ({ name, size = 16, stroke = 1.6, color = "currentColor" }) => {
+  const paths = {
+    sparkle: <><path d="M12 3l1.6 5.4 5.4 1.6-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6z"/><path d="M19 14l.7 2.3 2.3.7-2.3.7L19 20l-.7-2.3L16 17l2.3-.7z"/></>,
+    send: <><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></>,
+    download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>,
+    bell: <><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></>,
+    chevDown: <polyline points="6 9 12 15 18 9"/>,
+    monitor: <><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></>,
+    target: <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></>,
+    clock: <><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 13"/></>,
+    refresh: <><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><polyline points="21 3 21 8 16 8"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><polyline points="3 21 3 16 8 16"/></>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+         stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+      {paths[name]}
+    </svg>
+  );
+};
+
+/* ── Reveal wrapper ───────────────────────────────────────── */
+const Reveal = ({ children, delay = 0 }) => {
+  const [seen, setSeen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setTimeout(() => setSeen(true), delay); obs.disconnect(); }
+    }, { threshold: 0.05 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [delay]);
+  return <div ref={ref} className={`reveal ${seen ? "in" : ""}`}>{children}</div>;
+};
+
+/* ── Live countdown ───────────────────────────────────────── */
+const Countdown = ({ initialSeconds }) => {
+  const [secs, setSecs] = useState(initialSeconds);
+  useEffect(() => {
+    const id = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const m = Math.floor(secs / 60);
+  const s = String(secs % 60).padStart(2, "0");
+  return <>{m}:{s}</>;
+};
+
+/* ═══════════════════════════════════════════════════
+   VARIANT A — OPERATIONAL
+   ═══════════════════════════════════════════════════ */
+const VariantA = () => (
+  <div>
+    <div className="bar-a">
+      <span className="wm">RIG</span>
+      <span className="osint">OSINT</span>
+      <label className="ask" htmlFor="ask-a">
+        <span className="spark"><Icon name="sparkle" size={16} stroke={1.4}/></span>
+        <input id="ask-a" type="search" placeholder="Ask anything about today…" aria-label="Ask anything"/>
+        <span className="kbd">⌘K</span>
+      </label>
+      <button className="send" type="button">
+        <Icon name="send" size={13} stroke={1.8}/>
+        <span>Send Report</span>
+      </button>
+      <button className="ic-btn" type="button" aria-label="Export">
+        <Icon name="download" size={15} stroke={1.6}/>
+      </button>
+      <button className="ic-btn" type="button" aria-label="Notifications">
+        <Icon name="bell" size={15} stroke={1.6}/>
+        <span className="bdot"></span>
+      </button>
+      <button className="avatar" type="button" aria-label="Open user menu">
+        M<span className="online"></span>
+      </button>
+      <span className="chev" aria-hidden="true"><Icon name="chevDown" size={14} stroke={1.6}/></span>
+    </div>
+    <div className="ribbon-a" role="status" aria-label="System status">
+      <div className="cell integrity">
+        <span className="gdot" aria-hidden="true"></span>
+        <div className="text">
+          <span className="lbl">System Online</span>
+          <span className="val">Source integrity 98.7%</span>
+        </div>
+      </div>
+      <div className="cell">
+        <span className="ic-w"><Icon name="target" size={20} stroke={1.4}/></span>
+        <div className="text">
+          <span className="lbl">247 Sources Monitored</span>
+          <span className="val">
+            <span className="lang-list">
+              Telugu <span className="dot"></span> English <span className="dot"></span> Hindi <span className="dot"></span> Urdu
+            </span>
+          </span>
+        </div>
+      </div>
+      <div className="cell">
+        <span className="ic-w"><Icon name="clock" size={20} stroke={1.4}/></span>
+        <div className="text">
+          <span className="lbl">Last Updated 05:42 IST</span>
+          <span className="val">Tuesday, 13 May 2026</span>
+        </div>
+      </div>
+      <div className="cell next">
+        <span className="ic-w"><Icon name="refresh" size={20} stroke={1.4}/></span>
+        <div className="text">
+          <span className="lbl">Next Refresh In</span>
+          <span className="val"><Countdown initialSeconds={14*60+22}/></span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ═══════════════════════════════════════════════════
+   VARIANT B — EDITORIAL
+   ═══════════════════════════════════════════════════ */
+const VariantB = () => (
+  <div>
+    <div className="bar-b">
+      <span className="wm">RIG</span>
+      <span className="osint">OSINT</span>
+      <label className="ask" htmlFor="ask-b">
+        <span className="spark"><Icon name="sparkle" size={14} stroke={1.4}/></span>
+        <input id="ask-b" type="search" placeholder="Ask anything about today…" aria-label="Ask anything"/>
+        <span className="kbd">⌘K</span>
+      </label>
+      <button className="send" type="button">
+        <span>Send Report</span>
+      </button>
+      <button className="ic-btn" type="button" aria-label="Export">
+        <Icon name="download" size={15} stroke={1.5}/>
+      </button>
+      <button className="ic-btn" type="button" aria-label="Notifications">
+        <Icon name="bell" size={15} stroke={1.5}/>
+      </button>
+      <button className="avatar" type="button" aria-label="Open user menu">
+        M<span className="online"></span>
+      </button>
+    </div>
+    <div className="ribbon-b" role="status" aria-label="System status">
+      <div className="seg live">
+        <span className="gdot" aria-hidden="true"></span>
+        <span className="k">System</span><span className="v">Online · 98.7%</span>
+      </div>
+      <div className="seg">
+        <span className="k">Sources</span><span className="v">247 across 18 outlets</span>
+      </div>
+      <div className="seg">
+        <span className="k">Languages</span><span className="v">TE · EN · HI · UR</span>
+      </div>
+      <div className="seg right">
+        <span className="k">Updated</span><span className="v">05:42 IST · 13 May 2026</span>
+      </div>
+      <div className="seg right next">
+        <span className="k">Next refresh in</span><span className="v"><Countdown initialSeconds={14*60+22}/></span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ═══════════════════════════════════════════════════
+   VARIANT C — CINEMATIC
+   ═══════════════════════════════════════════════════ */
+const Waveform = () => (
+  <svg viewBox="0 0 1200 96" preserveAspectRatio="none">
+    <defs>
+      <path id="wv1" d="M 0 48 Q 75 28 150 48 T 300 48 T 450 48 T 600 48 T 750 48 T 900 48 T 1050 48 T 1200 48 T 1350 48 T 1500 48"/>
+      <path id="wv2" d="M 0 48 Q 100 64 200 48 T 400 48 T 600 48 T 800 48 T 1000 48 T 1200 48 T 1400 48 T 1500 48"/>
+      <path id="wv3" d="M 0 48 Q 60 36 120 48 T 240 48 T 360 48 T 480 48 T 600 48 T 720 48 T 840 48 T 960 48 T 1080 48 T 1200 48 T 1500 48"/>
+      <path id="wv4" d="M 0 48 Q 80 56 160 48 T 320 48 T 480 48 T 640 48 T 800 48 T 960 48 T 1120 48 T 1280 48 T 1500 48"/>
+    </defs>
+    <g>
+      <use href="#wv1" className="wave-line l1"/>
+      <use href="#wv2" className="wave-line l2"/>
+      <use href="#wv3" className="wave-line l3"/>
+      <use href="#wv4" className="wave-line l4"/>
+    </g>
+  </svg>
+);
+
+const VariantC = () => (
+  <div className="bar-c-wrap">
+    <div className="bar-c">
+      <span className="wm">RIG</span>
+      <span className="osint">OSINT</span>
+      <label className="ask" htmlFor="ask-c">
+        <span className="spark"><Icon name="sparkle" size={16} stroke={1.4}/></span>
+        <input id="ask-c" type="search" placeholder="Ask anything about today…" aria-label="Ask anything"/>
+        <span className="kbd">⌘K</span>
+      </label>
+      <button className="send" type="button">
+        <Icon name="send" size={13} stroke={1.8}/>
+        <span>Send Report</span>
+      </button>
+      <button className="ic-btn" type="button" aria-label="Export">
+        <Icon name="download" size={15} stroke={1.6}/>
+      </button>
+      <button className="ic-btn" type="button" aria-label="Notifications">
+        <Icon name="bell" size={15} stroke={1.6}/>
+        <span className="bdot"></span>
+      </button>
+      <button className="avatar" type="button" aria-label="Open user menu">
+        M<span className="online"></span>
+      </button>
+    </div>
+    <div className="ribbon-c" role="status" aria-label="System status">
+      <div className="cell integrity">
+        <span className="gdot" aria-hidden="true"></span>
+        <div className="text">
+          <span className="lbl">System Online</span>
+          <span className="val">Source integrity 98.7%</span>
+        </div>
+      </div>
+      <div className="cell">
+        <span className="ic-w"><Icon name="target" size={20} stroke={1.4}/></span>
+        <div className="text">
+          <span className="lbl">247 Sources Monitored</span>
+          <span className="val">
+            <span className="lang-list">
+              Telugu <span className="dot"></span> English <span className="dot"></span> Hindi <span className="dot"></span> Urdu
+            </span>
+          </span>
+        </div>
+      </div>
+      <div className="cell">
+        <span className="ic-w"><Icon name="clock" size={20} stroke={1.4}/></span>
+        <div className="text">
+          <span className="lbl">Last Updated 05:42 IST</span>
+          <span className="val">Tuesday, 13 May 2026</span>
+        </div>
+      </div>
+      <div className="cell next">
+        <span className="ic-w"><Icon name="refresh" size={20} stroke={1.4}/></span>
+        <div className="text">
+          <span className="lbl">Next Refresh In</span>
+          <span className="val"><Countdown initialSeconds={14*60+22}/></span>
+        </div>
+      </div>
+    </div>
+    <div className="wave-layer" aria-hidden="true">
+      <Waveform/>
+    </div>
+    <div className="bottom-sweep" aria-hidden="true"></div>
+  </div>
+);
+
+/* ── Section wrapper ──────────────────────────────────────── */
+const Variation = ({ tag, name, desc, delay, children, fold }) => (
+  <Reveal delay={delay}>
+    <section className="variant">
+      <div className="variant-head">
+        <span className="variant-tag">{tag}</span>
+        <span className="variant-name">{name}</span>
+        <span className="variant-desc">{desc}</span>
+      </div>
+      {children}
+      {fold && <div className="fold-hint">{fold}</div>}
+    </section>
+  </Reveal>
+);
+
+const App = () => (
+  <div className="page-wrap">
+    <header className="page-head">
+      <div className="page-eyebrow">RIG · OSINT &nbsp;·&nbsp; Top bar exploration</div>
+      <h1>Three takes on a sticky intelligence chassis.</h1>
+      <p className="lead">
+        Same anatomy — wordmark, OSINT badge, ask-bar, primary action, utilities, user menu, status ribbon —
+        rendered at three points along the restraint ↔ cinematic axis. Pick the one that earns its glow,
+        then we integrate it into the brief.
+      </p>
+    </header>
+
+    <Variation
+      tag="A · Operational"
+      name="The reference, dialled in."
+      desc="Amber outlines, crimson primary, dense ribbon. The honest control-room read."
+      delay={0}
+      fold="↓ This sits above the morning brief.">
+      <VariantA/>
+    </Variation>
+
+    <Variation
+      tag="B · Editorial"
+      name="Less chrome. More page."
+      desc="Fraunces leads. Glow recedes. Ribbon is text-and-tabular-numbers, not iconography."
+      delay={80}
+      fold="↓ This sits above the morning brief.">
+      <VariantB/>
+    </Variation>
+
+    <Variation
+      tag="C · Cinematic"
+      name="Mission-control mode."
+      desc="Drifting waveform behind the ribbon, breathing send button, scanline through the ask-bar, edge sweep."
+      delay={160}
+      fold="↓ This sits above the morning brief.">
+      <VariantC/>
+    </Variation>
+  </div>
+);
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App/>);
+</script>
+</body>
+</html>

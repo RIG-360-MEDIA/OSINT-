@@ -1,0 +1,117 @@
+# RIG SURVEILLANCE - Caddy reverse proxy with auto-TLS
+# Public URLs:
+#   - https://robin-osi.rig360media.com/    (primary, custom domain)
+#   - https://178-105-63-154.nip.io/        (legacy, kept as parallel fallback)
+
+178-105-63-154.nip.io {
+    encode gzip zstd
+
+    @wmBare path /world-monitor-app
+    redir @wmBare /world-monitor-app/ permanent
+
+    handle /world-monitor-app/* {
+        uri strip_prefix /world-monitor-app
+        reverse_proxy rig-worldmonitor:8080
+    }
+
+    handle /assets/* {
+        reverse_proxy rig-worldmonitor:8080
+    }
+    handle /manifest.webmanifest {
+        reverse_proxy rig-worldmonitor:8080
+    }
+    handle /icons/* {
+        reverse_proxy rig-worldmonitor:8080
+    }
+    handle /robots.txt {
+        reverse_proxy rig-worldmonitor:8080
+    }
+    handle /sitemap.xml {
+        reverse_proxy rig-worldmonitor:8080
+    }
+    handle /_vercel/* {
+        reverse_proxy rig-worldmonitor:8080
+    }
+
+    @fromWmIframe header_regexp Referer ^https?://[^/]+/world-monitor-app/
+    handle @fromWmIframe {
+        reverse_proxy rig-worldmonitor:8080
+    }
+
+    handle_path /osint/* {
+        reverse_proxy osint-backend:8000
+    }
+
+    @backend path /api/* /health /docs /openapi.json /redoc
+    handle @backend {
+        reverse_proxy rig-backend:8000
+    }
+
+    handle {
+        reverse_proxy rig-frontend:3000
+    }
+
+    log {
+        output stdout
+    }
+}
+
+robin-osi.rig360media.com {
+    encode gzip zstd
+
+    @wmBare path /world-monitor-app
+    redir @wmBare /world-monitor-app/ permanent
+
+    handle /world-monitor-app/* {
+        uri strip_prefix /world-monitor-app
+        reverse_proxy rig-worldmonitor:8080
+    }
+
+    handle /assets/* {
+        reverse_proxy rig-worldmonitor:8080
+    }
+    handle /manifest.webmanifest {
+        reverse_proxy rig-worldmonitor:8080
+    }
+    handle /icons/* {
+        reverse_proxy rig-worldmonitor:8080
+    }
+    handle /robots.txt {
+        reverse_proxy rig-worldmonitor:8080
+    }
+    handle /sitemap.xml {
+        reverse_proxy rig-worldmonitor:8080
+    }
+    handle /_vercel/* {
+        reverse_proxy rig-worldmonitor:8080
+    }
+
+    @fromWmIframe header_regexp Referer ^https?://[^/]+/world-monitor-app/
+    handle @fromWmIframe {
+        reverse_proxy rig-worldmonitor:8080
+    }
+
+    handle_path /osint/* {
+        reverse_proxy osint-backend:8000
+    }
+
+    @backend path /api/* /health /docs /openapi.json /redoc
+    handle @backend {
+        reverse_proxy rig-backend:8000
+    }
+
+    handle {
+        reverse_proxy rig-frontend:3000
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    log {
+        output stdout
+    }
+}

@@ -96,6 +96,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
       DATABASE_URL_SYNC: postgresql://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
       GROQ_API_KEYS: ${GROQ_API_KEYS:-}
+      CEREBRAS_API_KEYS: ${CEREBRAS_API_KEYS:-}
       DOSSIER_ENABLED: ${DOSSIER_ENABLED:-false}
       SEARXNG_URL: ${SEARXNG_URL:-http://rig-searxng:8080}
       OPENSANCTIONS_API_KEY: ${OPENSANCTIONS_API_KEY:-}
@@ -302,6 +303,27 @@ services:
       - rig-wm-redis-rest
     restart: unless-stopped
 
+
+  osint-backend:
+    build:
+      context: ../products/osint/backend
+      dockerfile: Dockerfile
+    container_name: osint-backend
+    environment:
+      - OSINT_DB_URL=postgresql+asyncpg://analytics_user:${ANALYTICS_DB_PASSWORD}@rig-postgres:5432/rig?ssl=disable
+      - OSINT_CORS_ORIGINS=http://localhost:3001,http://178.105.63.154:3001,https://brief.rig360media.com
+      - OSINT_DB_POOL_SIZE=5
+      - OSINT_DB_MAX_OVERFLOW=10
+      - OSINT_HOST=0.0.0.0
+      - OSINT_PORT=8000
+      - OSINT_LOG_LEVEL=INFO
+    ports:
+      - "8002:8000"
+    networks:
+      - rig-network
+    depends_on:
+      - rig-postgres
+    restart: unless-stopped
 networks:
   rig-network:
     driver: bridge

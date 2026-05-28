@@ -311,7 +311,7 @@ services:
     container_name: osint-backend
     environment:
       - OSINT_DB_URL=postgresql+asyncpg://analytics_user:${ANALYTICS_DB_PASSWORD}@rig-postgres:5432/rig?ssl=disable
-      - OSINT_CORS_ORIGINS=http://localhost:3001,http://178.105.63.154:3001,https://brief.rig360media.com
+      - OSINT_CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://178.105.63.154:3001,https://brief.rig360media.com
       - OSINT_DB_POOL_SIZE=5
       - OSINT_DB_MAX_OVERFLOW=10
       - OSINT_HOST=0.0.0.0

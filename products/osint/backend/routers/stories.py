@@ -324,22 +324,38 @@ async def get_stories(
       since_hours — width of the "today" window in the response metrics.
       country — ISO 3166-1 alpha-2 (e.g., IN) to restrict articles by source country.
     """
+    # Aryan-2: freshness decay.
+    # Rank by importance_score * EXP(-hours_since_last_activity / HALF_LIFE_H)
+    # so a 2-hour breaking story can outrank a 5-day-old high-salience cluster.
+    # half_life=12h means a story loses ~50% of its rank every 12h with no
+    # new articles — adjust per editorial preference.
+    HALF_LIFE_H = 12.0
     async with get_db() as db:
-        rows = (await db.execute(text("""
-            SELECT ec.id::text AS cluster_id, ec.canonical_description,
-                   ec.canonical_event_type, ec.source_count, ec.article_count,
-                   ec.importance_score
-              FROM event_clusters ec
-             WHERE ec.is_active
-               AND ec.source_count >= 2
-               AND ec.importance_score IS NOT NULL
-               AND EXISTS (
-                 SELECT 1 FROM article_events ae JOIN articles a ON a.id = ae.article_id
-                  WHERE ae.event_cluster_id = ec.id
-                    AND a.collected_at >= analytics.now_sim() - INTERVAL '7 days'
-                    AND a.collected_at <= analytics.now_sim()
-               )
-             ORDER BY ec.importance_score DESC, ec.last_updated_at DESC NULLS LAST
+        rows = (await db.execute(text(f"""
+            WITH active AS (
+                SELECT ec.id::text AS cluster_id, ec.canonical_description,
+                       ec.canonical_event_type, ec.source_count, ec.article_count,
+                       ec.importance_score,
+                       MAX(a.collected_at) AS last_activity
+                  FROM event_clusters ec
+                  JOIN article_events ae ON ae.event_cluster_id = ec.id
+                  JOIN articles a ON a.id = ae.article_id
+                 WHERE ec.is_active
+                   AND ec.source_count >= 2
+                   AND ec.importance_score IS NOT NULL
+                   AND a.collected_at >= analytics.now_sim() - INTERVAL '7 days'
+                   AND a.collected_at <= analytics.now_sim()
+                 GROUP BY ec.id, ec.canonical_description, ec.canonical_event_type,
+                          ec.source_count, ec.article_count, ec.importance_score
+            )
+            SELECT cluster_id, canonical_description, canonical_event_type,
+                   source_count, article_count, importance_score,
+                   importance_score * EXP(
+                       - EXTRACT(EPOCH FROM (analytics.now_sim() - last_activity))
+                       / 3600.0 / {HALF_LIFE_H}
+                   ) AS effective_rank
+              FROM active
+             ORDER BY effective_rank DESC NULLS LAST
              LIMIT :lim
         """), {"lim": int(limit)})).fetchall()
 

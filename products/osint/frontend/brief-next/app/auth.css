@@ -1,0 +1,233 @@
+/* Auth, admin, and onboarding pages — matches boss's brief aesthetic but minimal */
+
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: radial-gradient(ellipse at top, #1a1a1a 0%, #050505 100%);
+  font-family: var(--font-spectral), Georgia, serif;
+  color: #e9c46a;
+}
+
+.auth-card {
+  background: rgba(20, 20, 20, 0.92);
+  border: 1px solid rgba(233, 196, 106, 0.22);
+  border-radius: 8px;
+  padding: 40px 36px;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+.auth-card h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: #f5e3b3;
+}
+.auth-card p {
+  margin: 0 0 18px;
+  color: #c8b07a;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.auth-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+}
+.auth-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8a7250;
+}
+.auth-card input,
+.auth-card select {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(233, 196, 106, 0.25);
+  border-radius: 4px;
+  padding: 10px 12px;
+  color: #f5e3b3;
+  font-family: inherit;
+  font-size: 15px;
+}
+.auth-card input:focus,
+.auth-card select:focus {
+  outline: none;
+  border-color: #5eead4;
+  box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.18);
+}
+.auth-card button {
+  margin-top: 8px;
+  background: linear-gradient(180deg, #e9c46a, #c9a44d);
+  color: #1a1100;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.12s;
+}
+.auth-card button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(233, 196, 106, 0.3); }
+.auth-card button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.auth-hint { margin-top: 18px; font-size: 13px; color: #6b5a3c; }
+.auth-error { margin-top: 14px; color: #fb7185; font-size: 14px; }
+
+/* ── Admin shell (wider, table-friendly) ─────────────────────────────────── */
+.admin-shell {
+  min-height: 100vh;
+  background: #050505;
+  font-family: var(--font-spectral), Georgia, serif;
+  color: #c8b07a;
+  padding: 40px 60px;
+}
+.admin-shell h1 {
+  font-size: 30px;
+  color: #f5e3b3;
+  font-weight: 500;
+  margin: 0 0 6px;
+}
+.admin-hint { color: #6b5a3c; font-size: 14px; margin-bottom: 28px; }
+.admin-card {
+  background: rgba(20, 20, 20, 0.7);
+  border: 1px solid rgba(233, 196, 106, 0.15);
+  border-radius: 6px;
+  padding: 24px 28px;
+  margin-bottom: 22px;
+}
+.admin-card h2 {
+  margin: 0 0 14px;
+  font-size: 18px;
+  color: #e9c46a;
+  letter-spacing: 0.5px;
+}
+.admin-card form { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 10px; align-items: end; }
+.admin-card form > * { width: 100%; }
+.admin-card input, .admin-card select {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(233, 196, 106, 0.22);
+  border-radius: 4px;
+  padding: 9px 11px;
+  color: #f5e3b3;
+  font-family: inherit;
+  font-size: 14px;
+}
+.admin-card button {
+  background: #5eead4;
+  color: #062b25;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.invite-link {
+  margin-top: 14px;
+  padding: 12px;
+  background: rgba(94, 234, 212, 0.08);
+  border: 1px solid rgba(94, 234, 212, 0.3);
+  border-radius: 4px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.invite-link input { flex: 1; font-size: 12px; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-table th, .admin-table td {
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(233, 196, 106, 0.08);
+}
+.admin-table th { color: #8a7250; font-weight: 500; letter-spacing: 0.5px; font-size: 11px; text-transform: uppercase; }
+.admin-table td { color: #c8b07a; }
+
+/* ── Onboarding wizard ───────────────────────────────────────────────────── */
+.onboarding-shell {
+  min-height: 100vh;
+  background: radial-gradient(ellipse at top, #1a1a1a 0%, #050505 100%);
+  font-family: var(--font-spectral), Georgia, serif;
+  color: #c8b07a;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.onboarding-progress {
+  width: 100%;
+  max-width: 720px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8a7250;
+  margin-bottom: 18px;
+}
+.progress-bar {
+  margin-top: 8px;
+  height: 3px;
+  background: rgba(233, 196, 106, 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-bar > div {
+  height: 100%;
+  background: linear-gradient(90deg, #e9c46a, #5eead4);
+  transition: width 0.3s;
+}
+.onboarding-card {
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid rgba(233, 196, 106, 0.2);
+  border-radius: 8px;
+  padding: 40px;
+  max-width: 720px;
+  width: 100%;
+}
+.onboarding-card h1 {
+  font-size: 32px;
+  color: #f5e3b3;
+  margin: 0 0 6px;
+  font-weight: 500;
+}
+.onboarding-desc { color: #8a7250; margin: 0 0 28px; font-size: 16px; }
+.onboarding-placeholder {
+  padding: 60px 24px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px dashed rgba(233, 196, 106, 0.22);
+  border-radius: 6px;
+  text-align: center;
+  color: #6b5a3c;
+  font-size: 14px;
+  font-style: italic;
+  margin-bottom: 28px;
+}
+.onboarding-controls {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.onboarding-controls button {
+  background: linear-gradient(180deg, #e9c46a, #c9a44d);
+  color: #1a1100;
+  border: none;
+  border-radius: 4px;
+  padding: 12px 24px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.onboarding-controls button:first-child:not(:only-child) {
+  background: transparent;
+  border: 1px solid rgba(233, 196, 106, 0.3);
+  color: #c8b07a;
+}
+.onboarding-controls button:disabled { opacity: 0.5; cursor: not-allowed; }

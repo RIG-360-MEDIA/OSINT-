@@ -66,7 +66,12 @@ async def search_entities(
                  )
                )
              ORDER BY
+               -- 1. exact name match wins (e.g., 'Modi' search → 'Modi' before 'Modi Govt Initiative')
                CASE WHEN LOWER(canonical_name) = LEFT(:n, GREATEST(LENGTH(:n)-1, 1)) THEN 0 ELSE 1 END,
+               -- 2. national politicians (party set, no state) rank above regional
+               CASE WHEN party IS NOT NULL AND party != '' AND state IS NULL THEN 0 ELSE 1 END,
+               -- 3. politicians with party (regional) above unaffiliated persons
+               CASE WHEN party IS NOT NULL AND party != '' THEN 0 ELSE 1 END,
                LENGTH(canonical_name)
              LIMIT :limit
         """), params)).fetchall()

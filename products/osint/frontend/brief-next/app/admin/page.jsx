@@ -11,7 +11,7 @@ export default function AdminPage() {
   const [orgs, setOrgs] = useState([]);
   const [invites, setInvites] = useState([]);
   const [orgForm, setOrgForm] = useState({ name: '', role_template: 'govt', notes: '' });
-  const [inviteForm, setInviteForm] = useState({ email: '', org_id: '', role_template: 'govt', expires_in_days: 14, notes: '' });
+  const [inviteForm, setInviteForm] = useState({ email: '', org_id: '', expires_in_days: 14, notes: '' });
   const [lastLink, setLastLink] = useState(null);
   const [error, setError] = useState(null);
 
@@ -88,17 +88,10 @@ export default function AdminPage() {
         <form onSubmit={createInvite}>
           <input type="email" placeholder="Email" required value={inviteForm.email} onChange={e => setInviteForm({ ...inviteForm, email: e.target.value })} />
           <select required value={inviteForm.org_id} onChange={e => setInviteForm({ ...inviteForm, org_id: e.target.value })}>
-            <option value="">— pick an org —</option>
+            <option value="">— pick an org (role is inherited from it) —</option>
             {orgs.map(o => <option key={o.id} value={o.id}>{o.name} ({o.role_template})</option>)}
           </select>
-          <select value={inviteForm.role_template} onChange={e => setInviteForm({ ...inviteForm, role_template: e.target.value })}>
-            <option value="govt">govt</option>
-            <option value="pr">pr</option>
-            <option value="journalist">journalist</option>
-            <option value="academic">academic</option>
-            <option value="corporate">corporate</option>
-          </select>
-          <input type="number" min="1" max="90" placeholder="Days" value={inviteForm.expires_in_days} onChange={e => setInviteForm({ ...inviteForm, expires_in_days: e.target.value })} />
+          <input type="number" min="1" max="90" placeholder="Expires (days)" title="Days until the invite link expires" value={inviteForm.expires_in_days} onChange={e => setInviteForm({ ...inviteForm, expires_in_days: e.target.value })} />
           <input placeholder="Notes (optional)" value={inviteForm.notes} onChange={e => setInviteForm({ ...inviteForm, notes: e.target.value })} />
           <button>Issue invite</button>
         </form>

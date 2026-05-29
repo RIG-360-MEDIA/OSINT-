@@ -42,7 +42,10 @@ class CreateOrgIn(BaseModel):
 class CreateInviteIn(BaseModel):
     email: EmailStr
     org_id: str
-    role_template: str = Field(pattern="^(govt|pr|journalist|academic|corporate)$")
+    # role_template is NOT accepted here — it's inherited from the org, which
+    # is the single source of truth. The org carries the category; the invite
+    # just decides which org the person joins. (Removed the duplicate field
+    # that let a 'corporate' org issue a 'govt' invite — incoherent.)
     expires_in_days: int = Field(default=14, ge=1, le=90)
     notes: str | None = None
 
@@ -96,26 +99,24 @@ async def create_invite(
     body: CreateInviteIn,
     principal: dict[str, Any] = Depends(require_super_admin),
 ) -> dict[str, Any]:
-    if body.role_template not in VALID_ROLE_TEMPLATES:
-        raise HTTPException(status_code=400, detail="Invalid role_template")
-
-    # Verify org exists
+    # Verify org exists + inherit its role_template (single source of truth).
     async with get_db() as db:
         org = (await db.execute(text(
-            "SELECT id::text AS id, name FROM analytics.orgs WHERE id = CAST(:o AS uuid)"
+            "SELECT id::text AS id, name, role_template FROM analytics.orgs WHERE id = CAST(:o AS uuid)"
         ), {"o": body.org_id})).fetchone()
     if org is None:
         raise HTTPException(status_code=404, detail="org_id not found")
+    role_template = org.role_template
 
     token, token_hash, exp_unix = mint_invite_token(
         email=str(body.email),
         org_id=body.org_id,
-        role_template=body.role_template,
+        role_template=role_template,
         expires_in_days=body.expires_in_days,
     )
     await db_create_invite(
         token_hash=token_hash, email=str(body.email),
-        org_id=body.org_id, role_template=body.role_template,
+        org_id=body.org_id, role_template=role_template,
         invited_by=principal["id"], expires_at_unix=exp_unix,
         notes=body.notes,
     )
@@ -123,7 +124,7 @@ async def create_invite(
         "email": str(body.email),
         "org_id": body.org_id,
         "org_name": org.name,
-        "role_template": body.role_template,
+        "role_template": role_template,
         "link": build_invite_link(token),
         "expires_at_unix": exp_unix,
         "notes": body.notes,

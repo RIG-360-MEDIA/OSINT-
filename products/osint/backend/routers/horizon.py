@@ -73,7 +73,7 @@ async def get_horizon(
               JOIN articles a ON a.id = ae.article_id
               JOIN sources s  ON s.id = a.source_id
              WHERE ae.effective_event_date >= analytics.now_sim_date()
-               AND ae.effective_event_date <= analytics.now_sim_date() + :days
+               AND ae.effective_event_date <= analytics.now_sim_date() + CAST(:days AS INTEGER)
                AND ae.effective_event_date <= '2030-12-31'   -- guard vs hallucinated far-future
                AND ae.event_description IS NOT NULL
                AND LENGTH(ae.event_description) >= 10

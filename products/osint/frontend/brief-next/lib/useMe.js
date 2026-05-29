@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { supabase, authFetch } from './supabase';
+import { supabase, authFetch, getAccessToken } from './supabase';
 
 /**
  * Resolve the current principal via GET /api/me.
@@ -17,8 +17,8 @@ export function useMe() {
     let cancelled = false;
     async function load() {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
+        const token = await getAccessToken();
+        if (!token) {
           if (!cancelled) setState({ loading: false, me: null, error: null });
           return;
         }

@@ -125,9 +125,14 @@ async def main():
                   json_body={"email": "x@example.com", "org_id": "00000000-0000-0000-0000-000000000000", "role_template": "govt"})
     check("create invite (nonexistent org) → 404", r.status_code == 404, f"status={r.status_code}")
 
+    # role_template is no longer an invite field — it is inherited from the org
+    # (single source of truth). A stray role_template must be IGNORED, and the
+    # invite created with the org's role (govt), not rejected.
     r = await api("POST", "/api/admin/invites", token=admin_token,
-                  json_body={"email": "x@example.com", "org_id": org_id, "role_template": "wrong"})
-    check("create invite (bad role) → 422", r.status_code == 422, f"status={r.status_code}")
+                  json_body={"email": "stray-role@example.com", "org_id": org_id, "role_template": "wrong"})
+    ij = r.json() if r.status_code == 200 else {}
+    check("create invite ignores stray role_template (inherits org govt) → 200",
+          r.status_code == 200 and ij.get("role_template") == "govt", f"status={r.status_code} role={ij.get('role_template')}")
 
     # ── 7. Invite peek ────────────────────────────────────────────────────────
     if invite_token:
@@ -173,6 +178,43 @@ async def main():
         check("new user has correct email + org", m.get("email") == TEST_EMAIL and m.get("org_id") == org_id,
               f"email={m.get('email')} org={m.get('org_id')}")
 
+    # ── 9.5 Complete onboarding (save wizard prefs — the path that was hanging) ─
+    if user_token:
+        r = await api("POST", "/api/onboarding/complete", json_body={})
+        check("complete onboarding no token → 401", r.status_code == 401, f"status={r.status_code}")
+
+        sample_prefs = {
+            "watchlist": {
+                "entity_ids": [], "entity_meta": [], "allies": [], "opposition": [],
+                "bureaucrats": [], "civil_society": [], "auto_adjacents": True,
+            },
+            "regions": {}, "topics": {}, "languages": {}, "sources": {},
+            "stance": {}, "events": {}, "delivery": {}, "personality": {},
+        }
+        r = await api("POST", "/api/onboarding/complete", token=user_token, json_body=sample_prefs)
+        cj = r.json() if r.status_code == 200 else {}
+        check("complete onboarding (valid) → 200 + status onboarded",
+              r.status_code == 200 and cj.get("status") == "onboarded", f"status={r.status_code} body={str(cj)[:120]}")
+
+        r = await api("GET", "/api/me", token=user_token)
+        m2 = r.json() if r.status_code == 200 else {}
+        check("after complete, /api/me onboarded → true",
+              r.status_code == 200 and m2.get("onboarded") is True, f"status={r.status_code} onb={m2.get('onboarded')}")
+
+        async with engine.begin() as conn:
+            prow = (await conn.execute(text(
+                "SELECT user_id FROM analytics.user_brief_prefs WHERE user_id=(SELECT id FROM analytics.users WHERE email=:e)"
+            ), {"e": TEST_EMAIL})).fetchone()
+            urow = (await conn.execute(text(
+                "SELECT onboarded_at FROM analytics.users WHERE email=:e"
+            ), {"e": TEST_EMAIL})).fetchone()
+        check("user_brief_prefs row written", prow is not None)
+        check("users.onboarded_at set", urow is not None and urow.onboarded_at is not None,
+              f"onboarded_at={getattr(urow, 'onboarded_at', None)}")
+
+        r = await api("POST", "/api/onboarding/complete", token=user_token, json_body=sample_prefs)
+        check("complete onboarding again (upsert) → 200", r.status_code == 200, f"status={r.status_code}")
+
     # ── 10. New user login round-trip ─────────────────────────────────────────
     r = await supa_login(TEST_EMAIL, TEST_PW)
     check("new user can log in with their password → 200", r.status_code == 200 and bool(r.json().get("access_token")), f"status={r.status_code}")
@@ -203,7 +245,11 @@ async def _teardown(user_id, org_id, email):
     # delete analytics rows
     try:
         async with engine.begin() as conn:
+            # FK-safe order: prefs → invites (incl. the stray-role invite for a
+            # different email that still references this org) → users → org.
             await conn.execute(text("DELETE FROM analytics.user_brief_prefs WHERE user_id = (SELECT id FROM analytics.users WHERE email=:e)"), {"e": email})
+            if org_id:
+                await conn.execute(text("DELETE FROM analytics.invites WHERE org_id = CAST(:o AS uuid)"), {"o": org_id})
             await conn.execute(text("DELETE FROM analytics.invites WHERE email=:e"), {"e": email})
             await conn.execute(text("DELETE FROM analytics.users WHERE email=:e"), {"e": email})
             if org_id:

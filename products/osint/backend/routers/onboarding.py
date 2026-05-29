@@ -237,7 +237,11 @@ async def complete_onboarding(
                     sources, stance, events, delivery, personality
                 ) VALUES (
                     CAST(:uid AS uuid),
-                    CASE WHEN :psid IS NULL THEN NULL ELSE CAST(:psid AS uuid) END,
+                    -- CAST(NULL AS uuid) is just NULL::uuid; the explicit cast makes
+                    -- the param type unambiguous. A bare CASE/:psid left asyncpg
+                    -- unable to infer the type when primary_subject_id is None
+                    -- (AmbiguousParameterError → 500 on every onboarding-complete).
+                    CAST(:psid AS uuid),
                     CAST(:psmeta AS jsonb),
                     CAST(:watch AS jsonb), CAST(:reg AS jsonb), CAST(:top AS jsonb),
                     CAST(:lang AS jsonb), CAST(:src AS jsonb), CAST(:st AS jsonb),

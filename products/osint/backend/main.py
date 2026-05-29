@@ -55,7 +55,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),
     allow_credentials=True,
-    allow_methods=["GET", "OPTIONS"],
+    # POST/PUT/DELETE are required for signup-accept, issue-invite, and
+    # complete-onboarding. The old GET/OPTIONS-only list made every POST
+    # fail the browser's preflight (400) while server-side tests passed.
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

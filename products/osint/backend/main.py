@@ -24,7 +24,7 @@ from sqlalchemy import text
 
 from config import load_settings
 from db import dispose_engine, get_db, get_engine
-from routers import admin, entities, emerging, kpi, me, onboarding, stories
+from routers import admin, entities, emerging, kpi, me, onboarding, stories, voices
 
 settings = load_settings()
 
@@ -63,6 +63,7 @@ app.include_router(kpi.router)
 app.include_router(entities.router)
 app.include_router(emerging.router)
 app.include_router(stories.router)
+app.include_router(voices.router)
 app.include_router(me.router)
 app.include_router(admin.router)
 app.include_router(onboarding.router)

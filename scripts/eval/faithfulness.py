@@ -72,92 +72,83 @@ def verbatim_in(quote: str, doc: str) -> bool:
 # Sample collection from the live brief API
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def collect_quotes(n_stories: int = 8) -> list[dict]:
-    """Pull principalQuote + lens quotes from /api/brief/stories."""
-    async with httpx.AsyncClient(timeout=60) as client:
-        r = await client.get(f"{API_BASE}/api/brief/stories?limit={n_stories}")
-    r.raise_for_status()
-    out = []
-    for story in r.json().get("stories", []):
-        pq = story.get("principalQuote")
-        if pq and pq.get("text"):
-            out.append({
-                "kind": "principalQuote",
-                "quote": pq["text"],
-                "speaker": pq.get("attribution"),
-                "source": pq.get("source"),
-                "headline": story.get("headline", "")[:80],
-            })
-        for lens in story.get("lens", []):
-            q = lens.get("quote")
-            if q and q.startswith("("):
-                continue  # placeholder rows
-            if q:
-                out.append({
-                    "kind": "lens",
-                    "quote": q,
-                    "speaker": None,
-                    "source": lens.get("outlet"),
-                    "headline": story.get("headline", "")[:80],
-                })
-    return out
+async def collect_quotes(n: int = 30) -> list[dict]:
+    """Sample N quotes from article_quotes — the table the brief draws from.
+
+    This is what the brief WOULD show if every cluster had quotes — same
+    quality dimension, larger N. /api/brief/stories' principalQuote alone
+    gives a tiny sample at certain sim_now values.
+    """
+    async with engine.connect() as conn:
+        rows = (await conn.execute(text("""
+            SELECT aq.quote_text, aq.speaker_name,
+                   aq.context, aq.is_direct,
+                   s.name AS source, a.title AS headline, a.id AS article_id,
+                   ed.canonical_name AS speaker_canonical,
+                   ed.entity_type AS speaker_type
+              FROM article_quotes aq
+              JOIN articles a ON a.id = aq.article_id
+              JOIN sources s ON s.id = a.source_id
+              LEFT JOIN entity_dictionary ed ON ed.id = aq.speaker_entity_id
+             WHERE LENGTH(aq.quote_text) BETWEEN 40 AND 280
+               AND aq.is_direct = TRUE
+             ORDER BY RANDOM() LIMIT :n
+        """), {"n": n})).fetchall()
+    return [{
+        "kind": "article_quote",
+        "quote": r.quote_text,
+        "speaker": r.speaker_canonical or r.speaker_name,
+        "speaker_type": r.speaker_type,
+        "source": r.source,
+        "headline": (r.headline or "")[:80],
+        "article_id": str(r.article_id),
+        "context": r.context,
+    } for r in rows]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Source-article lookup
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def find_source_article(quote: str, source: str | None) -> dict | None:
-    """Try to locate the article that contains this quote.
-
-    We use article_quotes as the index — finding the article via the saved
-    speaker_name + quote_text is reliable since the brief router pulled
-    these straight from that table.
-    """
-    qn = _norm(quote)
-    needle = qn[: min(80, len(qn))]  # first 80 chars of normalised quote
+async def fetch_article_proxy(article_id: str) -> dict | None:
+    """Fetch the article's title + summary + raw_text (when present) for
+    verbatim search. Our 'document' to check the quote against."""
     async with engine.connect() as conn:
-        # Match via article_quotes.quote_text (normalised); we keep top 1
         row = (await conn.execute(text("""
-            SELECT a.id AS article_id, a.title, a.summary_executive,
-                   a.thumbnail_url, a.collected_at, s.name AS source,
-                   aq.quote_text
-              FROM article_quotes aq
-              JOIN articles a ON a.id = aq.article_id
-              JOIN sources s  ON s.id = a.source_id
-             WHERE LOWER(regexp_replace(aq.quote_text, '[^a-z0-9 ]', '', 'g')) LIKE :n
-               AND ('' = :src OR s.name = :src)
-             ORDER BY a.collected_at DESC
-             LIMIT 1
-        """), {"n": f"%{needle}%", "src": source or ""})).fetchone()
-        if not row:
-            return None
-
-        # Pull a chunk of substrate to look in: title + summary + the matched quote_text
-        # (the full article body isn't in our table; we use the quote-text row as proof
-        # the quote was extracted from this article — that's our ground truth)
-        body_parts = [row.title or "", row.summary_executive or "", row.quote_text or ""]
-        return {
-            "article_id": str(row.article_id),
-            "title": row.title,
-            "doc": "\n".join(body_parts),
-            "source": row.source,
-        }
+            SELECT a.id, a.title, a.summary_executive, a.summary_snippet,
+                   a.summary_preview, a.lead_text_original, a.lead_text_translated,
+                   a.full_text_scraped, a.full_text_translated
+              FROM articles a
+             WHERE a.id = CAST(:aid AS uuid)
+        """), {"aid": article_id})).fetchone()
+    if not row:
+        return None
+    body = "\n".join([
+        row.title or "",
+        row.summary_executive or "",
+        row.summary_snippet or "",
+        row.summary_preview or "",
+        row.lead_text_original or "",
+        row.lead_text_translated or "",
+        (row.full_text_scraped or "")[:50000],
+        (row.full_text_translated or "")[:50000],
+    ])
+    return {"id": str(row.id), "doc": body, "title": row.title}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Main eval loop
 # ─────────────────────────────────────────────────────────────────────────────
 
-async def main(n_stories: int = 8) -> int:
-    quotes = await collect_quotes(n_stories=n_stories)
+async def main(n: int = 30) -> int:
+    quotes = await collect_quotes(n=n)
     if not quotes:
-        print("No quotes found in /api/brief/stories. Replay clock too narrow?")
+        print("No quotes in article_quotes. Drain hasn't extracted any yet?")
         return 0
 
     results = []
     for q in quotes:
-        src = await find_source_article(q["quote"], q.get("source"))
+        src = await fetch_article_proxy(q["article_id"])
         verdict = "UNGROUNDED"
         score = 0.0
         if src:
@@ -173,13 +164,12 @@ async def main(n_stories: int = 8) -> int:
                     verdict = "PARTIAL"
                 else:
                     verdict = "MISMATCH"
-        results.append({**q, "verdict": verdict, "score": round(score, 3),
-                        "article_id": src["article_id"] if src else None})
+        results.append({**q, "verdict": verdict, "score": round(score, 3)})
 
     # ─── Report ─────────────────────────────────────────────────────────────
     n = len(results)
     by_verdict = Counter(r["verdict"] for r in results)
-    print(f"\nFaithfulness eval — {n} quotes from {n_stories} stories")
+    print(f"\nFaithfulness eval — {n} quotes sampled from article_quotes")
     print(f"  API: {API_BASE}")
     print("─" * 78)
     for verdict in ("VERBATIM", "NEAR_MATCH", "PARTIAL", "MISMATCH", "UNGROUNDED"):
@@ -207,5 +197,5 @@ async def main(n_stories: int = 8) -> int:
 
 
 if __name__ == "__main__":
-    n = int(sys.argv[1]) if len(sys.argv) > 1 else 8
+    n = int(sys.argv[1]) if len(sys.argv) > 1 else 30
     raise SystemExit(asyncio.run(main(n)))

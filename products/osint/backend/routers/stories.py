@@ -2,7 +2,7 @@
 
 Phase 4.1 enhancements (2026-05-29) — adds the 6 fields the brief design needs
 that were previously stubbed: principalQuote, coverage (crit/neu/sup %),
-citeBlocks (top-3 outlets with article counts), thumbnail (og_image),
+citeBlocks (top-3 outlets with article counts), thumbnail (thumbnail_url),
 vs% (today vs 7-day baseline), peakTime (hour of peak in last sim-24h).
 
 Filter params added day-1 so personalization can plug in later without
@@ -217,18 +217,18 @@ async def _one_cluster(
             "timestamp": pq.collected_at.strftime("%d %b · %H:%M IST") if pq.collected_at else "—",
         }
 
-    # ─── Thumbnail — most-recent og_image (PHASE 4.1) ───────────────────────
+    # ─── Thumbnail — most-recent thumbnail_url (PHASE 4.1) ───────────────────────
     thumb_row = (await db.execute(text(f"""
-        SELECT a.og_image
+        SELECT a.thumbnail_url
           FROM article_events ae JOIN articles a ON a.id = ae.article_id
          WHERE ae.event_cluster_id = CAST(:cid AS uuid)
-           AND a.og_image IS NOT NULL AND a.og_image != ''
+           AND a.thumbnail_url IS NOT NULL AND a.thumbnail_url != ''
            AND a.collected_at >= analytics.now_sim() - {week_window}
            AND a.collected_at <= analytics.now_sim()
            {country_clause}
          ORDER BY a.collected_at DESC LIMIT 1
     """), params)).fetchone()
-    thumbnail = thumb_row.og_image if thumb_row else None
+    thumbnail = thumb_row.thumbnail_url if thumb_row else None
 
     # ─── Lens cards (1 quote per outlet up to 5) ────────────────────────────
     lens_rows = (await db.execute(text(f"""

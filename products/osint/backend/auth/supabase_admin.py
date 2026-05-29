@@ -82,19 +82,33 @@ async def sign_in_with_password(
 
 
 async def get_user_by_email(email: str) -> dict[str, Any] | None:
-    """Look up an existing Supabase user by email. Returns None if not found."""
+    """Look up an existing Supabase user by exact email. Returns None if absent.
+
+    CRITICAL: GoTrue's /admin/users endpoint does NOT filter by the `email`
+    query param — it returns a paginated list of ALL users and ignores it.
+    Taking users[0] blindly (the old bug) linked new signups to a random
+    existing identity. We MUST filter client-side by exact email match.
+    """
+    target = email.strip().lower()
     async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.get(
-            f"{_URL}/auth/v1/admin/users",
-            headers=_admin_headers(),
-            params={"email": email.strip().lower()},
-        )
-    if r.status_code == 404:
-        return None
-    if r.status_code >= 400:
-        raise HTTPException(status_code=500, detail=f"Supabase get_user: {r.text}")
-    data = r.json()
-    users = data.get("users") if isinstance(data, dict) else data
-    if not users:
-        return None
-    return users[0] if isinstance(users, list) else users
+        # Page through to be safe; most installs are small but don't assume.
+        page = 1
+        while page <= 20:  # hard cap: 20 pages × 200 = 4000 users
+            r = await client.get(
+                f"{_URL}/auth/v1/admin/users",
+                headers=_admin_headers(),
+                params={"per_page": 200, "page": page},
+            )
+            if r.status_code >= 400:
+                raise HTTPException(status_code=500, detail=f"Supabase get_user: {r.text}")
+            data = r.json()
+            users = data.get("users") if isinstance(data, dict) else data
+            if not users:
+                return None
+            for u in users:
+                if (u.get("email") or "").strip().lower() == target:
+                    return u
+            if len(users) < 200:  # last page
+                return None
+            page += 1
+    return None

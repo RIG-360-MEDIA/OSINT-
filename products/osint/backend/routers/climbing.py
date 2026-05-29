@@ -110,18 +110,10 @@ async def get_climbing(
              LIMIT 80
         """), params)).fetchall()
 
-    # Get the subset of entities that ARE actual people/orgs/places, so we
-    # can drop generic-role surface forms ("District Program Officer") that
-    # were leaking through as climbing entries.
-    async with get_db() as db:
-        ent_rows = (await db.execute(text("""
-            SELECT LOWER(canonical_name) AS n
-              FROM entity_dictionary
-             WHERE LOWER(entity_type) IN ('person','politician','organization','location')
-        """))).fetchall()
-    known_entities = {r.n for r in ent_rows}
-
     # Filter stopwords + watched entities + format
+    # NOTE: the entity_dictionary lookup is intentionally NOT loaded here per
+    # request (16K-row subquery blew the climbing endpoint past 30s). The
+    # generic-role keyword filter below is the cheaper, good-enough fallback.
     items: list[dict[str, Any]] = []
     for r in rows:
         e = r.entity
@@ -131,14 +123,11 @@ async def get_climbing(
             continue
         if e.startswith(("the ", "a ", "an ")):
             continue
-        # Phase-4 fix: only surface entries that are KNOWN as person/org/location
-        # in entity_dictionary OR are clean enough (no generic-role keywords).
-        is_known = e in known_entities
-        is_generic_role = any(k in e for k in (
-            "officer", "minister", "director", "secretary", "president of",
-            "chairman", "ceo", "judge", "manager", "head of",
-        ))
-        if is_generic_role and not is_known:
+        # Phase-4 fix: drop generic-role surface forms ("district program officer").
+        if any(k in e for k in (
+            "officer", "director", "secretary", "chairman",
+            "judge", "manager", "head of", "spokesperson",
+        )):
             continue
 
         icon, tone = _classify(e)

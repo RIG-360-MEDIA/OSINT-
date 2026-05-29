@@ -77,6 +77,60 @@ function useLiveStories() {
   return stories;
 }
 
+// Phase 4 endpoints — voices, climbing, horizon, mood.
+// All four are auth-free read-only and follow the same null-fallback pattern.
+function useLiveVoices() {
+  const [v, setV] = React.useState(null);
+  React.useEffect(() => {
+    let c = false;
+    const f = () => fetch(`${RIG_API_BASE}/api/brief/voices?limit=5&since_hours=12`)
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { if (j && !c) setV(j); }).catch(() => {});
+    f(); const t = setInterval(f, 120000);
+    return () => { c = true; clearInterval(t); };
+  }, []);
+  return v;
+}
+
+function useLiveClimbing() {
+  const [climbing, setClimbing] = React.useState(null);
+  React.useEffect(() => {
+    let c = false;
+    const f = () => fetch(`${RIG_API_BASE}/api/brief/climbing?limit=3&since_hours=4`)
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { if (j && j.climbing && !c) setClimbing(j.climbing); }).catch(() => {});
+    f(); const t = setInterval(f, 120000);
+    return () => { c = true; clearInterval(t); };
+  }, []);
+  return climbing;
+}
+
+function useLiveHorizon() {
+  const [horizon, setHorizon] = React.useState(null);
+  React.useEffect(() => {
+    let c = false;
+    const f = () => fetch(`${RIG_API_BASE}/api/brief/horizon?days=7`)
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { if (j && j.days && !c) setHorizon(j); }).catch(() => {});
+    f(); const t = setInterval(f, 300000);  // 5-min refresh — calendar moves slowly
+    return () => { c = true; clearInterval(t); };
+  }, []);
+  return horizon;
+}
+
+function useLiveMood() {
+  const [mood, setMood] = React.useState(null);
+  React.useEffect(() => {
+    let c = false;
+    const f = () => fetch(`${RIG_API_BASE}/api/brief/mood?since_hours=24`)
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { if (j && !c) setMood(j); }).catch(() => {});
+    f(); const t = setInterval(f, 120000);
+    return () => { c = true; clearInterval(t); };
+  }, []);
+  return mood;
+}
+
 
 const stanceColor = (s) =>
   s === "supportive" ? "var(--stance-supportive)" :
@@ -1314,21 +1368,64 @@ const HorizonOutlook = () => (
   </div>
 );
 
-const KeyEvents = () => (
-  <div className="hz-panel">
-    <header className="hz-panel-head"><h3>Key Events To Watch</h3><p>High-impact events shaping the week ahead</p></header>
-    <div className="hz-events">
-      {HORIZON_EVENTS.map((e, i) => (
-        <article key={i} className={`hz-event ${e.tone} ${e.risk === "High" ? "alert-glow tone-rose" : ""}`}>
-          <div className="hz-event-date"><span className="m">{e.day}</span><span className="d">{e.date}</span><span className="w">{e.weekday}</span></div>
-          <div className="hz-event-icon"><Icon name={e.icon} size={18} stroke={1.4}/></div>
-          <div className="hz-event-body"><h5>{e.title}</h5><p>{e.desc}</p></div>
-          <div className="hz-event-risk"><span className="lbl">Risk</span><span className={`val ${e.riskTone}`}>{e.risk}</span><span className={`dot ${e.riskTone}`}></span></div>
-        </article>
-      ))}
+// Map osint-backend event_type → boss's icon name.
+const HZ_ICON_MAP = {
+  cabinet: "building", approval: "chat", release: "trendUp",
+  announcement: "megaphone", election: "vote", court: "scale",
+  ruling: "scale", hearing: "scale", sports_result: "target",
+  press_briefing: "chat", summit: "building", rally: "megaphone",
+  policy_launch: "megaphone", budget: "trendUp",
+};
+
+const KeyEvents = () => {
+  const liveHz = useLiveHorizon();
+
+  // Flatten live horizon days → boss's per-event shape. Falls back to mock
+  // until the API responds, or if no events are available.
+  const events = React.useMemo(() => {
+    if (!liveHz?.days) return HORIZON_EVENTS;
+    const out = [];
+    for (const day of liveHz.days) {
+      if (!day.events?.length) continue;
+      const dt = new Date(day.date);
+      const dayLabel = dt.toLocaleString('en-US', { month: 'short' });
+      const dateLabel = String(dt.getUTCDate());
+      const weekdayLabel = dt.toLocaleString('en-US', { weekday: 'short' });
+      for (const e of day.events) {
+        const conf = e.confidence ?? 1.0;
+        const risk = conf >= 0.8 ? "High" : conf >= 0.5 ? "Medium" : "Low";
+        const riskTone = conf >= 0.8 ? "rose" : conf >= 0.5 ? "amber" : "green";
+        out.push({
+          day: dayLabel, date: dateLabel, weekday: weekdayLabel,
+          icon: HZ_ICON_MAP[e.type] || "chat",
+          tone: e.tone || "amber",
+          title: (e.description || e.type || "").slice(0, 70),
+          desc: e.source ? `via ${e.source}` : "",
+          risk, riskTone,
+        });
+        if (out.length >= 6) break;
+      }
+      if (out.length >= 6) break;
+    }
+    return out.length ? out : HORIZON_EVENTS;
+  }, [liveHz]);
+
+  return (
+    <div className="hz-panel">
+      <header className="hz-panel-head"><h3>Key Events To Watch</h3><p>High-impact events shaping the week ahead</p></header>
+      <div className="hz-events">
+        {events.map((e, i) => (
+          <article key={i} className={`hz-event ${e.tone} ${e.risk === "High" ? "alert-glow tone-rose" : ""}`}>
+            <div className="hz-event-date"><span className="m">{e.day}</span><span className="d">{e.date}</span><span className="w">{e.weekday}</span></div>
+            <div className="hz-event-icon"><Icon name={e.icon} size={18} stroke={1.4}/></div>
+            <div className="hz-event-body"><h5>{e.title}</h5><p>{e.desc}</p></div>
+            <div className="hz-event-risk"><span className="lbl">Risk</span><span className={`val ${e.riskTone}`}>{e.risk}</span><span className={`dot ${e.riskTone}`}></span></div>
+          </article>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ForecastPulse = () => {
   const points = [[10, 270],[80, 220],[150, 180],[220, 130],[290, 90],[360, 75],[430, 105],[500, 140]];

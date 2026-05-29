@@ -1,0 +1,131 @@
+# Entity seed — Republic of the Philippines
+country: PH
+version: v1
+notes: |
+  Sources: op.gov.ph / congress.gov.ph rosters, PSE PSEi,
+  GMA / ABS-CBN / Rappler mastheads.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Marcos Jr Govt (since June 2022) ---
+  - {name: "Ferdinand Marcos Jr.", aliases: ["Marcos Jr.", "Bongbong Marcos", "BBM"], role: "President", party: "PFP"}
+  - {name: "Sara Duterte",         aliases: ["Sara"], role: "Vice President / Education Secretary", party: "Lakas–CMD"}
+  - {name: "Enrique Manalo",       aliases: [], role: "Foreign Secretary"}
+  - {name: "Gilberto Teodoro",     aliases: ["Teodoro"], role: "Defence Secretary"}
+  - {name: "Benjamin Diokno",      aliases: ["Diokno"], role: "Finance Secretary"}
+  - {name: "Benhur Abalos",        aliases: [], role: "Interior Secretary"}
+
+  # --- Recent Presidents ---
+  - {name: "Rodrigo Duterte",      aliases: ["Duterte"], role: "Former President (2016-2022)", party: "PDP-Laban"}
+  - {name: "Benigno Aquino III",   aliases: ["Noynoy Aquino", "PNoy"], role: "Former President (deceased)"}
+  - {name: "Gloria Macapagal Arroyo", aliases: ["GMA"], role: "Former President"}
+
+  # --- Opposition ---
+  - {name: "Leni Robredo",         aliases: ["Robredo"], role: "Former VP / 2022 Presidential candidate", party: "Liberal"}
+  - {name: "Risa Hontiveros",      aliases: [], role: "Senator"}
+
+  # --- Congressional Leaders ---
+  - {name: "Francis Escudero",     aliases: ["Chiz Escudero"], role: "Senate President"}
+  - {name: "Martin Romualdez",     aliases: ["Romualdez"], role: "Speaker of the House"}
+
+  # --- Central Bank ---
+  - {name: "Eli Remolona",         aliases: ["Remolona"], role: "Governor of the Bangko Sentral ng Pilipinas"}
+
+  # --- Religious ---
+  - {name: "Luis Antonio Tagle",   aliases: ["Cardinal Tagle"], role: "Catholic Cardinal"}
+
+organizations:
+  - {name: "Government of the Philippines", aliases: ["Philippine Govt"]}
+  - {name: "Malacañang Palace",    aliases: ["Malacanang"]}
+  - {name: "Congress of the Philippines", aliases: ["Philippine Congress"]}
+  - {name: "Senate of the Philippines", aliases: ["Philippine Senate"]}
+  - {name: "House of Representatives of the Philippines", aliases: []}
+  - {name: "Supreme Court of the Philippines", aliases: []}
+  - {name: "Commission on Elections (Philippines)", aliases: ["COMELEC"]}
+
+  # --- Ministries / Depts ---
+  - {name: "Department of Foreign Affairs (Philippines)", aliases: ["Philippine DFA"]}
+  - {name: "Department of National Defense (Philippines)", aliases: ["DND Philippines"]}
+  - {name: "Department of Finance (Philippines)", aliases: ["DOF Philippines"]}
+  - {name: "Department of Justice (Philippines)", aliases: ["DOJ Philippines"]}
+  - {name: "Department of the Interior and Local Government", aliases: ["DILG"]}
+
+  # --- Central Bank ---
+  - {name: "Bangko Sentral ng Pilipinas", aliases: ["BSP"]}
+
+  # --- Military ---
+  - {name: "Armed Forces of the Philippines", aliases: ["AFP Philippines"]}
+  - {name: "Philippine Army",      aliases: []}
+  - {name: "Philippine Navy",      aliases: []}
+  - {name: "Philippine Air Force", aliases: []}
+  - {name: "Philippine Coast Guard", aliases: ["PCG"]}
+  - {name: "Philippine National Police", aliases: ["PNP"]}
+  - {name: "National Bureau of Investigation (Philippines)", aliases: ["NBI Philippines"]}
+
+  # --- Parties ---
+  - {name: "Partido Federal ng Pilipinas", aliases: ["PFP"]}
+  - {name: "Lakas–CMD",            aliases: ["Lakas-CMD"]}
+  - {name: "PDP-Laban",            aliases: []}
+  - {name: "Liberal Party of the Philippines", aliases: ["LP Philippines"]}
+  - {name: "Nacionalista Party",   aliases: []}
+
+  # --- Media ---
+  - {name: "Philippine News Agency", aliases: ["PNA"]}
+  - {name: "GMA Network",          aliases: ["GMA"]}
+  - {name: "ABS-CBN",              aliases: []}
+  - {name: "Rappler",              aliases: []}
+  - {name: "Philippine Daily Inquirer", aliases: ["Inquirer"]}
+  - {name: "Manila Bulletin",      aliases: []}
+  - {name: "Philippine Star",      aliases: ["PhilStar"]}
+  - {name: "Manila Times",         aliases: []}
+  - {name: "TV5 (Philippines)",    aliases: ["TV5"]}
+
+  # --- Corps ---
+  - {name: "PLDT",                 aliases: []}
+  - {name: "SM Investments Corporation", aliases: ["SM Investments"]}
+  - {name: "Ayala Corporation",    aliases: []}
+  - {name: "BDO Unibank",          aliases: ["BDO"]}
+  - {name: "Bank of the Philippine Islands", aliases: ["BPI"]}
+  - {name: "Globe Telecom",        aliases: []}
+  - {name: "San Miguel Corporation", aliases: ["SMC"]}
+
+  # --- Insurgent groups ---
+  - {name: "New People's Army",    aliases: ["NPA"]}
+  - {name: "Communist Party of the Philippines", aliases: ["CPP"]}
+  - {name: "Abu Sayyaf",           aliases: []}
+  - {name: "Moro Islamic Liberation Front", aliases: ["MILF"]}
+
+locations:
+  - {name: "Philippines",          aliases: ["Pilipinas"]}
+  - {name: "Manila",               aliases: []}
+  - {name: "Quezon City",          aliases: ["QC"]}
+  - {name: "Cebu City",            aliases: ["Cebu"]}
+  - {name: "Davao City",           aliases: ["Davao"]}
+  - {name: "Caloocan",             aliases: []}
+  - {name: "Makati",               aliases: []}
+  - {name: "Pasig",                aliases: []}
+  - {name: "Taguig",               aliases: []}
+  - {name: "Zamboanga City",       aliases: []}
+  - {name: "Cagayan de Oro",       aliases: []}
+  - {name: "Iloilo City",          aliases: []}
+
+  # --- Regions ---
+  - {name: "Metro Manila",         aliases: ["NCR"]}
+  - {name: "Luzon",                aliases: []}
+  - {name: "Visayas",              aliases: []}
+  - {name: "Mindanao",             aliases: []}
+  - {name: "Bangsamoro",           aliases: ["BARMM"]}
+
+  # --- Strategic ---
+  - {name: "West Philippine Sea",  aliases: []}
+  - {name: "Scarborough Shoal",    aliases: ["Bajo de Masinloc"]}
+  - {name: "Spratly Islands (Philippines)", aliases: ["Kalayaan Islands"]}
+  - {name: "Sulu Sea",             aliases: []}
+
+roles:
+  - {name: "President of the Philippines", aliases: ["Philippine President"]}
+  - {name: "Vice President of the Philippines", aliases: ["Philippine VP"]}
+  - {name: "Senate President (Philippines)", aliases: []}
+  - {name: "Speaker of the House (Philippines)", aliases: []}
+  - {name: "Foreign Secretary of the Philippines", aliases: []}
+  - {name: "Governor of the Bangko Sentral ng Pilipinas", aliases: ["BSP Governor"]}

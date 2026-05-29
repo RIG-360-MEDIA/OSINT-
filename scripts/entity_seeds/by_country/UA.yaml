@@ -1,0 +1,139 @@
+# Entity seed — Ukraine
+country: UA
+version: v1
+notes: |
+  Sources: president.gov.ua, kmu.gov.ua (cabinet), Verkhovna Rada roster,
+  Ukrainska Pravda mastheads, Wikipedia "List of Ukrainian" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Govt (since Feb 2022 war) ---
+  - {name: "Volodymyr Zelensky",   aliases: ["Zelenskyy", "Zelensky", "President Zelensky"], role: "President of Ukraine"}
+  - {name: "Olena Zelenska",       aliases: [], notes: "First Lady"}
+  - {name: "Denys Shmyhal",        aliases: ["Shmyhal"], role: "Prime Minister"}
+  - {name: "Andriy Sybiha",        aliases: ["Sybiha"], role: "Foreign Minister"}
+  - {name: "Rustem Umerov",        aliases: ["Umerov"], role: "Defense Minister"}
+  - {name: "Andriy Yermak",        aliases: ["Yermak"], role: "Head of the Presidential Office"}
+  - {name: "Mykhailo Podolyak",    aliases: ["Podolyak"], role: "Presidential Adviser"}
+  - {name: "Ihor Klymenko",        aliases: ["Klymenko"], role: "Interior Minister"}
+  - {name: "Sergii Marchenko",     aliases: ["Marchenko"], role: "Finance Minister"}
+
+  # --- Verkhovna Rada Leadership ---
+  - {name: "Ruslan Stefanchuk",    aliases: ["Stefanchuk"], role: "Speaker of the Verkhovna Rada"}
+  - {name: "David Arakhamia",      aliases: ["Arakhamia"], role: "Servant of the People faction leader"}
+
+  # --- Military / Security ---
+  - {name: "Oleksandr Syrskyi",    aliases: ["Syrsky"], role: "Commander-in-Chief of the Armed Forces"}
+  - {name: "Valerii Zaluzhnyi",    aliases: ["Zaluzhny"], role: "Former Commander-in-Chief; Ambassador to UK"}
+  - {name: "Kyrylo Budanov",       aliases: ["Budanov"], role: "GUR (Military Intelligence) Chief"}
+  - {name: "Vasyl Maliuk",         aliases: ["Maliuk"], role: "SBU Head"}
+
+  # --- Foreign Affairs Notables (recent) ---
+  - {name: "Dmytro Kuleba",        aliases: ["Kuleba"], role: "Former Foreign Minister"}
+
+  # --- Mayors / Regional ---
+  - {name: "Vitali Klitschko",     aliases: ["Klitschko"], role: "Mayor of Kyiv"}
+  - {name: "Ihor Terekhov",        aliases: [], role: "Mayor of Kharkiv"}
+  - {name: "Hennadiy Trukhanov",   aliases: [], role: "Mayor of Odesa"}
+
+  # --- Opposition / former ---
+  - {name: "Petro Poroshenko",     aliases: ["Poroshenko"], role: "Former President", party: "European Solidarity"}
+  - {name: "Yulia Tymoshenko",     aliases: ["Tymoshenko"], role: "Former PM", party: "Batkivshchyna"}
+  - {name: "Viktor Yanukovych",    aliases: [], notes: "Former President (deposed 2014)"}
+  - {name: "Viktor Medvedchuk",    aliases: [], notes: "Pro-Russian exiled politician"}
+
+  # --- Central Bank ---
+  - {name: "Andriy Pyshnyy",       aliases: [], role: "Governor of the National Bank of Ukraine"}
+
+organizations:
+  - {name: "Government of Ukraine", aliases: ["Ukrainian Cabinet", "Cabinet of Ministers of Ukraine"]}
+  - {name: "Office of the President of Ukraine", aliases: ["Presidential Office of Ukraine"]}
+  - {name: "Verkhovna Rada",       aliases: ["Ukrainian Parliament"]}
+  - {name: "Supreme Court of Ukraine", aliases: []}
+  - {name: "National Security and Defense Council of Ukraine", aliases: ["NSDC"]}
+  - {name: "Central Election Commission of Ukraine", aliases: ["CEC Ukraine"]}
+
+  # --- Ministries ---
+  - {name: "Ministry of Foreign Affairs of Ukraine", aliases: ["MFA Ukraine"]}
+  - {name: "Ministry of Defence of Ukraine", aliases: ["MoD Ukraine"]}
+  - {name: "Ministry of Internal Affairs of Ukraine", aliases: []}
+
+  # --- Military / Intel ---
+  - {name: "Armed Forces of Ukraine", aliases: ["AFU", "ZSU"]}
+  - {name: "Ukrainian Ground Forces", aliases: []}
+  - {name: "Ukrainian Air Force",  aliases: []}
+  - {name: "Ukrainian Navy",       aliases: []}
+  - {name: "Security Service of Ukraine", aliases: ["SBU"]}
+  - {name: "Main Directorate of Intelligence of the MoD of Ukraine", aliases: ["HUR", "GUR"]}
+  - {name: "National Guard of Ukraine", aliases: []}
+  - {name: "Azov Brigade",         aliases: ["Azov Regiment"]}
+
+  # --- Central Bank ---
+  - {name: "National Bank of Ukraine", aliases: ["NBU"]}
+
+  # --- Parties ---
+  - {name: "Servant of the People (party)", aliases: ["Sluha Narodu"]}
+  - {name: "European Solidarity",  aliases: []}
+  - {name: "Batkivshchyna",        aliases: ["Fatherland"]}
+  - {name: "Holos",                aliases: ["Voice (party)"]}
+  - {name: "Opposition Platform — For Life", aliases: []}
+
+  # --- Media ---
+  - {name: "Ukrainska Pravda",     aliases: ["Ukrainian Pravda"]}
+  - {name: "Kyiv Independent",     aliases: ["The Kyiv Independent"]}
+  - {name: "Interfax-Ukraine",     aliases: []}
+  - {name: "Ukrinform",            aliases: []}
+  - {name: "Suspilne",             aliases: ["UA:PBC"]}
+  - {name: "Hromadske",            aliases: []}
+  - {name: "Censor.NET",           aliases: []}
+  - {name: "1+1 (TV channel)",     aliases: ["1+1"]}
+  - {name: "ICTV (Ukraine)",       aliases: []}
+
+  # --- Corps ---
+  - {name: "Naftogaz",             aliases: []}
+  - {name: "PrivatBank",           aliases: []}
+  - {name: "Ukreximbank",          aliases: []}
+  - {name: "DTEK",                 aliases: []}
+
+locations:
+  - {name: "Kyiv",                 aliases: ["Kiev"]}
+  - {name: "Kharkiv",              aliases: ["Kharkov"]}
+  - {name: "Odesa",                aliases: ["Odessa"]}
+  - {name: "Dnipro",               aliases: ["Dnepropetrovsk"]}
+  - {name: "Lviv",                 aliases: ["Lvov"]}
+  - {name: "Zaporizhzhia",         aliases: ["Zaporozhye"], notes: "city + nuclear plant"}
+  - {name: "Mykolaiv",             aliases: ["Nikolaev"]}
+  - {name: "Mariupol",             aliases: []}
+  - {name: "Kherson (city)",       aliases: []}
+  - {name: "Bakhmut",              aliases: []}
+  - {name: "Avdiivka",             aliases: []}
+  - {name: "Pokrovsk",             aliases: []}
+  - {name: "Kupiansk",             aliases: []}
+  - {name: "Chernihiv",            aliases: []}
+  - {name: "Sumy",                 aliases: []}
+
+  # --- Oblasts ---
+  - {name: "Donetsk Oblast",       aliases: []}
+  - {name: "Luhansk Oblast",       aliases: []}
+  - {name: "Kherson Oblast",       aliases: []}
+  - {name: "Zaporizhzhia Oblast",  aliases: []}
+  - {name: "Kharkiv Oblast",       aliases: []}
+  - {name: "Crimea",               aliases: ["Crimean Peninsula"], notes: "annexed by Russia 2014"}
+
+  # --- Landmarks ---
+  - {name: "Mariinskyi Palace",    aliases: []}
+  - {name: "Bankova Street",       aliases: [], notes: "Presidential Office shorthand"}
+  - {name: "Maidan Nezalezhnosti", aliases: ["Maidan", "Independence Square"]}
+  - {name: "Zaporizhzhia Nuclear Power Plant", aliases: ["ZNPP"]}
+  - {name: "Chernobyl",            aliases: ["Chornobyl"]}
+
+roles:
+  - {name: "President of Ukraine", aliases: []}
+  - {name: "Prime Minister of Ukraine", aliases: ["Ukrainian PM"]}
+  - {name: "Speaker of the Verkhovna Rada", aliases: []}
+  - {name: "Commander-in-Chief of the Armed Forces of Ukraine", aliases: []}
+  - {name: "Head of the Office of the President of Ukraine", aliases: []}
+  - {name: "Foreign Minister of Ukraine", aliases: []}
+  - {name: "Defence Minister of Ukraine", aliases: []}
+  - {name: "Chief of the SBU",     aliases: []}
+  - {name: "Head of the GUR",      aliases: []}

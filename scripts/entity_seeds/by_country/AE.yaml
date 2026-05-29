@@ -1,0 +1,91 @@
+# Entity seed — United Arab Emirates
+country: AE
+version: v1
+notes: |
+  Sources: u.ae cabinet, mofa.gov.ae, ADX/DFM listed corps,
+  Wikipedia "List of Emirati" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Federal Leadership ---
+  - {name: "Mohamed bin Zayed Al Nahyan", aliases: ["MBZ", "Mohammed bin Zayed", "Sheikh Mohamed bin Zayed"], role: "President of the UAE / Ruler of Abu Dhabi"}
+  - {name: "Mohammed bin Rashid Al Maktoum", aliases: ["Sheikh Mohammed bin Rashid", "MBR"], role: "Vice President / PM / Ruler of Dubai"}
+  - {name: "Hamdan bin Mohammed Al Maktoum", aliases: ["Sheikh Hamdan", "Crown Prince Hamdan", "Fazza"], role: "Crown Prince of Dubai"}
+  - {name: "Khaled bin Mohamed Al Nahyan", aliases: [], role: "Crown Prince of Abu Dhabi"}
+  - {name: "Mansour bin Zayed Al Nahyan", aliases: ["Sheikh Mansour"], role: "Deputy PM / Presidential Court Chairman"}
+  - {name: "Tahnoun bin Zayed Al Nahyan", aliases: [], role: "National Security Adviser"}
+  - {name: "Abdullah bin Zayed Al Nahyan", aliases: ["Abdullah bin Zayed"], role: "Foreign Minister"}
+  - {name: "Reem Al Hashimy",      aliases: [], role: "International Cooperation Minister / Expo 2020 chair"}
+
+  # --- Other Emirate Rulers ---
+  - {name: "Sultan bin Muhammad Al-Qasimi", aliases: [], role: "Ruler of Sharjah"}
+  - {name: "Saud bin Saqr Al Qasimi", aliases: [], role: "Ruler of Ras Al Khaimah"}
+
+  # --- Central Bank ---
+  - {name: "Khaled Mohamed Balama", aliases: [], role: "Governor of the Central Bank of the UAE"}
+
+organizations:
+  - {name: "Government of the United Arab Emirates", aliases: ["UAE Govt"]}
+  - {name: "UAE Cabinet",          aliases: []}
+  - {name: "Federal Supreme Council (UAE)", aliases: []}
+  - {name: "Federal National Council", aliases: ["FNC"]}
+
+  # --- Ministries ---
+  - {name: "UAE Ministry of Foreign Affairs", aliases: ["UAE MFA", "MoFAIC"]}
+  - {name: "UAE Ministry of Defence", aliases: []}
+  - {name: "UAE Ministry of Interior", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "Central Bank of the UAE", aliases: ["CBUAE"]}
+
+  # --- Military / Intel ---
+  - {name: "UAE Armed Forces",     aliases: []}
+  - {name: "Emirati Air Force",    aliases: ["UAE Air Force"]}
+
+  # --- Media ---
+  - {name: "WAM",                  aliases: ["Emirates News Agency"]}
+  - {name: "The National (UAE)",   aliases: ["The National"]}
+  - {name: "Khaleej Times",        aliases: []}
+  - {name: "Gulf News",            aliases: []}
+  - {name: "Al-Bayan",             aliases: []}
+  - {name: "Sky News Arabia",      aliases: []}
+
+  # --- Corps ---
+  - {name: "Emirates",             aliases: ["Emirates Airline"]}
+  - {name: "Etihad Airways",       aliases: ["Etihad"]}
+  - {name: "ADNOC",                aliases: ["Abu Dhabi National Oil Company"]}
+  - {name: "Mubadala Investment Company", aliases: ["Mubadala"]}
+  - {name: "ADQ",                  aliases: []}
+  - {name: "First Abu Dhabi Bank", aliases: ["FAB"]}
+  - {name: "Emirates NBD",         aliases: []}
+  - {name: "DP World",             aliases: []}
+  - {name: "Emaar Properties",     aliases: ["Emaar"]}
+  - {name: "Aldar Properties",     aliases: ["Aldar"]}
+  - {name: "Etisalat",             aliases: ["e&"]}
+  - {name: "G42",                  aliases: [], notes: "AI/tech"}
+
+locations:
+  - {name: "United Arab Emirates", aliases: ["UAE"]}
+  - {name: "Abu Dhabi",            aliases: []}
+  - {name: "Dubai",                aliases: []}
+  - {name: "Sharjah",              aliases: []}
+  - {name: "Ajman",                aliases: []}
+  - {name: "Fujairah",             aliases: []}
+  - {name: "Ras Al Khaimah",       aliases: ["RAK"]}
+  - {name: "Umm Al Quwain",        aliases: ["UAQ"]}
+  - {name: "Al Ain",               aliases: []}
+  - {name: "Dubai International Financial Centre", aliases: ["DIFC"]}
+  - {name: "Abu Dhabi Global Market", aliases: ["ADGM"]}
+  - {name: "Jebel Ali",            aliases: []}
+  - {name: "Burj Khalifa",         aliases: []}
+  - {name: "Palm Jumeirah",        aliases: []}
+
+roles:
+  - {name: "President of the UAE", aliases: ["UAE President", "Emirati President"]}
+  - {name: "Vice President of the UAE", aliases: ["UAE VP"]}
+  - {name: "Prime Minister of the UAE", aliases: ["UAE PM"]}
+  - {name: "Ruler of Abu Dhabi",   aliases: []}
+  - {name: "Ruler of Dubai",       aliases: []}
+  - {name: "Crown Prince of Abu Dhabi", aliases: []}
+  - {name: "Crown Prince of Dubai", aliases: []}
+  - {name: "UAE Foreign Minister", aliases: []}

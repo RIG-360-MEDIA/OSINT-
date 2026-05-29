@@ -1,0 +1,121 @@
+# Entity seed — Kingdom of Saudi Arabia
+country: SA
+version: v1
+notes: |
+  Sources: spa.gov.sa, my.gov.sa cabinet roster, Tadawul TASI 30,
+  Wikipedia "List of Saudi" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Royal Family / Govt ---
+  - {name: "Salman bin Abdulaziz Al Saud", aliases: ["King Salman", "Salman of Saudi Arabia"], role: "King of Saudi Arabia"}
+  - {name: "Mohammed bin Salman", aliases: ["MBS", "Mohammad bin Salman", "Crown Prince Mohammed bin Salman"], role: "Crown Prince / Prime Minister"}
+
+  # --- Cabinet ---
+  - {name: "Faisal bin Farhan Al Saud", aliases: ["Faisal bin Farhan", "Prince Faisal"], role: "Foreign Minister"}
+  - {name: "Khalid bin Salman Al Saud", aliases: ["Prince Khalid bin Salman"], role: "Defence Minister"}
+  - {name: "Mohammed Al-Jadaan", aliases: ["Al-Jadaan"], role: "Finance Minister"}
+  - {name: "Abdulaziz bin Salman", aliases: [], role: "Energy Minister"}
+  - {name: "Abdullah bin Bandar Al Saud", aliases: [], role: "National Guard Minister"}
+  - {name: "Abdulrahman Al-Rabiah", aliases: [], role: "Hajj & Umrah Minister"}
+  - {name: "Tawfig Al-Rabiah", aliases: [], role: "Hajj Minister"}
+  - {name: "Yasir Al-Rumayyan", aliases: ["Al-Rumayyan"], role: "PIF Governor / Saudi Aramco Chairman"}
+
+  # --- Religious ---
+  - {name: "Abdulrahman Al-Sudais", aliases: [], role: "Imam of the Grand Mosque"}
+
+  # --- Central Bank ---
+  - {name: "Ayman Al-Sayari", aliases: [], role: "Governor of the Saudi Central Bank"}
+
+  # --- Diaspora figures ---
+  - {name: "Jamal Khashoggi", aliases: ["Khashoggi"], notes: "Journalist (assassinated Oct 2018)"}
+
+organizations:
+  - {name: "Government of Saudi Arabia", aliases: ["Saudi Govt"]}
+  - {name: "House of Saud", aliases: ["Al Saud"]}
+  - {name: "Council of Ministers (Saudi Arabia)", aliases: ["Saudi Cabinet"]}
+  - {name: "Consultative Assembly of Saudi Arabia", aliases: ["Shura Council"]}
+  - {name: "Royal Court of Saudi Arabia", aliases: []}
+  - {name: "Public Investment Fund", aliases: ["PIF"]}
+  - {name: "Saudi Arabian Monetary Authority", aliases: ["SAMA", "Saudi Central Bank"]}
+
+  # --- Ministries ---
+  - {name: "Saudi Ministry of Foreign Affairs", aliases: ["Saudi MFA"]}
+  - {name: "Saudi Ministry of Defense", aliases: ["Saudi MoD"]}
+  - {name: "Saudi Ministry of Interior", aliases: []}
+  - {name: "Saudi Ministry of Hajj and Umrah", aliases: []}
+
+  # --- Military / Intel ---
+  - {name: "Royal Saudi Armed Forces", aliases: ["RSAF"]}
+  - {name: "Royal Saudi Land Forces", aliases: []}
+  - {name: "Royal Saudi Air Force", aliases: ["RSAF Air"]}
+  - {name: "Royal Saudi Navy", aliases: []}
+  - {name: "Saudi National Guard", aliases: ["SANG"]}
+  - {name: "General Intelligence Presidency (Saudi Arabia)", aliases: ["GIP", "Saudi GID"]}
+  - {name: "State Security Presidency", aliases: ["Saudi State Security"]}
+  - {name: "Mutawa",                aliases: ["Religious Police", "Hai'a"]}
+
+  # --- Media ---
+  - {name: "Saudi Press Agency",   aliases: ["SPA"]}
+  - {name: "Al Arabiya",           aliases: ["Al-Arabiya"]}
+  - {name: "Al Ekhbariya",         aliases: []}
+  - {name: "Saudi Gazette",        aliases: []}
+  - {name: "Arab News",            aliases: []}
+  - {name: "Asharq Al-Awsat",      aliases: []}
+  - {name: "Al-Riyadh",            aliases: []}
+  - {name: "Okaz",                 aliases: []}
+  - {name: "MBC Group",            aliases: ["Middle East Broadcasting Center"]}
+  - {name: "Rotana",               aliases: []}
+
+  # --- Corps ---
+  - {name: "Saudi Aramco",         aliases: ["Aramco"]}
+  - {name: "SABIC",                aliases: ["Saudi Basic Industries Corporation"]}
+  - {name: "Al Rajhi Bank",        aliases: []}
+  - {name: "Saudi National Bank",  aliases: ["SNB"]}
+  - {name: "STC",                  aliases: ["Saudi Telecom Company"]}
+  - {name: "Saudi Arabian Airlines", aliases: ["Saudia"]}
+  - {name: "NEOM",                 aliases: []}
+  - {name: "Red Sea Global",       aliases: []}
+  - {name: "ROSHN",                aliases: []}
+  - {name: "LIV Golf",             aliases: ["LIV"], notes: "Saudi PIF-backed"}
+
+locations:
+  - {name: "Saudi Arabia",         aliases: ["KSA", "Kingdom"]}
+  - {name: "Riyadh",               aliases: []}
+  - {name: "Jeddah",               aliases: []}
+  - {name: "Mecca",                aliases: ["Makkah"]}
+  - {name: "Medina",               aliases: ["Madinah"]}
+  - {name: "Dammam",               aliases: []}
+  - {name: "Khobar",               aliases: ["Al Khobar"]}
+  - {name: "Tabuk",                aliases: []}
+  - {name: "Buraidah",             aliases: []}
+  - {name: "Ta'if",                aliases: ["Taif"]}
+  - {name: "Hail",                 aliases: []}
+  - {name: "Najran",               aliases: []}
+  - {name: "Abha",                 aliases: []}
+  - {name: "Jizan",                aliases: []}
+
+  # --- Provinces ---
+  - {name: "Riyadh Province",      aliases: []}
+  - {name: "Makkah Region",        aliases: ["Mecca Region"]}
+  - {name: "Eastern Province (Saudi Arabia)", aliases: []}
+  - {name: "Madinah Region",       aliases: []}
+  - {name: "Asir Region",          aliases: []}
+
+  # --- Megaprojects ---
+  - {name: "The Line",             aliases: [], notes: "NEOM city"}
+  - {name: "Trojena",              aliases: []}
+  - {name: "Diriyah",              aliases: []}
+  - {name: "AlUla",                aliases: []}
+
+  # --- Strategic ---
+  - {name: "Red Sea",              aliases: []}
+  - {name: "Arabian Peninsula",    aliases: []}
+
+roles:
+  - {name: "King of Saudi Arabia", aliases: ["Saudi King"]}
+  - {name: "Crown Prince of Saudi Arabia", aliases: ["Saudi Crown Prince"]}
+  - {name: "Prime Minister of Saudi Arabia", aliases: ["Saudi PM"]}
+  - {name: "Foreign Minister of Saudi Arabia", aliases: []}
+  - {name: "Defence Minister of Saudi Arabia", aliases: []}
+  - {name: "Governor of the Saudi Central Bank", aliases: ["SAMA Governor"]}

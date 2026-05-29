@@ -1,0 +1,85 @@
+# Entity seed — Syria
+country: SY
+version: v1
+notes: |
+  Reflects post-Assad transitional government (since Dec 2024).
+  Sources: SANA, Reuters / AFP Damascus desk, Wikipedia "List of
+  Syrian" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Transitional Govt (Hayat Tahrir al-Sham led, since Dec 2024) ---
+  - {name: "Ahmed al-Sharaa",      aliases: ["Abu Mohammad al-Julani", "al-Jolani", "Al-Sharaa"], role: "President of Syria (transitional)"}
+  - {name: "Mohammed al-Bashir",   aliases: ["al-Bashir"], role: "Former Caretaker PM (Dec 2024 - Mar 2025)"}
+  - {name: "Asaad al-Shaibani",    aliases: ["al-Shaibani"], role: "Foreign Minister"}
+  - {name: "Murhaf Abu Qasra",     aliases: [], role: "Defence Minister"}
+  - {name: "Anas Khattab",         aliases: [], role: "Intelligence chief"}
+
+  # --- Former Govt (Assad era) ---
+  - {name: "Bashar al-Assad",      aliases: ["Assad", "Bashar Al-Assad"], role: "Deposed President (fled Dec 2024)"}
+  - {name: "Asma al-Assad",        aliases: ["Asma Assad"], notes: "Bashar's wife"}
+  - {name: "Maher al-Assad",       aliases: [], notes: "Bashar's brother, 4th Armoured Division"}
+  - {name: "Walid Muallem",        aliases: [], notes: "Former FM (deceased 2020)"}
+  - {name: "Faisal Mekdad",        aliases: ["Mekdad"], role: "Former Foreign Minister"}
+
+  # --- Opposition / Kurdish ---
+  - {name: "Mazloum Abdi",         aliases: [], role: "SDF Commander"}
+  - {name: "Ilham Ahmed",          aliases: [], role: "AANES official"}
+
+organizations:
+  - {name: "Government of Syria", aliases: ["Syrian Govt"]}
+  - {name: "People's Assembly of Syria", aliases: ["Syrian Parliament"]}
+
+  # --- Military / Intel ---
+  - {name: "Syrian Arab Army",     aliases: ["SAA"]}
+  - {name: "Syrian Air Force",     aliases: []}
+  - {name: "Syrian General Intelligence Directorate", aliases: ["GID", "Syrian Mukhabarat"]}
+  - {name: "Air Force Intelligence Directorate (Syria)", aliases: []}
+  - {name: "Republican Guard (Syria)", aliases: []}
+  - {name: "Fourth Armoured Division", aliases: []}
+
+  # --- Former regime / parties ---
+  - {name: "Ba'ath Party (Syria)", aliases: ["Syrian Ba'ath Party"]}
+  - {name: "National Defence Forces (Syria)", aliases: ["NDF Syria"]}
+
+  # --- Opposition groups ---
+  - {name: "Hayat Tahrir al-Sham", aliases: ["HTS"]}
+  - {name: "Syrian National Army", aliases: ["SNA"]}
+  - {name: "Syrian Democratic Forces", aliases: ["SDF"]}
+  - {name: "Autonomous Administration of North and East Syria", aliases: ["AANES", "Rojava"]}
+  - {name: "Free Syrian Army",     aliases: ["FSA"]}
+  - {name: "Kurdish People's Protection Units", aliases: ["YPG"]}
+
+  # --- Media ---
+  - {name: "SANA",                 aliases: ["Syrian Arab News Agency"]}
+  - {name: "Al-Watan (Syria)",     aliases: []}
+  - {name: "Syria TV",             aliases: []}
+  - {name: "Enab Baladi",          aliases: []}
+  - {name: "Al-Modon",             aliases: []}
+
+locations:
+  - {name: "Syria",                aliases: ["Syrian Arab Republic"]}
+  - {name: "Damascus",             aliases: []}
+  - {name: "Aleppo",               aliases: []}
+  - {name: "Homs",                 aliases: []}
+  - {name: "Hama",                 aliases: []}
+  - {name: "Latakia",              aliases: []}
+  - {name: "Tartus",               aliases: []}
+  - {name: "Deir ez-Zor",          aliases: []}
+  - {name: "Raqqa",                aliases: []}
+  - {name: "Qamishli",             aliases: []}
+  - {name: "Idlib",                aliases: []}
+  - {name: "Daraa",                aliases: []}
+  - {name: "Manbij",               aliases: []}
+  - {name: "Kobani",               aliases: ["Ain al-Arab"]}
+
+  # --- Strategic ---
+  - {name: "Golan Heights",        aliases: [], notes: "Israeli-occupied"}
+  - {name: "Northeast Syria",      aliases: ["Rojava"]}
+  - {name: "Suwayda",              aliases: ["As-Suwayda"]}
+
+roles:
+  - {name: "President of Syria",   aliases: ["Syrian President"]}
+  - {name: "Prime Minister of Syria", aliases: ["Syrian PM"]}
+  - {name: "Foreign Minister of Syria", aliases: []}
+  - {name: "Commander of the SDF", aliases: []}

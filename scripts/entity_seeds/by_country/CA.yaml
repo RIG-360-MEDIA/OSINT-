@@ -1,0 +1,148 @@
+# Entity seed — Canada
+country: CA
+version: v1
+notes: |
+  Sources: pm.gc.ca / parl.ca rosters, TSX 60, Wikipedia
+  "List of Canadian" pages. Reflects 2025 Liberal change of leadership.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Current Govt (Liberal, Carney since 2025) ---
+  - {name: "Mark Carney",          aliases: ["Carney", "PM Carney"], role: "Prime Minister", party: "Liberal"}
+  - {name: "Mélanie Joly",         aliases: ["Joly"], role: "Foreign Affairs Minister", party: "Liberal"}
+  - {name: "Bill Blair",           aliases: ["Blair"], role: "Defence Minister", party: "Liberal"}
+  - {name: "François-Philippe Champagne", aliases: ["Champagne"], role: "Finance Minister", party: "Liberal"}
+  - {name: "Dominic LeBlanc",      aliases: ["LeBlanc"], role: "Public Safety Minister", party: "Liberal"}
+
+  # --- King's Representative ---
+  - {name: "Mary Simon",           aliases: ["Simon"], role: "Governor General of Canada"}
+
+  # --- Opposition ---
+  - {name: "Pierre Poilievre",     aliases: ["Poilievre", "PP"], role: "Conservative Leader", party: "Conservative"}
+  - {name: "Jagmeet Singh",        aliases: ["Singh"], role: "NDP Leader", party: "NDP"}
+  - {name: "Yves-François Blanchet", aliases: ["Blanchet"], role: "Bloc Québécois Leader", party: "Bloc Québécois"}
+  - {name: "Elizabeth May",        aliases: ["May"], role: "Green Party Leader", party: "Green"}
+
+  # --- Recent PMs ---
+  - {name: "Justin Trudeau",       aliases: ["Trudeau"], role: "Former PM (2015-2025)", party: "Liberal"}
+  - {name: "Stephen Harper",       aliases: ["Harper"], role: "Former PM", party: "Conservative"}
+
+  # --- Speakers ---
+  - {name: "Greg Fergus",          aliases: [], role: "Speaker of the House of Commons"}
+
+  # --- Bank of Canada ---
+  - {name: "Tiff Macklem",         aliases: ["Macklem"], role: "Governor of the Bank of Canada"}
+
+  # --- Premiers ---
+  - {name: "Doug Ford",            aliases: [], role: "Premier of Ontario", party: "PC Ontario"}
+  - {name: "François Legault",     aliases: ["Legault"], role: "Premier of Quebec", party: "CAQ"}
+  - {name: "Danielle Smith",       aliases: [], role: "Premier of Alberta", party: "UCP"}
+  - {name: "David Eby",            aliases: [], role: "Premier of British Columbia", party: "BC NDP"}
+
+  # --- Business ---
+  - {name: "Tobias Lütke",         aliases: ["Lutke"], role: "Shopify CEO"}
+
+organizations:
+  - {name: "Government of Canada", aliases: ["Canadian Govt", "GoC"]}
+  - {name: "Office of the Prime Minister (Canada)", aliases: ["PMO Canada"]}
+  - {name: "Parliament of Canada", aliases: []}
+  - {name: "House of Commons of Canada", aliases: ["Canadian House of Commons"]}
+  - {name: "Senate of Canada",     aliases: ["Canadian Senate"]}
+  - {name: "Supreme Court of Canada", aliases: ["SCC"]}
+  - {name: "Elections Canada",     aliases: []}
+  - {name: "Privy Council Office (Canada)", aliases: ["PCO"]}
+
+  # --- Departments ---
+  - {name: "Global Affairs Canada", aliases: ["GAC"]}
+  - {name: "Department of National Defence (Canada)", aliases: ["DND Canada"]}
+  - {name: "Department of Finance Canada", aliases: []}
+  - {name: "Public Safety Canada", aliases: []}
+  - {name: "Royal Canadian Mounted Police", aliases: ["RCMP"]}
+  - {name: "Canadian Security Intelligence Service", aliases: ["CSIS"]}
+
+  # --- Central Bank ---
+  - {name: "Bank of Canada",       aliases: ["BoC"]}
+
+  # --- Military ---
+  - {name: "Canadian Armed Forces", aliases: ["CAF"]}
+  - {name: "Canadian Army",        aliases: []}
+  - {name: "Royal Canadian Navy",  aliases: ["RCN"]}
+  - {name: "Royal Canadian Air Force", aliases: ["RCAF"]}
+
+  # --- Parties ---
+  - {name: "Liberal Party of Canada", aliases: ["LPC"]}
+  - {name: "Conservative Party of Canada", aliases: ["CPC", "Tories Canada"]}
+  - {name: "New Democratic Party", aliases: ["NDP"]}
+  - {name: "Bloc Québécois",       aliases: ["Bloc"]}
+  - {name: "Green Party of Canada", aliases: []}
+
+  # --- Media ---
+  - {name: "Canadian Broadcasting Corporation", aliases: ["CBC"]}
+  - {name: "Société Radio-Canada", aliases: ["Radio-Canada"]}
+  - {name: "CTV News",             aliases: ["CTV"]}
+  - {name: "Global News",          aliases: []}
+  - {name: "The Globe and Mail",   aliases: []}
+  - {name: "Toronto Star",         aliases: []}
+  - {name: "National Post",        aliases: []}
+  - {name: "La Presse",            aliases: []}
+  - {name: "Le Devoir",            aliases: []}
+  - {name: "The Canadian Press",   aliases: ["CP"]}
+
+  # --- Major Corps ---
+  - {name: "Royal Bank of Canada", aliases: ["RBC"]}
+  - {name: "TD Bank Group",        aliases: ["TD Bank", "Toronto-Dominion"]}
+  - {name: "Bank of Montreal",     aliases: ["BMO"]}
+  - {name: "Scotiabank",           aliases: ["Bank of Nova Scotia"]}
+  - {name: "CIBC",                 aliases: ["Canadian Imperial Bank of Commerce"]}
+  - {name: "Manulife",             aliases: []}
+  - {name: "Shopify",              aliases: []}
+  - {name: "BlackBerry Limited",   aliases: ["BlackBerry"]}
+  - {name: "Bombardier",           aliases: []}
+  - {name: "Suncor Energy",        aliases: []}
+  - {name: "Enbridge",             aliases: []}
+  - {name: "Magna International",  aliases: ["Magna"]}
+  - {name: "Brookfield Corporation", aliases: ["Brookfield"]}
+  - {name: "Air Canada",           aliases: []}
+
+locations:
+  - {name: "Canada",               aliases: []}
+  - {name: "Ottawa",                aliases: []}
+  - {name: "Toronto",              aliases: []}
+  - {name: "Montreal",             aliases: ["Montréal"]}
+  - {name: "Vancouver",            aliases: []}
+  - {name: "Calgary",              aliases: []}
+  - {name: "Edmonton",             aliases: []}
+  - {name: "Quebec City",          aliases: ["Québec City"]}
+  - {name: "Winnipeg",             aliases: []}
+  - {name: "Halifax",              aliases: []}
+  - {name: "St. John's",           aliases: []}
+  - {name: "Yellowknife",          aliases: []}
+  - {name: "Iqaluit",              aliases: []}
+
+  # --- Provinces / territories ---
+  - {name: "Ontario",              aliases: ["ON"]}
+  - {name: "Quebec",               aliases: ["Québec", "QC"]}
+  - {name: "British Columbia",     aliases: ["BC"]}
+  - {name: "Alberta",              aliases: ["AB"]}
+  - {name: "Manitoba",             aliases: ["MB"]}
+  - {name: "Saskatchewan",         aliases: ["SK"]}
+  - {name: "Nova Scotia",          aliases: ["NS"]}
+  - {name: "New Brunswick",        aliases: ["NB"]}
+  - {name: "Newfoundland and Labrador", aliases: ["NL"]}
+  - {name: "Prince Edward Island", aliases: ["PEI"]}
+  - {name: "Yukon",                aliases: ["YT"]}
+  - {name: "Northwest Territories", aliases: ["NWT"]}
+  - {name: "Nunavut",              aliases: ["NU"]}
+
+  # --- Landmarks ---
+  - {name: "Parliament Hill",      aliases: []}
+  - {name: "Rideau Hall",          aliases: []}
+
+roles:
+  - {name: "Prime Minister of Canada", aliases: ["Canadian PM"]}
+  - {name: "Governor General of Canada", aliases: []}
+  - {name: "Leader of the Opposition (Canada)", aliases: []}
+  - {name: "Premier (Canada)",     aliases: ["Canadian Premier"]}
+  - {name: "Speaker of the House of Commons (Canada)", aliases: []}
+  - {name: "Governor of the Bank of Canada", aliases: []}
+  - {name: "Member of Parliament (Canada)", aliases: ["MP (Canada)"]}

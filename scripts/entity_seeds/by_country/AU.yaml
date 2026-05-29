@@ -1,0 +1,160 @@
+# Entity seed — Commonwealth of Australia
+country: AU
+version: v1
+notes: |
+  Sources: pm.gov.au, Parliament of Australia rosters, ASX 200,
+  Wikipedia "List of Australian" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Albanese Govt (Labor, since May 2022) ---
+  - {name: "Anthony Albanese",     aliases: ["Albanese", "Albo", "PM Albanese"], role: "Prime Minister", party: "Labor"}
+  - {name: "Richard Marles",       aliases: ["Marles"], role: "Deputy PM / Defence Minister", party: "Labor"}
+  - {name: "Penny Wong",           aliases: ["Wong"], role: "Foreign Minister", party: "Labor"}
+  - {name: "Jim Chalmers",         aliases: ["Chalmers"], role: "Treasurer", party: "Labor"}
+  - {name: "Tony Burke",           aliases: ["Burke"], role: "Home Affairs Minister", party: "Labor"}
+  - {name: "Mark Dreyfus",         aliases: [], role: "Attorney-General", party: "Labor"}
+  - {name: "Tanya Plibersek",      aliases: ["Plibersek"], role: "Environment Minister", party: "Labor"}
+  - {name: "Katy Gallagher",       aliases: [], role: "Finance Minister", party: "Labor"}
+  - {name: "Bill Shorten",         aliases: ["Shorten"], role: "NDIS Minister / former Labor Leader", party: "Labor"}
+  - {name: "Chris Bowen",          aliases: [], role: "Climate Change Minister", party: "Labor"}
+
+  # --- Governor-General / Monarchy ---
+  - {name: "Sam Mostyn",           aliases: ["Mostyn"], role: "Governor-General of Australia"}
+
+  # --- Opposition (Coalition) ---
+  - {name: "Peter Dutton",         aliases: ["Dutton"], role: "Opposition Leader", party: "Liberal"}
+  - {name: "David Littleproud",    aliases: ["Littleproud"], role: "Nationals Leader", party: "Nationals"}
+  - {name: "Sussan Ley",           aliases: ["Ley"], role: "Deputy Opposition Leader", party: "Liberal"}
+  - {name: "Angus Taylor",         aliases: ["Taylor"], role: "Shadow Treasurer", party: "Liberal"}
+
+  # --- Greens / Other ---
+  - {name: "Adam Bandt",           aliases: ["Bandt"], role: "Greens Leader", party: "Greens"}
+  - {name: "Pauline Hanson",       aliases: ["Hanson"], role: "One Nation Leader", party: "One Nation"}
+
+  # --- Recent PMs ---
+  - {name: "Scott Morrison",       aliases: ["Morrison", "ScoMo"], role: "Former PM", party: "Liberal"}
+  - {name: "Malcolm Turnbull",     aliases: ["Turnbull"], role: "Former PM"}
+  - {name: "Tony Abbott",          aliases: ["Abbott"], role: "Former PM"}
+  - {name: "Kevin Rudd",           aliases: ["Rudd"], role: "Australian Ambassador to US / Former PM"}
+  - {name: "Julia Gillard",        aliases: ["Gillard"], role: "Former PM"}
+  - {name: "John Howard",          aliases: ["Howard"], role: "Former PM"}
+
+  # --- Speakers ---
+  - {name: "Milton Dick",          aliases: [], role: "Speaker of the House"}
+  - {name: "Sue Lines",            aliases: [], role: "President of the Senate"}
+
+  # --- Reserve Bank ---
+  - {name: "Michele Bullock",      aliases: ["Bullock"], role: "Governor of the Reserve Bank of Australia"}
+
+  # --- Premiers (top states) ---
+  - {name: "Chris Minns",          aliases: [], role: "Premier of NSW", party: "Labor"}
+  - {name: "Jacinta Allan",        aliases: [], role: "Premier of Victoria", party: "Labor"}
+  - {name: "David Crisafulli",     aliases: [], role: "Premier of Queensland", party: "LNP"}
+
+  # --- Business ---
+  - {name: "Andrew Forrest",       aliases: ["Twiggy Forrest"], role: "Fortescue founder"}
+  - {name: "Gina Rinehart",        aliases: ["Rinehart"], role: "Hancock Prospecting Chair"}
+
+organizations:
+  - {name: "Government of Australia", aliases: ["Aussie Govt", "Australian Govt", "Commonwealth Government"]}
+  - {name: "Department of the Prime Minister and Cabinet (Australia)", aliases: ["PM&C"]}
+  - {name: "Parliament of Australia", aliases: ["Australian Parliament"]}
+  - {name: "Australian Senate",    aliases: ["Senate of Australia"]}
+  - {name: "Australian House of Representatives", aliases: []}
+  - {name: "High Court of Australia", aliases: ["HCA"]}
+  - {name: "Australian Electoral Commission", aliases: ["AEC"]}
+
+  # --- Departments ---
+  - {name: "Department of Foreign Affairs and Trade", aliases: ["DFAT"]}
+  - {name: "Department of Defence (Australia)", aliases: ["Australian DoD"]}
+  - {name: "Department of the Treasury (Australia)", aliases: []}
+  - {name: "Department of Home Affairs (Australia)", aliases: []}
+
+  # --- Reserve Bank ---
+  - {name: "Reserve Bank of Australia", aliases: ["RBA"]}
+
+  # --- Military / Intel ---
+  - {name: "Australian Defence Force", aliases: ["ADF"]}
+  - {name: "Australian Army",      aliases: []}
+  - {name: "Royal Australian Navy", aliases: ["RAN"]}
+  - {name: "Royal Australian Air Force", aliases: ["RAAF"]}
+  - {name: "Australian Security Intelligence Organisation", aliases: ["ASIO"]}
+  - {name: "Australian Secret Intelligence Service", aliases: ["ASIS"]}
+  - {name: "Australian Federal Police", aliases: ["AFP"]}
+
+  # --- Parties ---
+  - {name: "Australian Labor Party", aliases: ["Labor", "ALP"]}
+  - {name: "Liberal Party of Australia", aliases: ["Liberals", "LPA"]}
+  - {name: "National Party of Australia", aliases: ["Nationals"]}
+  - {name: "Liberal National Party of Queensland", aliases: ["LNP"]}
+  - {name: "Australian Greens",    aliases: ["Greens"]}
+  - {name: "One Nation",           aliases: ["Pauline Hanson's One Nation"]}
+  - {name: "Australian Democrats", aliases: []}
+  - {name: "United Australia Party", aliases: ["UAP"]}
+
+  # --- Media ---
+  - {name: "Australian Broadcasting Corporation", aliases: ["ABC", "ABC News Australia"]}
+  - {name: "Special Broadcasting Service", aliases: ["SBS"]}
+  - {name: "Nine Entertainment Co", aliases: ["Channel 9"]}
+  - {name: "Seven West Media",     aliases: ["Channel 7"]}
+  - {name: "Network Ten",          aliases: ["Channel 10"]}
+  - {name: "Sky News Australia",   aliases: []}
+  - {name: "The Sydney Morning Herald", aliases: ["SMH"]}
+  - {name: "The Age",              aliases: []}
+  - {name: "The Australian",       aliases: []}
+  - {name: "Australian Financial Review", aliases: ["AFR"]}
+  - {name: "News.com.au",          aliases: []}
+  - {name: "The Daily Telegraph (Sydney)", aliases: []}
+  - {name: "Guardian Australia",   aliases: []}
+  - {name: "Australian Associated Press", aliases: ["AAP"]}
+
+  # --- ASX 200 / Major corps ---
+  - {name: "BHP Group",            aliases: ["BHP"]}
+  - {name: "Rio Tinto",            aliases: []}
+  - {name: "Fortescue",            aliases: ["Fortescue Metals Group"]}
+  - {name: "Commonwealth Bank",    aliases: ["CBA"]}
+  - {name: "Westpac",              aliases: []}
+  - {name: "ANZ",                  aliases: ["Australia and New Zealand Banking Group"]}
+  - {name: "National Australia Bank", aliases: ["NAB"]}
+  - {name: "Macquarie Group",      aliases: []}
+  - {name: "Telstra",              aliases: []}
+  - {name: "Woolworths Group",     aliases: ["Woolies"]}
+  - {name: "Coles Group",          aliases: ["Coles"]}
+  - {name: "Qantas",               aliases: []}
+  - {name: "CSL",                  aliases: ["CSL Limited"]}
+
+locations:
+  - {name: "Australia",            aliases: ["Oz"]}
+  - {name: "Canberra",             aliases: []}
+  - {name: "Sydney",               aliases: []}
+  - {name: "Melbourne",            aliases: []}
+  - {name: "Brisbane",             aliases: []}
+  - {name: "Perth",                aliases: []}
+  - {name: "Adelaide",             aliases: []}
+  - {name: "Hobart",               aliases: []}
+  - {name: "Darwin",               aliases: []}
+  - {name: "Gold Coast",           aliases: []}
+  - {name: "Newcastle (Australia)", aliases: []}
+  - {name: "Wollongong",           aliases: []}
+  - {name: "Geelong",              aliases: []}
+
+  # --- States / territories ---
+  - {name: "New South Wales",      aliases: ["NSW"]}
+  - {name: "Victoria",             aliases: ["VIC"]}
+  - {name: "Queensland",           aliases: ["QLD"]}
+  - {name: "Western Australia",    aliases: ["WA"]}
+  - {name: "South Australia",      aliases: ["SA Australia"]}
+  - {name: "Tasmania",             aliases: ["TAS"]}
+  - {name: "Northern Territory",   aliases: ["NT"]}
+  - {name: "Australian Capital Territory", aliases: ["ACT"]}
+
+roles:
+  - {name: "Prime Minister of Australia", aliases: ["Aussie PM", "Australian PM"]}
+  - {name: "Governor-General of Australia", aliases: []}
+  - {name: "Treasurer of Australia", aliases: []}
+  - {name: "Foreign Minister of Australia", aliases: []}
+  - {name: "Defence Minister of Australia", aliases: []}
+  - {name: "Leader of the Opposition (Australia)", aliases: []}
+  - {name: "Premier (Australia)",  aliases: ["Australian Premier"]}
+  - {name: "Governor of the Reserve Bank of Australia", aliases: ["RBA Governor"]}

@@ -1,0 +1,179 @@
+# Entity seed — France
+country: FR
+version: v1
+notes: |
+  Sources: elysee.fr / assemblee-nationale.fr rosters, Wikipedia
+  "List of French" pages, CAC 40.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Current Govt (post-2024 instability) ---
+  - {name: "Emmanuel Macron",      aliases: ["Macron", "President Macron"], role: "President", party: "Renaissance"}
+  - {name: "François Bayrou",      aliases: ["Bayrou"], role: "Prime Minister (since Dec 2024)", party: "MoDem"}
+  - {name: "Jean-Noël Barrot",     aliases: ["Barrot"], role: "Foreign Minister", party: "Renaissance"}
+  - {name: "Sébastien Lecornu",    aliases: ["Lecornu"], role: "Armed Forces Minister", party: "Renaissance"}
+  - {name: "Bruno Retailleau",     aliases: ["Retailleau"], role: "Interior Minister", party: "LR"}
+  - {name: "Éric Lombard",         aliases: ["Lombard"], role: "Economy/Finance Minister"}
+  - {name: "Gérald Darmanin",      aliases: ["Darmanin"], role: "Justice Minister"}
+  - {name: "Élisabeth Borne",      aliases: [], role: "Education Minister / Former PM"}
+
+  # --- Recent PMs ---
+  - {name: "Michel Barnier",       aliases: ["Barnier"], role: "Former PM (Sept-Dec 2024)"}
+  - {name: "Gabriel Attal",        aliases: ["Attal"], role: "Former PM (Jan-Sept 2024)", party: "Renaissance"}
+
+  # --- Opposition ---
+  - {name: "Marine Le Pen",        aliases: ["Le Pen"], role: "RN Leader / MP", party: "RN"}
+  - {name: "Jordan Bardella",      aliases: ["Bardella"], role: "RN President", party: "RN"}
+  - {name: "Jean-Luc Mélenchon",   aliases: ["Mélenchon", "Melenchon"], role: "LFI Founder", party: "LFI"}
+  - {name: "Manuel Bompard",       aliases: [], role: "LFI Coordinator", party: "LFI"}
+  - {name: "Mathilde Panot",       aliases: [], party: "LFI"}
+  - {name: "Olivier Faure",        aliases: [], role: "PS First Secretary", party: "PS"}
+  - {name: "Marine Tondelier",     aliases: [], role: "Greens National Secretary", party: "EELV"}
+  - {name: "Laurent Wauquiez",     aliases: [], role: "LR Group Leader", party: "LR"}
+
+  # --- Speakers ---
+  - {name: "Yaël Braun-Pivet",     aliases: [], role: "President of the National Assembly"}
+  - {name: "Gérard Larcher",       aliases: [], role: "President of the Senate"}
+
+  # --- Recent Presidents ---
+  - {name: "François Hollande",    aliases: ["Hollande"], role: "Former President", party: "PS"}
+  - {name: "Nicolas Sarkozy",      aliases: ["Sarkozy"], role: "Former President", party: "LR"}
+
+  # --- Banque de France / Markets ---
+  - {name: "François Villeroy de Galhau", aliases: [], role: "Banque de France Governor"}
+  - {name: "Christine Lagarde",    aliases: ["Lagarde"], role: "ECB President", notes: "French national"}
+
+  # --- Business ---
+  - {name: "Bernard Arnault",      aliases: ["Arnault"], role: "LVMH Chairman"}
+  - {name: "Patrick Pouyanné",     aliases: ["Pouyanne"], role: "TotalEnergies CEO"}
+
+organizations:
+  - {name: "Government of France", aliases: ["French Govt", "Gouvernement Français"]}
+  - {name: "Élysée Palace",        aliases: ["Élysée", "Elysee"]}
+  - {name: "Matignon",             aliases: ["Hôtel Matignon"], notes: "PM's office"}
+  - {name: "National Assembly (France)", aliases: ["Assemblée Nationale", "French Assembly"]}
+  - {name: "Senate of France",     aliases: ["French Senate"]}
+  - {name: "Constitutional Council (France)", aliases: ["Conseil Constitutionnel"]}
+  - {name: "Council of State (France)", aliases: ["Conseil d'État"]}
+  - {name: "Court of Cassation (France)", aliases: []}
+
+  # --- Ministries ---
+  - {name: "Ministry for Europe and Foreign Affairs (France)", aliases: ["Quai d'Orsay"]}
+  - {name: "Ministry of the Armed Forces (France)", aliases: []}
+  - {name: "Ministry of the Economy, Finance and Industrial and Digital Sovereignty (France)", aliases: ["Bercy"]}
+  - {name: "Ministry of the Interior (France)", aliases: ["Place Beauvau"]}
+
+  # --- Central Bank ---
+  - {name: "Banque de France",     aliases: ["Bank of France"]}
+
+  # --- Military / Intel ---
+  - {name: "French Armed Forces",  aliases: ["Armée française"]}
+  - {name: "French Army",          aliases: ["Armée de Terre"]}
+  - {name: "French Air and Space Force", aliases: ["Armée de l'Air et de l'Espace"]}
+  - {name: "French Navy",          aliases: ["Marine Nationale"]}
+  - {name: "Directorate-General for External Security", aliases: ["DGSE"]}
+  - {name: "Directorate-General for Internal Security", aliases: ["DGSI"]}
+  - {name: "Gendarmerie Nationale", aliases: []}
+
+  # --- Parties ---
+  - {name: "Renaissance (French political party)", aliases: ["Renaissance", "LREM"]}
+  - {name: "Democratic Movement (France)", aliases: ["MoDem"]}
+  - {name: "Horizons (party)",     aliases: []}
+  - {name: "The Republicans (France)", aliases: ["LR", "Les Républicains"]}
+  - {name: "National Rally",       aliases: ["RN", "Rassemblement National"]}
+  - {name: "La France Insoumise",  aliases: ["LFI"]}
+  - {name: "Socialist Party (France)", aliases: ["PS", "Parti Socialiste"]}
+  - {name: "Europe Ecology – The Greens", aliases: ["EELV", "Les Écologistes"]}
+  - {name: "French Communist Party", aliases: ["PCF"]}
+  - {name: "Reconquête",           aliases: []}
+
+  # --- Media ---
+  - {name: "Agence France-Presse", aliases: ["AFP"]}
+  - {name: "Le Monde",             aliases: []}
+  - {name: "Le Figaro",            aliases: []}
+  - {name: "Libération",           aliases: ["Libé"]}
+  - {name: "Les Échos",            aliases: ["Les Echos"]}
+  - {name: "Le Parisien",          aliases: []}
+  - {name: "L'Équipe",             aliases: []}
+  - {name: "France 24",            aliases: []}
+  - {name: "France Télévisions",   aliases: []}
+  - {name: "TF1",                  aliases: []}
+  - {name: "BFM TV",               aliases: ["BFMTV"]}
+  - {name: "Radio France",         aliases: []}
+  - {name: "France Inter",         aliases: []}
+  - {name: "Le Point",             aliases: []}
+  - {name: "L'Express",            aliases: []}
+  - {name: "Mediapart",            aliases: []}
+
+  # --- CAC 40 / Major corps ---
+  - {name: "LVMH",                 aliases: ["Moët Hennessy Louis Vuitton"]}
+  - {name: "TotalEnergies",        aliases: ["Total"]}
+  - {name: "BNP Paribas",          aliases: []}
+  - {name: "Société Générale",     aliases: ["SocGen"]}
+  - {name: "Crédit Agricole",      aliases: []}
+  - {name: "Airbus",               aliases: []}
+  - {name: "Renault",              aliases: []}
+  - {name: "Stellantis",           aliases: [], notes: "French-Italian-US"}
+  - {name: "Sanofi",               aliases: []}
+  - {name: "L'Oréal",              aliases: ["L'Oreal"]}
+  - {name: "Carrefour",            aliases: []}
+  - {name: "Schneider Electric",   aliases: []}
+  - {name: "Vinci",                aliases: ["Vinci SA"]}
+  - {name: "Bouygues",             aliases: []}
+  - {name: "Orange (telecom)",     aliases: ["Orange"]}
+  - {name: "AXA",                  aliases: []}
+  - {name: "Hermès",               aliases: ["Hermes"]}
+  - {name: "Dassault Aviation",    aliases: []}
+  - {name: "Thales Group",         aliases: ["Thales"]}
+
+locations:
+  - {name: "France",               aliases: ["French Republic"]}
+  - {name: "Paris",                aliases: []}
+  - {name: "Marseille",            aliases: []}
+  - {name: "Lyon",                 aliases: []}
+  - {name: "Toulouse",             aliases: []}
+  - {name: "Nice",                 aliases: []}
+  - {name: "Nantes",               aliases: []}
+  - {name: "Strasbourg",           aliases: []}
+  - {name: "Montpellier",          aliases: []}
+  - {name: "Bordeaux",             aliases: []}
+  - {name: "Lille",                aliases: []}
+  - {name: "Rennes",               aliases: []}
+  - {name: "Le Havre",             aliases: []}
+  - {name: "Reims",                aliases: []}
+  - {name: "Saint-Étienne",        aliases: []}
+  - {name: "Toulon",               aliases: []}
+  - {name: "Versailles",           aliases: []}
+
+  # --- Regions ---
+  - {name: "Île-de-France",        aliases: ["Ile de France"]}
+  - {name: "Auvergne-Rhône-Alpes", aliases: []}
+  - {name: "Provence-Alpes-Côte d'Azur", aliases: ["PACA"]}
+  - {name: "Brittany",             aliases: ["Bretagne"]}
+  - {name: "Normandy",             aliases: ["Normandie"]}
+  - {name: "Corsica",              aliases: ["Corse"]}
+  - {name: "Hauts-de-France",      aliases: []}
+  - {name: "Occitanie",            aliases: []}
+  - {name: "Nouvelle-Aquitaine",   aliases: []}
+  - {name: "Grand Est",            aliases: []}
+
+  # --- Overseas / territories ---
+  - {name: "Réunion",              aliases: ["La Reunion"]}
+  - {name: "Mayotte",              aliases: []}
+  - {name: "Martinique",           aliases: []}
+  - {name: "Guadeloupe",           aliases: []}
+  - {name: "French Guiana",        aliases: ["Guyane"]}
+  - {name: "New Caledonia",        aliases: ["Nouvelle-Calédonie"]}
+
+  # --- Landmarks ---
+  - {name: "Champs-Élysées",       aliases: ["Champs Elysees"]}
+  - {name: "Eiffel Tower",         aliases: ["Tour Eiffel"]}
+  - {name: "Notre-Dame de Paris",  aliases: ["Notre Dame"]}
+
+roles:
+  - {name: "President of France",  aliases: ["French President"]}
+  - {name: "Prime Minister of France", aliases: ["French PM"]}
+  - {name: "Foreign Minister of France", aliases: []}
+  - {name: "Defence Minister of France", aliases: []}
+  - {name: "President of the National Assembly (France)", aliases: []}
+  - {name: "Governor of the Banque de France", aliases: []}

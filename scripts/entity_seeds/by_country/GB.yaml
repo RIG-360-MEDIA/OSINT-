@@ -1,0 +1,185 @@
+# Entity seed — United Kingdom
+country: GB
+version: v1
+notes: |
+  Sources: gov.uk cabinet list, House of Commons member lists, BBC/ITV/Sky
+  mastheads, FTSE 100, Wikipedia "List of UK" pages. Westminster focus;
+  devolved governments (Scottish/Welsh/NI) lightly covered — expand in v2.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Current Labour Govt (since July 2024) ---
+  - {name: "Keir Starmer",     aliases: ["Starmer", "Sir Keir Starmer", "PM Starmer"], role: "Prime Minister", party: "Labour"}
+  - {name: "Rachel Reeves",    aliases: ["Reeves"], role: "Chancellor of the Exchequer", party: "Labour"}
+  - {name: "David Lammy",      aliases: ["Lammy"], role: "Foreign Secretary", party: "Labour"}
+  - {name: "Yvette Cooper",    aliases: ["Cooper"], role: "Home Secretary", party: "Labour"}
+  - {name: "John Healey",      aliases: ["Healey"], role: "Defence Secretary", party: "Labour"}
+  - {name: "Wes Streeting",    aliases: ["Streeting"], role: "Health Secretary", party: "Labour"}
+  - {name: "Bridget Phillipson", aliases: ["Phillipson"], role: "Education Secretary", party: "Labour"}
+  - {name: "Ed Miliband",      aliases: ["Miliband"], role: "Energy Secretary", party: "Labour"}
+  - {name: "Shabana Mahmood",  aliases: ["Mahmood"], role: "Lord Chancellor", party: "Labour"}
+  - {name: "Pat McFadden",     aliases: ["McFadden"], role: "Cabinet Office Minister", party: "Labour"}
+  - {name: "Angela Rayner",    aliases: ["Rayner"], role: "Deputy Prime Minister", party: "Labour"}
+  - {name: "Lucy Powell",      aliases: ["Powell"], role: "Leader of the Commons", party: "Labour"}
+  - {name: "Lisa Nandy",       aliases: ["Nandy"], role: "Culture Secretary", party: "Labour"}
+  - {name: "Morgan McSweeney", aliases: ["McSweeney"], role: "Downing Street Chief of Staff", party: "Labour"}
+
+  # --- Conservative Opposition ---
+  - {name: "Kemi Badenoch",    aliases: ["Badenoch"], role: "Leader of the Opposition", party: "Conservative"}
+  - {name: "Robert Jenrick",   aliases: ["Jenrick"], role: "Shadow Justice Secretary", party: "Conservative"}
+  - {name: "Mel Stride",       aliases: ["Stride"], role: "Shadow Chancellor", party: "Conservative"}
+  - {name: "Priti Patel",      aliases: ["Patel"], role: "Shadow Foreign Secretary", party: "Conservative"}
+  - {name: "Chris Philp",      aliases: ["Philp"], role: "Shadow Home Secretary", party: "Conservative"}
+
+  # --- Other Party Leaders ---
+  - {name: "Ed Davey",         aliases: ["Davey", "Sir Ed Davey"], role: "Lib Dem Leader", party: "Liberal Democrat"}
+  - {name: "Nigel Farage",     aliases: ["Farage"], role: "Reform UK Leader", party: "Reform UK"}
+  - {name: "Richard Tice",     aliases: ["Tice"], party: "Reform UK"}
+  - {name: "John Swinney",     aliases: ["Swinney"], role: "First Minister of Scotland", party: "SNP"}
+  - {name: "Carla Denyer",     aliases: ["Denyer"], role: "Co-Leader of the Greens", party: "Green Party"}
+
+  # --- Recent PMs ---
+  - {name: "Rishi Sunak",      aliases: ["Sunak"], role: "Former PM", party: "Conservative"}
+  - {name: "Liz Truss",        aliases: ["Truss"], role: "Former PM", party: "Conservative"}
+  - {name: "Boris Johnson",    aliases: ["Johnson", "BoJo"], role: "Former PM", party: "Conservative"}
+  - {name: "Theresa May",      aliases: ["May"], role: "Former PM", party: "Conservative"}
+  - {name: "David Cameron",    aliases: ["Cameron"], role: "Former PM", party: "Conservative"}
+  - {name: "Gordon Brown",     aliases: ["Brown"], role: "Former PM", party: "Labour"}
+  - {name: "Tony Blair",       aliases: ["Blair"], role: "Former PM", party: "Labour"}
+  - {name: "John Major",       aliases: ["Major"], role: "Former PM", party: "Conservative"}
+  - {name: "Jeremy Corbyn",    aliases: ["Corbyn"], notes: "Former Labour Leader"}
+
+  # --- Monarchy ---
+  - {name: "King Charles III", aliases: ["Charles III", "King Charles", "His Majesty"], role: "Sovereign"}
+  - {name: "Prince William",   aliases: ["William, Prince of Wales", "Prince of Wales"]}
+  - {name: "Catherine, Princess of Wales", aliases: ["Kate Middleton", "Princess Kate"]}
+  - {name: "Queen Camilla",    aliases: ["Camilla"]}
+
+  # --- Bank of England / Markets ---
+  - {name: "Andrew Bailey",    aliases: ["Bailey"], role: "Bank of England Governor"}
+
+  # --- Civil Service / Speaker ---
+  - {name: "Lindsay Hoyle",    aliases: ["Hoyle"], role: "Speaker of the Commons"}
+  - {name: "Simon Case",       aliases: ["Case"], notes: "Former Cabinet Secretary"}
+  - {name: "Chris Wormald",    aliases: ["Wormald"], role: "Cabinet Secretary"}
+
+organizations:
+  - {name: "10 Downing Street", aliases: ["No 10", "Number 10", "Downing Street", "PM's Office"]}
+  - {name: "HM Treasury",      aliases: ["Treasury", "UK Treasury"]}
+  - {name: "Foreign, Commonwealth and Development Office", aliases: ["FCDO", "Foreign Office"]}
+  - {name: "Home Office",      aliases: []}
+  - {name: "Ministry of Defence", aliases: ["MoD"]}
+  - {name: "Ministry of Justice", aliases: ["MoJ"]}
+  - {name: "Cabinet Office",   aliases: []}
+  - {name: "National Health Service", aliases: ["NHS"]}
+  - {name: "Bank of England",  aliases: ["BoE", "Threadneedle Street"]}
+  - {name: "House of Commons", aliases: ["Commons"]}
+  - {name: "House of Lords",   aliases: ["Lords", "Upper House"]}
+  - {name: "UK Parliament",    aliases: ["Parliament", "Westminster"]}
+  - {name: "Supreme Court of the United Kingdom", aliases: ["UK Supreme Court"]}
+  - {name: "Crown Prosecution Service", aliases: ["CPS"]}
+
+  # --- Intelligence / Security ---
+  - {name: "MI5",              aliases: ["Security Service"]}
+  - {name: "MI6",              aliases: ["Secret Intelligence Service", "SIS"]}
+  - {name: "GCHQ",             aliases: ["Government Communications Headquarters"]}
+
+  # --- Political Parties ---
+  - {name: "Labour Party",     aliases: ["Labour"]}
+  - {name: "Conservative Party", aliases: ["Tories", "Conservatives", "Tory Party"]}
+  - {name: "Liberal Democrats", aliases: ["Lib Dems", "LibDems"]}
+  - {name: "Reform UK",        aliases: ["Reform"]}
+  - {name: "Scottish National Party", aliases: ["SNP"]}
+  - {name: "Green Party of England and Wales", aliases: ["Greens", "Green Party"]}
+  - {name: "Plaid Cymru",      aliases: []}
+  - {name: "Democratic Unionist Party", aliases: ["DUP"]}
+  - {name: "Sinn Féin",        aliases: []}
+
+  # --- Devolved governments ---
+  - {name: "Scottish Government", aliases: ["Scottish Govt", "Holyrood"]}
+  - {name: "Welsh Government", aliases: ["Welsh Govt"]}
+  - {name: "Northern Ireland Executive", aliases: ["NI Executive", "Stormont"]}
+
+  # --- Media ---
+  - {name: "BBC",              aliases: ["British Broadcasting Corporation", "BBC News"]}
+  - {name: "ITV",              aliases: ["ITV News"]}
+  - {name: "Sky News",         aliases: ["Sky"]}
+  - {name: "Channel 4",        aliases: ["C4 News", "Channel 4 News"]}
+  - {name: "The Guardian",     aliases: ["Guardian"]}
+  - {name: "The Times",        aliases: ["Times of London"]}
+  - {name: "The Daily Telegraph", aliases: ["Telegraph", "Daily Telegraph"]}
+  - {name: "Financial Times",  aliases: ["FT"]}
+  - {name: "Daily Mail",       aliases: ["Mail", "Mail Online"]}
+  - {name: "The Sun",          aliases: ["Sun"]}
+  - {name: "Daily Mirror",     aliases: ["Mirror"]}
+  - {name: "The Independent",  aliases: ["Independent"]}
+  - {name: "The Spectator",    aliases: ["Spectator"]}
+  - {name: "New Statesman",    aliases: []}
+  - {name: "The Economist",    aliases: ["Economist"]}
+
+  # --- FTSE 100 / Major UK Corps ---
+  - {name: "HSBC",             aliases: []}
+  - {name: "Barclays",         aliases: []}
+  - {name: "BP",               aliases: ["British Petroleum"]}
+  - {name: "Shell plc",        aliases: ["Shell"]}
+  - {name: "GSK",              aliases: ["GlaxoSmithKline"]}
+  - {name: "AstraZeneca",      aliases: []}
+  - {name: "Rolls-Royce",      aliases: []}
+  - {name: "BAE Systems",      aliases: ["BAE"]}
+  - {name: "Tesco",            aliases: []}
+  - {name: "Vodafone",         aliases: []}
+
+constituencies:
+  # Notable Westminster seats (not all 650 — top political ones)
+  - {name: "Holborn and St Pancras", aliases: [], notes: "Starmer's seat"}
+  - {name: "Leeds West and Pudsey",  aliases: [], notes: "Reeves' seat"}
+  - {name: "Clacton",                aliases: [], notes: "Farage's seat"}
+  - {name: "Richmond and Northallerton", aliases: [], notes: "Sunak's seat"}
+  - {name: "Uxbridge and South Ruislip", aliases: [], notes: "Johnson's former seat"}
+  - {name: "Islington North",        aliases: [], notes: "Corbyn's seat"}
+  - {name: "North West Essex",       aliases: [], notes: "Badenoch's seat"}
+
+locations:
+  - {name: "London",           aliases: []}
+  - {name: "Manchester",       aliases: []}
+  - {name: "Birmingham",       aliases: []}
+  - {name: "Glasgow",          aliases: []}
+  - {name: "Edinburgh",        aliases: []}
+  - {name: "Liverpool",        aliases: []}
+  - {name: "Leeds",            aliases: []}
+  - {name: "Cardiff",          aliases: []}
+  - {name: "Belfast",          aliases: []}
+  - {name: "Newcastle upon Tyne", aliases: ["Newcastle"]}
+  - {name: "Sheffield",        aliases: []}
+  - {name: "Bristol",          aliases: []}
+  - {name: "Nottingham",       aliases: []}
+  - {name: "Southampton",      aliases: []}
+  - {name: "Brighton",         aliases: []}
+  - {name: "Oxford",           aliases: []}
+  - {name: "Cambridge",        aliases: []}
+  - {name: "England",          aliases: []}
+  - {name: "Scotland",         aliases: []}
+  - {name: "Wales",            aliases: ["Cymru"]}
+  - {name: "Northern Ireland", aliases: ["NI", "Ulster"]}
+  - {name: "Westminster",      aliases: [], notes: "political shorthand for UK govt"}
+  - {name: "Whitehall",        aliases: [], notes: "civil service shorthand"}
+  - {name: "The City",         aliases: ["City of London", "the City"]}
+  - {name: "Canary Wharf",     aliases: []}
+
+roles:
+  - {name: "Prime Minister",   aliases: ["PM"]}
+  - {name: "Deputy Prime Minister", aliases: ["DPM"]}
+  - {name: "Chancellor of the Exchequer", aliases: ["Chancellor"]}
+  - {name: "Foreign Secretary", aliases: []}
+  - {name: "Home Secretary",   aliases: []}
+  - {name: "Defence Secretary", aliases: []}
+  - {name: "Health Secretary", aliases: []}
+  - {name: "Education Secretary", aliases: []}
+  - {name: "Justice Secretary", aliases: ["Lord Chancellor"]}
+  - {name: "Cabinet Secretary", aliases: []}
+  - {name: "Member of Parliament", aliases: ["MP"]}
+  - {name: "Leader of the Opposition", aliases: []}
+  - {name: "Shadow Cabinet Minister", aliases: ["Shadow Minister"]}
+  - {name: "First Minister of Scotland", aliases: []}
+  - {name: "First Minister of Wales", aliases: []}
+  - {name: "First Minister of Northern Ireland", aliases: []}

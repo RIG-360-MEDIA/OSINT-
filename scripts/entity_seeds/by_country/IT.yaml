@@ -1,0 +1,129 @@
+# Entity seed — Italian Republic
+country: IT
+version: v1
+notes: |
+  Sources: governo.it / quirinale.it, Wikipedia "List of Italian" pages,
+  FTSE MIB 40.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Current Govt (Meloni Cabinet, since Oct 2022) ---
+  - {name: "Giorgia Meloni",       aliases: ["Meloni"], role: "Prime Minister", party: "FdI"}
+  - {name: "Sergio Mattarella",    aliases: ["Mattarella"], role: "President of the Italian Republic"}
+  - {name: "Antonio Tajani",       aliases: ["Tajani"], role: "Foreign Minister / Deputy PM", party: "FI"}
+  - {name: "Matteo Salvini",       aliases: ["Salvini"], role: "Infrastructure Minister / Deputy PM", party: "Lega"}
+  - {name: "Guido Crosetto",       aliases: ["Crosetto"], role: "Defence Minister", party: "FdI"}
+  - {name: "Giancarlo Giorgetti",  aliases: ["Giorgetti"], role: "Finance Minister", party: "Lega"}
+  - {name: "Matteo Piantedosi",    aliases: ["Piantedosi"], role: "Interior Minister"}
+  - {name: "Carlo Nordio",         aliases: ["Nordio"], role: "Justice Minister"}
+
+  # --- Opposition ---
+  - {name: "Elly Schlein",         aliases: ["Schlein"], role: "PD Secretary", party: "PD"}
+  - {name: "Giuseppe Conte",       aliases: ["Conte"], role: "M5S Leader / Former PM", party: "M5S"}
+  - {name: "Angelo Bonelli",       aliases: [], party: "Greens-Left Alliance"}
+  - {name: "Carlo Calenda",        aliases: [], role: "Azione Leader", party: "Azione"}
+  - {name: "Matteo Renzi",         aliases: ["Renzi"], role: "Italia Viva Leader", party: "IV"}
+
+  # --- Recent PMs ---
+  - {name: "Mario Draghi",         aliases: ["Draghi"], role: "Former PM / Former ECB President"}
+  - {name: "Silvio Berlusconi",    aliases: ["Berlusconi"], role: "Former PM (deceased 2023)"}
+
+  # --- Bank of Italy ---
+  - {name: "Fabio Panetta",        aliases: ["Panetta"], role: "Governor of the Banca d'Italia"}
+
+  # --- Vatican (in Italy) ---
+  - {name: "Pope Francis",         aliases: ["Francis", "Jorge Mario Bergoglio"], role: "Bishop of Rome / Pope", notes: "also INTL"}
+
+organizations:
+  - {name: "Government of Italy",  aliases: ["Italian Govt", "Governo Italiano"]}
+  - {name: "Palazzo Chigi",        aliases: ["Italian PM's office"]}
+  - {name: "Quirinal Palace",      aliases: ["Quirinale"]}
+  - {name: "Parliament of Italy",  aliases: ["Italian Parliament"]}
+  - {name: "Italian Chamber of Deputies", aliases: ["Camera dei Deputati"]}
+  - {name: "Italian Senate",       aliases: ["Senato"]}
+  - {name: "Constitutional Court of Italy", aliases: []}
+
+  # --- Ministries ---
+  - {name: "Italian Ministry of Foreign Affairs", aliases: ["Italian MAECI"]}
+  - {name: "Italian Ministry of Defence", aliases: []}
+  - {name: "Italian Ministry of the Economy and Finance", aliases: ["MEF"]}
+  - {name: "Italian Ministry of the Interior", aliases: ["Viminale"]}
+
+  # --- Central Bank ---
+  - {name: "Banca d'Italia",       aliases: ["Bank of Italy"]}
+
+  # --- Military / Intel ---
+  - {name: "Italian Armed Forces", aliases: []}
+  - {name: "Italian Army",         aliases: []}
+  - {name: "Italian Navy",         aliases: ["Marina Militare"]}
+  - {name: "Italian Air Force",    aliases: ["Aeronautica Militare"]}
+  - {name: "Carabinieri",          aliases: []}
+  - {name: "AISE",                 aliases: [], notes: "External intel"}
+  - {name: "AISI",                 aliases: [], notes: "Internal intel"}
+
+  # --- Parties ---
+  - {name: "Brothers of Italy",    aliases: ["FdI", "Fratelli d'Italia"]}
+  - {name: "Lega (political party)", aliases: ["Lega", "Lega Nord", "League"]}
+  - {name: "Forza Italia",         aliases: ["FI"]}
+  - {name: "Democratic Party (Italy)", aliases: ["PD", "Partito Democratico"]}
+  - {name: "Five Star Movement",   aliases: ["M5S", "Movimento 5 Stelle"]}
+  - {name: "Azione (political party)", aliases: ["Azione"]}
+  - {name: "Italia Viva",          aliases: ["IV"]}
+  - {name: "Greens and Left Alliance", aliases: []}
+
+  # --- Media ---
+  - {name: "ANSA",                 aliases: ["Agenzia Nazionale Stampa Associata"]}
+  - {name: "Rai",                  aliases: ["RAI", "Radiotelevisione italiana"]}
+  - {name: "Mediaset",             aliases: []}
+  - {name: "La Repubblica",        aliases: ["Repubblica"]}
+  - {name: "Corriere della Sera",  aliases: ["Corriere"]}
+  - {name: "La Stampa",            aliases: []}
+  - {name: "Il Sole 24 Ore",       aliases: ["Sole 24 Ore"]}
+  - {name: "Il Fatto Quotidiano",  aliases: []}
+  - {name: "Il Messaggero",        aliases: []}
+  - {name: "Il Giornale",          aliases: []}
+
+  # --- Corps ---
+  - {name: "Eni",                  aliases: []}
+  - {name: "Enel",                 aliases: []}
+  - {name: "Stellantis",           aliases: ["Fiat parent"]}
+  - {name: "Ferrari",              aliases: []}
+  - {name: "Generali",             aliases: ["Assicurazioni Generali"]}
+  - {name: "Intesa Sanpaolo",      aliases: []}
+  - {name: "UniCredit",            aliases: []}
+  - {name: "Leonardo (company)",   aliases: ["Leonardo"]}
+  - {name: "Pirelli",              aliases: []}
+
+locations:
+  - {name: "Italy",                aliases: ["Italian Republic"]}
+  - {name: "Rome",                 aliases: ["Roma"]}
+  - {name: "Milan",                aliases: ["Milano"]}
+  - {name: "Naples",               aliases: ["Napoli"]}
+  - {name: "Turin",                aliases: ["Torino"]}
+  - {name: "Palermo",              aliases: []}
+  - {name: "Genoa",                aliases: ["Genova"]}
+  - {name: "Bologna",              aliases: []}
+  - {name: "Florence",             aliases: ["Firenze"]}
+  - {name: "Venice",               aliases: ["Venezia"]}
+  - {name: "Verona",               aliases: []}
+  - {name: "Bari",                 aliases: []}
+  - {name: "Catania",              aliases: []}
+
+  # --- Regions ---
+  - {name: "Lombardy",             aliases: ["Lombardia"]}
+  - {name: "Sicily",               aliases: ["Sicilia"]}
+  - {name: "Veneto",               aliases: []}
+  - {name: "Tuscany",              aliases: ["Toscana"]}
+  - {name: "Lazio",                aliases: []}
+  - {name: "Piedmont",             aliases: ["Piemonte"]}
+  - {name: "Campania",             aliases: []}
+  - {name: "Sardinia",             aliases: ["Sardegna"]}
+
+  # --- Vatican ---
+  - {name: "Vatican City",         aliases: ["Holy See"]}
+
+roles:
+  - {name: "Prime Minister of Italy", aliases: ["Italian PM", "Presidente del Consiglio"]}
+  - {name: "President of Italy",   aliases: ["Italian President"]}
+  - {name: "Foreign Minister of Italy", aliases: []}
+  - {name: "Governor of the Bank of Italy", aliases: []}

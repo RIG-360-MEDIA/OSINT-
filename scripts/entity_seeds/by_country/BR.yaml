@@ -1,0 +1,143 @@
+# Entity seed — Federative Republic of Brazil
+country: BR
+version: v1
+notes: |
+  Sources: planalto.gov.br, congresso.leg.br rosters, B3 IBOV,
+  Wikipedia "List of Brazilian" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Lula Govt (since Jan 2023) ---
+  - {name: "Luiz Inácio Lula da Silva", aliases: ["Lula", "Lula da Silva", "President Lula"], role: "President", party: "PT"}
+  - {name: "Geraldo Alckmin",      aliases: ["Alckmin"], role: "Vice President", party: "PSB"}
+  - {name: "Mauro Vieira",         aliases: ["Vieira"], role: "Foreign Minister"}
+  - {name: "José Múcio",           aliases: ["Mucio"], role: "Defence Minister"}
+  - {name: "Fernando Haddad",      aliases: ["Haddad"], role: "Finance Minister", party: "PT"}
+  - {name: "Ricardo Lewandowski",  aliases: [], role: "Justice Minister"}
+  - {name: "Rui Costa",            aliases: [], role: "Chief of Staff", party: "PT"}
+  - {name: "Marina Silva",         aliases: ["Marina Silva"], role: "Environment Minister"}
+  - {name: "Alexandre Padilha",    aliases: [], role: "Institutional Relations Minister"}
+  - {name: "Esther Dweck",         aliases: [], role: "Management Minister"}
+
+  # --- Opposition / Bolsonarismo ---
+  - {name: "Jair Bolsonaro",       aliases: ["Bolsonaro"], role: "Former President", party: "PL"}
+  - {name: "Michelle Bolsonaro",   aliases: [], notes: "Bolsonaro's wife"}
+  - {name: "Tarcísio de Freitas",  aliases: ["Tarcisio"], role: "Governor of São Paulo", party: "Republicanos"}
+  - {name: "Romeu Zema",           aliases: ["Zema"], role: "Governor of Minas Gerais", party: "Novo"}
+
+  # --- Recent Presidents ---
+  - {name: "Dilma Rousseff",       aliases: ["Dilma"], role: "Former President (impeached) / BRICS Bank President"}
+  - {name: "Michel Temer",         aliases: ["Temer"], role: "Former President"}
+
+  # --- Congressional Leaders ---
+  - {name: "Arthur Lira",          aliases: ["Lira"], role: "Speaker of the Chamber of Deputies"}
+  - {name: "Rodrigo Pacheco",      aliases: ["Pacheco"], role: "President of the Federal Senate"}
+
+  # --- Judiciary ---
+  - {name: "Luís Roberto Barroso", aliases: ["Barroso"], role: "President of the Supreme Federal Tribunal (STF)"}
+  - {name: "Alexandre de Moraes",  aliases: ["Moraes"], role: "STF Minister"}
+
+  # --- Central Bank ---
+  - {name: "Gabriel Galípolo",     aliases: ["Galipolo"], role: "President of the Central Bank of Brazil"}
+  - {name: "Roberto Campos Neto",  aliases: ["Campos Neto"], role: "Former BCB President"}
+
+organizations:
+  - {name: "Government of Brazil", aliases: ["Brazilian Govt"]}
+  - {name: "Palácio do Planalto",  aliases: ["Planalto"]}
+  - {name: "National Congress of Brazil", aliases: ["Brazilian Congress"]}
+  - {name: "Federal Senate (Brazil)", aliases: ["Brazilian Senate"]}
+  - {name: "Chamber of Deputies (Brazil)", aliases: ["Brazilian Chamber of Deputies"]}
+  - {name: "Supreme Federal Tribunal", aliases: ["STF"]}
+  - {name: "Superior Electoral Court (Brazil)", aliases: ["TSE"]}
+
+  # --- Ministries ---
+  - {name: "Itamaraty",            aliases: ["Brazilian MFA", "Ministry of Foreign Affairs (Brazil)"]}
+  - {name: "Ministry of Defence (Brazil)", aliases: []}
+  - {name: "Ministry of Finance (Brazil)", aliases: []}
+  - {name: "Ministry of Justice and Public Security (Brazil)", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "Central Bank of Brazil", aliases: ["BCB", "Banco Central do Brasil"]}
+
+  # --- Military / Intel ---
+  - {name: "Brazilian Armed Forces", aliases: []}
+  - {name: "Brazilian Army",       aliases: []}
+  - {name: "Brazilian Navy",       aliases: []}
+  - {name: "Brazilian Air Force",  aliases: ["FAB"]}
+  - {name: "Brazilian Intelligence Agency", aliases: ["ABIN"]}
+  - {name: "Federal Police (Brazil)", aliases: ["PF Brazil"]}
+  - {name: "Federal Highway Police", aliases: ["PRF"]}
+
+  # --- Parties ---
+  - {name: "Workers' Party (Brazil)", aliases: ["PT", "Partido dos Trabalhadores"]}
+  - {name: "Liberal Party (Brazil)", aliases: ["PL"]}
+  - {name: "Brazilian Social Democracy Party", aliases: ["PSDB"]}
+  - {name: "Brazilian Democratic Movement", aliases: ["MDB"]}
+  - {name: "Progressistas",        aliases: ["PP"]}
+  - {name: "União Brasil",         aliases: []}
+  - {name: "Republicanos",         aliases: []}
+  - {name: "Novo (party)",         aliases: []}
+  - {name: "Brazilian Socialist Party", aliases: ["PSB"]}
+  - {name: "Democratic Labour Party (Brazil)", aliases: ["PDT"]}
+
+  # --- Media ---
+  - {name: "Globo",                aliases: ["Rede Globo", "TV Globo"]}
+  - {name: "Folha de S.Paulo",     aliases: ["Folha"]}
+  - {name: "O Estado de S. Paulo", aliases: ["Estadão"]}
+  - {name: "O Globo",              aliases: []}
+  - {name: "Veja",                 aliases: []}
+  - {name: "UOL",                  aliases: []}
+  - {name: "Band",                 aliases: ["BandNews TV"]}
+  - {name: "SBT",                  aliases: []}
+  - {name: "Record TV",            aliases: []}
+  - {name: "Agência Brasil",       aliases: []}
+
+  # --- Corps ---
+  - {name: "Petrobras",            aliases: []}
+  - {name: "Vale",                 aliases: []}
+  - {name: "Itaú Unibanco",        aliases: ["Itau Unibanco"]}
+  - {name: "Banco Bradesco",       aliases: ["Bradesco"]}
+  - {name: "JBS",                  aliases: []}
+  - {name: "Ambev",                aliases: []}
+  - {name: "Embraer",              aliases: []}
+  - {name: "BRF",                  aliases: ["BRF S.A."]}
+
+  # --- Crime ---
+  - {name: "Primeiro Comando da Capital", aliases: ["PCC"]}
+  - {name: "Comando Vermelho",     aliases: ["CV"]}
+
+locations:
+  - {name: "Brazil",               aliases: ["Brasil"]}
+  - {name: "Brasília",             aliases: ["Brasilia"]}
+  - {name: "São Paulo",            aliases: ["Sao Paulo", "SP"]}
+  - {name: "Rio de Janeiro",       aliases: ["Rio"]}
+  - {name: "Salvador",             aliases: []}
+  - {name: "Fortaleza",            aliases: []}
+  - {name: "Belo Horizonte",       aliases: []}
+  - {name: "Manaus",               aliases: []}
+  - {name: "Curitiba",             aliases: []}
+  - {name: "Recife",               aliases: []}
+  - {name: "Porto Alegre",         aliases: []}
+  - {name: "Belém",                aliases: ["Belem"]}
+  - {name: "Goiânia",              aliases: ["Goiania"]}
+
+  # --- States ---
+  - {name: "São Paulo (state)",    aliases: ["State of Sao Paulo"]}
+  - {name: "Rio de Janeiro (state)", aliases: []}
+  - {name: "Minas Gerais",         aliases: ["MG"]}
+  - {name: "Bahia",                aliases: []}
+  - {name: "Pernambuco",           aliases: []}
+  - {name: "Paraná",               aliases: ["Parana"]}
+  - {name: "Rio Grande do Sul",    aliases: []}
+
+  # --- Strategic ---
+  - {name: "Amazon rainforest",    aliases: ["Amazônia", "Amazon"]}
+  - {name: "Pantanal",             aliases: []}
+  - {name: "Cerrado",              aliases: []}
+
+roles:
+  - {name: "President of Brazil",  aliases: ["Brazilian President"]}
+  - {name: "Vice President of Brazil", aliases: []}
+  - {name: "Foreign Minister of Brazil", aliases: []}
+  - {name: "President of the Central Bank of Brazil", aliases: ["BCB President"]}
+  - {name: "Governor (Brazil)",    aliases: []}

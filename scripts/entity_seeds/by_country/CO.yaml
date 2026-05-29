@@ -1,0 +1,112 @@
+# Entity seed — Republic of Colombia
+country: CO
+version: v1
+notes: |
+  Sources: presidencia.gov.co, camara.gov.co / senado.gov.co rosters,
+  Colcap, El Tiempo / El Espectador.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Petro Govt ---
+  - {name: "Gustavo Petro",        aliases: ["Petro", "President Petro"], role: "President", party: "Pacto Histórico"}
+  - {name: "Francia Márquez",      aliases: ["Marquez", "Francia Marquez"], role: "Vice President", party: "Colombia Humana"}
+  - {name: "Luis Gilberto Murillo", aliases: [], role: "Foreign Minister"}
+  - {name: "Iván Velásquez",       aliases: ["Ivan Velasquez"], role: "Defence Minister"}
+  - {name: "Diego Guevara",        aliases: [], role: "Finance Minister"}
+  - {name: "Daniel Rojas",         aliases: [], role: "Education Minister"}
+
+  # --- Opposition ---
+  - {name: "Álvaro Uribe Vélez",   aliases: ["Uribe", "Alvaro Uribe"], role: "Former President", party: "Centro Democrático"}
+  - {name: "Iván Duque",           aliases: ["Duque", "Ivan Duque"], role: "Former President", party: "Centro Democrático"}
+  - {name: "Federico Gutiérrez",   aliases: ["Fico Gutierrez"], role: "Mayor of Medellín"}
+
+  # --- Congressional Leaders ---
+  - {name: "Efraín Cepeda",        aliases: ["Cepeda"], role: "President of the Senate"}
+
+  # --- Central Bank ---
+  - {name: "Leonardo Villar Gómez", aliases: [], role: "Governor of the Bank of the Republic"}
+
+  # --- FARC dissidents / ELN ---
+  - {name: "Iván Márquez",         aliases: ["Ivan Marquez"], notes: "Former FARC commander (dissident)"}
+  - {name: "Antonio García",       aliases: [], notes: "ELN commander"}
+
+organizations:
+  - {name: "Government of Colombia", aliases: ["Colombian Govt"]}
+  - {name: "Casa de Nariño",       aliases: ["Casa de Narino"]}
+  - {name: "Congress of Colombia", aliases: ["Colombian Congress"]}
+  - {name: "Senate of Colombia",   aliases: []}
+  - {name: "Chamber of Representatives (Colombia)", aliases: []}
+  - {name: "Constitutional Court of Colombia", aliases: []}
+
+  # --- Ministries ---
+  - {name: "Colombian Ministry of Foreign Affairs", aliases: ["Cancillería"]}
+  - {name: "Colombian Ministry of National Defense", aliases: []}
+  - {name: "Colombian Ministry of Finance", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "Bank of the Republic (Colombia)", aliases: ["Banco de la República", "BanRep"]}
+
+  # --- Military ---
+  - {name: "Colombian Armed Forces", aliases: []}
+  - {name: "Colombian National Army", aliases: []}
+  - {name: "Colombian National Police", aliases: []}
+
+  # --- Parties / Movements ---
+  - {name: "Pacto Histórico",      aliases: ["Historic Pact"]}
+  - {name: "Centro Democrático",   aliases: ["Centro Democratico"]}
+  - {name: "Partido Liberal Colombiano", aliases: ["Liberal Party (Colombia)"]}
+  - {name: "Partido Conservador Colombiano", aliases: ["Conservative Party (Colombia)"]}
+  - {name: "Partido de la U",      aliases: []}
+  - {name: "Alianza Verde",        aliases: ["Green Alliance"]}
+  - {name: "Polo Democrático Alternativo", aliases: ["PDA"]}
+
+  # --- Armed groups ---
+  - {name: "FARC",                 aliases: ["Revolutionary Armed Forces of Colombia"]}
+  - {name: "FARC dissidents",      aliases: ["EMC", "Segunda Marquetalia"]}
+  - {name: "National Liberation Army (Colombia)", aliases: ["ELN"]}
+  - {name: "Gulf Clan",            aliases: ["Clan del Golfo", "AGC"]}
+
+  # --- Media ---
+  - {name: "El Tiempo",            aliases: []}
+  - {name: "El Espectador",        aliases: []}
+  - {name: "Semana",               aliases: []}
+  - {name: "Caracol Televisión",   aliases: ["Caracol TV"]}
+  - {name: "RCN Televisión",       aliases: ["RCN TV"]}
+  - {name: "La FM",                aliases: []}
+  - {name: "Blu Radio",            aliases: []}
+  - {name: "W Radio",              aliases: []}
+
+  # --- Corps ---
+  - {name: "Ecopetrol",            aliases: []}
+  - {name: "Grupo Aval",           aliases: []}
+  - {name: "Bancolombia",          aliases: []}
+  - {name: "Avianca",              aliases: []}
+  - {name: "Grupo Argos",          aliases: []}
+
+locations:
+  - {name: "Colombia",             aliases: []}
+  - {name: "Bogotá",               aliases: ["Bogota"]}
+  - {name: "Medellín",             aliases: ["Medellin"]}
+  - {name: "Cali",                 aliases: []}
+  - {name: "Barranquilla",         aliases: []}
+  - {name: "Cartagena",            aliases: []}
+  - {name: "Cúcuta",               aliases: ["Cucuta"]}
+  - {name: "Bucaramanga",          aliases: []}
+  - {name: "Pereira",              aliases: []}
+  - {name: "Santa Marta",          aliases: []}
+
+  # --- Departments ---
+  - {name: "Antioquia",            aliases: []}
+  - {name: "Cundinamarca",         aliases: []}
+  - {name: "Valle del Cauca",      aliases: []}
+  - {name: "Atlántico",            aliases: ["Atlantico"]}
+  - {name: "Bolívar (Colombia)",   aliases: ["Bolivar"]}
+
+  # --- Strategic ---
+  - {name: "Colombia-Venezuela border", aliases: []}
+  - {name: "Darién Gap",           aliases: ["Darien Gap"]}
+
+roles:
+  - {name: "President of Colombia", aliases: ["Colombian President"]}
+  - {name: "Vice President of Colombia", aliases: []}
+  - {name: "Foreign Minister of Colombia", aliases: []}

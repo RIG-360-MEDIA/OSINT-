@@ -1,0 +1,52 @@
+# Entity seed for <COUNTRY NAME>
+# Copy this file to <ISO>.yaml (e.g. JP.yaml for Japan) and fill in.
+# See README.md for full format docs.
+
+country: XX               # ISO 3166-1 alpha-2 — REQUIRED
+version: v1               # bump (v2, v3) when revising
+notes: |
+  Sources used: <list e.g. Wikidata, Wikipedia, etc.>
+  Coverage gaps: <areas you didn't fill yet>
+  Last updated: 2026-MM-DD
+
+# ----------------------------------------------------------------------------
+# PERSONS — politicians, executives, journalists, military, judiciary, etc.
+# ----------------------------------------------------------------------------
+persons:
+  - name: "Full Name"
+    aliases: ["Common short name", "Other variant"]
+    role: "Current position"      # optional
+    party: "Party name"           # optional
+    notes: "Free-text context"    # optional
+
+# ----------------------------------------------------------------------------
+# ORGANIZATIONS — govt agencies, companies, NGOs, parties, universities
+# ----------------------------------------------------------------------------
+organizations:
+  - name: "Full Org Name"
+    aliases: ["Acronym", "Common name"]
+    notes: ""
+
+# ----------------------------------------------------------------------------
+# CONSTITUENCIES — electoral districts (skip for non-electoral countries)
+# ----------------------------------------------------------------------------
+constituencies:
+  - name: "District Name"
+    aliases: []
+    notes: ""
+
+# ----------------------------------------------------------------------------
+# LOCATIONS — cities, states/provinces, landmarks, regions
+# ----------------------------------------------------------------------------
+locations:
+  - name: "City Name"
+    aliases: []
+    notes: ""
+
+# ----------------------------------------------------------------------------
+# ROLES — official titles likely to appear in news
+# ----------------------------------------------------------------------------
+roles:
+  - name: "Title"
+    aliases: []
+    notes: ""

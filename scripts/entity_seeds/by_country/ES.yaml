@@ -1,0 +1,132 @@
+# Entity seed — Kingdom of Spain
+country: ES
+version: v1
+notes: |
+  Sources: lamoncloa.gob.es, congreso.es, IBEX 35,
+  Wikipedia "List of Spanish" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Sánchez Govt ---
+  - {name: "Pedro Sánchez",        aliases: ["Sanchez", "Pedro Sanchez"], role: "Prime Minister", party: "PSOE"}
+  - {name: "Felipe VI",            aliases: ["King Felipe VI"], role: "King of Spain"}
+  - {name: "Queen Letizia",        aliases: ["Letizia"]}
+  - {name: "Yolanda Díaz",         aliases: ["Yolanda Diaz", "Diaz"], role: "Deputy PM / Labour Minister", party: "Sumar"}
+  - {name: "María Jesús Montero",  aliases: ["Montero"], role: "Deputy PM / Finance Minister", party: "PSOE"}
+  - {name: "José Manuel Albares",  aliases: ["Albares"], role: "Foreign Minister", party: "PSOE"}
+  - {name: "Margarita Robles",     aliases: ["Robles"], role: "Defence Minister", party: "PSOE"}
+  - {name: "Fernando Grande-Marlaska", aliases: ["Marlaska"], role: "Interior Minister", party: "PSOE"}
+
+  # --- Opposition / Other Party Heads ---
+  - {name: "Alberto Núñez Feijóo", aliases: ["Feijoo"], role: "PP Leader", party: "PP"}
+  - {name: "Santiago Abascal",     aliases: ["Abascal"], role: "Vox Leader", party: "Vox"}
+  - {name: "Cuca Gamarra",         aliases: [], role: "PP Secretary-General", party: "PP"}
+
+  # --- Catalan / Basque ---
+  - {name: "Carles Puigdemont",    aliases: ["Puigdemont"], role: "Former Catalan President (exiled)", party: "Junts"}
+  - {name: "Salvador Illa",        aliases: ["Illa"], role: "President of the Generalitat de Catalunya", party: "PSC"}
+  - {name: "Imanol Pradales",      aliases: [], role: "Lehendakari (Basque President)", party: "PNV"}
+
+  # --- Recent PMs ---
+  - {name: "Mariano Rajoy",        aliases: ["Rajoy"], role: "Former PM", party: "PP"}
+  - {name: "José Luis Rodríguez Zapatero", aliases: ["Zapatero"], role: "Former PM", party: "PSOE"}
+
+  # --- Bank of Spain ---
+  - {name: "José Luis Escrivá",    aliases: ["Escriva"], role: "Governor of the Bank of Spain"}
+
+organizations:
+  - {name: "Government of Spain",  aliases: ["Spanish Govt"]}
+  - {name: "Moncloa Palace",       aliases: ["La Moncloa"]}
+  - {name: "Cortes Generales",     aliases: ["Spanish Parliament"]}
+  - {name: "Congress of Deputies (Spain)", aliases: ["Spanish Congress"]}
+  - {name: "Spanish Senate",       aliases: ["Senado"]}
+  - {name: "Constitutional Court of Spain", aliases: []}
+  - {name: "Supreme Court of Spain", aliases: []}
+  - {name: "Spanish Royal Family", aliases: ["Casa Real"]}
+
+  # --- Ministries ---
+  - {name: "Spanish Ministry of Foreign Affairs, European Union and Cooperation", aliases: ["Spanish MFA"]}
+  - {name: "Spanish Ministry of Defence", aliases: []}
+  - {name: "Spanish Ministry of Finance", aliases: []}
+  - {name: "Spanish Ministry of the Interior", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "Bank of Spain",        aliases: ["Banco de España"]}
+
+  # --- Military / Intel ---
+  - {name: "Spanish Armed Forces", aliases: []}
+  - {name: "Spanish Army",         aliases: []}
+  - {name: "Spanish Navy",         aliases: ["Armada Española"]}
+  - {name: "Spanish Air and Space Force", aliases: ["Ejército del Aire"]}
+  - {name: "Civil Guard (Spain)",  aliases: ["Guardia Civil"]}
+  - {name: "National Intelligence Centre (Spain)", aliases: ["CNI"]}
+
+  # --- Parties ---
+  - {name: "Spanish Socialist Workers' Party", aliases: ["PSOE"]}
+  - {name: "People's Party (Spain)", aliases: ["PP"]}
+  - {name: "Vox (political party)", aliases: ["Vox"]}
+  - {name: "Sumar",                aliases: []}
+  - {name: "Podemos",              aliases: []}
+  - {name: "Ciudadanos",           aliases: ["Cs"]}
+  - {name: "Junts per Catalunya",  aliases: ["Junts"]}
+  - {name: "Republican Left of Catalonia", aliases: ["ERC"]}
+  - {name: "Basque Nationalist Party", aliases: ["PNV", "EAJ"]}
+  - {name: "EH Bildu",             aliases: []}
+
+  # --- Media ---
+  - {name: "EFE (news agency)",    aliases: ["EFE"]}
+  - {name: "RTVE",                 aliases: []}
+  - {name: "El País",              aliases: ["El Pais"]}
+  - {name: "El Mundo",             aliases: []}
+  - {name: "ABC (newspaper)",      aliases: ["ABC España"]}
+  - {name: "La Vanguardia",        aliases: []}
+  - {name: "El Confidencial",      aliases: []}
+  - {name: "Eldiario.es",          aliases: []}
+  - {name: "20 Minutos",           aliases: []}
+  - {name: "La Razón",             aliases: ["La Razon"]}
+  - {name: "Antena 3",             aliases: []}
+  - {name: "Telecinco",            aliases: []}
+
+  # --- IBEX 35 / Corps ---
+  - {name: "Banco Santander",      aliases: ["Santander"]}
+  - {name: "BBVA",                 aliases: ["Banco Bilbao Vizcaya Argentaria"]}
+  - {name: "Iberdrola",            aliases: []}
+  - {name: "Repsol",               aliases: []}
+  - {name: "Telefónica",           aliases: ["Telefonica"]}
+  - {name: "Inditex",              aliases: ["Zara parent"]}
+  - {name: "ACS Group",            aliases: []}
+  - {name: "Ferrovial",            aliases: []}
+  - {name: "Endesa",               aliases: []}
+  - {name: "IAG",                  aliases: ["International Airlines Group"]}
+
+locations:
+  - {name: "Spain",                aliases: ["Reino de España"]}
+  - {name: "Madrid",               aliases: []}
+  - {name: "Barcelona",            aliases: []}
+  - {name: "Valencia",             aliases: []}
+  - {name: "Seville",              aliases: ["Sevilla"]}
+  - {name: "Zaragoza",             aliases: []}
+  - {name: "Málaga",               aliases: ["Malaga"]}
+  - {name: "Bilbao",               aliases: []}
+  - {name: "Granada",              aliases: []}
+  - {name: "Palma",                aliases: []}
+
+  # --- Regions / autonomous communities ---
+  - {name: "Catalonia",            aliases: ["Cataluña"]}
+  - {name: "Basque Country",       aliases: ["País Vasco", "Euskadi"]}
+  - {name: "Andalusia",            aliases: ["Andalucía"]}
+  - {name: "Galicia",              aliases: []}
+  - {name: "Community of Madrid",  aliases: []}
+  - {name: "Valencian Community",  aliases: []}
+  - {name: "Aragon",               aliases: ["Aragón"]}
+  - {name: "Castile and León",     aliases: ["Castilla y León"]}
+  - {name: "Castile-La Mancha",    aliases: []}
+  - {name: "Balearic Islands",     aliases: []}
+  - {name: "Canary Islands",       aliases: ["Islas Canarias"]}
+
+roles:
+  - {name: "Prime Minister of Spain", aliases: ["Spanish PM"]}
+  - {name: "King of Spain",        aliases: []}
+  - {name: "Foreign Minister of Spain", aliases: []}
+  - {name: "President of the Generalitat de Catalunya", aliases: []}
+  - {name: "Lehendakari",          aliases: ["Basque President"]}

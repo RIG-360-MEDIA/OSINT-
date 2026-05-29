@@ -1,0 +1,128 @@
+# Entity seed — Republic of Poland
+country: PL
+version: v1
+notes: |
+  Sources: gov.pl, sejm.gov.pl rosters, WIG 20, Wikipedia
+  "List of Polish" pages. Reflects Tusk Govt (since Dec 2023).
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Govt ---
+  - {name: "Donald Tusk",          aliases: ["Tusk"], role: "Prime Minister", party: "PO"}
+  - {name: "Andrzej Duda",         aliases: ["Duda"], role: "President of Poland", party: "PiS-aligned"}
+  - {name: "Władysław Kosiniak-Kamysz", aliases: ["Kosiniak-Kamysz"], role: "Deputy PM / Defence Minister", party: "PSL"}
+  - {name: "Krzysztof Gawkowski",  aliases: [], role: "Deputy PM / Digital Affairs Minister", party: "Lewica"}
+  - {name: "Radosław Sikorski",    aliases: ["Sikorski"], role: "Foreign Minister", party: "PO"}
+  - {name: "Andrzej Domański",     aliases: ["Domanski"], role: "Finance Minister", party: "PO"}
+  - {name: "Tomasz Siemoniak",     aliases: [], role: "Interior Minister", party: "PO"}
+  - {name: "Adam Bodnar",          aliases: ["Bodnar"], role: "Justice Minister", party: "PO"}
+
+  # --- Opposition (PiS) ---
+  - {name: "Jarosław Kaczyński",   aliases: ["Kaczynski"], role: "PiS Chairman", party: "PiS"}
+  - {name: "Mateusz Morawiecki",   aliases: ["Morawiecki"], role: "Former PM", party: "PiS"}
+  - {name: "Mariusz Błaszczak",    aliases: ["Blaszczak"], role: "Former Defence Minister", party: "PiS"}
+  - {name: "Karol Nawrocki",       aliases: ["Nawrocki"], role: "PiS-backed Presidential candidate 2025", party: "PiS"}
+
+  # --- Other Party Leaders ---
+  - {name: "Sławomir Mentzen",     aliases: ["Mentzen"], role: "Konfederacja Leader", party: "Konfederacja"}
+  - {name: "Szymon Hołownia",      aliases: ["Holownia"], role: "Speaker of the Sejm / Poland 2050 Leader", party: "Polska 2050"}
+
+  # --- Recent Presidents ---
+  - {name: "Bronisław Komorowski", aliases: ["Komorowski"], role: "Former President"}
+  - {name: "Aleksander Kwaśniewski", aliases: ["Kwasniewski"], role: "Former President"}
+
+  # --- Central Bank ---
+  - {name: "Adam Glapiński",       aliases: ["Glapinski"], role: "Governor of the National Bank of Poland"}
+
+organizations:
+  - {name: "Government of Poland", aliases: ["Polish Govt"]}
+  - {name: "Council of Ministers (Poland)", aliases: ["Polish Cabinet"]}
+  - {name: "Sejm",                 aliases: ["Sejm of the Republic of Poland"]}
+  - {name: "Senate of Poland",     aliases: ["Polish Senate"]}
+  - {name: "Constitutional Tribunal (Poland)", aliases: []}
+  - {name: "Supreme Court of Poland", aliases: []}
+
+  # --- Ministries ---
+  - {name: "Polish Ministry of Foreign Affairs", aliases: ["Polish MFA"]}
+  - {name: "Polish Ministry of National Defence", aliases: []}
+  - {name: "Polish Ministry of Finance", aliases: []}
+  - {name: "Polish Ministry of the Interior and Administration", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "National Bank of Poland", aliases: ["NBP"]}
+
+  # --- Military / Intel ---
+  - {name: "Polish Armed Forces",  aliases: []}
+  - {name: "Polish Land Forces",   aliases: []}
+  - {name: "Polish Navy",          aliases: []}
+  - {name: "Polish Air Force",     aliases: []}
+  - {name: "Internal Security Agency (Poland)", aliases: ["ABW"]}
+  - {name: "Foreign Intelligence Agency (Poland)", aliases: ["AW"]}
+
+  # --- Parties ---
+  - {name: "Civic Platform",       aliases: ["PO", "Platforma Obywatelska"]}
+  - {name: "Law and Justice (Poland)", aliases: ["PiS", "Prawo i Sprawiedliwość"]}
+  - {name: "Polish People's Party", aliases: ["PSL"]}
+  - {name: "Confederation Liberty and Independence", aliases: ["Konfederacja"]}
+  - {name: "The Left (Poland)",    aliases: ["Lewica"]}
+  - {name: "Poland 2050",          aliases: ["Polska 2050"]}
+  - {name: "Third Way (Poland)",   aliases: ["Trzecia Droga"]}
+
+  # --- Media ---
+  - {name: "Polska Agencja Prasowa", aliases: ["PAP"]}
+  - {name: "TVP",                  aliases: ["Telewizja Polska"]}
+  - {name: "TVN",                  aliases: []}
+  - {name: "Polsat",               aliases: []}
+  - {name: "Gazeta Wyborcza",      aliases: []}
+  - {name: "Rzeczpospolita (newspaper)", aliases: ["Rzeczpospolita"]}
+  - {name: "Onet.pl",              aliases: ["Onet"]}
+  - {name: "WP.pl",                aliases: ["Wirtualna Polska"]}
+  - {name: "Polityka",             aliases: []}
+  - {name: "Newsweek Polska",      aliases: []}
+
+  # --- Corps / WIG 20 ---
+  - {name: "PKN Orlen",            aliases: ["Orlen"]}
+  - {name: "PZU",                  aliases: []}
+  - {name: "PKO Bank Polski",      aliases: ["PKO BP"]}
+  - {name: "Pekao",                aliases: ["Bank Pekao"]}
+  - {name: "KGHM",                 aliases: ["KGHM Polska Miedź"]}
+  - {name: "Allegro",              aliases: []}
+  - {name: "InPost",               aliases: []}
+  - {name: "Tauron",               aliases: []}
+  - {name: "LPP",                  aliases: []}
+  - {name: "CD Projekt",           aliases: []}
+
+locations:
+  - {name: "Poland",               aliases: ["Polska"]}
+  - {name: "Warsaw",               aliases: ["Warszawa"]}
+  - {name: "Kraków",               aliases: ["Cracow", "Krakow"]}
+  - {name: "Łódź",                 aliases: ["Lodz"]}
+  - {name: "Wrocław",              aliases: ["Wroclaw"]}
+  - {name: "Poznań",               aliases: ["Poznan"]}
+  - {name: "Gdańsk",               aliases: ["Gdansk"]}
+  - {name: "Szczecin",             aliases: []}
+  - {name: "Bydgoszcz",            aliases: []}
+  - {name: "Lublin",               aliases: []}
+  - {name: "Katowice",             aliases: []}
+  - {name: "Białystok",            aliases: ["Bialystok"]}
+  - {name: "Gdynia",               aliases: []}
+  - {name: "Częstochowa",          aliases: ["Czestochowa"]}
+  - {name: "Rzeszów",              aliases: ["Rzeszow"]}
+
+  # --- Voivodeships ---
+  - {name: "Mazovia",              aliases: ["Mazowieckie"]}
+  - {name: "Silesia",              aliases: ["Slaskie"]}
+  - {name: "Lesser Poland",        aliases: ["Malopolskie"]}
+  - {name: "Greater Poland",       aliases: ["Wielkopolskie"]}
+
+  # --- Strategic ---
+  - {name: "Polish-Belarusian border", aliases: ["Poland-Belarus border"]}
+  - {name: "Suwałki Gap",          aliases: ["Suwalki Gap"]}
+
+roles:
+  - {name: "Prime Minister of Poland", aliases: ["Polish PM"]}
+  - {name: "President of Poland",  aliases: ["Polish President"]}
+  - {name: "Foreign Minister of Poland", aliases: []}
+  - {name: "Defence Minister of Poland", aliases: []}
+  - {name: "Marshal of the Sejm",  aliases: []}
+  - {name: "Governor of the National Bank of Poland", aliases: ["NBP Governor"]}

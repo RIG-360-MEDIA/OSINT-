@@ -1,0 +1,122 @@
+# Entity seed — Bangladesh
+country: BD
+version: v1
+notes: |
+  Sources: interim govt (Yunus admin since Aug 2024), bdnews24,
+  Wikipedia "List of Bangladeshi" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Interim Government (since 8 Aug 2024) ---
+  - {name: "Muhammad Yunus",        aliases: ["Yunus", "Dr. Muhammad Yunus"], role: "Chief Adviser of Bangladesh", notes: "Nobel Peace Laureate"}
+  - {name: "Mohammed Touhid Hossain", aliases: ["Touhid Hossain"], role: "Foreign Affairs Adviser"}
+  - {name: "Asif Mahmud Shojib Bhuyain", aliases: ["Asif Mahmud"], role: "Sports & Youth Adviser"}
+  - {name: "Nahid Islam",           aliases: [], role: "ICT Adviser / Student leader"}
+  - {name: "Sayeda Rizwana Hasan",  aliases: ["Rizwana Hasan"], role: "Environment Adviser"}
+  - {name: "Mohammed Tofazzel Hossain Miah", aliases: [], role: "Principal Secretary to Chief Adviser"}
+  - {name: "Adilur Rahman Khan",    aliases: [], role: "Industries Adviser"}
+  - {name: "Salehuddin Ahmed",      aliases: [], role: "Finance Adviser"}
+
+  # --- Former Govt (Awami League) ---
+  - {name: "Sheikh Hasina",         aliases: ["Hasina"], role: "Former PM (deposed Aug 2024)", party: "Awami League"}
+  - {name: "Sheikh Rehana",         aliases: [], notes: "Sister of Hasina"}
+  - {name: "Saima Wazed",           aliases: [], notes: "Daughter of Hasina, WHO SEARO RD"}
+  - {name: "Sajeeb Wazed Joy",      aliases: ["Sajeeb Wazed", "Joy"], notes: "Son of Hasina"}
+  - {name: "Abul Hasan Mahmood Ali", aliases: [], role: "Former Foreign Minister", party: "Awami League"}
+  - {name: "Obaidul Quader",        aliases: [], role: "Former General Secretary of AL", party: "Awami League"}
+
+  # --- Opposition / BNP ---
+  - {name: "Khaleda Zia",           aliases: [], role: "BNP Chairperson", party: "BNP"}
+  - {name: "Tarique Rahman",        aliases: [], role: "BNP Acting Chairman (UK-based)", party: "BNP"}
+  - {name: "Mirza Fakhrul Islam Alamgir", aliases: ["Mirza Fakhrul"], role: "BNP Secretary General", party: "BNP"}
+  - {name: "Ruhul Kabir Rizvi",     aliases: [], party: "BNP"}
+
+  # --- Jamaat ---
+  - {name: "Shafiqur Rahman",       aliases: [], role: "Ameer of Jamaat-e-Islami Bangladesh", party: "Jamaat-e-Islami"}
+
+  # --- Military ---
+  - {name: "Waker-uz-Zaman",        aliases: ["Waker-Uz-Zaman"], role: "Bangladesh Army Chief"}
+
+  # --- Judiciary ---
+  - {name: "Syed Refaat Ahmed",     aliases: [], role: "Chief Justice of Bangladesh"}
+
+  # --- Central Bank ---
+  - {name: "Ahsan H. Mansur",       aliases: ["Mansur"], role: "Governor Bangladesh Bank"}
+
+  # --- President ---
+  - {name: "Mohammed Shahabuddin",  aliases: ["Shahabuddin Chuppu"], role: "President of Bangladesh"}
+
+organizations:
+  - {name: "Government of Bangladesh", aliases: ["GoB"]}
+  - {name: "Cabinet of Bangladesh", aliases: ["Bangladesh Cabinet"]}
+  - {name: "Bangladesh Parliament", aliases: ["Jatiya Sangsad", "JS"]}
+  - {name: "Supreme Court of Bangladesh", aliases: ["BD Supreme Court"]}
+  - {name: "Bangladesh Election Commission", aliases: ["BEC"]}
+  - {name: "Bangladesh Bank",      aliases: []}
+  - {name: "Anti-Corruption Commission Bangladesh", aliases: ["ACC"]}
+
+  # --- Military / Intel ---
+  - {name: "Bangladesh Army",      aliases: []}
+  - {name: "Bangladesh Navy",      aliases: []}
+  - {name: "Bangladesh Air Force", aliases: ["BAF"]}
+  - {name: "Border Guard Bangladesh", aliases: ["BGB"]}
+  - {name: "Rapid Action Battalion", aliases: ["RAB"]}
+  - {name: "Directorate General of Forces Intelligence", aliases: ["DGFI"]}
+  - {name: "National Security Intelligence", aliases: ["NSI"]}
+
+  # --- Parties ---
+  - {name: "Awami League",         aliases: ["AL", "Bangladesh Awami League"]}
+  - {name: "Bangladesh Nationalist Party", aliases: ["BNP"]}
+  - {name: "Jamaat-e-Islami Bangladesh", aliases: ["JIB"]}
+  - {name: "Jatiya Party",         aliases: ["JP"]}
+  - {name: "Bangladesh Jamaat-e-Islami", aliases: []}
+
+  # --- Media ---
+  - {name: "Prothom Alo",          aliases: []}
+  - {name: "The Daily Star",       aliases: []}
+  - {name: "bdnews24.com",         aliases: ["bdnews24"]}
+  - {name: "Daily Ittefaq",        aliases: []}
+  - {name: "Jugantor",             aliases: []}
+  - {name: "Kaler Kantho",         aliases: []}
+  - {name: "Janakantha",           aliases: []}
+  - {name: "Daily Sun",            aliases: []}
+  - {name: "Dhaka Tribune",        aliases: []}
+  - {name: "ATN News",             aliases: []}
+  - {name: "Channel 24",           aliases: []}
+  - {name: "Somoy News",           aliases: ["Somoy TV"]}
+
+  # --- Corps ---
+  - {name: "Grameen Bank",         aliases: []}
+  - {name: "BRAC",                 aliases: [], notes: "world's largest NGO"}
+
+locations:
+  - {name: "Dhaka",                aliases: []}
+  - {name: "Chattogram",           aliases: ["Chittagong"]}
+  - {name: "Sylhet",               aliases: []}
+  - {name: "Rajshahi",             aliases: []}
+  - {name: "Khulna",               aliases: []}
+  - {name: "Barisal",              aliases: ["Barishal"]}
+  - {name: "Rangpur",              aliases: []}
+  - {name: "Mymensingh",           aliases: []}
+  - {name: "Comilla",              aliases: ["Cumilla"]}
+  - {name: "Cox's Bazar",          aliases: []}
+  - {name: "Gazipur",              aliases: []}
+  - {name: "Narayanganj",          aliases: []}
+
+  # --- Divisions ---
+  - {name: "Dhaka Division",       aliases: []}
+  - {name: "Chattogram Division",  aliases: ["Chittagong Division"]}
+  - {name: "Sylhet Division",      aliases: []}
+
+  # --- Landmark ---
+  - {name: "Bangabhaban",          aliases: [], notes: "Presidential Palace"}
+  - {name: "Ganabhaban",           aliases: [], notes: "Official PM residence"}
+  - {name: "Shahbag",              aliases: []}
+
+roles:
+  - {name: "Prime Minister of Bangladesh", aliases: ["Bangladeshi PM"]}
+  - {name: "Chief Adviser of Bangladesh",  aliases: []}
+  - {name: "President of Bangladesh",      aliases: []}
+  - {name: "Bangladesh Army Chief",        aliases: []}
+  - {name: "Chief Justice of Bangladesh",  aliases: []}
+  - {name: "Foreign Minister of Bangladesh", aliases: []}

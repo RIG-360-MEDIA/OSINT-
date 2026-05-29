@@ -1,0 +1,154 @@
+# Entity seed — Germany (Federal Republic)
+country: DE
+version: v1
+notes: |
+  Sources: bundeskanzler.de cabinet, Bundestag roster, DAX 40,
+  Wikipedia "List of German" pages. Reflects state post-2025 election
+  (Merz-led CDU/CSU+SPD coalition).
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Current Govt ---
+  - {name: "Friedrich Merz",       aliases: ["Merz"], role: "Chancellor of Germany", party: "CDU"}
+  - {name: "Frank-Walter Steinmeier", aliases: ["Steinmeier"], role: "President of Germany", party: "SPD"}
+  - {name: "Lars Klingbeil",       aliases: ["Klingbeil"], role: "Vice-Chancellor / Finance Minister", party: "SPD"}
+  - {name: "Johann Wadephul",      aliases: ["Wadephul"], role: "Foreign Minister", party: "CDU"}
+  - {name: "Boris Pistorius",      aliases: ["Pistorius"], role: "Defence Minister", party: "SPD"}
+  - {name: "Alexander Dobrindt",   aliases: ["Dobrindt"], role: "Interior Minister", party: "CSU"}
+  - {name: "Stefanie Hubig",       aliases: [], role: "Justice Minister", party: "SPD"}
+  - {name: "Karsten Wildberger",   aliases: [], role: "Digital Minister", party: "CDU"}
+
+  # --- Former Chancellors / Senior politicians ---
+  - {name: "Olaf Scholz",          aliases: ["Scholz"], role: "Former Chancellor", party: "SPD"}
+  - {name: "Angela Merkel",        aliases: ["Merkel"], role: "Former Chancellor", party: "CDU"}
+  - {name: "Gerhard Schröder",     aliases: ["Schroeder"], role: "Former Chancellor", party: "SPD"}
+
+  # --- Opposition Leaders ---
+  - {name: "Alice Weidel",         aliases: ["Weidel"], role: "AfD Leader", party: "AfD"}
+  - {name: "Tino Chrupalla",       aliases: ["Chrupalla"], role: "AfD Co-Leader", party: "AfD"}
+  - {name: "Felix Banaszak",       aliases: [], role: "Greens Co-Leader", party: "Greens"}
+  - {name: "Franziska Brantner",   aliases: [], role: "Greens Co-Leader", party: "Greens"}
+  - {name: "Heidi Reichinnek",     aliases: [], role: "Die Linke parliamentary leader", party: "Die Linke"}
+  - {name: "Sahra Wagenknecht",    aliases: ["Wagenknecht"], role: "BSW founder", party: "BSW"}
+  - {name: "Christian Lindner",    aliases: ["Lindner"], role: "Former Finance Minister / FDP Leader", party: "FDP"}
+
+  # --- Bundestag Leadership ---
+  - {name: "Julia Klöckner",       aliases: ["Kloeckner"], role: "President of the Bundestag", party: "CDU"}
+
+  # --- Bundesbank ---
+  - {name: "Joachim Nagel",        aliases: [], role: "President of the Deutsche Bundesbank"}
+
+  # --- Markus Söder (CSU) ---
+  - {name: "Markus Söder",         aliases: ["Soeder"], role: "Minister-President of Bavaria", party: "CSU"}
+
+organizations:
+  - {name: "Federal Government of Germany", aliases: ["German Govt", "Bundesregierung"]}
+  - {name: "Federal Chancellery (Germany)", aliases: ["Bundeskanzleramt"]}
+  - {name: "Bundestag",            aliases: ["German Parliament"]}
+  - {name: "Bundesrat",            aliases: ["Federal Council"]}
+  - {name: "Federal Constitutional Court", aliases: ["Bundesverfassungsgericht", "BVerfG"]}
+  - {name: "Federal Court of Justice (Germany)", aliases: ["BGH"]}
+  - {name: "Federal Election Commission (Germany)", aliases: []}
+
+  # --- Ministries ---
+  - {name: "Federal Foreign Office (Germany)", aliases: ["Auswärtiges Amt", "German MFA"]}
+  - {name: "Federal Ministry of Defence (Germany)", aliases: ["BMVg"]}
+  - {name: "Federal Ministry of Finance (Germany)", aliases: ["BMF"]}
+  - {name: "Federal Ministry of the Interior (Germany)", aliases: ["BMI"]}
+  - {name: "Federal Ministry of Economic Affairs and Climate Action", aliases: ["BMWK"]}
+
+  # --- Central Bank ---
+  - {name: "Deutsche Bundesbank",  aliases: ["Bundesbank"]}
+
+  # --- Military / Intel ---
+  - {name: "Bundeswehr",           aliases: ["German Armed Forces"]}
+  - {name: "BND",                  aliases: ["Bundesnachrichtendienst", "Federal Intelligence Service"]}
+  - {name: "BfV",                  aliases: ["Bundesamt für Verfassungsschutz", "Federal Office for the Protection of the Constitution"]}
+
+  # --- Parties ---
+  - {name: "Christian Democratic Union", aliases: ["CDU"]}
+  - {name: "Christian Social Union in Bavaria", aliases: ["CSU"]}
+  - {name: "Social Democratic Party of Germany", aliases: ["SPD", "Sozialdemokratische Partei Deutschlands"]}
+  - {name: "Alliance 90/The Greens", aliases: ["Bündnis 90/Die Grünen", "Greens"]}
+  - {name: "Free Democratic Party (Germany)", aliases: ["FDP"]}
+  - {name: "Alternative for Germany", aliases: ["AfD"]}
+  - {name: "The Left (Germany)",   aliases: ["Die Linke"]}
+  - {name: "Sahra Wagenknecht Alliance", aliases: ["BSW"]}
+
+  # --- Media ---
+  - {name: "ARD",                  aliases: ["Tagesschau", "German Public Broadcasting"]}
+  - {name: "ZDF",                  aliases: []}
+  - {name: "Deutsche Welle",       aliases: ["DW"]}
+  - {name: "Der Spiegel",          aliases: ["Spiegel"]}
+  - {name: "Süddeutsche Zeitung",  aliases: ["SZ", "Sueddeutsche Zeitung"]}
+  - {name: "Frankfurter Allgemeine Zeitung", aliases: ["FAZ", "Frankfurter Allgemeine"]}
+  - {name: "Die Welt",             aliases: ["Welt"]}
+  - {name: "Die Zeit",             aliases: ["Zeit"]}
+  - {name: "Bild",                 aliases: ["Bild Zeitung"]}
+  - {name: "Handelsblatt",         aliases: []}
+  - {name: "Stern (magazine)",     aliases: ["Stern"]}
+  - {name: "Tagesspiegel",         aliases: []}
+  - {name: "dpa",                  aliases: ["Deutsche Presse-Agentur"]}
+
+  # --- DAX 40 / Major corps ---
+  - {name: "Volkswagen",           aliases: ["VW"]}
+  - {name: "Mercedes-Benz Group",  aliases: ["Mercedes-Benz", "Daimler"]}
+  - {name: "BMW",                  aliases: ["Bayerische Motoren Werke"]}
+  - {name: "Siemens",              aliases: []}
+  - {name: "SAP",                  aliases: []}
+  - {name: "Deutsche Bank",        aliases: []}
+  - {name: "Commerzbank",          aliases: []}
+  - {name: "Allianz",              aliases: []}
+  - {name: "Bayer",                aliases: []}
+  - {name: "BASF",                 aliases: []}
+  - {name: "Deutsche Telekom",     aliases: []}
+  - {name: "Lufthansa",            aliases: ["Deutsche Lufthansa"]}
+  - {name: "Adidas",               aliases: []}
+  - {name: "Rheinmetall",          aliases: []}
+  - {name: "Porsche",              aliases: []}
+
+locations:
+  - {name: "Berlin",               aliases: []}
+  - {name: "Hamburg",              aliases: []}
+  - {name: "Munich",               aliases: ["München"]}
+  - {name: "Cologne",              aliases: ["Köln"]}
+  - {name: "Frankfurt",            aliases: ["Frankfurt am Main"]}
+  - {name: "Stuttgart",            aliases: []}
+  - {name: "Düsseldorf",           aliases: ["Duesseldorf"]}
+  - {name: "Leipzig",              aliases: []}
+  - {name: "Dortmund",             aliases: []}
+  - {name: "Essen",                aliases: []}
+  - {name: "Bremen",               aliases: []}
+  - {name: "Dresden",              aliases: []}
+  - {name: "Hannover",             aliases: ["Hanover"]}
+  - {name: "Nuremberg",            aliases: ["Nürnberg"]}
+  - {name: "Bonn",                 aliases: []}
+
+  # --- Bundesländer ---
+  - {name: "Bavaria",              aliases: ["Bayern"]}
+  - {name: "Baden-Württemberg",    aliases: []}
+  - {name: "North Rhine-Westphalia", aliases: ["NRW"]}
+  - {name: "Lower Saxony",         aliases: ["Niedersachsen"]}
+  - {name: "Hesse",                aliases: ["Hessen"]}
+  - {name: "Saxony",               aliases: ["Sachsen"]}
+  - {name: "Rhineland-Palatinate", aliases: ["Rheinland-Pfalz"]}
+  - {name: "Schleswig-Holstein",   aliases: []}
+  - {name: "Brandenburg",          aliases: []}
+  - {name: "Mecklenburg-Vorpommern", aliases: []}
+  - {name: "Thuringia",            aliases: ["Thüringen"]}
+  - {name: "Saxony-Anhalt",        aliases: ["Sachsen-Anhalt"]}
+  - {name: "Saarland",             aliases: []}
+
+  # --- Landmark ---
+  - {name: "Reichstag",            aliases: ["Reichstag Building"]}
+  - {name: "Brandenburg Gate",     aliases: ["Brandenburger Tor"]}
+
+roles:
+  - {name: "Chancellor of Germany", aliases: ["Bundeskanzler", "German Chancellor"]}
+  - {name: "President of Germany", aliases: ["Bundespräsident"]}
+  - {name: "Vice-Chancellor of Germany", aliases: ["Vizekanzler"]}
+  - {name: "Foreign Minister of Germany", aliases: []}
+  - {name: "Defence Minister of Germany", aliases: []}
+  - {name: "Finance Minister of Germany", aliases: []}
+  - {name: "President of the Bundestag", aliases: []}
+  - {name: "Minister-President (Germany)", aliases: ["Ministerpräsident"]}

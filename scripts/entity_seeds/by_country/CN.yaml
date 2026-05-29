@@ -1,0 +1,206 @@
+# Entity seed — People's Republic of China
+country: CN
+version: v1
+notes: |
+  Sources: Xinhua leadership profiles, State Council org chart, Wikipedia
+  "List of Politburo Standing Committee" + provincial CCP secretaries,
+  Fortune China 100, Hurun Rich List. Constituencies skipped — PRC has
+  no electoral districts that map to news mentions.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Politburo Standing Committee (20th Central Committee, since Oct 2022) ---
+  - {name: "Xi Jinping",       aliases: ["Xi", "President Xi", "General Secretary Xi"], role: "General Secretary of the CCP / President", party: "CCP"}
+  - {name: "Li Qiang",         aliases: ["Li"], role: "Premier of the State Council", party: "CCP"}
+  - {name: "Zhao Leji",        aliases: [], role: "Chairman of the NPC Standing Committee", party: "CCP"}
+  - {name: "Wang Huning",      aliases: [], role: "Chairman of the CPPCC", party: "CCP"}
+  - {name: "Cai Qi",           aliases: [], role: "First Secretary of the CCP Secretariat", party: "CCP"}
+  - {name: "Ding Xuexiang",    aliases: [], role: "Executive Vice Premier", party: "CCP"}
+  - {name: "Li Xi",            aliases: [], role: "Secretary of CCDI (anti-corruption chief)", party: "CCP"}
+
+  # --- Vice-Premier / State Councillors ---
+  - {name: "Han Zheng",        aliases: [], role: "Vice President of China", party: "CCP"}
+  - {name: "He Lifeng",        aliases: [], role: "Vice Premier", party: "CCP"}
+  - {name: "Liu Guozhong",     aliases: [], role: "Vice Premier", party: "CCP"}
+  - {name: "Zhang Guoqing",    aliases: [], role: "Vice Premier", party: "CCP"}
+
+  # --- Foreign Affairs / Defence ---
+  - {name: "Wang Yi",          aliases: ["王毅"], role: "Foreign Minister", party: "CCP"}
+  - {name: "Dong Jun",         aliases: [], role: "Defence Minister", party: "CCP"}
+  - {name: "Liu Jianchao",     aliases: [], role: "Head of CCP International Department"}
+  - {name: "Qin Gang",         aliases: [], role: "Former Foreign Minister"}
+
+  # --- PLA Leadership ---
+  - {name: "Zhang Youxia",     aliases: [], role: "Vice Chairman of the CMC"}
+  - {name: "He Weidong",       aliases: [], role: "Vice Chairman of the CMC"}
+
+  # --- Recent Top Leaders ---
+  - {name: "Hu Jintao",        aliases: [], role: "Former General Secretary"}
+  - {name: "Wen Jiabao",       aliases: [], role: "Former Premier"}
+  - {name: "Li Keqiang",       aliases: [], role: "Former Premier (deceased)"}
+  - {name: "Jiang Zemin",      aliases: [], role: "Former General Secretary (deceased)"}
+
+  # --- Hong Kong / Macau / Taiwan ---
+  - {name: "John Lee",         aliases: ["Lee Ka-chiu"], role: "Chief Executive of Hong Kong"}
+  - {name: "Sam Hou Fai",      aliases: [], role: "Chief Executive of Macau"}
+  - {name: "Lai Ching-te",     aliases: ["William Lai"], role: "President of Taiwan (ROC)", notes: "Taipei-based; PRC disputes"}
+
+  # --- Central Bank ---
+  - {name: "Pan Gongsheng",    aliases: [], role: "Governor of the People's Bank of China"}
+
+  # --- Business / Tech ---
+  - {name: "Ren Zhengfei",     aliases: [], role: "Huawei founder"}
+  - {name: "Jack Ma",          aliases: ["Ma Yun"], role: "Alibaba founder"}
+  - {name: "Pony Ma",          aliases: ["Ma Huateng"], role: "Tencent CEO"}
+  - {name: "Robin Li",         aliases: ["Li Yanhong"], role: "Baidu CEO"}
+  - {name: "Zhang Yiming",     aliases: [], role: "ByteDance founder"}
+  - {name: "Liang Wenfeng",    aliases: [], role: "DeepSeek founder"}
+  - {name: "Wang Chuanfu",     aliases: [], role: "BYD chairman"}
+  - {name: "Lei Jun",          aliases: [], role: "Xiaomi CEO"}
+  - {name: "Colin Huang",      aliases: ["Huang Zheng"], role: "Pinduoduo / Temu founder"}
+  - {name: "Zhang Yiming",     aliases: [], role: "ByteDance founder"}
+
+  # --- Provincial Party Secretaries (selected key provinces) ---
+  - {name: "Yin Li",           aliases: [], role: "Beijing Party Secretary"}
+  - {name: "Chen Jining",      aliases: [], role: "Shanghai Party Secretary"}
+  - {name: "Huang Kunming",    aliases: [], role: "Guangdong Party Secretary"}
+  - {name: "Yuan Jiajun",      aliases: [], role: "Chongqing Party Secretary"}
+
+organizations:
+  # --- Party / State Top ---
+  - {name: "Communist Party of China", aliases: ["CCP", "CPC", "the Party", "Chinese Communist Party"]}
+  - {name: "State Council of China", aliases: ["State Council", "PRC State Council"]}
+  - {name: "Politburo of the Communist Party of China", aliases: ["Politburo"]}
+  - {name: "Politburo Standing Committee", aliases: ["PSC"]}
+  - {name: "National People's Congress", aliases: ["NPC"]}
+  - {name: "Chinese People's Political Consultative Conference", aliases: ["CPPCC"]}
+  - {name: "Central Military Commission", aliases: ["CMC"]}
+  - {name: "Central Commission for Discipline Inspection", aliases: ["CCDI"]}
+
+  # --- Ministries ---
+  - {name: "Ministry of Foreign Affairs of China", aliases: ["China MFA", "MOFA"]}
+  - {name: "Ministry of State Security",    aliases: ["MSS"]}
+  - {name: "Ministry of Public Security",   aliases: ["MPS"]}
+  - {name: "Ministry of National Defense",  aliases: ["China MoD"]}
+  - {name: "Ministry of Commerce",          aliases: ["MOFCOM"]}
+  - {name: "Ministry of Industry and Information Technology", aliases: ["MIIT"]}
+  - {name: "National Development and Reform Commission", aliases: ["NDRC"]}
+
+  # --- Central Bank / Financial ---
+  - {name: "People's Bank of China",        aliases: ["PBOC", "PBoC"]}
+  - {name: "China Securities Regulatory Commission", aliases: ["CSRC"]}
+  - {name: "State Administration of Foreign Exchange", aliases: ["SAFE"]}
+
+  # --- Military ---
+  - {name: "People's Liberation Army",      aliases: ["PLA"]}
+  - {name: "PLA Navy",                       aliases: ["PLAN"]}
+  - {name: "PLA Air Force",                  aliases: ["PLAAF"]}
+  - {name: "PLA Rocket Force",               aliases: ["PLARF"]}
+  - {name: "People's Armed Police",          aliases: ["PAP"]}
+
+  # --- Media ---
+  - {name: "Xinhua News Agency",             aliases: ["Xinhua"]}
+  - {name: "China Central Television",       aliases: ["CCTV"]}
+  - {name: "People's Daily",                  aliases: []}
+  - {name: "Global Times",                    aliases: []}
+  - {name: "China Daily",                     aliases: []}
+  - {name: "PLA Daily",                       aliases: []}
+  - {name: "South China Morning Post",        aliases: ["SCMP"], notes: "Hong Kong, Alibaba-owned"}
+  - {name: "CGTN",                            aliases: ["China Global Television Network"]}
+
+  # --- State-owned Enterprises ---
+  - {name: "Sinopec",                         aliases: ["China Petroleum & Chemical"]}
+  - {name: "China National Petroleum",        aliases: ["CNPC", "PetroChina"]}
+  - {name: "State Grid Corporation of China", aliases: ["State Grid"]}
+  - {name: "Industrial and Commercial Bank of China", aliases: ["ICBC"]}
+  - {name: "China Construction Bank",         aliases: ["CCB"]}
+  - {name: "Agricultural Bank of China",      aliases: ["ABC"]}
+  - {name: "Bank of China",                   aliases: ["BoC"]}
+  - {name: "China Mobile",                    aliases: []}
+  - {name: "China Telecom",                   aliases: []}
+  - {name: "COSCO",                           aliases: ["COSCO Shipping"]}
+  - {name: "China Railway",                   aliases: ["China Railway Group"]}
+
+  # --- Tech ---
+  - {name: "Huawei",                          aliases: ["Huawei Technologies"]}
+  - {name: "Alibaba Group",                   aliases: ["Alibaba", "BABA"]}
+  - {name: "Tencent",                         aliases: ["Tencent Holdings"]}
+  - {name: "Baidu",                           aliases: []}
+  - {name: "ByteDance",                       aliases: ["TikTok parent"]}
+  - {name: "DeepSeek",                        aliases: []}
+  - {name: "SMIC",                            aliases: ["Semiconductor Manufacturing International"]}
+  - {name: "BYD",                             aliases: ["BYD Auto"]}
+  - {name: "CATL",                            aliases: ["Contemporary Amperex Technology"]}
+  - {name: "Xiaomi",                          aliases: []}
+  - {name: "JD.com",                          aliases: ["Jingdong"]}
+  - {name: "Meituan",                         aliases: []}
+  - {name: "Pinduoduo",                       aliases: ["PDD"]}
+
+locations:
+  # --- Provinces / regions ---
+  - {name: "Beijing",          aliases: ["Peking"]}
+  - {name: "Shanghai",         aliases: []}
+  - {name: "Guangdong",        aliases: []}
+  - {name: "Jiangsu",          aliases: []}
+  - {name: "Zhejiang",         aliases: []}
+  - {name: "Shandong",         aliases: []}
+  - {name: "Sichuan",          aliases: []}
+  - {name: "Henan",            aliases: []}
+  - {name: "Hebei",            aliases: []}
+  - {name: "Hubei",            aliases: []}
+  - {name: "Hunan",            aliases: []}
+  - {name: "Fujian",           aliases: []}
+  - {name: "Anhui",            aliases: []}
+  - {name: "Liaoning",         aliases: []}
+  - {name: "Jiangxi",          aliases: []}
+  - {name: "Heilongjiang",     aliases: []}
+  - {name: "Jilin",            aliases: []}
+  - {name: "Shanxi",           aliases: []}
+  - {name: "Shaanxi",          aliases: []}
+  - {name: "Yunnan",           aliases: []}
+  - {name: "Guizhou",          aliases: []}
+  - {name: "Gansu",            aliases: []}
+  - {name: "Hainan",           aliases: []}
+  - {name: "Qinghai",          aliases: []}
+  - {name: "Chongqing",        aliases: []}
+  - {name: "Tianjin",          aliases: []}
+  - {name: "Inner Mongolia",   aliases: []}
+  - {name: "Xinjiang",         aliases: ["Xinjiang Uyghur Autonomous Region"]}
+  - {name: "Tibet",            aliases: ["Xizang", "Tibet Autonomous Region"]}
+  - {name: "Ningxia",          aliases: []}
+  - {name: "Guangxi",          aliases: []}
+
+  # --- Major cities (additional) ---
+  - {name: "Shenzhen",         aliases: []}
+  - {name: "Guangzhou",        aliases: ["Canton"]}
+  - {name: "Chengdu",          aliases: []}
+  - {name: "Hangzhou",         aliases: []}
+  - {name: "Wuhan",            aliases: []}
+  - {name: "Xi'an",            aliases: ["Xian"]}
+  - {name: "Nanjing",          aliases: []}
+  - {name: "Suzhou",           aliases: []}
+  - {name: "Dalian",           aliases: []}
+  - {name: "Qingdao",          aliases: []}
+
+  # --- SARs / disputed ---
+  - {name: "Hong Kong",        aliases: ["HK", "HKSAR"]}
+  - {name: "Macau",            aliases: ["Macao"]}
+  - {name: "Taiwan",           aliases: ["ROC", "Republic of China"], notes: "PRC claims as province"}
+  - {name: "Taipei",           aliases: []}
+
+  # --- Landmark / strategic ---
+  - {name: "Zhongnanhai",      aliases: [], notes: "CCP/State Council compound"}
+  - {name: "Tiananmen Square", aliases: []}
+  - {name: "South China Sea",  aliases: ["SCS"]}
+  - {name: "Taiwan Strait",    aliases: []}
+
+roles:
+  - {name: "General Secretary of the Communist Party of China", aliases: ["General Secretary", "CCP General Secretary"]}
+  - {name: "President of the People's Republic of China", aliases: ["President of China", "Chinese President"]}
+  - {name: "Premier of the State Council", aliases: ["Chinese Premier", "Premier"]}
+  - {name: "Vice President of China",       aliases: []}
+  - {name: "Chairman of the Central Military Commission", aliases: ["CMC Chairman"]}
+  - {name: "Foreign Minister",               aliases: []}
+  - {name: "Defence Minister",               aliases: []}
+  - {name: "Governor of the People's Bank of China", aliases: ["PBOC Governor"]}
+  - {name: "CCP Provincial Secretary",       aliases: ["Provincial Party Secretary"]}

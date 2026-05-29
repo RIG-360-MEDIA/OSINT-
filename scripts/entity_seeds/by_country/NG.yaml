@@ -1,0 +1,154 @@
+# Entity seed — Federal Republic of Nigeria
+country: NG
+version: v1
+notes: |
+  Sources: statehouse.gov.ng, Nigerian Senate / House composition,
+  Premium Times / Punch / This Day mastheads.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Current Govt (Tinubu Admin since May 2023) ---
+  - {name: "Bola Tinubu",          aliases: ["Tinubu", "President Tinubu", "Bola Ahmed Tinubu", "President Bola Tinubu", "Asiwaju"], role: "President", party: "APC"}
+  - {name: "Kashim Shettima",      aliases: ["Shettima"], role: "Vice President", party: "APC"}
+  - {name: "Yusuf Tuggar",         aliases: ["Tuggar"], role: "Foreign Affairs Minister", party: "APC"}
+  - {name: "Mohammed Badaru Abubakar", aliases: ["Badaru"], role: "Defence Minister", party: "APC"}
+  - {name: "Wale Edun",            aliases: ["Edun"], role: "Finance Minister", party: "APC"}
+  - {name: "Bunmi Tunji-Ojo",      aliases: [], role: "Interior Minister"}
+  - {name: "Lateef Fagbemi",       aliases: [], role: "Attorney General"}
+  - {name: "Olubunmi Tunji-Ojo",   aliases: [], role: "Information Minister"}
+  - {name: "Femi Gbajabiamila",    aliases: [], role: "Chief of Staff to the President"}
+
+  # --- Opposition ---
+  - {name: "Atiku Abubakar",       aliases: ["Atiku"], role: "PDP candidate 2023", party: "PDP"}
+  - {name: "Peter Obi",            aliases: [], role: "Labour Party candidate 2023", party: "LP"}
+  - {name: "Rabiu Kwankwaso",      aliases: [], role: "NNPP candidate", party: "NNPP"}
+
+  # --- Recent Presidents ---
+  - {name: "Muhammadu Buhari",     aliases: ["Buhari"], role: "Former President (2015-2023)", party: "APC"}
+  - {name: "Goodluck Jonathan",    aliases: [], role: "Former President", party: "PDP"}
+  - {name: "Olusegun Obasanjo",    aliases: ["Obasanjo"], role: "Former President"}
+
+  # --- National Assembly Leadership ---
+  - {name: "Godswill Akpabio",     aliases: ["Akpabio"], role: "Senate President"}
+  - {name: "Tajudeen Abbas",       aliases: [], role: "Speaker of the House of Representatives"}
+
+  # --- Military / Security ---
+  - {name: "Christopher Musa",     aliases: [], role: "Chief of Defence Staff"}
+  - {name: "Olufemi Oluyede",      aliases: [], role: "Chief of Army Staff"}
+
+  # --- Central Bank ---
+  - {name: "Olayemi Cardoso",      aliases: ["Cardoso"], role: "Governor of the Central Bank of Nigeria"}
+  - {name: "Godwin Emefiele",      aliases: ["Emefiele"], role: "Former CBN Governor"}
+
+  # --- State Governors (top 6) ---
+  - {name: "Babajide Sanwo-Olu",   aliases: ["Sanwo-Olu"], role: "Governor of Lagos State", party: "APC"}
+  - {name: "Siminalayi Fubara",    aliases: ["Fubara"], role: "Governor of Rivers State"}
+  - {name: "Nasir El-Rufai",       aliases: ["El-Rufai"], role: "Former Kaduna Governor", party: "APC"}
+  - {name: "Hyacinth Alia",        aliases: [], role: "Governor of Benue State", party: "APC"}
+
+  # --- Business ---
+  - {name: "Aliko Dangote",        aliases: ["Dangote"], role: "Dangote Group founder"}
+  - {name: "Mike Adenuga",         aliases: ["Adenuga"], role: "Globacom founder"}
+
+organizations:
+  - {name: "Federal Government of Nigeria", aliases: ["Nigerian Govt", "FGN"]}
+  - {name: "Aso Rock",             aliases: ["Aso Villa"], notes: "Presidential complex"}
+  - {name: "National Assembly of Nigeria", aliases: ["NASS"]}
+  - {name: "Senate of Nigeria",    aliases: ["Nigerian Senate"]}
+  - {name: "House of Representatives (Nigeria)", aliases: []}
+  - {name: "Supreme Court of Nigeria", aliases: []}
+  - {name: "Independent National Electoral Commission", aliases: ["INEC"]}
+  - {name: "Federal Inland Revenue Service", aliases: ["FIRS"]}
+  - {name: "Nigeria Customs Service", aliases: ["NCS"]}
+  - {name: "Economic and Financial Crimes Commission", aliases: ["EFCC"]}
+  - {name: "Independent Corrupt Practices Commission", aliases: ["ICPC"]}
+
+  # --- Ministries ---
+  - {name: "Federal Ministry of Foreign Affairs (Nigeria)", aliases: ["Nigerian MFA"]}
+  - {name: "Federal Ministry of Defence (Nigeria)", aliases: []}
+  - {name: "Federal Ministry of Finance (Nigeria)", aliases: []}
+
+  # --- Central Bank / Sovereign ---
+  - {name: "Central Bank of Nigeria", aliases: ["CBN"]}
+  - {name: "Nigerian National Petroleum Company", aliases: ["NNPC", "NNPCL"]}
+
+  # --- Military / Intel ---
+  - {name: "Nigerian Armed Forces", aliases: []}
+  - {name: "Nigerian Army",        aliases: []}
+  - {name: "Nigerian Navy",        aliases: []}
+  - {name: "Nigerian Air Force",   aliases: ["NAF"]}
+  - {name: "Nigeria Police Force", aliases: ["NPF"]}
+  - {name: "Department of State Services", aliases: ["DSS", "SSS"]}
+  - {name: "National Intelligence Agency (Nigeria)", aliases: ["NIA Nigeria"]}
+
+  # --- Parties ---
+  - {name: "All Progressives Congress", aliases: ["APC"]}
+  - {name: "Peoples Democratic Party (Nigeria)", aliases: ["PDP"]}
+  - {name: "Labour Party (Nigeria)", aliases: ["LP Nigeria"]}
+  - {name: "New Nigeria Peoples Party", aliases: ["NNPP"]}
+  - {name: "Social Democratic Party (Nigeria)", aliases: ["SDP Nigeria"]}
+  - {name: "Young Progressives Party", aliases: ["YPP"]}
+
+  # --- Media ---
+  - {name: "Premium Times",        aliases: []}
+  - {name: "Punch (newspaper)",    aliases: ["The Punch"]}
+  - {name: "This Day",             aliases: ["ThisDay"]}
+  - {name: "The Guardian Nigeria", aliases: ["Guardian Nigeria"]}
+  - {name: "Vanguard (Nigeria)",   aliases: ["Vanguard Newspaper"]}
+  - {name: "Daily Trust",          aliases: []}
+  - {name: "Channels Television",  aliases: ["Channels TV"]}
+  - {name: "TVC News",             aliases: []}
+  - {name: "Arise News",           aliases: []}
+  - {name: "Sahara Reporters",     aliases: []}
+  - {name: "News Agency of Nigeria", aliases: ["NAN"]}
+
+  # --- Corps ---
+  - {name: "Dangote Group",        aliases: []}
+  - {name: "Dangote Refinery",     aliases: []}
+  - {name: "Globacom",             aliases: ["Glo"]}
+  - {name: "MTN Nigeria",          aliases: []}
+  - {name: "Zenith Bank",          aliases: []}
+  - {name: "Access Bank",          aliases: []}
+  - {name: "First Bank of Nigeria", aliases: ["FBN"]}
+  - {name: "GTCO",                 aliases: ["Guaranty Trust Holding Company", "GTBank"]}
+
+  # --- Insurgent groups ---
+  - {name: "Boko Haram",           aliases: []}
+  - {name: "Islamic State West Africa Province", aliases: ["ISWAP"]}
+
+locations:
+  - {name: "Nigeria",              aliases: []}
+  - {name: "Abuja",                aliases: [], notes: "Federal Capital Territory"}
+  - {name: "Lagos",                aliases: []}
+  - {name: "Kano",                 aliases: []}
+  - {name: "Ibadan",               aliases: []}
+  - {name: "Port Harcourt",        aliases: []}
+  - {name: "Benin City",           aliases: []}
+  - {name: "Kaduna",               aliases: []}
+  - {name: "Enugu",                aliases: []}
+  - {name: "Onitsha",              aliases: []}
+  - {name: "Aba",                  aliases: []}
+  - {name: "Maiduguri",            aliases: []}
+  - {name: "Jos",                  aliases: []}
+  - {name: "Sokoto",               aliases: []}
+
+  # --- States ---
+  - {name: "Lagos State",          aliases: []}
+  - {name: "Kano State",           aliases: []}
+  - {name: "Rivers State",         aliases: []}
+  - {name: "Kaduna State",         aliases: []}
+  - {name: "Borno State",          aliases: []}
+  - {name: "Anambra State",        aliases: []}
+  - {name: "Edo State",            aliases: []}
+  - {name: "Oyo State",            aliases: []}
+  - {name: "Federal Capital Territory", aliases: ["FCT", "Abuja FCT"]}
+  - {name: "Niger Delta",          aliases: []}
+
+roles:
+  - {name: "President of Nigeria", aliases: ["Nigerian President"]}
+  - {name: "Vice President of Nigeria", aliases: ["Nigerian VP"]}
+  - {name: "Senate President (Nigeria)", aliases: []}
+  - {name: "Speaker of the House of Representatives (Nigeria)", aliases: []}
+  - {name: "Chief of Defence Staff (Nigeria)", aliases: []}
+  - {name: "Governor (Nigeria)",   aliases: ["Nigerian Governor"]}
+  - {name: "Governor of the Central Bank of Nigeria", aliases: ["CBN Governor"]}

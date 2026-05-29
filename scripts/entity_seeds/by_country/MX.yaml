@@ -1,0 +1,137 @@
+# Entity seed — United Mexican States
+country: MX
+version: v1
+notes: |
+  Sources: gob.mx cabinet, diputados.gob.mx / senado.gob.mx rosters,
+  BMV IPC, Wikipedia "List of Mexican" pages. Reflects Sheinbaum
+  govt (since Oct 2024).
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Sheinbaum Cabinet ---
+  - {name: "Claudia Sheinbaum",    aliases: ["Sheinbaum", "President Sheinbaum"], role: "President", party: "Morena"}
+  - {name: "Juan Ramón de la Fuente", aliases: ["de la Fuente"], role: "Foreign Minister"}
+  - {name: "Ricardo Trevilla Trejo", aliases: [], role: "Defence Minister"}
+  - {name: "Raquel Buenrostro",    aliases: ["Buenrostro"], role: "Public Function Minister"}
+  - {name: "Rogelio Ramírez de la O", aliases: [], role: "Finance Minister"}
+  - {name: "Rosa Icela Rodríguez", aliases: [], role: "Interior Minister"}
+  - {name: "Marcelo Ebrard",       aliases: ["Ebrard"], role: "Economy Minister"}
+
+  # --- Opposition ---
+  - {name: "Alejandro Moreno",     aliases: [], role: "PRI Leader", party: "PRI"}
+  - {name: "Marko Cortés",         aliases: ["Marko Cortes"], role: "PAN Leader", party: "PAN"}
+  - {name: "Jorge Álvarez Máynez", aliases: [], party: "MC", notes: "2024 Movimiento Ciudadano candidate"}
+
+  # --- Recent Presidents ---
+  - {name: "Andrés Manuel López Obrador", aliases: ["AMLO", "Lopez Obrador"], role: "Former President (2018-2024)", party: "Morena"}
+  - {name: "Enrique Peña Nieto",   aliases: ["Pena Nieto"], role: "Former President"}
+  - {name: "Felipe Calderón",      aliases: ["Calderon"], role: "Former President", party: "PAN"}
+
+  # --- Mayors / Governors ---
+  - {name: "Clara Brugada",        aliases: [], role: "Head of Government of Mexico City", party: "Morena"}
+  - {name: "Samuel García",        aliases: ["Samuel Garcia"], role: "Governor of Nuevo León", party: "MC"}
+
+  # --- Central Bank ---
+  - {name: "Victoria Rodríguez Ceja", aliases: [], role: "Governor of the Bank of Mexico"}
+
+  # --- Drug Lords (high profile) ---
+  - {name: "Ismael Zambada",       aliases: ["El Mayo"], notes: "Sinaloa Cartel co-founder"}
+  - {name: "Joaquín Guzmán Loera", aliases: ["El Chapo", "Chapo Guzman"], notes: "Sinaloa Cartel"}
+
+organizations:
+  - {name: "Government of Mexico", aliases: ["Mexican Govt"]}
+  - {name: "Presidency of Mexico", aliases: []}
+  - {name: "Congress of the Union", aliases: ["Mexican Congress"]}
+  - {name: "Senate of Mexico",     aliases: ["Mexican Senate"]}
+  - {name: "Chamber of Deputies (Mexico)", aliases: []}
+  - {name: "Supreme Court of Mexico", aliases: ["SCJN"]}
+  - {name: "National Electoral Institute", aliases: ["INE"]}
+
+  # --- Ministries ---
+  - {name: "Mexican Ministry of Foreign Affairs", aliases: ["SRE"]}
+  - {name: "Secretariat of National Defense (Mexico)", aliases: ["SEDENA"]}
+  - {name: "Secretariat of the Navy (Mexico)", aliases: ["SEMAR"]}
+  - {name: "Secretariat of Security and Civilian Protection", aliases: ["SSPC"]}
+  - {name: "Secretariat of Finance and Public Credit", aliases: ["SHCP"]}
+
+  # --- Central Bank ---
+  - {name: "Bank of Mexico",       aliases: ["Banxico"]}
+
+  # --- Military ---
+  - {name: "Mexican Armed Forces", aliases: []}
+  - {name: "Mexican Army",         aliases: []}
+  - {name: "Mexican Air Force",    aliases: []}
+  - {name: "Mexican Navy",         aliases: []}
+  - {name: "Mexican National Guard", aliases: ["GN"]}
+
+  # --- Parties ---
+  - {name: "MORENA",               aliases: ["Movimiento Regeneración Nacional"]}
+  - {name: "National Action Party (Mexico)", aliases: ["PAN"]}
+  - {name: "Institutional Revolutionary Party", aliases: ["PRI"]}
+  - {name: "Party of the Democratic Revolution", aliases: ["PRD"]}
+  - {name: "Citizens' Movement (Mexico)", aliases: ["MC"]}
+  - {name: "Labor Party (Mexico)", aliases: ["PT"]}
+  - {name: "Ecologist Green Party of Mexico", aliases: ["PVEM"]}
+
+  # --- Media ---
+  - {name: "Notimex",              aliases: []}
+  - {name: "Televisa",             aliases: ["Grupo Televisa"]}
+  - {name: "TV Azteca",            aliases: []}
+  - {name: "El Universal (Mexico)", aliases: []}
+  - {name: "Reforma",              aliases: []}
+  - {name: "La Jornada",           aliases: []}
+  - {name: "Milenio",              aliases: []}
+  - {name: "Excélsior",            aliases: ["Excelsior"]}
+  - {name: "Proceso (magazine)",   aliases: ["Proceso"]}
+  - {name: "Animal Político",      aliases: ["Animal Politico"]}
+
+  # --- Corps ---
+  - {name: "Pemex",                aliases: ["Petróleos Mexicanos"]}
+  - {name: "Comisión Federal de Electricidad", aliases: ["CFE"]}
+  - {name: "América Móvil",        aliases: ["America Movil"]}
+  - {name: "Cemex",                aliases: []}
+  - {name: "Grupo Bimbo",          aliases: ["Bimbo"]}
+  - {name: "Grupo Carso",          aliases: []}
+  - {name: "FEMSA",                aliases: []}
+  - {name: "Banorte",              aliases: []}
+  - {name: "Walmart de México",    aliases: ["Walmex"]}
+
+  # --- Cartels ---
+  - {name: "Sinaloa Cartel",       aliases: []}
+  - {name: "Jalisco New Generation Cartel", aliases: ["CJNG"]}
+  - {name: "Gulf Cartel",          aliases: ["Cartel del Golfo"]}
+  - {name: "Los Zetas",            aliases: []}
+
+locations:
+  - {name: "Mexico",               aliases: ["México"]}
+  - {name: "Mexico City",          aliases: ["CDMX", "Ciudad de México"]}
+  - {name: "Guadalajara",          aliases: []}
+  - {name: "Monterrey",            aliases: []}
+  - {name: "Puebla",               aliases: []}
+  - {name: "Tijuana",              aliases: []}
+  - {name: "Juárez",               aliases: ["Ciudad Juárez"]}
+  - {name: "León",                 aliases: ["Leon"]}
+  - {name: "Cancún",               aliases: ["Cancun"]}
+  - {name: "Acapulco",             aliases: []}
+  - {name: "Mérida",               aliases: ["Merida"]}
+
+  # --- States ---
+  - {name: "Jalisco",              aliases: []}
+  - {name: "Nuevo León",           aliases: ["Nuevo Leon"]}
+  - {name: "State of Mexico",      aliases: ["Estado de México"]}
+  - {name: "Baja California",      aliases: []}
+  - {name: "Chihuahua",            aliases: []}
+  - {name: "Sinaloa",              aliases: []}
+  - {name: "Veracruz",             aliases: []}
+  - {name: "Oaxaca",               aliases: []}
+  - {name: "Guanajuato",           aliases: []}
+  - {name: "Yucatán",              aliases: ["Yucatan"]}
+
+  # --- Strategic ---
+  - {name: "US-Mexico border",     aliases: ["Mexico-US border", "Southern Border"]}
+
+roles:
+  - {name: "President of Mexico",  aliases: ["Mexican President"]}
+  - {name: "Foreign Minister of Mexico", aliases: []}
+  - {name: "Head of Government of Mexico City", aliases: []}
+  - {name: "Governor of the Bank of Mexico", aliases: ["Banxico Governor"]}

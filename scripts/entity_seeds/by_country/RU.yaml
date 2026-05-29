@@ -1,0 +1,182 @@
+# Entity seed — Russian Federation
+country: RU
+version: v1
+notes: |
+  Sources: Kremlin.ru officials list, Russian govt org chart, Forbes Russia,
+  Wikipedia "List of Russian" pages. Constituencies skipped — Russian Duma
+  uses mixed system; majority of news mentions are by federal subject.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Kremlin Top ---
+  - {name: "Vladimir Putin",   aliases: ["Putin", "President Putin", "Vladimir Vladimirovich Putin"], role: "President", party: "United Russia"}
+  - {name: "Mikhail Mishustin", aliases: ["Mishustin"], role: "Prime Minister", party: "United Russia"}
+  - {name: "Dmitry Medvedev",  aliases: ["Medvedev"], role: "Deputy Chair of Security Council; former PM/President"}
+  - {name: "Anton Vaino",      aliases: ["Vaino"], role: "Kremlin Chief of Staff"}
+
+  # --- Foreign Affairs / Security ---
+  - {name: "Sergey Lavrov",    aliases: ["Lavrov"], role: "Foreign Minister"}
+  - {name: "Andrey Belousov",  aliases: ["Belousov"], role: "Defence Minister"}
+  - {name: "Sergei Shoigu",    aliases: ["Shoigu"], role: "Security Council Secretary; former Defence Minister"}
+  - {name: "Nikolai Patrushev", aliases: ["Patrushev"], role: "Putin Aide; former Security Council Secretary"}
+  - {name: "Sergei Naryshkin", aliases: ["Naryshkin"], role: "SVR Director (Foreign Intelligence)"}
+  - {name: "Alexander Bortnikov", aliases: ["Bortnikov"], role: "FSB Director"}
+  - {name: "Valery Gerasimov", aliases: ["Gerasimov"], role: "Chief of the General Staff"}
+  - {name: "Alexander Bastrykin", aliases: ["Bastrykin"], role: "Investigative Committee Chairman"}
+  - {name: "Igor Krasnov",     aliases: ["Krasnov"], role: "Prosecutor General"}
+
+  # --- Other Cabinet ---
+  - {name: "Anton Siluanov",   aliases: ["Siluanov"], role: "Finance Minister"}
+  - {name: "Maxim Reshetnikov", aliases: ["Reshetnikov"], role: "Economy Minister"}
+  - {name: "Alexander Novak",  aliases: ["Novak"], role: "Deputy PM (Energy)"}
+  - {name: "Denis Manturov",   aliases: ["Manturov"], role: "First Deputy PM"}
+  - {name: "Tatyana Golikova", aliases: ["Golikova"], role: "Deputy PM (Social)"}
+  - {name: "Marat Khusnullin", aliases: ["Khusnullin"], role: "Deputy PM (Construction)"}
+
+  # --- Central Bank ---
+  - {name: "Elvira Nabiullina", aliases: ["Nabiullina"], role: "Central Bank Governor"}
+
+  # --- Federation Council / Duma ---
+  - {name: "Valentina Matviyenko", aliases: ["Matviyenko"], role: "Chair of the Federation Council"}
+  - {name: "Vyacheslav Volodin", aliases: ["Volodin"], role: "Chair of the State Duma"}
+
+  # --- Regional ---
+  - {name: "Sergei Sobyanin",  aliases: ["Sobyanin"], role: "Mayor of Moscow"}
+  - {name: "Alexander Beglov", aliases: ["Beglov"], role: "Governor of Saint Petersburg"}
+  - {name: "Ramzan Kadyrov",   aliases: ["Kadyrov"], role: "Head of Chechen Republic"}
+  - {name: "Denis Pushilin",   aliases: ["Pushilin"], role: "Head of Donetsk People's Republic"}
+
+  # --- Recent / military notables ---
+  - {name: "Yevgeny Prigozhin", aliases: ["Prigozhin"], notes: "Wagner Group founder (deceased Aug 2023)"}
+  - {name: "Dmitry Utkin",     aliases: ["Utkin"], notes: "Wagner co-founder (deceased Aug 2023)"}
+  - {name: "Sergei Surovikin", aliases: ["Surovikin", "General Armageddon"], notes: "Former Aerospace Forces commander"}
+  - {name: "Alexei Navalny",   aliases: ["Navalny"], notes: "Opposition leader (deceased Feb 2024)"}
+  - {name: "Mikhail Khodorkovsky", aliases: ["Khodorkovsky"], notes: "Exiled opposition"}
+  - {name: "Vladimir Kara-Murza", aliases: ["Kara-Murza"], notes: "Opposition activist"}
+
+  # --- Oligarchs / business ---
+  - {name: "Roman Abramovich", aliases: ["Abramovich"]}
+  - {name: "Oleg Deripaska",   aliases: ["Deripaska"]}
+  - {name: "Alisher Usmanov",  aliases: ["Usmanov"]}
+  - {name: "Vagit Alekperov",  aliases: ["Alekperov"], notes: "Lukoil"}
+  - {name: "Igor Sechin",      aliases: ["Sechin"], role: "Rosneft CEO"}
+  - {name: "Alexey Miller",    aliases: ["Miller"], role: "Gazprom CEO"}
+  - {name: "Herman Gref",      aliases: ["Gref"], role: "Sberbank CEO"}
+
+organizations:
+  # --- State ---
+  - {name: "Kremlin",          aliases: ["Office of the President of Russia", "Russian Presidential Administration"]}
+  - {name: "Government of Russia", aliases: ["Russian Government", "White House (Moscow)"]}
+  - {name: "Security Council of Russia", aliases: ["Russian Security Council"]}
+  - {name: "State Duma",       aliases: ["Duma"]}
+  - {name: "Federation Council", aliases: ["Russian Senate"]}
+  - {name: "Federal Assembly", aliases: ["Russian Parliament"]}
+  - {name: "Constitutional Court of Russia", aliases: ["Russian Constitutional Court"]}
+
+  # --- Ministries ---
+  - {name: "Ministry of Foreign Affairs of Russia", aliases: ["Russian MFA", "MID"]}
+  - {name: "Ministry of Defence of Russia", aliases: ["Russian MoD"]}
+  - {name: "Ministry of Internal Affairs of Russia", aliases: ["MVD"]}
+  - {name: "Ministry of Finance of Russia", aliases: ["MinFin"]}
+
+  # --- Intelligence / Security ---
+  - {name: "Federal Security Service", aliases: ["FSB"]}
+  - {name: "Foreign Intelligence Service of Russia", aliases: ["SVR"]}
+  - {name: "Main Directorate of the General Staff", aliases: ["GRU", "Russian military intelligence"]}
+  - {name: "Federal Protective Service", aliases: ["FSO"]}
+  - {name: "National Guard of Russia", aliases: ["Rosgvardiya"]}
+  - {name: "Investigative Committee of Russia", aliases: ["SKR"]}
+
+  # --- Central Bank / Sovereign ---
+  - {name: "Central Bank of Russia", aliases: ["Bank of Russia", "CBR"]}
+
+  # --- Parties ---
+  - {name: "United Russia",    aliases: []}
+  - {name: "Communist Party of the Russian Federation", aliases: ["KPRF"]}
+  - {name: "Liberal Democratic Party of Russia", aliases: ["LDPR"]}
+  - {name: "A Just Russia",    aliases: []}
+
+  # --- Energy / Industry ---
+  - {name: "Gazprom",          aliases: []}
+  - {name: "Rosneft",          aliases: []}
+  - {name: "Lukoil",           aliases: []}
+  - {name: "Novatek",          aliases: []}
+  - {name: "Transneft",        aliases: []}
+  - {name: "Rosatom",          aliases: []}
+  - {name: "Rostec",           aliases: ["Rostec State Corporation"]}
+  - {name: "Norilsk Nickel",   aliases: ["Nornickel"]}
+  - {name: "Severstal",        aliases: []}
+  - {name: "RusAl",            aliases: []}
+
+  # --- Banks ---
+  - {name: "Sberbank",         aliases: []}
+  - {name: "VTB Bank",         aliases: ["VTB"]}
+  - {name: "Gazprombank",      aliases: []}
+
+  # --- Media ---
+  - {name: "TASS",             aliases: ["Russian Telegraph Agency"]}
+  - {name: "RIA Novosti",      aliases: ["RIA"]}
+  - {name: "Interfax",         aliases: []}
+  - {name: "RT",               aliases: ["Russia Today"]}
+  - {name: "Sputnik",          aliases: ["Sputnik News"]}
+  - {name: "Channel One Russia", aliases: ["Channel One"]}
+  - {name: "Rossiya 1",        aliases: []}
+  - {name: "Kommersant",       aliases: []}
+  - {name: "Vedomosti",        aliases: []}
+  - {name: "Meduza",           aliases: [], notes: "exile-based independent"}
+  - {name: "Novaya Gazeta",    aliases: []}
+
+  # --- Paramilitary ---
+  - {name: "Wagner Group",     aliases: ["PMC Wagner"]}
+  - {name: "Akhmat",           aliases: ["Akhmat battalion"]}
+
+locations:
+  # --- Major cities ---
+  - {name: "Moscow",           aliases: []}
+  - {name: "Saint Petersburg", aliases: ["St Petersburg", "Petersburg", "St. Petersburg"]}
+  - {name: "Novosibirsk",      aliases: []}
+  - {name: "Yekaterinburg",    aliases: ["Ekaterinburg"]}
+  - {name: "Kazan",            aliases: []}
+  - {name: "Nizhny Novgorod",  aliases: []}
+  - {name: "Samara",           aliases: []}
+  - {name: "Omsk",             aliases: []}
+  - {name: "Rostov-on-Don",    aliases: ["Rostov"]}
+  - {name: "Ufa",              aliases: []}
+  - {name: "Krasnoyarsk",      aliases: []}
+  - {name: "Voronezh",         aliases: []}
+  - {name: "Perm",             aliases: []}
+  - {name: "Volgograd",        aliases: []}
+  - {name: "Krasnodar",        aliases: []}
+  - {name: "Vladivostok",      aliases: []}
+  - {name: "Sochi",            aliases: []}
+  - {name: "Murmansk",         aliases: []}
+  - {name: "Kaliningrad",      aliases: []}
+
+  # --- Federal subjects / annexed / disputed ---
+  - {name: "Chechnya",         aliases: ["Chechen Republic"]}
+  - {name: "Dagestan",         aliases: []}
+  - {name: "Tatarstan",        aliases: []}
+  - {name: "Bashkortostan",    aliases: []}
+  - {name: "Siberia",          aliases: []}
+  - {name: "Russian Far East", aliases: ["Far East"]}
+  - {name: "Crimea",           aliases: [], notes: "annexed 2014; internationally disputed"}
+  - {name: "Sevastopol",       aliases: []}
+  - {name: "Donetsk",          aliases: ["DPR"], notes: "annexed 2022; disputed"}
+  - {name: "Luhansk",          aliases: ["LPR"], notes: "annexed 2022; disputed"}
+  - {name: "Zaporizhzhia",     aliases: [], notes: "partial Russian occupation"}
+  - {name: "Kherson",          aliases: [], notes: "partial Russian occupation"}
+
+  # --- Landmark ---
+  - {name: "Red Square",       aliases: []}
+  - {name: "Lubyanka",         aliases: [], notes: "FSB HQ shorthand"}
+
+roles:
+  - {name: "President of Russia", aliases: ["Russian President"]}
+  - {name: "Prime Minister of Russia", aliases: ["Russian PM"]}
+  - {name: "Foreign Minister of Russia", aliases: []}
+  - {name: "Defence Minister of Russia", aliases: []}
+  - {name: "Director of the FSB", aliases: ["FSB Director"]}
+  - {name: "Director of the SVR", aliases: ["SVR Director"]}
+  - {name: "Chief of the General Staff", aliases: []}
+  - {name: "Governor (Russia)", aliases: ["Russian governor"]}
+  - {name: "Mayor of Moscow", aliases: []}

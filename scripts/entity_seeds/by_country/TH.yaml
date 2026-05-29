@@ -1,0 +1,107 @@
+# Entity seed — Kingdom of Thailand
+country: TH
+version: v1
+notes: |
+  Sources: thaigov.go.th, parliament.go.th, SET 50, Bangkok Post.
+  Reflects Paetongtarn Shinawatra govt (since Aug 2024).
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Govt ---
+  - {name: "Paetongtarn Shinawatra", aliases: ["Paetongtarn", "Ung Ing"], role: "Prime Minister", party: "Pheu Thai"}
+  - {name: "Vajiralongkorn",       aliases: ["King Vajiralongkorn", "Rama X"], role: "King of Thailand"}
+  - {name: "Maris Sangiampongsa",  aliases: [], role: "Foreign Minister"}
+  - {name: "Phumtham Wechayachai", aliases: ["Phumtham"], role: "Defence Minister"}
+  - {name: "Pichai Chunhavajira",  aliases: [], role: "Finance Minister"}
+  - {name: "Anutin Charnvirakul",  aliases: ["Anutin"], role: "Deputy PM / Interior Minister", party: "Bhumjaithai"}
+
+  # --- Recent PMs ---
+  - {name: "Srettha Thavisin",     aliases: ["Srettha"], role: "Former PM (removed Aug 2024)", party: "Pheu Thai"}
+  - {name: "Prayut Chan-o-cha",    aliases: ["Prayut", "Prayuth"], role: "Former PM (2014-2023)"}
+  - {name: "Thaksin Shinawatra",   aliases: ["Thaksin"], role: "Former PM / political patron"}
+  - {name: "Yingluck Shinawatra",  aliases: [], role: "Former PM"}
+
+  # --- Opposition ---
+  - {name: "Natthaphong Ruengpanyawut", aliases: [], role: "People's Party Leader", party: "People's Party"}
+  - {name: "Pita Limjaroenrat",    aliases: ["Pita"], role: "Former Move Forward Leader (banned)"}
+
+  # --- Speakers ---
+  - {name: "Wan Muhamad Noor Matha", aliases: [], role: "Speaker of the House of Representatives"}
+
+  # --- Central Bank ---
+  - {name: "Sethaput Suthiwartnarueput", aliases: [], role: "Governor of the Bank of Thailand"}
+
+organizations:
+  - {name: "Government of Thailand", aliases: ["Thai Govt"]}
+  - {name: "National Assembly of Thailand", aliases: ["Thai Parliament"]}
+  - {name: "Senate of Thailand",   aliases: ["Thai Senate"]}
+  - {name: "House of Representatives (Thailand)", aliases: ["Thai House"]}
+  - {name: "Constitutional Court of Thailand", aliases: []}
+  - {name: "Royal Thai Government", aliases: []}
+
+  # --- Ministries ---
+  - {name: "Thai Ministry of Foreign Affairs", aliases: ["Thai MFA"]}
+  - {name: "Thai Ministry of Defence", aliases: []}
+  - {name: "Thai Ministry of Finance", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "Bank of Thailand",     aliases: ["BoT"]}
+
+  # --- Military ---
+  - {name: "Royal Thai Armed Forces", aliases: []}
+  - {name: "Royal Thai Army",      aliases: ["RTA"]}
+  - {name: "Royal Thai Navy",      aliases: ["RTN"]}
+  - {name: "Royal Thai Air Force", aliases: ["RTAF"]}
+  - {name: "Royal Thai Police",    aliases: []}
+
+  # --- Parties ---
+  - {name: "Pheu Thai Party",      aliases: []}
+  - {name: "People's Party (Thailand, 2024)", aliases: ["Prachachon Party"]}
+  - {name: "Move Forward Party",   aliases: ["MFP"], notes: "dissolved 2024"}
+  - {name: "Bhumjaithai Party",    aliases: []}
+  - {name: "Palang Pracharath Party", aliases: ["PPRP"]}
+  - {name: "Democrat Party (Thailand)", aliases: []}
+  - {name: "United Thai Nation Party", aliases: ["UTN"]}
+
+  # --- Media ---
+  - {name: "Bangkok Post",         aliases: []}
+  - {name: "The Nation (Thailand)", aliases: ["The Nation Thailand"]}
+  - {name: "Khaosod",              aliases: ["Khaosod English"]}
+  - {name: "Thai PBS",             aliases: []}
+  - {name: "Thairath",             aliases: ["Daily News (Thailand)"]}
+  - {name: "Matichon",             aliases: []}
+  - {name: "NNT",                  aliases: ["National News Bureau of Thailand"]}
+
+  # --- Corps ---
+  - {name: "PTT Public Company",   aliases: ["PTT"]}
+  - {name: "Siam Commercial Bank", aliases: ["SCB"]}
+  - {name: "Kasikornbank",         aliases: ["KBank"]}
+  - {name: "Bangkok Bank",         aliases: []}
+  - {name: "Charoen Pokphand Group", aliases: ["CP Group"]}
+  - {name: "Siam Cement Group",    aliases: ["SCG"]}
+  - {name: "Thai Airways",         aliases: ["Thai Airways International"]}
+  - {name: "Airports of Thailand", aliases: ["AOT"]}
+
+locations:
+  - {name: "Thailand",             aliases: ["Siam"]}
+  - {name: "Bangkok",              aliases: ["Krung Thep"]}
+  - {name: "Chiang Mai",           aliases: []}
+  - {name: "Pattaya",              aliases: []}
+  - {name: "Phuket",               aliases: []}
+  - {name: "Nakhon Ratchasima",    aliases: ["Korat"]}
+  - {name: "Hat Yai",              aliases: []}
+  - {name: "Khon Kaen",            aliases: []}
+  - {name: "Chiang Rai",           aliases: []}
+  - {name: "Krabi",                aliases: []}
+  - {name: "Udon Thani",           aliases: []}
+
+  # --- Strategic ---
+  - {name: "Mae Sot",              aliases: [], notes: "Thai-Myanmar border"}
+  - {name: "Three Pagodas Pass",   aliases: []}
+  - {name: "Southern Thailand insurgency area", aliases: []}
+
+roles:
+  - {name: "Prime Minister of Thailand", aliases: ["Thai PM"]}
+  - {name: "King of Thailand",     aliases: []}
+  - {name: "Foreign Minister of Thailand", aliases: []}
+  - {name: "Governor of the Bank of Thailand", aliases: []}

@@ -1,0 +1,187 @@
+# Entity seed — International / multilateral / supranational
+country: XX                # 'XX' = not bound to a single country
+version: v1
+notes: |
+  UN system, regional blocs, multilateral finance, alliances, courts,
+  NGOs, religious bodies. These show up in 100s of articles per day
+  but have no country, so we tag them XX.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- UN top ---
+  - {name: "António Guterres",     aliases: ["Antonio Guterres", "Guterres", "UN Secretary-General"], role: "UN Secretary-General"}
+  - {name: "Amina J. Mohammed",    aliases: ["Amina Mohammed"], role: "UN Deputy Secretary-General"}
+  - {name: "Volker Türk",          aliases: ["Volker Turk"], role: "UN High Commissioner for Human Rights"}
+  - {name: "Filippo Grandi",       aliases: [], role: "UN High Commissioner for Refugees / UNHCR"}
+  - {name: "Cindy McCain",         aliases: [], role: "WFP Executive Director"}
+  - {name: "Catherine Russell",    aliases: [], role: "UNICEF Executive Director"}
+
+  # --- WHO / health ---
+  - {name: "Tedros Adhanom Ghebreyesus", aliases: ["Tedros"], role: "WHO Director-General"}
+
+  # --- IMF / World Bank ---
+  - {name: "Kristalina Georgieva", aliases: [], role: "IMF Managing Director"}
+  - {name: "Ajay Banga",           aliases: [], role: "World Bank President"}
+
+  # --- WTO ---
+  - {name: "Ngozi Okonjo-Iweala",  aliases: ["Okonjo-Iweala"], role: "WTO Director-General"}
+
+  # --- NATO ---
+  - {name: "Mark Rutte",           aliases: ["Rutte"], role: "NATO Secretary-General"}
+
+  # --- EU ---
+  - {name: "Ursula von der Leyen", aliases: ["von der Leyen", "VdL"], role: "European Commission President"}
+  - {name: "Antonio Costa",        aliases: ["Costa"], role: "European Council President"}
+  - {name: "Roberta Metsola",      aliases: ["Metsola"], role: "European Parliament President"}
+  - {name: "Kaja Kallas",          aliases: ["Kallas"], role: "EU High Representative for Foreign Affairs"}
+
+  # --- ICC / ICJ ---
+  - {name: "Karim Khan",           aliases: [], role: "ICC Prosecutor"}
+  - {name: "Tomoko Akane",         aliases: [], role: "ICC President"}
+
+  # --- Religious ---
+  - {name: "Pope Francis",         aliases: ["Francis"], role: "Pope of the Catholic Church"}
+  - {name: "Bartholomew I",        aliases: ["Patriarch Bartholomew"], role: "Ecumenical Patriarch of Constantinople"}
+  - {name: "Dalai Lama",           aliases: ["Tenzin Gyatso", "14th Dalai Lama"], role: "Tibetan Buddhist leader"}
+
+  # --- ECB ---
+  - {name: "Christine Lagarde",    aliases: ["Lagarde"], role: "President of the European Central Bank"}
+
+organizations:
+  # --- UN system ---
+  - {name: "United Nations",       aliases: ["UN"]}
+  - {name: "United Nations Security Council", aliases: ["UNSC", "Security Council"]}
+  - {name: "United Nations General Assembly", aliases: ["UNGA"]}
+  - {name: "United Nations Human Rights Council", aliases: ["UNHRC"]}
+  - {name: "United Nations Children's Fund", aliases: ["UNICEF"]}
+  - {name: "United Nations High Commissioner for Refugees", aliases: ["UNHCR"]}
+  - {name: "World Food Programme", aliases: ["WFP"]}
+  - {name: "World Health Organization", aliases: ["WHO"]}
+  - {name: "United Nations Educational, Scientific and Cultural Organization", aliases: ["UNESCO"]}
+  - {name: "International Atomic Energy Agency", aliases: ["IAEA"]}
+  - {name: "International Labour Organization", aliases: ["ILO"]}
+  - {name: "United Nations Development Programme", aliases: ["UNDP"]}
+  - {name: "United Nations Conference on Trade and Development", aliases: ["UNCTAD"]}
+  - {name: "International Maritime Organization", aliases: ["IMO"]}
+  - {name: "International Civil Aviation Organization", aliases: ["ICAO"]}
+  - {name: "United Nations Relief and Works Agency", aliases: ["UNRWA"]}
+  - {name: "Food and Agriculture Organization", aliases: ["FAO"]}
+  - {name: "World Meteorological Organization", aliases: ["WMO"]}
+  - {name: "Intergovernmental Panel on Climate Change", aliases: ["IPCC"]}
+
+  # --- Finance / trade ---
+  - {name: "International Monetary Fund", aliases: ["IMF"]}
+  - {name: "World Bank",           aliases: ["World Bank Group", "WB"]}
+  - {name: "International Bank for Reconstruction and Development", aliases: ["IBRD"]}
+  - {name: "International Finance Corporation", aliases: ["IFC"]}
+  - {name: "World Trade Organization", aliases: ["WTO"]}
+  - {name: "Bank for International Settlements", aliases: ["BIS"]}
+  - {name: "Organisation for Economic Co-operation and Development", aliases: ["OECD"]}
+  - {name: "Financial Action Task Force", aliases: ["FATF"]}
+  - {name: "Asian Development Bank", aliases: ["ADB"]}
+  - {name: "Asian Infrastructure Investment Bank", aliases: ["AIIB"]}
+  - {name: "European Bank for Reconstruction and Development", aliases: ["EBRD"]}
+  - {name: "Inter-American Development Bank", aliases: ["IDB", "IADB"]}
+  - {name: "African Development Bank", aliases: ["AfDB"]}
+  - {name: "New Development Bank", aliases: ["NDB"], notes: "BRICS bank"}
+
+  # --- Security / Defence ---
+  - {name: "North Atlantic Treaty Organization", aliases: ["NATO"]}
+  - {name: "Organization for Security and Co-operation in Europe", aliases: ["OSCE"]}
+  - {name: "Shanghai Cooperation Organisation", aliases: ["SCO"]}
+  - {name: "Collective Security Treaty Organization", aliases: ["CSTO"]}
+  - {name: "Quadrilateral Security Dialogue", aliases: ["Quad"]}
+  - {name: "AUKUS",                aliases: []}
+  - {name: "Five Eyes",            aliases: ["FVEY"]}
+  - {name: "G7",                   aliases: ["Group of Seven"]}
+  - {name: "G20",                  aliases: ["Group of Twenty"]}
+  - {name: "BRICS",                aliases: []}
+
+  # --- Regional blocs ---
+  - {name: "European Union",       aliases: ["EU"]}
+  - {name: "European Commission",  aliases: []}
+  - {name: "European Council",     aliases: []}
+  - {name: "European Parliament",  aliases: ["EP"]}
+  - {name: "Council of Europe",    aliases: ["CoE"]}
+  - {name: "European Central Bank", aliases: ["ECB"]}
+  - {name: "Eurozone",             aliases: []}
+  - {name: "Schengen Area",        aliases: ["Schengen Zone"]}
+
+  - {name: "African Union",        aliases: ["AU"]}
+  - {name: "Arab League",          aliases: ["League of Arab States"]}
+  - {name: "Gulf Cooperation Council", aliases: ["GCC"]}
+  - {name: "Organisation of Islamic Cooperation", aliases: ["OIC"]}
+  - {name: "Association of Southeast Asian Nations", aliases: ["ASEAN"]}
+  - {name: "South Asian Association for Regional Cooperation", aliases: ["SAARC"]}
+  - {name: "Pacific Islands Forum", aliases: ["PIF"]}
+  - {name: "Commonwealth of Nations", aliases: ["Commonwealth"]}
+  - {name: "Organization of American States", aliases: ["OAS"]}
+  - {name: "Mercosur",             aliases: []}
+  - {name: "Caribbean Community",  aliases: ["CARICOM"]}
+
+  # --- Courts / law ---
+  - {name: "International Criminal Court", aliases: ["ICC"]}
+  - {name: "International Court of Justice", aliases: ["ICJ", "World Court"]}
+  - {name: "Permanent Court of Arbitration", aliases: ["PCA"]}
+  - {name: "European Court of Human Rights", aliases: ["ECHR", "ECtHR"]}
+
+  # --- Energy / standards ---
+  - {name: "Organization of the Petroleum Exporting Countries", aliases: ["OPEC"]}
+  - {name: "OPEC+",                aliases: []}
+  - {name: "International Energy Agency", aliases: ["IEA"]}
+
+  # --- NGOs / humanitarian ---
+  - {name: "Amnesty International", aliases: ["Amnesty"]}
+  - {name: "Human Rights Watch",   aliases: ["HRW"]}
+  - {name: "Doctors Without Borders", aliases: ["MSF", "Médecins Sans Frontières"]}
+  - {name: "International Committee of the Red Cross", aliases: ["ICRC"]}
+  - {name: "International Federation of Red Cross and Red Crescent Societies", aliases: ["IFRC"]}
+  - {name: "Reporters Without Borders", aliases: ["RSF", "Reporters Sans Frontières"]}
+  - {name: "Transparency International", aliases: ["TI"]}
+  - {name: "Greenpeace",           aliases: []}
+  - {name: "World Wide Fund for Nature", aliases: ["WWF"]}
+  - {name: "Oxfam",                aliases: []}
+  - {name: "Save the Children",    aliases: []}
+  - {name: "CARE International",   aliases: []}
+
+  # --- Religious ---
+  - {name: "Vatican City",         aliases: ["Holy See", "Vatican"]}
+
+  # --- Wires / global media ---
+  - {name: "Agence France-Presse", aliases: ["AFP"]}
+  - {name: "Reuters",              aliases: []}
+  - {name: "Associated Press",     aliases: ["AP"]}
+  - {name: "Al Jazeera",           aliases: ["Aljazeera"]}
+  - {name: "BBC",                  aliases: ["British Broadcasting Corporation"]}
+
+  # --- Sports global ---
+  - {name: "International Olympic Committee", aliases: ["IOC"]}
+  - {name: "FIFA",                 aliases: ["Fédération Internationale de Football Association"]}
+  - {name: "International Cricket Council", aliases: ["ICC (cricket)"]}
+
+  # --- Other ---
+  - {name: "International Space Station", aliases: ["ISS"]}
+  - {name: "World Economic Forum", aliases: ["WEF"]}
+
+locations:
+  - {name: "Antarctica",           aliases: []}
+  - {name: "Arctic",               aliases: ["Arctic region"]}
+  - {name: "Sub-Saharan Africa",   aliases: []}
+  - {name: "Middle East",          aliases: []}
+  - {name: "European Union",       aliases: ["EU"]}   # also as place
+  - {name: "Schengen Area",        aliases: ["Schengen Zone"]}
+  - {name: "Eurozone",             aliases: []}
+  - {name: "Indo-Pacific",         aliases: []}
+  - {name: "South China Sea",      aliases: []}
+  - {name: "Suez Canal",           aliases: []}
+  - {name: "Panama Canal",         aliases: []}
+
+roles:
+  - {name: "UN Secretary-General", aliases: ["UNSG"]}
+  - {name: "President of the European Commission", aliases: []}
+  - {name: "Pope",                 aliases: ["Holy Father", "Bishop of Rome"]}
+  - {name: "NATO Secretary-General", aliases: []}
+  - {name: "IMF Managing Director", aliases: []}
+  - {name: "World Bank President", aliases: []}
+  - {name: "WTO Director-General", aliases: []}
+  - {name: "WHO Director-General", aliases: []}

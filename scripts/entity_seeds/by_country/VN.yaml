@@ -1,0 +1,93 @@
+# Entity seed — Socialist Republic of Vietnam
+country: VN
+version: v1
+notes: |
+  Sources: chinhphu.vn, na.gov.vn rosters, VN-Index, Vietnam News Agency.
+  Reflects post-Aug 2024 leadership transition.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Top Four (since Aug 2024) ---
+  - {name: "Tô Lâm",               aliases: ["To Lam", "Tô Lâm"], role: "General Secretary of the CPV / Former President", party: "CPV"}
+  - {name: "Lương Cường",          aliases: ["Luong Cuong"], role: "President of Vietnam (since Oct 2024)"}
+  - {name: "Phạm Minh Chính",      aliases: ["Pham Minh Chinh"], role: "Prime Minister", party: "CPV"}
+  - {name: "Trần Thanh Mẫn",       aliases: ["Tran Thanh Man"], role: "Chairman of the National Assembly"}
+
+  # --- Foreign / Defence ---
+  - {name: "Bùi Thanh Sơn",        aliases: ["Bui Thanh Son"], role: "Foreign Minister"}
+  - {name: "Phan Văn Giang",       aliases: ["Phan Van Giang"], role: "Defence Minister"}
+
+  # --- Recent / Deceased ---
+  - {name: "Nguyễn Phú Trọng",     aliases: ["Nguyen Phu Trong"], role: "Former CPV General Secretary (deceased July 2024)"}
+  - {name: "Nguyễn Xuân Phúc",     aliases: ["Nguyen Xuan Phuc"], role: "Former President"}
+  - {name: "Võ Văn Thưởng",        aliases: ["Vo Van Thuong"], role: "Former President"}
+
+  # --- Central Bank ---
+  - {name: "Nguyễn Thị Hồng",      aliases: [], role: "Governor of the State Bank of Vietnam"}
+
+organizations:
+  - {name: "Government of Vietnam", aliases: ["Vietnamese Govt"]}
+  - {name: "Communist Party of Vietnam", aliases: ["CPV", "Vietnamese Communist Party"]}
+  - {name: "Politburo of the Communist Party of Vietnam", aliases: ["Vietnamese Politburo"]}
+  - {name: "Central Committee of the Communist Party of Vietnam", aliases: []}
+  - {name: "National Assembly of Vietnam", aliases: ["Vietnamese NA"]}
+  - {name: "Vietnam Fatherland Front", aliases: ["VFF"]}
+
+  # --- Ministries ---
+  - {name: "Vietnamese Ministry of Foreign Affairs", aliases: ["Vietnamese MFA"]}
+  - {name: "Vietnamese Ministry of National Defence", aliases: []}
+  - {name: "Vietnamese Ministry of Public Security", aliases: []}
+  - {name: "Vietnamese Ministry of Finance", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "State Bank of Vietnam", aliases: ["SBV"]}
+
+  # --- Military ---
+  - {name: "Vietnam People's Army", aliases: ["VPA", "PAVN"]}
+  - {name: "Vietnam People's Navy", aliases: []}
+  - {name: "Vietnam People's Air Force", aliases: []}
+  - {name: "Vietnam People's Public Security", aliases: []}
+
+  # --- Media ---
+  - {name: "Vietnam News Agency",  aliases: ["VNA"]}
+  - {name: "Nhân Dân",             aliases: ["Nhan Dan"]}
+  - {name: "Vietnam News",         aliases: []}
+  - {name: "Tuổi Trẻ",             aliases: ["Tuoi Tre"]}
+  - {name: "Thanh Niên",           aliases: ["Thanh Nien"]}
+  - {name: "Vietnam Television",   aliases: ["VTV"]}
+  - {name: "VnExpress",            aliases: []}
+
+  # --- Corps ---
+  - {name: "Vingroup",             aliases: []}
+  - {name: "VinFast",              aliases: []}
+  - {name: "Petrovietnam",         aliases: ["PetroVietnam"]}
+  - {name: "Vietcombank",          aliases: []}
+  - {name: "Viettel",              aliases: []}
+  - {name: "FPT Corporation",      aliases: ["FPT"]}
+
+locations:
+  - {name: "Vietnam",              aliases: ["Viet Nam"]}
+  - {name: "Hanoi",                aliases: ["Hà Nội"]}
+  - {name: "Ho Chi Minh City",     aliases: ["Saigon", "HCMC"]}
+  - {name: "Da Nang",              aliases: ["Đà Nẵng"]}
+  - {name: "Haiphong",             aliases: ["Hải Phòng"]}
+  - {name: "Can Tho",              aliases: ["Cần Thơ"]}
+  - {name: "Hue",                  aliases: ["Huế"]}
+  - {name: "Nha Trang",            aliases: []}
+  - {name: "Vung Tau",             aliases: ["Vũng Tàu"]}
+
+  # --- Provinces ---
+  - {name: "Mekong Delta",         aliases: []}
+  - {name: "Red River Delta",      aliases: []}
+
+  # --- Strategic ---
+  - {name: "South China Sea (Vietnamese)", aliases: ["East Sea"]}
+  - {name: "Spratly Islands",      aliases: ["Trường Sa"]}
+  - {name: "Paracel Islands",      aliases: ["Hoàng Sa"]}
+
+roles:
+  - {name: "General Secretary of the Communist Party of Vietnam", aliases: ["CPV General Secretary"]}
+  - {name: "President of Vietnam", aliases: ["Vietnamese President"]}
+  - {name: "Prime Minister of Vietnam", aliases: ["Vietnamese PM"]}
+  - {name: "Chairman of the National Assembly of Vietnam", aliases: []}
+  - {name: "Foreign Minister of Vietnam", aliases: []}

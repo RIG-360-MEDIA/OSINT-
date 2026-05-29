@@ -1,0 +1,111 @@
+# Entity seed — Argentine Republic
+country: AR
+version: v1
+notes: |
+  Sources: casarosada.gob.ar, Congreso.gov.ar rosters, MerVal, Clarín/La Nación.
+  Reflects Milei govt (since Dec 2023).
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Govt ---
+  - {name: "Javier Milei",         aliases: ["Milei", "President Milei"], role: "President", party: "La Libertad Avanza"}
+  - {name: "Victoria Villarruel",  aliases: ["Villarruel"], role: "Vice President", party: "LLA"}
+  - {name: "Diana Mondino",        aliases: ["Mondino"], role: "Foreign Minister"}
+  - {name: "Luis Petri",           aliases: ["Petri"], role: "Defence Minister"}
+  - {name: "Luis Caputo",          aliases: ["Caputo"], role: "Finance Minister"}
+  - {name: "Patricia Bullrich",    aliases: ["Bullrich"], role: "Security Minister", party: "PRO"}
+  - {name: "Mariano Cúneo Libarona", aliases: [], role: "Justice Minister"}
+  - {name: "Guillermo Francos",    aliases: [], role: "Chief of Cabinet"}
+  - {name: "Karina Milei",         aliases: [], role: "General Secretary of the Presidency", notes: "Milei's sister"}
+
+  # --- Opposition / Other ---
+  - {name: "Cristina Fernández de Kirchner", aliases: ["Cristina Kirchner", "CFK"], role: "Former President", party: "PJ"}
+  - {name: "Sergio Massa",         aliases: ["Massa"], role: "Former Economy Minister", party: "Unión por la Patria"}
+  - {name: "Axel Kicillof",        aliases: ["Kicillof"], role: "Governor of Buenos Aires Province", party: "PJ"}
+  - {name: "Mauricio Macri",       aliases: ["Macri"], role: "Former President", party: "PRO"}
+  - {name: "Horacio Rodríguez Larreta", aliases: [], party: "PRO"}
+
+  # --- Central Bank ---
+  - {name: "Santiago Bausili",     aliases: [], role: "President of the Central Bank of Argentina"}
+
+  # --- Pope ---
+  - {name: "Pope Francis",         aliases: ["Jorge Mario Bergoglio"], notes: "Argentine national; primary entry under INTL"}
+
+organizations:
+  - {name: "Government of Argentina", aliases: ["Argentine Govt"]}
+  - {name: "Casa Rosada",          aliases: []}
+  - {name: "Argentine National Congress", aliases: ["Congreso Argentino"]}
+  - {name: "Argentine Senate",     aliases: []}
+  - {name: "Argentine Chamber of Deputies", aliases: []}
+  - {name: "Supreme Court of Argentina", aliases: []}
+  - {name: "National Electoral Chamber (Argentina)", aliases: []}
+
+  # --- Ministries ---
+  - {name: "Argentine Ministry of Foreign Affairs", aliases: []}
+  - {name: "Argentine Ministry of Defence", aliases: []}
+  - {name: "Argentine Ministry of Economy", aliases: []}
+  - {name: "Argentine Ministry of Security", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "Central Bank of Argentina", aliases: ["BCRA"]}
+
+  # --- Military ---
+  - {name: "Argentine Armed Forces", aliases: []}
+  - {name: "Argentine Army",       aliases: []}
+  - {name: "Argentine Navy",       aliases: []}
+  - {name: "Argentine Air Force",  aliases: []}
+
+  # --- Parties ---
+  - {name: "La Libertad Avanza",   aliases: ["LLA"]}
+  - {name: "PRO (Argentina)",      aliases: ["Propuesta Republicana"]}
+  - {name: "Justicialist Party",   aliases: ["PJ"]}
+  - {name: "Radical Civic Union",  aliases: ["UCR"]}
+  - {name: "Unión por la Patria",  aliases: ["Union por la Patria"]}
+  - {name: "Frente de Todos",      aliases: []}
+
+  # --- Media ---
+  - {name: "Télam",                aliases: ["Telam"]}
+  - {name: "Clarín",               aliases: ["Clarin"]}
+  - {name: "La Nación",            aliases: ["La Nacion"]}
+  - {name: "Página/12",            aliases: ["Pagina 12"]}
+  - {name: "Infobae",              aliases: []}
+  - {name: "Ámbito Financiero",    aliases: ["Ambito"]}
+  - {name: "TN (television channel)", aliases: ["Todo Noticias"]}
+  - {name: "C5N",                  aliases: []}
+
+  # --- Corps ---
+  - {name: "YPF",                  aliases: ["YPF Sociedad Anónima"]}
+  - {name: "Mercado Libre",        aliases: ["MercadoLibre"]}
+  - {name: "Tenaris",              aliases: []}
+  - {name: "Techint",              aliases: []}
+  - {name: "Banco Galicia",        aliases: []}
+  - {name: "Globant",              aliases: []}
+
+locations:
+  - {name: "Argentina",            aliases: ["Argentine Republic"]}
+  - {name: "Buenos Aires",         aliases: []}
+  - {name: "Córdoba (Argentina)",  aliases: ["Cordoba"]}
+  - {name: "Rosario",              aliases: []}
+  - {name: "Mendoza",              aliases: []}
+  - {name: "La Plata",             aliases: []}
+  - {name: "Mar del Plata",        aliases: []}
+  - {name: "San Miguel de Tucumán", aliases: ["Tucuman"]}
+  - {name: "Salta",                aliases: []}
+  - {name: "Bariloche",            aliases: ["San Carlos de Bariloche"]}
+
+  # --- Provinces ---
+  - {name: "Buenos Aires Province", aliases: []}
+  - {name: "Córdoba Province",     aliases: []}
+  - {name: "Santa Fe Province",    aliases: []}
+  - {name: "Mendoza Province",     aliases: []}
+
+  # --- Disputed / Strategic ---
+  - {name: "Falkland Islands",     aliases: ["Malvinas", "Islas Malvinas"]}
+  - {name: "Tierra del Fuego",     aliases: []}
+  - {name: "Patagonia",            aliases: []}
+
+roles:
+  - {name: "President of Argentina", aliases: ["Argentine President"]}
+  - {name: "Vice President of Argentina", aliases: []}
+  - {name: "Foreign Minister of Argentina", aliases: []}
+  - {name: "President of the Central Bank of Argentina", aliases: ["BCRA President"]}

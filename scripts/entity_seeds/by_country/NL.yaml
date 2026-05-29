@@ -1,0 +1,128 @@
+# Entity seed — Kingdom of the Netherlands
+country: NL
+version: v1
+notes: |
+  Sources: government.nl, Tweede Kamer roster, AEX 25,
+  Wikipedia "List of Dutch" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Schoof Cabinet (since July 2024, PVV-led coalition) ---
+  - {name: "Dick Schoof",          aliases: ["Schoof"], role: "Prime Minister"}
+  - {name: "Willem-Alexander",     aliases: ["King Willem-Alexander"], role: "King of the Netherlands"}
+  - {name: "Caspar Veldkamp",      aliases: [], role: "Foreign Affairs Minister"}
+  - {name: "Ruben Brekelmans",     aliases: [], role: "Defence Minister"}
+  - {name: "Eelco Heinen",         aliases: [], role: "Finance Minister"}
+  - {name: "David van Weel",       aliases: [], role: "Justice & Security Minister"}
+  - {name: "Marjolein Faber",      aliases: [], role: "Asylum Minister", party: "PVV"}
+
+  # --- Coalition Leaders ---
+  - {name: "Geert Wilders",        aliases: ["Wilders"], role: "PVV Leader", party: "PVV"}
+  - {name: "Pieter Omtzigt",       aliases: ["Omtzigt"], role: "NSC Leader", party: "NSC"}
+  - {name: "Caroline van der Plas", aliases: [], role: "BBB Leader", party: "BBB"}
+  - {name: "Dilan Yeşilgöz",       aliases: ["Yesilgoz"], role: "VVD Leader", party: "VVD"}
+
+  # --- Opposition Leaders ---
+  - {name: "Frans Timmermans",     aliases: ["Timmermans"], role: "GL-PvdA Leader / Former EU Commissioner", party: "GL-PvdA"}
+  - {name: "Rob Jetten",           aliases: ["Jetten"], role: "D66 Leader", party: "D66"}
+
+  # --- Former PM ---
+  - {name: "Mark Rutte",           aliases: ["Rutte"], role: "Former PM / NATO Secretary-General"}
+
+  # --- Central Bank ---
+  - {name: "Klaas Knot",           aliases: ["Knot"], role: "Governor of De Nederlandsche Bank"}
+
+organizations:
+  - {name: "Government of the Netherlands", aliases: ["Dutch Govt"]}
+  - {name: "House of Representatives (Netherlands)", aliases: ["Tweede Kamer"]}
+  - {name: "Senate of the Netherlands", aliases: ["Eerste Kamer"]}
+  - {name: "Council of State of the Netherlands", aliases: ["Raad van State"]}
+  - {name: "Supreme Court of the Netherlands", aliases: ["Hoge Raad"]}
+
+  # --- Ministries ---
+  - {name: "Dutch Ministry of Foreign Affairs", aliases: []}
+  - {name: "Dutch Ministry of Defence", aliases: []}
+  - {name: "Dutch Ministry of Finance", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "De Nederlandsche Bank", aliases: ["DNB", "Dutch Central Bank"]}
+
+  # --- Military / Intel ---
+  - {name: "Royal Netherlands Armed Forces", aliases: []}
+  - {name: "Royal Netherlands Army", aliases: []}
+  - {name: "Royal Netherlands Navy", aliases: []}
+  - {name: "Royal Netherlands Air Force", aliases: ["RNLAF"]}
+  - {name: "AIVD",                 aliases: ["General Intelligence and Security Service"]}
+  - {name: "MIVD",                 aliases: ["Military Intelligence and Security Service"]}
+
+  # --- Parties ---
+  - {name: "Party for Freedom",    aliases: ["PVV", "Partij voor de Vrijheid"]}
+  - {name: "People's Party for Freedom and Democracy", aliases: ["VVD"]}
+  - {name: "New Social Contract",  aliases: ["NSC"]}
+  - {name: "Farmer-Citizen Movement", aliases: ["BBB"]}
+  - {name: "GroenLinks-PvdA",      aliases: ["GL-PvdA"]}
+  - {name: "Democrats 66",         aliases: ["D66"]}
+  - {name: "Christian Democratic Appeal", aliases: ["CDA"]}
+  - {name: "ChristenUnie",         aliases: []}
+  - {name: "Forum for Democracy",  aliases: ["FvD"]}
+  - {name: "JA21",                 aliases: []}
+  - {name: "Socialist Party (Netherlands)", aliases: ["SP"]}
+
+  # --- Media ---
+  - {name: "ANP",                  aliases: ["Algemeen Nederlands Persbureau"]}
+  - {name: "NOS",                  aliases: ["Nederlandse Omroep Stichting"]}
+  - {name: "RTL Nederland",        aliases: []}
+  - {name: "De Telegraaf",         aliases: []}
+  - {name: "NRC Handelsblad",      aliases: ["NRC"]}
+  - {name: "de Volkskrant",        aliases: ["Volkskrant"]}
+  - {name: "AD",                   aliases: ["Algemeen Dagblad"]}
+  - {name: "Het Financieele Dagblad", aliases: ["FD"]}
+
+  # --- Corps / AEX ---
+  - {name: "ASML",                 aliases: []}
+  - {name: "Shell plc",            aliases: ["Royal Dutch Shell"]}
+  - {name: "Unilever",             aliases: []}
+  - {name: "Philips",              aliases: ["Koninklijke Philips"]}
+  - {name: "ING Group",            aliases: []}
+  - {name: "ABN AMRO",             aliases: []}
+  - {name: "Rabobank",             aliases: []}
+  - {name: "Heineken",             aliases: []}
+  - {name: "Ahold Delhaize",       aliases: []}
+  - {name: "KLM",                  aliases: ["Koninklijke Luchtvaart Maatschappij"]}
+  - {name: "Prosus",               aliases: []}
+  - {name: "Adyen",                aliases: []}
+
+  # --- International orgs based here ---
+  - {name: "International Court of Justice (location)", aliases: ["ICJ"], notes: "based in The Hague"}
+  - {name: "Europol",              aliases: []}
+
+locations:
+  - {name: "Netherlands",          aliases: ["Holland", "the Netherlands", "Nederland"]}
+  - {name: "Amsterdam",            aliases: []}
+  - {name: "Rotterdam",            aliases: []}
+  - {name: "The Hague",            aliases: ["Den Haag"]}
+  - {name: "Utrecht",              aliases: []}
+  - {name: "Eindhoven",            aliases: []}
+  - {name: "Groningen",            aliases: []}
+  - {name: "Tilburg",              aliases: []}
+  - {name: "Almere",               aliases: []}
+  - {name: "Breda",                aliases: []}
+  - {name: "Nijmegen",             aliases: []}
+  - {name: "Maastricht",           aliases: []}
+
+  # --- Provinces ---
+  - {name: "North Holland",        aliases: ["Noord-Holland"]}
+  - {name: "South Holland",        aliases: ["Zuid-Holland"]}
+  - {name: "Utrecht (province)",   aliases: []}
+  - {name: "North Brabant",        aliases: ["Noord-Brabant"]}
+  - {name: "Gelderland",           aliases: []}
+
+  # --- Overseas territories ---
+  - {name: "Curaçao",              aliases: ["Curacao"]}
+  - {name: "Aruba",                aliases: []}
+  - {name: "Sint Maarten",         aliases: []}
+
+roles:
+  - {name: "Prime Minister of the Netherlands", aliases: ["Dutch PM"]}
+  - {name: "King of the Netherlands", aliases: []}
+  - {name: "Foreign Minister of the Netherlands", aliases: []}

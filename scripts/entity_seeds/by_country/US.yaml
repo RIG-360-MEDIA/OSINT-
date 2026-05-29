@@ -1,0 +1,347 @@
+# Entity seed — United States
+country: US
+version: v1
+notes: |
+  Sources: official White House org chart, US Congress members list, US
+  Supreme Court roster, Fortune 100 + Big Tech, top journalism mastheads,
+  US Census major-cities, Wikipedia "List of United States" pages.
+  Coverage gaps: state legislatures (not seeded), county officials,
+  ambassadors, sub-cabinet. Add in v2.
+  Last updated: 2026-05-28.
+
+# ============================================================================
+# PERSONS
+# ============================================================================
+persons:
+  # --- Current Executive (2025-2029 term) ---
+  - {name: "Donald Trump",   aliases: ["Trump", "Donald J. Trump", "DJT", "President Trump"], role: "President", party: "Republican"}
+  - {name: "JD Vance",       aliases: ["J.D. Vance", "Vice President Vance"], role: "Vice President", party: "Republican"}
+  - {name: "Marco Rubio",    aliases: ["Rubio"], role: "Secretary of State", party: "Republican"}
+  - {name: "Pete Hegseth",   aliases: ["Hegseth"], role: "Secretary of Defense", party: "Republican"}
+  - {name: "Pam Bondi",      aliases: ["Bondi"], role: "Attorney General", party: "Republican"}
+  - {name: "Scott Bessent",  aliases: ["Bessent"], role: "Secretary of the Treasury", party: "Republican"}
+  - {name: "Howard Lutnick", aliases: ["Lutnick"], role: "Secretary of Commerce", party: "Republican"}
+  - {name: "Doug Burgum",    aliases: ["Burgum"], role: "Secretary of the Interior", party: "Republican"}
+  - {name: "Robert F. Kennedy Jr.", aliases: ["RFK Jr", "RFK Jr.", "Bobby Kennedy"], role: "HHS Secretary", party: "Republican"}
+  - {name: "Linda McMahon",  aliases: ["McMahon"], role: "Education Secretary", party: "Republican"}
+  - {name: "Kristi Noem",    aliases: ["Noem"], role: "DHS Secretary", party: "Republican"}
+  - {name: "Sean Duffy",     aliases: ["Duffy"], role: "Transportation Secretary", party: "Republican"}
+  - {name: "Tulsi Gabbard",  aliases: ["Gabbard"], role: "Director of National Intelligence", party: "Republican"}
+  - {name: "John Ratcliffe", aliases: ["Ratcliffe"], role: "CIA Director", party: "Republican"}
+  - {name: "Kash Patel",     aliases: ["Patel"], role: "FBI Director", party: "Republican"}
+  - {name: "Susie Wiles",    aliases: ["Wiles"], role: "White House Chief of Staff", party: "Republican"}
+  - {name: "Stephen Miller", aliases: ["Miller"], role: "Deputy Chief of Staff", party: "Republican"}
+  - {name: "Karoline Leavitt", aliases: ["Leavitt"], role: "Press Secretary", party: "Republican"}
+  - {name: "Mike Waltz",     aliases: ["Waltz"], role: "National Security Advisor", party: "Republican"}
+  - {name: "Elon Musk",      aliases: ["Musk"], notes: "DOGE / X / Tesla / SpaceX founder"}
+  - {name: "Vivek Ramaswamy", aliases: ["Ramaswamy"], notes: "Former DOGE co-lead", party: "Republican"}
+
+  # --- Recent Presidents ---
+  - {name: "Joe Biden",      aliases: ["Biden", "President Biden", "Joseph R. Biden"], role: "Former President", party: "Democratic"}
+  - {name: "Kamala Harris",  aliases: ["Harris", "VP Harris"], role: "Former Vice President", party: "Democratic"}
+  - {name: "Barack Obama",   aliases: ["Obama"], role: "Former President", party: "Democratic"}
+  - {name: "Hillary Clinton", aliases: ["Clinton", "HRC"], role: "Former Secretary of State", party: "Democratic"}
+  - {name: "Bill Clinton",   aliases: [], role: "Former President", party: "Democratic"}
+  - {name: "George W. Bush", aliases: ["Bush", "W"], role: "Former President", party: "Republican"}
+  - {name: "Mike Pence",     aliases: ["Pence"], role: "Former Vice President", party: "Republican"}
+  - {name: "Anthony Blinken", aliases: ["Blinken"], role: "Former Secretary of State", party: "Democratic"}
+  - {name: "Lloyd Austin",   aliases: ["Austin"], role: "Former Defense Secretary", party: "Democratic"}
+  - {name: "Janet Yellen",   aliases: ["Yellen"], role: "Former Treasury Secretary", party: "Democratic"}
+  - {name: "Merrick Garland", aliases: ["Garland"], role: "Former Attorney General", party: "Democratic"}
+
+  # --- Congressional Leadership ---
+  - {name: "John Thune",     aliases: ["Thune"], role: "Senate Majority Leader", party: "Republican"}
+  - {name: "Chuck Schumer",  aliases: ["Schumer"], role: "Senate Minority Leader", party: "Democratic"}
+  - {name: "Mike Johnson",   aliases: ["Speaker Johnson"], role: "Speaker of the House", party: "Republican"}
+  - {name: "Hakeem Jeffries", aliases: ["Jeffries"], role: "House Minority Leader", party: "Democratic"}
+  - {name: "Steve Scalise",  aliases: ["Scalise"], role: "House Majority Leader", party: "Republican"}
+  - {name: "Katherine Clark", aliases: ["Clark"], role: "House Minority Whip", party: "Democratic"}
+  - {name: "John Cornyn",    aliases: ["Cornyn"], party: "Republican"}
+  - {name: "Mitch McConnell", aliases: ["McConnell"], party: "Republican"}
+  - {name: "Ted Cruz",       aliases: ["Cruz"], party: "Republican"}
+  - {name: "Bernie Sanders", aliases: ["Sanders"], party: "Independent"}
+  - {name: "Elizabeth Warren", aliases: ["Warren"], party: "Democratic"}
+  - {name: "Alexandria Ocasio-Cortez", aliases: ["AOC", "Ocasio-Cortez"], party: "Democratic"}
+  - {name: "Marjorie Taylor Greene", aliases: ["MTG", "Greene"], party: "Republican"}
+  - {name: "Lindsey Graham", aliases: ["Graham"], party: "Republican"}
+  - {name: "Tim Kaine",      aliases: ["Kaine"], party: "Democratic"}
+  - {name: "Josh Hawley",    aliases: ["Hawley"], party: "Republican"}
+  - {name: "Cory Booker",    aliases: ["Booker"], party: "Democratic"}
+
+  # --- Governors (largest states) ---
+  - {name: "Gavin Newsom",   aliases: ["Newsom"], role: "Governor of California", party: "Democratic"}
+  - {name: "Greg Abbott",    aliases: ["Abbott"], role: "Governor of Texas", party: "Republican"}
+  - {name: "Ron DeSantis",   aliases: ["DeSantis"], role: "Governor of Florida", party: "Republican"}
+  - {name: "Kathy Hochul",   aliases: ["Hochul"], role: "Governor of New York", party: "Democratic"}
+  - {name: "Josh Shapiro",   aliases: ["Shapiro"], role: "Governor of Pennsylvania", party: "Democratic"}
+  - {name: "JB Pritzker",    aliases: ["Pritzker"], role: "Governor of Illinois", party: "Democratic"}
+  - {name: "Brian Kemp",     aliases: ["Kemp"], role: "Governor of Georgia", party: "Republican"}
+  - {name: "Gretchen Whitmer", aliases: ["Whitmer"], role: "Governor of Michigan", party: "Democratic"}
+  - {name: "Glenn Youngkin", aliases: ["Youngkin"], role: "Governor of Virginia", party: "Republican"}
+
+  # --- Supreme Court ---
+  - {name: "John Roberts",   aliases: ["Chief Justice Roberts"], role: "Chief Justice"}
+  - {name: "Clarence Thomas", aliases: ["Thomas"], role: "Associate Justice"}
+  - {name: "Samuel Alito",   aliases: ["Alito"], role: "Associate Justice"}
+  - {name: "Sonia Sotomayor", aliases: ["Sotomayor"], role: "Associate Justice"}
+  - {name: "Elena Kagan",    aliases: ["Kagan"], role: "Associate Justice"}
+  - {name: "Neil Gorsuch",   aliases: ["Gorsuch"], role: "Associate Justice"}
+  - {name: "Brett Kavanaugh", aliases: ["Kavanaugh"], role: "Associate Justice"}
+  - {name: "Amy Coney Barrett", aliases: ["Barrett", "ACB"], role: "Associate Justice"}
+  - {name: "Ketanji Brown Jackson", aliases: ["Jackson", "KBJ"], role: "Associate Justice"}
+
+  # --- Federal Reserve / Markets ---
+  - {name: "Jerome Powell",  aliases: ["Powell", "Jay Powell"], role: "Federal Reserve Chair"}
+  - {name: "Lael Brainard",  aliases: ["Brainard"], notes: "Former Fed Vice Chair"}
+  - {name: "Gary Gensler",   aliases: ["Gensler"], notes: "Former SEC Chair"}
+
+  # --- Business / Tech ---
+  - {name: "Tim Cook",       aliases: ["Cook"], role: "Apple CEO"}
+  - {name: "Sundar Pichai",  aliases: ["Pichai"], role: "Alphabet/Google CEO"}
+  - {name: "Mark Zuckerberg", aliases: ["Zuckerberg", "Zuck"], role: "Meta CEO"}
+  - {name: "Satya Nadella",  aliases: ["Nadella"], role: "Microsoft CEO"}
+  - {name: "Andy Jassy",     aliases: ["Jassy"], role: "Amazon CEO"}
+  - {name: "Jeff Bezos",     aliases: ["Bezos"], role: "Amazon founder"}
+  - {name: "Jensen Huang",   aliases: ["Huang"], role: "Nvidia CEO"}
+  - {name: "Sam Altman",     aliases: ["Altman"], role: "OpenAI CEO"}
+  - {name: "Dario Amodei",   aliases: ["Amodei"], role: "Anthropic CEO"}
+  - {name: "Warren Buffett", aliases: ["Buffett"], role: "Berkshire Hathaway CEO"}
+  - {name: "Jamie Dimon",    aliases: ["Dimon"], role: "JPMorgan Chase CEO"}
+  - {name: "Larry Fink",     aliases: ["Fink"], role: "BlackRock CEO"}
+
+  # --- Media / Journalism ---
+  - {name: "Anderson Cooper", aliases: ["Cooper"], notes: "CNN anchor"}
+  - {name: "Rachel Maddow",  aliases: ["Maddow"], notes: "MSNBC host"}
+  - {name: "Tucker Carlson", aliases: ["Carlson"], notes: "Former Fox host"}
+  - {name: "Sean Hannity",   aliases: ["Hannity"], notes: "Fox News host"}
+  - {name: "Joe Rogan",      aliases: ["Rogan"], notes: "Podcaster"}
+
+# ============================================================================
+# ORGANIZATIONS
+# ============================================================================
+organizations:
+  # --- Executive Branch ---
+  - {name: "White House",          aliases: ["The White House", "Executive Office of the President"]}
+  - {name: "Department of State",  aliases: ["State Department", "DOS", "Foggy Bottom"]}
+  - {name: "Department of Defense", aliases: ["Pentagon", "DoD", "DOD"]}
+  - {name: "Department of the Treasury", aliases: ["Treasury Department", "US Treasury"]}
+  - {name: "Department of Justice", aliases: ["DOJ", "Justice Department"]}
+  - {name: "Department of Homeland Security", aliases: ["DHS"]}
+  - {name: "Department of Commerce", aliases: ["DOC"]}
+  - {name: "Department of Energy", aliases: ["DOE"]}
+  - {name: "Department of Health and Human Services", aliases: ["HHS"]}
+  - {name: "Department of Education", aliases: ["ED"]}
+  - {name: "Department of Transportation", aliases: ["DOT"]}
+  - {name: "Department of the Interior", aliases: ["DOI"]}
+  - {name: "Department of Veterans Affairs", aliases: ["VA"]}
+  - {name: "Department of Agriculture", aliases: ["USDA"]}
+  - {name: "Department of Labor", aliases: ["DOL"]}
+
+  # --- Intelligence / Law Enforcement ---
+  - {name: "Federal Bureau of Investigation", aliases: ["FBI"]}
+  - {name: "Central Intelligence Agency", aliases: ["CIA"]}
+  - {name: "National Security Agency", aliases: ["NSA"]}
+  - {name: "Office of the Director of National Intelligence", aliases: ["ODNI"]}
+  - {name: "Drug Enforcement Administration", aliases: ["DEA"]}
+  - {name: "Secret Service", aliases: ["USSS"]}
+
+  # --- Legislative / Judicial ---
+  - {name: "United States Congress", aliases: ["US Congress", "Congress"]}
+  - {name: "United States Senate", aliases: ["US Senate", "Senate"]}
+  - {name: "United States House of Representatives", aliases: ["US House", "House", "House of Representatives"]}
+  - {name: "Supreme Court of the United States", aliases: ["SCOTUS", "Supreme Court"]}
+
+  # --- Independent Agencies ---
+  - {name: "Federal Reserve", aliases: ["Fed", "Federal Reserve System", "FOMC"]}
+  - {name: "Securities and Exchange Commission", aliases: ["SEC"]}
+  - {name: "Federal Trade Commission", aliases: ["FTC"]}
+  - {name: "Federal Communications Commission", aliases: ["FCC"]}
+  - {name: "Environmental Protection Agency", aliases: ["EPA"]}
+  - {name: "Food and Drug Administration", aliases: ["FDA"]}
+  - {name: "Internal Revenue Service", aliases: ["IRS"]}
+  - {name: "NASA",                 aliases: ["National Aeronautics and Space Administration"]}
+
+  # --- Political Parties ---
+  - {name: "Republican Party",     aliases: ["GOP", "Republicans"]}
+  - {name: "Democratic Party",     aliases: ["Democrats", "DNC"]}
+
+  # --- Media ---
+  - {name: "The New York Times",   aliases: ["NYT", "NY Times"]}
+  - {name: "The Washington Post",  aliases: ["WaPo", "Washington Post"]}
+  - {name: "Wall Street Journal",  aliases: ["WSJ"]}
+  - {name: "Associated Press",     aliases: ["AP"]}
+  - {name: "CNN",                  aliases: ["Cable News Network"]}
+  - {name: "Fox News",             aliases: ["Fox News Channel", "FNC"]}
+  - {name: "MSNBC",                aliases: []}
+  - {name: "NBC News",             aliases: ["NBC"]}
+  - {name: "ABC News",             aliases: ["ABC"]}
+  - {name: "CBS News",             aliases: ["CBS"]}
+  - {name: "Reuters",              aliases: []}
+  - {name: "Bloomberg",            aliases: ["Bloomberg News", "Bloomberg LP"]}
+  - {name: "NPR",                  aliases: ["National Public Radio"]}
+  - {name: "Politico",             aliases: []}
+  - {name: "Axios",                aliases: []}
+
+  # --- Big Tech ---
+  - {name: "Apple Inc.",           aliases: ["Apple", "AAPL"]}
+  - {name: "Microsoft",            aliases: ["MSFT"]}
+  - {name: "Alphabet Inc.",        aliases: ["Google", "GOOGL"]}
+  - {name: "Amazon",               aliases: ["Amazon.com", "AMZN"]}
+  - {name: "Meta Platforms",       aliases: ["Meta", "Facebook", "META"]}
+  - {name: "Tesla",                aliases: ["TSLA"]}
+  - {name: "Nvidia",               aliases: ["NVDA"]}
+  - {name: "OpenAI",               aliases: []}
+  - {name: "Anthropic",            aliases: []}
+  - {name: "SpaceX",               aliases: ["Space Exploration Technologies"]}
+  - {name: "X Corp.",              aliases: ["X", "Twitter"]}
+  - {name: "IBM",                  aliases: ["International Business Machines"]}
+  - {name: "Oracle",               aliases: ["ORCL"]}
+  - {name: "Intel",                aliases: ["INTC"]}
+  - {name: "AMD",                  aliases: ["Advanced Micro Devices"]}
+
+  # --- Finance ---
+  - {name: "JPMorgan Chase",       aliases: ["JPM", "Chase"]}
+  - {name: "Goldman Sachs",        aliases: ["GS"]}
+  - {name: "Bank of America",      aliases: ["BofA", "BAC"]}
+  - {name: "Citigroup",            aliases: ["Citi", "C"]}
+  - {name: "Morgan Stanley",       aliases: ["MS"]}
+  - {name: "Wells Fargo",          aliases: ["WFC"]}
+  - {name: "Berkshire Hathaway",   aliases: ["BRK.A", "BRK.B"]}
+  - {name: "BlackRock",            aliases: ["BLK"]}
+
+  # --- Other Major Corps ---
+  - {name: "Walmart",              aliases: ["WMT"]}
+  - {name: "ExxonMobil",           aliases: ["Exxon", "XOM"]}
+  - {name: "Chevron",              aliases: ["CVX"]}
+  - {name: "Boeing",               aliases: ["BA"]}
+  - {name: "Lockheed Martin",      aliases: ["LMT"]}
+  - {name: "Raytheon",             aliases: ["RTX"]}
+
+# ============================================================================
+# CONSTITUENCIES — 50 US states + DC + territories (Senate constituencies)
+# ============================================================================
+constituencies:
+  - {name: "Alabama",        aliases: ["AL"]}
+  - {name: "Alaska",         aliases: ["AK"]}
+  - {name: "Arizona",        aliases: ["AZ"]}
+  - {name: "Arkansas",       aliases: ["AR"]}
+  - {name: "California",     aliases: ["CA", "Calif."]}
+  - {name: "Colorado",       aliases: ["CO"]}
+  - {name: "Connecticut",    aliases: ["CT", "Conn."]}
+  - {name: "Delaware",       aliases: ["DE", "Del."]}
+  - {name: "Florida",        aliases: ["FL", "Fla."]}
+  - {name: "Georgia",        aliases: ["GA", "Ga."]}
+  - {name: "Hawaii",         aliases: ["HI"]}
+  - {name: "Idaho",          aliases: ["ID"]}
+  - {name: "Illinois",       aliases: ["IL", "Ill."]}
+  - {name: "Indiana",        aliases: ["IN", "Ind."]}
+  - {name: "Iowa",           aliases: ["IA"]}
+  - {name: "Kansas",         aliases: ["KS", "Kan."]}
+  - {name: "Kentucky",       aliases: ["KY", "Ky."]}
+  - {name: "Louisiana",      aliases: ["LA", "La."]}
+  - {name: "Maine",          aliases: ["ME"]}
+  - {name: "Maryland",       aliases: ["MD", "Md."]}
+  - {name: "Massachusetts",  aliases: ["MA", "Mass."]}
+  - {name: "Michigan",       aliases: ["MI", "Mich."]}
+  - {name: "Minnesota",      aliases: ["MN", "Minn."]}
+  - {name: "Mississippi",    aliases: ["MS", "Miss."]}
+  - {name: "Missouri",       aliases: ["MO", "Mo."]}
+  - {name: "Montana",        aliases: ["MT", "Mont."]}
+  - {name: "Nebraska",       aliases: ["NE", "Neb."]}
+  - {name: "Nevada",         aliases: ["NV", "Nev."]}
+  - {name: "New Hampshire",  aliases: ["NH", "N.H."]}
+  - {name: "New Jersey",     aliases: ["NJ", "N.J."]}
+  - {name: "New Mexico",     aliases: ["NM", "N.M."]}
+  - {name: "New York",       aliases: ["NY", "N.Y."]}
+  - {name: "North Carolina", aliases: ["NC", "N.C."]}
+  - {name: "North Dakota",   aliases: ["ND", "N.D."]}
+  - {name: "Ohio",           aliases: ["OH"]}
+  - {name: "Oklahoma",       aliases: ["OK", "Okla."]}
+  - {name: "Oregon",         aliases: ["OR", "Ore."]}
+  - {name: "Pennsylvania",   aliases: ["PA", "Pa."]}
+  - {name: "Rhode Island",   aliases: ["RI", "R.I."]}
+  - {name: "South Carolina", aliases: ["SC", "S.C."]}
+  - {name: "South Dakota",   aliases: ["SD", "S.D."]}
+  - {name: "Tennessee",      aliases: ["TN", "Tenn."]}
+  - {name: "Texas",          aliases: ["TX", "Tex."]}
+  - {name: "Utah",           aliases: ["UT"]}
+  - {name: "Vermont",        aliases: ["VT", "Vt."]}
+  - {name: "Virginia",       aliases: ["VA", "Va."]}
+  - {name: "Washington",     aliases: ["WA", "Wash."], notes: "state, not the city"}
+  - {name: "West Virginia",  aliases: ["WV", "W.Va."]}
+  - {name: "Wisconsin",      aliases: ["WI", "Wis."]}
+  - {name: "Wyoming",        aliases: ["WY", "Wyo."]}
+  - {name: "District of Columbia", aliases: ["DC", "D.C."]}
+
+# ============================================================================
+# LOCATIONS — major cities, landmark places
+# ============================================================================
+locations:
+  - {name: "Washington, D.C.", aliases: ["DC", "Washington"], notes: "Federal capital"}
+  - {name: "New York City",  aliases: ["NYC", "New York", "NY"]}
+  - {name: "Los Angeles",    aliases: ["LA"]}
+  - {name: "Chicago",        aliases: []}
+  - {name: "Houston",        aliases: []}
+  - {name: "Phoenix",        aliases: []}
+  - {name: "Philadelphia",   aliases: ["Philly"]}
+  - {name: "San Antonio",    aliases: []}
+  - {name: "San Diego",      aliases: []}
+  - {name: "Dallas",         aliases: []}
+  - {name: "San Jose",       aliases: []}
+  - {name: "Austin",         aliases: []}
+  - {name: "Jacksonville",   aliases: []}
+  - {name: "Fort Worth",     aliases: []}
+  - {name: "Columbus",       aliases: []}
+  - {name: "Charlotte",      aliases: []}
+  - {name: "San Francisco",  aliases: ["SF"]}
+  - {name: "Indianapolis",   aliases: []}
+  - {name: "Seattle",        aliases: []}
+  - {name: "Denver",         aliases: []}
+  - {name: "Boston",         aliases: []}
+  - {name: "Atlanta",        aliases: []}
+  - {name: "Miami",          aliases: []}
+  - {name: "Detroit",        aliases: []}
+  - {name: "Minneapolis",    aliases: []}
+  - {name: "Las Vegas",      aliases: ["Vegas"]}
+  - {name: "Portland",       aliases: [], notes: "OR (most common)"}
+  - {name: "Pittsburgh",     aliases: []}
+  - {name: "Cleveland",      aliases: []}
+  - {name: "Tampa",          aliases: []}
+  - {name: "Honolulu",       aliases: []}
+  - {name: "Anchorage",      aliases: []}
+
+  # --- Landmarks / institutional locations ---
+  - {name: "Capitol Hill",   aliases: ["The Capitol", "US Capitol"]}
+  - {name: "Pentagon",       aliases: []}
+  - {name: "Wall Street",    aliases: []}
+  - {name: "Silicon Valley", aliases: []}
+  - {name: "Mar-a-Lago",     aliases: []}
+  - {name: "Camp David",     aliases: []}
+
+# ============================================================================
+# ROLES
+# ============================================================================
+roles:
+  - {name: "President of the United States", aliases: ["POTUS", "U.S. President", "American President"]}
+  - {name: "Vice President of the United States", aliases: ["VPOTUS", "VP"]}
+  - {name: "Speaker of the House", aliases: ["House Speaker"]}
+  - {name: "Senate Majority Leader", aliases: []}
+  - {name: "Senate Minority Leader", aliases: []}
+  - {name: "House Majority Leader",  aliases: []}
+  - {name: "House Minority Leader",  aliases: []}
+  - {name: "Secretary of State",     aliases: ["State Secretary"]}
+  - {name: "Secretary of Defense",   aliases: ["Defense Secretary", "SecDef"]}
+  - {name: "Secretary of the Treasury", aliases: ["Treasury Secretary", "SecTreasury"]}
+  - {name: "Attorney General",       aliases: ["AG"]}
+  - {name: "FBI Director",           aliases: []}
+  - {name: "CIA Director",           aliases: []}
+  - {name: "Director of National Intelligence", aliases: ["DNI"]}
+  - {name: "National Security Advisor", aliases: ["NSA", "Nat-Sec Advisor"]}
+  - {name: "White House Chief of Staff", aliases: ["Chief of Staff"]}
+  - {name: "White House Press Secretary", aliases: ["Press Secretary"]}
+  - {name: "Federal Reserve Chair",  aliases: ["Fed Chair"]}
+  - {name: "Supreme Court Chief Justice", aliases: ["Chief Justice"]}
+  - {name: "Supreme Court Associate Justice", aliases: ["Associate Justice"]}
+  - {name: "US Senator",             aliases: ["Senator", "U.S. Senator"]}
+  - {name: "US Representative",      aliases: ["Congressman", "Congresswoman", "Representative"]}
+  - {name: "Governor",               aliases: []}

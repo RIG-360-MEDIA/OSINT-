@@ -1,0 +1,236 @@
+# Entity seed — India (top-level)
+country: IN
+version: v1
+notes: |
+  Top-level Indian entities the LLM-extracted dictionary skipped — it
+  focused on state-level personalities (CMs, MLAs, constituencies) and
+  missed national-level basics like "India", "Government of India",
+  "Lok Sabha", central agencies. This file FILLS those gaps.
+  Legacy state-level Indian entries are already country='IN' via
+  migration 078 backfill.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Current Govt ---
+  - {name: "Narendra Modi",        aliases: ["Modi", "PM Modi", "Prime Minister Narendra Modi", "PM Narendra Modi"], role: "Prime Minister", party: "BJP"}
+  - {name: "Droupadi Murmu",       aliases: ["President Murmu"], role: "President"}
+  - {name: "Jagdeep Dhankhar",     aliases: ["Dhankhar"], role: "Vice President"}
+  - {name: "Amit Shah",            aliases: ["Shah"], role: "Home Minister", party: "BJP"}
+  - {name: "S. Jaishankar",        aliases: ["Jaishankar", "EAM Jaishankar"], role: "External Affairs Minister", party: "BJP"}
+  - {name: "Rajnath Singh",        aliases: ["Rajnath"], role: "Defence Minister", party: "BJP"}
+  - {name: "Nirmala Sitharaman",   aliases: ["Sitharaman"], role: "Finance Minister", party: "BJP"}
+  - {name: "Piyush Goyal",         aliases: ["Goyal"], role: "Commerce & Industry Minister", party: "BJP"}
+  - {name: "Ashwini Vaishnaw",     aliases: ["Vaishnaw"], role: "Railways / IT Minister", party: "BJP"}
+  - {name: "J. P. Nadda",          aliases: ["JP Nadda", "Nadda"], role: "Health Minister / BJP President", party: "BJP"}
+
+  # --- Opposition leadership ---
+  - {name: "Rahul Gandhi",         aliases: ["Rahul"], role: "Leader of Opposition (Lok Sabha)", party: "Congress"}
+  - {name: "Mallikarjun Kharge",   aliases: ["Kharge"], role: "Congress President", party: "Congress"}
+  - {name: "Priyanka Gandhi Vadra", aliases: ["Priyanka Gandhi"], party: "Congress"}
+  - {name: "Sonia Gandhi",         aliases: [], role: "Former Congress President", party: "Congress"}
+
+  # --- Other Party Heads ---
+  - {name: "Mamata Banerjee",      aliases: ["Mamata", "Didi"], role: "Chief Minister of West Bengal", party: "TMC"}
+  - {name: "Arvind Kejriwal",      aliases: ["Kejriwal"], party: "AAP"}
+  - {name: "Akhilesh Yadav",       aliases: [], role: "Samajwadi Party Chief", party: "SP"}
+  - {name: "K. Chandrashekar Rao", aliases: ["KCR"], party: "BRS"}
+  - {name: "Sharad Pawar",         aliases: [], party: "NCP-SP"}
+  - {name: "Uddhav Thackeray",     aliases: [], party: "Shiv Sena (UBT)"}
+  - {name: "M. K. Stalin",         aliases: ["MK Stalin", "Stalin"], role: "Chief Minister of Tamil Nadu", party: "DMK"}
+  - {name: "Tejashwi Yadav",       aliases: [], party: "RJD"}
+  - {name: "Vijay (actor)",        aliases: ["Vijay", "Thalapathy Vijay"], role: "TVK Founder / Actor-politician", party: "TVK"}
+  - {name: "Chandrababu Naidu",    aliases: ["Naidu"], role: "Chief Minister of Andhra Pradesh", party: "TDP"}
+  - {name: "Nitish Kumar",         aliases: [], role: "Chief Minister of Bihar", party: "JDU"}
+
+  # --- Recent PMs / Senior ---
+  - {name: "Manmohan Singh",       aliases: [], role: "Former PM (deceased Dec 2024)", party: "Congress"}
+  - {name: "Atal Bihari Vajpayee", aliases: ["Vajpayee", "ABV"], notes: "Former PM (deceased)"}
+  - {name: "Pranab Mukherjee",     aliases: [], notes: "Former President (deceased)"}
+
+  # --- Judiciary ---
+  - {name: "Sanjiv Khanna",        aliases: ["CJI Khanna"], role: "Chief Justice of India"}
+  - {name: "D. Y. Chandrachud",    aliases: ["Chandrachud", "DY Chandrachud"], role: "Former Chief Justice"}
+
+  # --- Central Bank ---
+  - {name: "Sanjay Malhotra",      aliases: [], role: "Governor of the Reserve Bank of India"}
+  - {name: "Shaktikanta Das",      aliases: ["Das"], role: "Former RBI Governor"}
+
+  # --- Business ---
+  - {name: "Mukesh Ambani",        aliases: ["Ambani"], role: "Reliance Industries Chairman"}
+  - {name: "Gautam Adani",         aliases: ["Adani"], role: "Adani Group Chairman"}
+  - {name: "Ratan Tata",           aliases: [], notes: "Tata Group (deceased Oct 2024)"}
+  - {name: "Natarajan Chandrasekaran", aliases: ["N. Chandrasekaran"], role: "Tata Sons Chairman"}
+  - {name: "Anand Mahindra",       aliases: [], role: "M&M Chairman"}
+  - {name: "Sundar Pichai",        aliases: [], notes: "Alphabet CEO, Indian-American"}
+  - {name: "Sajjan Jindal",        aliases: [], role: "JSW Group Chairman"}
+
+  # --- Military ---
+  - {name: "Anil Chauhan",         aliases: [], role: "Chief of Defence Staff"}
+  - {name: "Upendra Dwivedi",      aliases: [], role: "Chief of the Army Staff"}
+  - {name: "Dinesh Kumar Tripathi", aliases: [], role: "Chief of the Naval Staff"}
+  - {name: "A. P. Singh",          aliases: ["AP Singh"], role: "Chief of the Air Staff"}
+
+organizations:
+  # --- Constitutional ---
+  - {name: "Government of India",  aliases: ["GoI", "Union Government", "Centre", "India Govt", "Indian Government"]}
+  - {name: "Prime Minister's Office (India)", aliases: ["PMO", "Indian PMO"]}
+  - {name: "Cabinet of India",     aliases: ["Union Cabinet", "Indian Cabinet"]}
+  - {name: "Parliament of India",  aliases: ["Indian Parliament"]}
+  - {name: "Lok Sabha",            aliases: ["House of the People"]}
+  - {name: "Rajya Sabha",          aliases: ["Council of States"]}
+  - {name: "Supreme Court of India", aliases: ["SCI", "Indian Supreme Court", "Supreme Court"]}
+  - {name: "Election Commission of India", aliases: ["ECI"]}
+  - {name: "Comptroller and Auditor General of India", aliases: ["CAG"]}
+  - {name: "NITI Aayog",           aliases: []}
+
+  # --- Ministries (national) ---
+  - {name: "Ministry of External Affairs", aliases: ["MEA", "Indian MEA", "External Affairs Ministry"]}
+  - {name: "Ministry of Home Affairs (India)", aliases: ["MHA", "Indian MHA", "Home Ministry"]}
+  - {name: "Ministry of Defence (India)", aliases: ["MoD India", "Indian MoD"]}
+  - {name: "Ministry of Finance (India)", aliases: ["MoF India", "Indian Finance Ministry"]}
+  - {name: "Ministry of Commerce and Industry (India)", aliases: []}
+  - {name: "Ministry of Health and Family Welfare", aliases: ["MoHFW"]}
+  - {name: "Ministry of Railways (India)", aliases: ["Indian Railways Ministry"]}
+
+  # --- Agencies ---
+  - {name: "Central Bureau of Investigation", aliases: ["CBI"]}
+  - {name: "Enforcement Directorate", aliases: ["ED"]}
+  - {name: "Income Tax Department (India)", aliases: ["I-T Department", "ITD"]}
+  - {name: "National Investigation Agency", aliases: ["NIA"]}
+  - {name: "Research and Analysis Wing", aliases: ["R&AW", "RAW"]}
+  - {name: "Intelligence Bureau (India)", aliases: ["IB India"]}
+  - {name: "Central Reserve Police Force", aliases: ["CRPF"]}
+  - {name: "Border Security Force", aliases: ["BSF"]}
+  - {name: "National Security Guard", aliases: ["NSG"]}
+  - {name: "Securities and Exchange Board of India", aliases: ["SEBI"]}
+  - {name: "Insurance Regulatory and Development Authority of India", aliases: ["IRDAI"]}
+  - {name: "Telecom Regulatory Authority of India", aliases: ["TRAI"]}
+
+  # --- Central Bank / Sovereign ---
+  - {name: "Reserve Bank of India", aliases: ["RBI"]}
+  - {name: "State Bank of India",  aliases: ["SBI"]}
+  - {name: "Life Insurance Corporation of India", aliases: ["LIC"]}
+
+  # --- Armed Forces ---
+  - {name: "Indian Armed Forces",  aliases: []}
+  - {name: "Indian Army",          aliases: []}
+  - {name: "Indian Navy",          aliases: []}
+  - {name: "Indian Air Force",     aliases: ["IAF", "IAF India"]}
+
+  # --- Sport / Cultural Bodies ---
+  - {name: "Board of Control for Cricket in India", aliases: ["BCCI"]}
+  - {name: "Indian Olympic Association", aliases: ["IOA"]}
+  - {name: "Sports Authority of India", aliases: ["SAI"]}
+
+  # --- National Parties (top-level) ---
+  - {name: "Bharatiya Janata Party", aliases: ["BJP"]}
+  - {name: "Indian National Congress", aliases: ["Congress", "INC"]}
+  - {name: "Aam Aadmi Party",      aliases: ["AAP"]}
+  - {name: "All India Trinamool Congress", aliases: ["TMC", "Trinamool"]}
+  - {name: "Samajwadi Party",      aliases: ["SP"]}
+  - {name: "Bahujan Samaj Party",  aliases: ["BSP"]}
+  - {name: "Communist Party of India (Marxist)", aliases: ["CPI(M)", "CPM"]}
+  - {name: "Communist Party of India", aliases: ["CPI"]}
+  - {name: "Rashtriya Janata Dal", aliases: ["RJD"]}
+  - {name: "Janata Dal (United)",  aliases: ["JDU"]}
+  - {name: "Dravida Munnetra Kazhagam", aliases: ["DMK"]}
+  - {name: "All India Anna Dravida Munnetra Kazhagam", aliases: ["AIADMK"]}
+  - {name: "Tamilaga Vettri Kazhagam", aliases: ["TVK"]}
+  - {name: "Telugu Desam Party",   aliases: ["TDP"]}
+  - {name: "YSR Congress Party",   aliases: ["YSRCP"]}
+  - {name: "Bharat Rashtra Samithi", aliases: ["BRS"]}
+  - {name: "Shiv Sena",            aliases: []}
+  - {name: "Shiv Sena (UBT)",      aliases: ["SS(UBT)"]}
+  - {name: "Nationalist Congress Party", aliases: ["NCP"]}
+  - {name: "Nationalist Congress Party (Sharadchandra Pawar)", aliases: ["NCP-SP"]}
+
+  # --- Coalitions ---
+  - {name: "National Democratic Alliance", aliases: ["NDA"]}
+  - {name: "Indian National Developmental Inclusive Alliance", aliases: ["INDIA bloc", "I.N.D.I.A."]}
+  - {name: "United Progressive Alliance", aliases: ["UPA"]}
+
+  # --- Media (national-level top) ---
+  - {name: "Press Trust of India", aliases: ["PTI"]}
+  - {name: "Asian News International", aliases: ["ANI"]}
+  - {name: "Doordarshan",          aliases: ["DD"]}
+  - {name: "All India Radio",      aliases: ["AIR", "Akashvani"]}
+  - {name: "The Hindu",            aliases: []}
+  - {name: "The Times of India",   aliases: ["TOI"]}
+  - {name: "Hindustan Times",      aliases: ["HT"]}
+  - {name: "The Indian Express",   aliases: ["Indian Express"]}
+  - {name: "NDTV",                 aliases: ["New Delhi Television"]}
+  - {name: "Republic TV",          aliases: []}
+  - {name: "Times Now",            aliases: []}
+  - {name: "India Today",          aliases: []}
+  - {name: "CNN-News18",           aliases: ["News18"]}
+  - {name: "The Wire (India)",     aliases: ["The Wire"]}
+  - {name: "The Print",            aliases: []}
+  - {name: "Scroll.in",            aliases: ["Scroll"]}
+  - {name: "Mint",                 aliases: ["Livemint"]}
+  - {name: "Business Standard",    aliases: []}
+  - {name: "Economic Times",       aliases: ["ET"]}
+
+  # --- Corps (top national) ---
+  - {name: "Reliance Industries",  aliases: ["RIL", "Reliance"]}
+  - {name: "Tata Group",           aliases: ["Tata Sons"]}
+  - {name: "Tata Consultancy Services", aliases: ["TCS"]}
+  - {name: "Infosys",              aliases: []}
+  - {name: "Wipro",                aliases: []}
+  - {name: "HCL Technologies",     aliases: ["HCL"]}
+  - {name: "Adani Group",          aliases: []}
+  - {name: "Mahindra Group",       aliases: ["M&M"]}
+  - {name: "Bajaj Group",          aliases: []}
+  - {name: "ICICI Bank",           aliases: []}
+  - {name: "HDFC Bank",            aliases: []}
+  - {name: "Axis Bank",            aliases: []}
+  - {name: "Bharti Airtel",        aliases: ["Airtel"]}
+  - {name: "Jio",                  aliases: ["Reliance Jio"]}
+  - {name: "ONGC",                 aliases: ["Oil and Natural Gas Corporation"]}
+  - {name: "Indian Oil Corporation", aliases: ["IOCL"]}
+
+locations:
+  - {name: "India",                aliases: ["Bharat", "Hindustan"]}
+  - {name: "New Delhi",            aliases: ["Delhi"]}
+  - {name: "Mumbai",               aliases: ["Bombay"]}
+  - {name: "Kolkata",              aliases: ["Calcutta"]}
+  - {name: "Chennai",              aliases: ["Madras"]}
+  - {name: "Bengaluru",            aliases: ["Bangalore"]}
+  - {name: "Hyderabad",            aliases: [], notes: "Indian Hyderabad (Telangana)"}
+  - {name: "Ahmedabad",            aliases: []}
+  - {name: "Pune",                 aliases: ["Poona"]}
+  - {name: "Jaipur",               aliases: []}
+  - {name: "Lucknow",              aliases: []}
+  - {name: "Surat",                aliases: []}
+  - {name: "Kanpur",               aliases: []}
+  - {name: "Nagpur",               aliases: []}
+  - {name: "Indore",               aliases: []}
+  - {name: "Patna",                aliases: []}
+  - {name: "Bhopal",               aliases: []}
+  - {name: "Visakhapatnam",        aliases: ["Vizag"]}
+  - {name: "Vadodara",             aliases: ["Baroda"]}
+  - {name: "Ludhiana",             aliases: []}
+  - {name: "Coimbatore",           aliases: []}
+  - {name: "Kochi",                aliases: ["Cochin"]}
+  - {name: "Thiruvananthapuram",   aliases: ["Trivandrum"]}
+  - {name: "Guwahati",             aliases: []}
+  - {name: "Chandigarh",           aliases: []}
+  - {name: "Srinagar",             aliases: []}
+
+  # --- Landmark ---
+  - {name: "Rashtrapati Bhavan",   aliases: [], notes: "Presidential Palace"}
+  - {name: "South Block",          aliases: [], notes: "PMO/MEA shorthand"}
+  - {name: "North Block",          aliases: [], notes: "MHA/Finance shorthand"}
+  - {name: "Parliament House",     aliases: ["Sansad Bhavan"]}
+
+roles:
+  - {name: "Prime Minister of India", aliases: ["Indian PM", "PM of India"]}
+  - {name: "President of India",   aliases: ["Indian President"]}
+  - {name: "Vice President of India", aliases: ["Indian VP"]}
+  - {name: "Chief Justice of India", aliases: ["CJI"]}
+  - {name: "Chief of Defence Staff", aliases: ["CDS"]}
+  - {name: "Chief Election Commissioner", aliases: ["CEC"]}
+  - {name: "Reserve Bank of India Governor", aliases: ["RBI Governor"]}
+  - {name: "Chief Minister",       aliases: ["CM"], notes: "Indian state-level"}
+  - {name: "Governor (India)",     aliases: ["Indian Governor"]}
+  - {name: "Member of Parliament (India)", aliases: ["MP", "Indian MP"]}
+  - {name: "Member of Legislative Assembly", aliases: ["MLA"]}

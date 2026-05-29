@@ -1,0 +1,156 @@
+# Entity seed — Pakistan
+country: PK
+version: v1
+notes: |
+  Sources: PM Office / President House / NA composition, Wikipedia
+  "List of Pakistan" pages, Geo / Dawn / ARY mastheads.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Current Govt (PML-N coalition, since March 2024) ---
+  - {name: "Shehbaz Sharif",       aliases: ["Shahbaz Sharif"], role: "Prime Minister", party: "PML-N"}
+  - {name: "Asif Ali Zardari",     aliases: ["Zardari"], role: "President", party: "PPP"}
+  - {name: "Ishaq Dar",            aliases: ["Dar"], role: "Foreign Minister / Deputy PM", party: "PML-N"}
+  - {name: "Mohsin Naqvi",         aliases: ["Naqvi"], role: "Interior Minister"}
+  - {name: "Khawaja Asif",         aliases: [], role: "Defence Minister", party: "PML-N"}
+  - {name: "Muhammad Aurangzeb",   aliases: ["Aurangzeb"], role: "Finance Minister"}
+  - {name: "Ahsan Iqbal",          aliases: [], role: "Planning Minister", party: "PML-N"}
+  - {name: "Attaullah Tarar",      aliases: [], role: "Information Minister", party: "PML-N"}
+
+  # --- Opposition / PTI ---
+  - {name: "Imran Khan",           aliases: ["Khan", "Kaptaan"], role: "Founder PTI (jailed)", party: "PTI"}
+  - {name: "Omar Ayub Khan",       aliases: ["Omar Ayub"], role: "Opposition Leader", party: "PTI"}
+  - {name: "Asad Qaiser",          aliases: [], party: "PTI"}
+  - {name: "Shah Mahmood Qureshi", aliases: ["SMQ", "Qureshi"], party: "PTI"}
+  - {name: "Bushra Bibi",          aliases: ["Bushra Imran"], notes: "Imran Khan's wife"}
+
+  # --- Other party heads ---
+  - {name: "Maryam Nawaz",         aliases: [], role: "Chief Minister of Punjab", party: "PML-N"}
+  - {name: "Nawaz Sharif",         aliases: [], role: "PML-N President / former PM", party: "PML-N"}
+  - {name: "Bilawal Bhutto Zardari", aliases: ["Bilawal"], role: "PPP Chairman", party: "PPP"}
+  - {name: "Murad Ali Shah",       aliases: [], role: "Chief Minister of Sindh", party: "PPP"}
+  - {name: "Ali Amin Gandapur",    aliases: ["Gandapur"], role: "Chief Minister of KP", party: "PTI"}
+  - {name: "Sarfraz Bugti",        aliases: [], role: "Chief Minister of Balochistan"}
+  - {name: "Fazl-ur-Rehman",       aliases: ["Maulana Fazl"], party: "JUI-F"}
+  - {name: "Sirajul Haq",          aliases: [], party: "Jamaat-e-Islami"}
+  - {name: "Altaf Hussain",        aliases: [], party: "MQM-London", notes: "exile in UK"}
+  - {name: "Khalid Maqbool Siddiqui", aliases: [], party: "MQM-P"}
+
+  # --- Military / Security ---
+  - {name: "Asim Munir",           aliases: ["General Asim Munir", "COAS Munir"], role: "Chief of Army Staff"}
+  - {name: "Sahir Shamshad Mirza", aliases: [], role: "Chairman Joint Chiefs of Staff Committee"}
+  - {name: "Nadeem Anjum",         aliases: [], role: "DG ISI"}
+  - {name: "Faiz Hameed",          aliases: [], notes: "Former DG ISI (under court martial)"}
+
+  # --- Judiciary ---
+  - {name: "Yahya Afridi",         aliases: [], role: "Chief Justice of Pakistan"}
+  - {name: "Qazi Faez Isa",        aliases: [], role: "Former Chief Justice"}
+
+  # --- Central Bank ---
+  - {name: "Jameel Ahmad",         aliases: [], role: "Governor State Bank of Pakistan"}
+
+  # --- Recent PMs ---
+  - {name: "Anwaar-ul-Haq Kakar",  aliases: ["Kakar"], notes: "Caretaker PM 2023-24"}
+  - {name: "Yousaf Raza Gilani",   aliases: ["Gillani"], notes: "Former PM", party: "PPP"}
+
+organizations:
+  - {name: "Government of Pakistan", aliases: ["GoP", "Pakistan Govt"]}
+  - {name: "Cabinet of Pakistan",    aliases: ["Pakistan Cabinet"]}
+  - {name: "National Assembly of Pakistan", aliases: ["NA", "Pakistan NA"]}
+  - {name: "Senate of Pakistan",     aliases: ["Pakistan Senate"]}
+  - {name: "Supreme Court of Pakistan", aliases: ["SCP", "Pakistan Supreme Court"]}
+  - {name: "Election Commission of Pakistan", aliases: ["ECP"]}
+  - {name: "State Bank of Pakistan", aliases: ["SBP"]}
+  - {name: "Federal Board of Revenue", aliases: ["FBR"]}
+  - {name: "Pakistan Electronic Media Regulatory Authority", aliases: ["PEMRA"]}
+  - {name: "National Accountability Bureau", aliases: ["NAB"]}
+
+  # --- Military / Intel ---
+  - {name: "Pakistan Army",          aliases: ["Pak Army"]}
+  - {name: "Pakistan Air Force",     aliases: ["PAF"]}
+  - {name: "Pakistan Navy",          aliases: []}
+  - {name: "Inter-Services Intelligence", aliases: ["ISI"]}
+  - {name: "Inter-Services Public Relations", aliases: ["ISPR"]}
+  - {name: "Intelligence Bureau (Pakistan)", aliases: ["IB Pakistan"]}
+
+  # --- Political Parties ---
+  - {name: "Pakistan Tehreek-e-Insaf", aliases: ["PTI"]}
+  - {name: "Pakistan Muslim League (N)", aliases: ["PML-N"]}
+  - {name: "Pakistan People's Party",  aliases: ["PPP", "PPPP"]}
+  - {name: "Jamiat Ulema-e-Islam (F)", aliases: ["JUI-F"]}
+  - {name: "Jamaat-e-Islami Pakistan", aliases: ["JI"]}
+  - {name: "Muttahida Qaumi Movement", aliases: ["MQM", "MQM-P"]}
+  - {name: "Awami National Party",     aliases: ["ANP"]}
+  - {name: "Pakistan Muslim League (Q)", aliases: ["PML-Q"]}
+  - {name: "Balochistan National Party", aliases: ["BNP"]}
+  - {name: "Tehreek-e-Labbaik Pakistan", aliases: ["TLP"]}
+
+  # --- Media ---
+  - {name: "Dawn",                   aliases: []}
+  - {name: "Geo News",               aliases: ["Geo TV"]}
+  - {name: "ARY News",               aliases: ["ARY"]}
+  - {name: "Express Tribune",        aliases: []}
+  - {name: "Express News",           aliases: []}
+  - {name: "The News International", aliases: ["The News"]}
+  - {name: "Jang Group",             aliases: ["Daily Jang"]}
+  - {name: "Dunya News",             aliases: []}
+  - {name: "Bol News",               aliases: []}
+  - {name: "Samaa TV",               aliases: []}
+  - {name: "Associated Press of Pakistan", aliases: ["APP"]}
+  - {name: "PTV",                    aliases: ["Pakistan Television"]}
+
+  # --- Banks / corps ---
+  - {name: "Habib Bank Limited",     aliases: ["HBL"]}
+  - {name: "United Bank Limited",    aliases: ["UBL"]}
+  - {name: "MCB Bank",               aliases: ["MCB"]}
+  - {name: "Pakistan State Oil",     aliases: ["PSO"]}
+  - {name: "Pakistan International Airlines", aliases: ["PIA"]}
+  - {name: "Pakistan Cricket Board", aliases: ["PCB"]}
+
+constituencies:
+  - {name: "NA-130 Lahore",      aliases: [], notes: "Nawaz Sharif's seat"}
+  - {name: "NA-127 Lahore",      aliases: [], notes: "Maryam Nawaz's seat"}
+  - {name: "NA-244 Karachi",     aliases: [], notes: "Bilawal seat (varies)"}
+  - {name: "NA-89 Mianwali",     aliases: [], notes: "Imran Khan's seat"}
+  - {name: "NA-122 Lahore",      aliases: []}
+
+locations:
+  - {name: "Islamabad",        aliases: ["ICT"]}
+  - {name: "Karachi",          aliases: []}
+  - {name: "Lahore",           aliases: []}
+  - {name: "Rawalpindi",       aliases: ["Pindi"]}
+  - {name: "Peshawar",         aliases: []}
+  - {name: "Quetta",           aliases: []}
+  - {name: "Faisalabad",       aliases: []}
+  - {name: "Multan",           aliases: []}
+  - {name: "Hyderabad",        aliases: [], notes: "Sindh (not the Indian one)"}
+  - {name: "Gujranwala",       aliases: []}
+  - {name: "Sialkot",          aliases: []}
+  - {name: "Sargodha",         aliases: []}
+  - {name: "Bahawalpur",       aliases: []}
+  - {name: "Gilgit",           aliases: []}
+  - {name: "Muzaffarabad",     aliases: []}
+
+  # --- Provinces / territories ---
+  - {name: "Punjab",           aliases: [], notes: "Pakistani Punjab — distinct from Indian Punjab"}
+  - {name: "Sindh",            aliases: []}
+  - {name: "Khyber Pakhtunkhwa", aliases: ["KP", "KPK"]}
+  - {name: "Balochistan",      aliases: []}
+  - {name: "Gilgit-Baltistan", aliases: ["GB"]}
+  - {name: "Azad Kashmir",     aliases: ["AJK", "Azad Jammu and Kashmir"]}
+  - {name: "FATA",             aliases: ["Federally Administered Tribal Areas"]}
+
+  # --- Landmark ---
+  - {name: "Pakistan Secretariat", aliases: ["PM Office Islamabad"]}
+  - {name: "GHQ",              aliases: ["General Headquarters"], notes: "Pakistan Army HQ"}
+  - {name: "PM House",         aliases: []}
+
+roles:
+  - {name: "Prime Minister of Pakistan", aliases: ["Pakistani PM"]}
+  - {name: "President of Pakistan",      aliases: []}
+  - {name: "Chief of Army Staff",        aliases: ["COAS"]}
+  - {name: "DG ISI",                     aliases: ["Director-General ISI"]}
+  - {name: "Chief Justice of Pakistan",  aliases: ["CJP"]}
+  - {name: "Foreign Minister of Pakistan", aliases: []}
+  - {name: "Chief Minister",             aliases: ["CM"]}
+  - {name: "Governor (Pakistan)",        aliases: []}

@@ -1,0 +1,136 @@
+# Entity seed — Türkiye
+country: TR
+version: v1
+notes: |
+  Sources: tccb.gov.tr / TBMM rosters, Anadolu Agency mastheads,
+  BIST 30, Wikipedia "List of Turkish" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Current Govt ---
+  - {name: "Recep Tayyip Erdoğan", aliases: ["Erdogan", "Erdoğan", "President Erdogan", "RTE"], role: "President", party: "AKP"}
+  - {name: "Cevdet Yılmaz",        aliases: ["Yilmaz"], role: "Vice President", party: "AKP"}
+  - {name: "Hakan Fidan",          aliases: ["Fidan"], role: "Foreign Minister", party: "AKP"}
+  - {name: "Yaşar Güler",          aliases: ["Guler"], role: "Defence Minister"}
+  - {name: "Mehmet Şimşek",        aliases: ["Simsek"], role: "Treasury & Finance Minister"}
+  - {name: "Ali Yerlikaya",        aliases: ["Yerlikaya"], role: "Interior Minister"}
+  - {name: "Yılmaz Tunç",          aliases: ["Tunc"], role: "Justice Minister"}
+  - {name: "Ömer Bolat",           aliases: ["Bolat"], role: "Trade Minister"}
+  - {name: "Devlet Bahçeli",       aliases: ["Bahceli"], role: "MHP Leader / AKP ally", party: "MHP"}
+
+  # --- Opposition ---
+  - {name: "Özgür Özel",           aliases: ["Ozel"], role: "CHP Leader", party: "CHP"}
+  - {name: "Ekrem İmamoğlu",       aliases: ["Imamoglu"], role: "Mayor of Istanbul", party: "CHP"}
+  - {name: "Mansur Yavaş",         aliases: ["Yavas"], role: "Mayor of Ankara", party: "CHP"}
+  - {name: "Kemal Kılıçdaroğlu",   aliases: ["Kilicdaroglu", "Kilicdaroglu"], role: "Former CHP Leader", party: "CHP"}
+  - {name: "Meral Akşener",        aliases: ["Aksener"], role: "Former İYİ Leader", party: "IYI"}
+  - {name: "Müsavat Dervişoğlu",   aliases: [], role: "İYİ Leader", party: "IYI"}
+  - {name: "Selahattin Demirtaş",  aliases: ["Demirtas"], role: "Former HDP Co-Chair (jailed)", party: "DEM"}
+
+  # --- Speakers ---
+  - {name: "Numan Kurtulmuş",      aliases: ["Kurtulmus"], role: "Speaker of the Grand National Assembly"}
+
+  # --- Central Bank ---
+  - {name: "Fatih Karahan",        aliases: ["Karahan"], role: "Governor of the Central Bank of Türkiye"}
+
+  # --- Military / Intelligence ---
+  - {name: "Metin Gürak",          aliases: ["Gurak"], role: "Chief of the General Staff"}
+  - {name: "İbrahim Kalın",        aliases: ["Kalin"], role: "MİT Director"}
+
+organizations:
+  - {name: "Presidency of Türkiye", aliases: ["Turkish Presidency", "Beştepe"]}
+  - {name: "Government of Türkiye", aliases: ["Turkish Govt"]}
+  - {name: "Grand National Assembly of Türkiye", aliases: ["TBMM", "Turkish Parliament"]}
+  - {name: "Constitutional Court of Türkiye", aliases: ["AYM"]}
+  - {name: "Supreme Election Council of Türkiye", aliases: ["YSK"]}
+
+  # --- Ministries ---
+  - {name: "Ministry of Foreign Affairs (Türkiye)", aliases: ["Turkish MFA"]}
+  - {name: "Ministry of National Defence (Türkiye)", aliases: ["Turkish MoD"]}
+  - {name: "Ministry of Treasury and Finance (Türkiye)", aliases: []}
+  - {name: "Ministry of Interior (Türkiye)", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "Central Bank of the Republic of Türkiye", aliases: ["CBRT", "TCMB"]}
+
+  # --- Military / Intel ---
+  - {name: "Turkish Armed Forces", aliases: ["TSK"]}
+  - {name: "Turkish Land Forces",  aliases: []}
+  - {name: "Turkish Naval Forces", aliases: []}
+  - {name: "Turkish Air Force",    aliases: []}
+  - {name: "National Intelligence Organization (Türkiye)", aliases: ["MİT", "MIT Turkey"]}
+
+  # --- Parties ---
+  - {name: "Justice and Development Party", aliases: ["AKP", "AK Parti"]}
+  - {name: "Republican People's Party", aliases: ["CHP"]}
+  - {name: "Nationalist Movement Party", aliases: ["MHP"]}
+  - {name: "Good Party (Türkiye)", aliases: ["IYI Party", "İYİ Parti"]}
+  - {name: "Peoples' Equality and Democracy Party", aliases: ["DEM Party", "HDP successor"]}
+  - {name: "Future Party (Türkiye)", aliases: ["Gelecek Partisi"]}
+  - {name: "DEVA Party",           aliases: []}
+
+  # --- Media ---
+  - {name: "Anadolu Agency",       aliases: ["AA"]}
+  - {name: "TRT",                  aliases: ["Türkiye Radyo Televizyon"]}
+  - {name: "TRT World",            aliases: []}
+  - {name: "Hürriyet",             aliases: ["Hurriyet"]}
+  - {name: "Sabah",                aliases: []}
+  - {name: "Milliyet",             aliases: []}
+  - {name: "Cumhuriyet",           aliases: []}
+  - {name: "Sözcü",                aliases: ["Sozcu"]}
+  - {name: "Daily Sabah",          aliases: []}
+  - {name: "Hürriyet Daily News",  aliases: ["Hurriyet Daily News"]}
+  - {name: "NTV (Türkiye)",        aliases: []}
+  - {name: "CNN Türk",             aliases: ["CNN Turk"]}
+  - {name: "Habertürk",            aliases: ["Haberturk"]}
+  - {name: "Yeni Şafak",           aliases: ["Yeni Safak"]}
+
+  # --- BIST 30 / Major corps ---
+  - {name: "Turkish Airlines",     aliases: ["THY"]}
+  - {name: "Garanti BBVA",         aliases: ["Garanti Bankası"]}
+  - {name: "İşbank",               aliases: ["Türkiye İş Bankası", "Is Bankasi"]}
+  - {name: "Akbank",               aliases: []}
+  - {name: "Yapı Kredi",           aliases: ["Yapi Kredi"]}
+  - {name: "Koç Holding",          aliases: ["Koc Holding"]}
+  - {name: "Sabancı Holding",      aliases: ["Sabanci Holding"]}
+  - {name: "Tüpraş",               aliases: ["Tupras"]}
+  - {name: "Aselsan",              aliases: []}
+  - {name: "Baykar",               aliases: [], notes: "drone maker"}
+  - {name: "Roketsan",             aliases: []}
+  - {name: "TUSAŞ",                aliases: ["TAI", "Turkish Aerospace"]}
+
+locations:
+  - {name: "Türkiye",              aliases: ["Turkey"]}
+  - {name: "Istanbul",              aliases: ["İstanbul"]}
+  - {name: "Ankara",               aliases: []}
+  - {name: "İzmir",                aliases: ["Izmir"]}
+  - {name: "Bursa",                aliases: []}
+  - {name: "Adana",                aliases: []}
+  - {name: "Gaziantep",            aliases: []}
+  - {name: "Konya",                aliases: []}
+  - {name: "Antalya",              aliases: []}
+  - {name: "Diyarbakır",           aliases: ["Diyarbakir"]}
+  - {name: "Şanlıurfa",            aliases: ["Sanliurfa"]}
+  - {name: "Kayseri",              aliases: []}
+  - {name: "Mersin",               aliases: []}
+  - {name: "Eskişehir",            aliases: ["Eskisehir"]}
+  - {name: "Trabzon",              aliases: []}
+  - {name: "Samsun",               aliases: []}
+  - {name: "Hatay",                aliases: []}
+  - {name: "Kahramanmaraş",        aliases: ["Kahramanmaras"]}
+  - {name: "Van",                  aliases: [], notes: "city in eastern Türkiye"}
+
+  # --- Regions / disputed ---
+  - {name: "Cyprus",               aliases: [], notes: "TR governs north half"}
+  - {name: "Northern Cyprus",      aliases: ["TRNC", "KKTC"]}
+  - {name: "Bosphorus",            aliases: ["Boğaziçi"]}
+  - {name: "Dardanelles",          aliases: []}
+
+roles:
+  - {name: "President of Türkiye", aliases: ["Turkish President"]}
+  - {name: "Vice President of Türkiye", aliases: []}
+  - {name: "Foreign Minister of Türkiye", aliases: []}
+  - {name: "Chief of the General Staff (Türkiye)", aliases: []}
+  - {name: "Governor of the Central Bank of Türkiye", aliases: []}
+  - {name: "Mayor of Istanbul",    aliases: []}
+  - {name: "Mayor of Ankara",      aliases: []}

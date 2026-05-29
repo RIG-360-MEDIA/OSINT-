@@ -1,0 +1,153 @@
+# Entity seed — Republic of Korea (South Korea)
+country: KR
+version: v1
+notes: |
+  Sources: Cheong Wa Dae roster (now Yongsan), National Assembly composition,
+  Yonhap mastheads, KOSPI 100, Wikipedia "List of Korean" pages.
+  Reflects state after Dec 2024 impeachment of Yoon Suk Yeol.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Acting / Caretaker (since Dec 2024 impeachment) ---
+  - {name: "Han Duck-soo",         aliases: ["Han Duck Soo"], role: "Acting President / Prime Minister (briefly)"}
+  - {name: "Choi Sang-mok",        aliases: ["Choi Sang Mok"], role: "Acting President / Finance Minister"}
+
+  # --- Impeached / suspended ---
+  - {name: "Yoon Suk Yeol",        aliases: ["Yoon Suk-yeol", "Yoon"], role: "Suspended President (impeached Dec 2024)", party: "PPP"}
+  - {name: "Kim Keon Hee",         aliases: ["Kim Keon-hee"], notes: "First Lady"}
+
+  # --- Cabinet ---
+  - {name: "Cho Tae-yul",          aliases: ["Cho Tae Yul"], role: "Foreign Minister"}
+  - {name: "Kim Yong-hyun",        aliases: [], role: "Former Defense Minister (martial-law incident)"}
+  - {name: "Lee Sang-min",         aliases: [], role: "Interior & Safety Minister"}
+  - {name: "Park Sung-jae",        aliases: [], role: "Justice Minister"}
+
+  # --- Opposition (DPK) ---
+  - {name: "Lee Jae-myung",        aliases: ["Lee Jae Myung"], role: "DPK Leader / 2022 presidential candidate", party: "Democratic Party of Korea"}
+  - {name: "Park Chan-dae",        aliases: [], role: "DPK Floor Leader", party: "DPK"}
+
+  # --- People Power Party (PPP) ---
+  - {name: "Han Dong-hoon",        aliases: ["Han Dong Hoon"], role: "Former PPP Leader", party: "PPP"}
+  - {name: "Kweon Seong-dong",     aliases: [], role: "PPP Floor Leader", party: "PPP"}
+
+  # --- Recent presidents ---
+  - {name: "Moon Jae-in",          aliases: ["Moon Jae In"], role: "Former President", party: "DPK"}
+  - {name: "Park Geun-hye",        aliases: [], role: "Former President (impeached)", party: "Saenuri"}
+  - {name: "Lee Myung-bak",        aliases: [], role: "Former President"}
+
+  # --- National Assembly Speaker ---
+  - {name: "Woo Won-shik",         aliases: [], role: "Speaker of the National Assembly"}
+
+  # --- BOK / Markets ---
+  - {name: "Rhee Chang-yong",      aliases: [], role: "Bank of Korea Governor"}
+
+  # --- Business / Chaebol ---
+  - {name: "Lee Jae-yong",         aliases: ["Jay Y. Lee", "Lee Jae Yong"], role: "Samsung Electronics Executive Chairman"}
+  - {name: "Chung Eui-sun",        aliases: [], role: "Hyundai Motor Group Executive Chair"}
+  - {name: "Chey Tae-won",         aliases: [], role: "SK Group Chairman"}
+  - {name: "Koo Kwang-mo",         aliases: [], role: "LG Group Chairman"}
+  - {name: "Shin Dong-bin",        aliases: [], role: "Lotte Group Chairman"}
+
+  # --- Judiciary ---
+  - {name: "Cho Hee-dae",          aliases: [], role: "Chief Justice of South Korea"}
+
+organizations:
+  - {name: "Government of South Korea", aliases: ["ROK Govt", "South Korean Govt"]}
+  - {name: "Office of the President (ROK)", aliases: ["Presidential Office", "Yongsan"]}
+  - {name: "National Assembly of South Korea", aliases: ["Korean National Assembly"]}
+  - {name: "Supreme Court of Korea", aliases: ["Korean Supreme Court"]}
+  - {name: "Constitutional Court of Korea", aliases: []}
+  - {name: "National Election Commission (Korea)", aliases: ["NEC"]}
+  - {name: "Board of Audit and Inspection", aliases: ["BAI"]}
+
+  # --- Ministries ---
+  - {name: "Ministry of Foreign Affairs (Korea)", aliases: ["MOFA Korea"]}
+  - {name: "Ministry of National Defense (Korea)", aliases: ["MND"]}
+  - {name: "Ministry of Economy and Finance (Korea)", aliases: ["MOEF"]}
+  - {name: "Ministry of Unification", aliases: ["MOU Korea"]}
+
+  # --- Intel / Security ---
+  - {name: "National Intelligence Service (Korea)", aliases: ["NIS"]}
+  - {name: "Republic of Korea Armed Forces", aliases: ["ROK Armed Forces", "ROK Military"]}
+  - {name: "Republic of Korea Army", aliases: ["ROKA"]}
+  - {name: "Republic of Korea Navy", aliases: ["ROKN"]}
+  - {name: "Republic of Korea Air Force", aliases: ["ROKAF"]}
+
+  # --- Central Bank ---
+  - {name: "Bank of Korea",        aliases: ["BOK"]}
+
+  # --- Parties ---
+  - {name: "People Power Party",   aliases: ["PPP", "Gukhimdang"]}
+  - {name: "Democratic Party of Korea", aliases: ["DPK", "Minjudang"]}
+  - {name: "Rebuilding Korea Party", aliases: []}
+  - {name: "Reform Party (Korea)", aliases: []}
+  - {name: "Justice Party (Korea)", aliases: []}
+
+  # --- Media ---
+  - {name: "Yonhap News Agency",   aliases: ["Yonhap"]}
+  - {name: "KBS",                  aliases: ["Korean Broadcasting System"]}
+  - {name: "MBC",                  aliases: ["Munhwa Broadcasting Corporation"]}
+  - {name: "SBS",                  aliases: ["Seoul Broadcasting System"]}
+  - {name: "JTBC",                 aliases: []}
+  - {name: "Chosun Ilbo",          aliases: ["The Chosun Ilbo"]}
+  - {name: "JoongAng Ilbo",        aliases: ["JoongAng Daily"]}
+  - {name: "Dong-A Ilbo",          aliases: []}
+  - {name: "Hankyoreh",            aliases: ["The Hankyoreh"]}
+  - {name: "Korea Times",          aliases: ["The Korea Times"]}
+  - {name: "Korea Herald",         aliases: ["The Korea Herald"]}
+  - {name: "Hankook Ilbo",         aliases: []}
+
+  # --- Chaebol ---
+  - {name: "Samsung Group",        aliases: ["Samsung"]}
+  - {name: "Samsung Electronics",  aliases: []}
+  - {name: "Hyundai Motor Group",  aliases: ["Hyundai"]}
+  - {name: "Kia Corporation",      aliases: ["Kia"]}
+  - {name: "SK Group",             aliases: ["SK"]}
+  - {name: "SK Hynix",             aliases: ["Hynix"]}
+  - {name: "LG Corporation",       aliases: ["LG Group"]}
+  - {name: "LG Electronics",       aliases: []}
+  - {name: "POSCO",                aliases: []}
+  - {name: "Lotte Group",          aliases: ["Lotte"]}
+  - {name: "Hanwha Group",         aliases: []}
+  - {name: "Naver",                aliases: []}
+  - {name: "Kakao",                aliases: ["Kakao Corp"]}
+  - {name: "KB Financial Group",   aliases: ["KB"]}
+
+locations:
+  - {name: "Seoul",                aliases: []}
+  - {name: "Busan",                aliases: ["Pusan"]}
+  - {name: "Incheon",              aliases: []}
+  - {name: "Daegu",                aliases: ["Taegu"]}
+  - {name: "Daejeon",              aliases: ["Taejon"]}
+  - {name: "Gwangju",              aliases: ["Kwangju"]}
+  - {name: "Ulsan",                aliases: []}
+  - {name: "Suwon",                aliases: []}
+  - {name: "Changwon",             aliases: []}
+  - {name: "Goyang",               aliases: []}
+  - {name: "Sejong",               aliases: ["Sejong City"], notes: "administrative capital"}
+  - {name: "Jeju",                 aliases: ["Jeju Island"]}
+
+  # --- Provinces ---
+  - {name: "Gyeonggi",             aliases: ["Gyeonggi Province"]}
+  - {name: "Gangwon",              aliases: ["Gangwon Province"]}
+  - {name: "North Chungcheong",    aliases: ["Chungbuk"]}
+  - {name: "South Chungcheong",    aliases: ["Chungnam"]}
+  - {name: "North Jeolla",         aliases: ["Jeonbuk"]}
+  - {name: "South Jeolla",         aliases: ["Jeonnam"]}
+  - {name: "North Gyeongsang",     aliases: ["Gyeongbuk"]}
+  - {name: "South Gyeongsang",     aliases: ["Gyeongnam"]}
+  - {name: "Jeju Province",        aliases: []}
+
+  # --- DMZ / Korean Peninsula ---
+  - {name: "Korean Demilitarized Zone", aliases: ["DMZ"]}
+  - {name: "Panmunjom",            aliases: []}
+  - {name: "Yongsan",              aliases: [], notes: "presidential office area"}
+
+roles:
+  - {name: "President of South Korea", aliases: ["ROK President"]}
+  - {name: "Prime Minister of South Korea", aliases: ["ROK PM", "Korean PM"]}
+  - {name: "Speaker of the National Assembly (Korea)", aliases: []}
+  - {name: "Foreign Minister of South Korea", aliases: []}
+  - {name: "Defense Minister of South Korea", aliases: []}
+  - {name: "Governor of the Bank of Korea", aliases: ["BOK Governor"]}
+  - {name: "Chief Justice of South Korea", aliases: []}

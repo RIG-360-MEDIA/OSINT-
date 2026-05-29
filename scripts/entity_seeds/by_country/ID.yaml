@@ -1,0 +1,125 @@
+# Entity seed — Republic of Indonesia
+country: ID
+version: v1
+notes: |
+  Sources: presidenri.go.id, dpr.go.id rosters, IDX Composite.
+  Reflects Prabowo Cabinet (since Oct 2024).
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Prabowo Govt ---
+  - {name: "Prabowo Subianto",     aliases: ["Prabowo", "President Prabowo"], role: "President", party: "Gerindra"}
+  - {name: "Gibran Rakabuming Raka", aliases: ["Gibran"], role: "Vice President", notes: "Jokowi's son"}
+  - {name: "Sugiono",              aliases: [], role: "Foreign Minister"}
+  - {name: "Sjafrie Sjamsoeddin",  aliases: [], role: "Defence Minister"}
+  - {name: "Sri Mulyani Indrawati", aliases: ["Sri Mulyani"], role: "Finance Minister"}
+  - {name: "Yusril Ihza Mahendra", aliases: [], role: "Law Minister"}
+
+  # --- Recent Presidents ---
+  - {name: "Joko Widodo",          aliases: ["Jokowi"], role: "Former President", party: "PDI-P"}
+  - {name: "Susilo Bambang Yudhoyono", aliases: ["SBY"], role: "Former President"}
+  - {name: "Megawati Sukarnoputri", aliases: ["Megawati"], role: "Former President / PDI-P Chair", party: "PDI-P"}
+
+  # --- Opposition / Other ---
+  - {name: "Anies Baswedan",       aliases: ["Anies"], role: "Former Jakarta Governor / 2024 Presidential candidate"}
+  - {name: "Ganjar Pranowo",       aliases: ["Ganjar"], role: "Former Central Java Governor / 2024 candidate", party: "PDI-P"}
+
+  # --- Speakers ---
+  - {name: "Puan Maharani",        aliases: [], role: "Speaker of the DPR", party: "PDI-P"}
+
+  # --- Central Bank ---
+  - {name: "Perry Warjiyo",        aliases: [], role: "Governor of Bank Indonesia"}
+
+organizations:
+  - {name: "Government of Indonesia", aliases: ["Indonesian Govt"]}
+  - {name: "Indonesian Presidency", aliases: []}
+  - {name: "People's Consultative Assembly", aliases: ["MPR"]}
+  - {name: "House of Representatives (Indonesia)", aliases: ["DPR"]}
+  - {name: "Regional Representative Council (Indonesia)", aliases: ["DPD"]}
+  - {name: "Supreme Court of Indonesia", aliases: ["MA"]}
+  - {name: "Constitutional Court of Indonesia", aliases: ["MK"]}
+  - {name: "General Elections Commission (Indonesia)", aliases: ["KPU"]}
+
+  # --- Ministries ---
+  - {name: "Indonesian Ministry of Foreign Affairs", aliases: ["Indonesian MFA"]}
+  - {name: "Indonesian Ministry of Defence", aliases: []}
+  - {name: "Indonesian Ministry of Finance", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "Bank Indonesia",       aliases: ["BI", "Indonesian Central Bank"]}
+
+  # --- Military / Intel ---
+  - {name: "Indonesian National Armed Forces", aliases: ["TNI"]}
+  - {name: "Indonesian Army",      aliases: ["TNI-AD"]}
+  - {name: "Indonesian Navy",      aliases: ["TNI-AL"]}
+  - {name: "Indonesian Air Force", aliases: ["TNI-AU"]}
+  - {name: "Indonesian National Police", aliases: ["Polri"]}
+  - {name: "State Intelligence Agency (Indonesia)", aliases: ["BIN"]}
+
+  # --- Parties ---
+  - {name: "Indonesian Democratic Party of Struggle", aliases: ["PDI-P"]}
+  - {name: "Gerindra",             aliases: ["Great Indonesia Movement Party"]}
+  - {name: "Golkar",               aliases: []}
+  - {name: "PKB",                  aliases: ["National Awakening Party"]}
+  - {name: "NasDem",               aliases: ["National Democratic Party"]}
+  - {name: "Democratic Party (Indonesia)", aliases: ["PD"]}
+  - {name: "PKS",                  aliases: ["Prosperous Justice Party"]}
+  - {name: "PPP (Indonesia)",      aliases: ["United Development Party"]}
+  - {name: "PAN (Indonesia)",      aliases: ["National Mandate Party"]}
+
+  # --- Media ---
+  - {name: "Antara (news agency)", aliases: ["Antara"]}
+  - {name: "Kompas",               aliases: ["Harian Kompas"]}
+  - {name: "Jakarta Post",         aliases: ["The Jakarta Post"]}
+  - {name: "Tempo (magazine)",     aliases: ["Tempo Magazine"]}
+  - {name: "Detik.com",            aliases: ["Detik"]}
+  - {name: "Tribunnews",           aliases: []}
+  - {name: "Kompas TV",            aliases: []}
+  - {name: "Metro TV",             aliases: []}
+  - {name: "RCTI",                 aliases: []}
+  - {name: "TVRI",                 aliases: []}
+
+  # --- Corps ---
+  - {name: "Pertamina",            aliases: []}
+  - {name: "Bank Mandiri",         aliases: []}
+  - {name: "Bank Central Asia",    aliases: ["BCA"]}
+  - {name: "Bank Rakyat Indonesia", aliases: ["BRI"]}
+  - {name: "Telkom Indonesia",     aliases: []}
+  - {name: "GoTo Group",           aliases: ["Gojek-Tokopedia"]}
+  - {name: "Garuda Indonesia",     aliases: []}
+  - {name: "Astra International",  aliases: ["Astra"]}
+
+locations:
+  - {name: "Indonesia",            aliases: []}
+  - {name: "Jakarta",              aliases: ["DKI Jakarta"]}
+  - {name: "Surabaya",             aliases: []}
+  - {name: "Bandung",              aliases: []}
+  - {name: "Medan",                aliases: []}
+  - {name: "Semarang",             aliases: []}
+  - {name: "Makassar",             aliases: []}
+  - {name: "Palembang",            aliases: []}
+  - {name: "Yogyakarta",           aliases: ["Jogja", "Jogjakarta"]}
+  - {name: "Denpasar",             aliases: []}
+  - {name: "Balikpapan",           aliases: []}
+  - {name: "Banjarmasin",          aliases: []}
+  - {name: "Pontianak",            aliases: []}
+  - {name: "Manado",               aliases: []}
+  - {name: "Padang",               aliases: []}
+  - {name: "Nusantara",            aliases: ["IKN Nusantara"], notes: "New capital city"}
+
+  # --- Provinces ---
+  - {name: "Bali",                 aliases: []}
+  - {name: "Java",                 aliases: ["Jawa"]}
+  - {name: "Sumatra",              aliases: ["Sumatera"]}
+  - {name: "Kalimantan",           aliases: ["Borneo"]}
+  - {name: "Sulawesi",             aliases: []}
+  - {name: "Papua",                aliases: []}
+  - {name: "West Papua",           aliases: []}
+  - {name: "Aceh",                 aliases: []}
+
+roles:
+  - {name: "President of Indonesia", aliases: ["Indonesian President"]}
+  - {name: "Vice President of Indonesia", aliases: []}
+  - {name: "Foreign Minister of Indonesia", aliases: []}
+  - {name: "Speaker of the People's Representative Council", aliases: []}
+  - {name: "Governor of Bank Indonesia", aliases: []}

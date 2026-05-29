@@ -1,0 +1,153 @@
+# Entity seed — Japan
+country: JP
+version: v1
+notes: |
+  Sources: Kantei.go.jp Cabinet list, Diet member rolls, Nikkei 225,
+  Wikipedia "List of Japanese" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Current Govt (Ishiba Cabinet, since Oct 2024) ---
+  - {name: "Shigeru Ishiba",       aliases: ["Ishiba"], role: "Prime Minister", party: "LDP"}
+  - {name: "Yoshimasa Hayashi",    aliases: ["Hayashi"], role: "Chief Cabinet Secretary", party: "LDP"}
+  - {name: "Takeshi Iwaya",        aliases: ["Iwaya"], role: "Foreign Minister", party: "LDP"}
+  - {name: "Gen Nakatani",         aliases: [], role: "Defense Minister", party: "LDP"}
+  - {name: "Katsunobu Kato",       aliases: ["Kato"], role: "Finance Minister", party: "LDP"}
+  - {name: "Yoji Muto",            aliases: [], role: "METI Minister", party: "LDP"}
+  - {name: "Toshimitsu Motegi",    aliases: ["Motegi"], role: "Former Foreign Minister", party: "LDP"}
+
+  # --- LDP leadership ---
+  - {name: "Yoshihiko Noda",       aliases: ["Noda"], role: "Opposition Leader / CDP head", party: "CDP"}
+  - {name: "Hiroshi Moriyama",     aliases: ["Moriyama"], role: "LDP Secretary-General", party: "LDP"}
+  - {name: "Sanae Takaichi",       aliases: ["Takaichi"], notes: "LDP leadership candidate", party: "LDP"}
+
+  # --- Recent PMs ---
+  - {name: "Fumio Kishida",        aliases: ["Kishida"], role: "Former PM", party: "LDP"}
+  - {name: "Yoshihide Suga",       aliases: ["Suga"], role: "Former PM", party: "LDP"}
+  - {name: "Shinzo Abe",           aliases: ["Abe"], role: "Former PM (assassinated 2022)", party: "LDP"}
+  - {name: "Taro Aso",             aliases: ["Aso"], role: "Former PM", party: "LDP"}
+  - {name: "Junichiro Koizumi",    aliases: ["Koizumi"], role: "Former PM", party: "LDP"}
+
+  # --- Imperial Family ---
+  - {name: "Emperor Naruhito",     aliases: ["Naruhito", "His Majesty the Emperor"], role: "Emperor of Japan"}
+  - {name: "Empress Masako",       aliases: ["Masako"]}
+  - {name: "Crown Prince Akishino", aliases: ["Akishino"]}
+
+  # --- Other Party Heads ---
+  - {name: "Tetsuo Saito",         aliases: ["Saito"], role: "Komeito Leader", party: "Komeito"}
+  - {name: "Yuichiro Tamaki",      aliases: ["Tamaki"], role: "DPP Leader", party: "DPP"}
+  - {name: "Tomoko Tamura",        aliases: [], role: "JCP Chair", party: "JCP"}
+
+  # --- Bank of Japan ---
+  - {name: "Kazuo Ueda",           aliases: ["Ueda"], role: "Bank of Japan Governor"}
+  - {name: "Haruhiko Kuroda",      aliases: ["Kuroda"], role: "Former BOJ Governor"}
+
+  # --- Business ---
+  - {name: "Akio Toyoda",          aliases: ["Toyoda"], role: "Toyota Chairman"}
+  - {name: "Masayoshi Son",        aliases: ["Son"], role: "SoftBank founder"}
+  - {name: "Tadashi Yanai",        aliases: ["Yanai"], role: "Fast Retailing / Uniqlo CEO"}
+
+organizations:
+  - {name: "Cabinet of Japan",     aliases: ["Japanese Cabinet"]}
+  - {name: "Office of the Prime Minister of Japan", aliases: ["Kantei", "Japanese PMO"]}
+  - {name: "National Diet of Japan", aliases: ["Diet", "Japanese Diet"]}
+  - {name: "House of Representatives (Japan)", aliases: ["Shugiin"]}
+  - {name: "House of Councillors", aliases: ["Sangiin"]}
+  - {name: "Supreme Court of Japan", aliases: []}
+  - {name: "Imperial Household Agency", aliases: ["IHA"]}
+
+  # --- Ministries ---
+  - {name: "Ministry of Foreign Affairs of Japan", aliases: ["MOFA Japan", "Gaimusho"]}
+  - {name: "Ministry of Defense of Japan", aliases: ["MOD Japan", "Boeisho"]}
+  - {name: "Ministry of Finance of Japan", aliases: ["MOF Japan"]}
+  - {name: "Ministry of Economy, Trade and Industry", aliases: ["METI"]}
+  - {name: "Ministry of Justice (Japan)", aliases: ["MOJ Japan"]}
+
+  # --- Central Bank ---
+  - {name: "Bank of Japan",        aliases: ["BOJ", "BoJ", "Nippon Ginko"]}
+
+  # --- Military ---
+  - {name: "Japan Self-Defense Forces", aliases: ["JSDF", "SDF"]}
+  - {name: "Japan Ground Self-Defense Force", aliases: ["JGSDF"]}
+  - {name: "Japan Maritime Self-Defense Force", aliases: ["JMSDF"]}
+  - {name: "Japan Air Self-Defense Force", aliases: ["JASDF"]}
+
+  # --- Parties ---
+  - {name: "Liberal Democratic Party (Japan)", aliases: ["LDP", "Jiminto"]}
+  - {name: "Constitutional Democratic Party of Japan", aliases: ["CDP"]}
+  - {name: "Komeito",              aliases: []}
+  - {name: "Democratic Party for the People", aliases: ["DPP"]}
+  - {name: "Japan Innovation Party", aliases: ["Ishin"]}
+  - {name: "Japanese Communist Party", aliases: ["JCP"]}
+  - {name: "Reiwa Shinsengumi",    aliases: []}
+
+  # --- Media ---
+  - {name: "NHK",                  aliases: ["Nippon Hoso Kyokai", "Japan Broadcasting Corporation"]}
+  - {name: "Asahi Shimbun",        aliases: ["Asahi"]}
+  - {name: "Yomiuri Shimbun",      aliases: ["Yomiuri"]}
+  - {name: "Mainichi Shimbun",     aliases: ["Mainichi"]}
+  - {name: "Nikkei",               aliases: ["Nihon Keizai Shimbun"]}
+  - {name: "Sankei Shimbun",       aliases: ["Sankei"]}
+  - {name: "Japan Times",          aliases: []}
+  - {name: "Kyodo News",           aliases: ["Kyodo"]}
+  - {name: "Jiji Press",           aliases: []}
+  - {name: "Fuji TV",              aliases: ["Fuji Television"]}
+  - {name: "TBS Television",       aliases: ["TBS"]}
+
+  # --- Corporations ---
+  - {name: "Toyota Motor Corporation", aliases: ["Toyota"]}
+  - {name: "Sony Group",           aliases: ["Sony"]}
+  - {name: "Honda Motor",          aliases: ["Honda"]}
+  - {name: "SoftBank Group",       aliases: ["SoftBank"]}
+  - {name: "Nintendo",             aliases: []}
+  - {name: "Mitsubishi UFJ Financial Group", aliases: ["MUFG"]}
+  - {name: "Sumitomo Mitsui Financial Group", aliases: ["SMBC Group", "SMFG"]}
+  - {name: "Mizuho Financial Group", aliases: ["Mizuho"]}
+  - {name: "Nippon Steel",         aliases: []}
+  - {name: "Hitachi",              aliases: []}
+  - {name: "Panasonic",            aliases: []}
+  - {name: "Mitsubishi Heavy Industries", aliases: ["MHI"]}
+  - {name: "Fast Retailing",       aliases: ["Uniqlo parent"]}
+  - {name: "Tokyo Electron",       aliases: ["TEL"]}
+  - {name: "Rakuten",              aliases: []}
+
+locations:
+  - {name: "Tokyo",                aliases: ["Tokyo Metropolis"]}
+  - {name: "Osaka",                aliases: []}
+  - {name: "Kyoto",                aliases: []}
+  - {name: "Yokohama",             aliases: []}
+  - {name: "Nagoya",               aliases: []}
+  - {name: "Sapporo",              aliases: []}
+  - {name: "Sendai",               aliases: []}
+  - {name: "Hiroshima",            aliases: []}
+  - {name: "Nagasaki",             aliases: []}
+  - {name: "Fukuoka",              aliases: []}
+  - {name: "Kobe",                 aliases: []}
+  - {name: "Okinawa",              aliases: [], notes: "prefecture / US bases"}
+
+  # --- Major prefectures ---
+  - {name: "Hokkaido",             aliases: []}
+  - {name: "Honshu",               aliases: []}
+  - {name: "Kyushu",               aliases: []}
+  - {name: "Shikoku",              aliases: []}
+  - {name: "Kanagawa",             aliases: []}
+  - {name: "Hokkaido Prefecture",  aliases: []}
+  - {name: "Aichi Prefecture",     aliases: []}
+  - {name: "Hyogo Prefecture",     aliases: []}
+
+  # --- Landmarks ---
+  - {name: "Kasumigaseki",         aliases: [], notes: "Japanese bureaucracy district"}
+  - {name: "Nagatacho",            aliases: [], notes: "Japanese political district / Diet"}
+  - {name: "Imperial Palace",      aliases: ["Kokyo"]}
+  - {name: "Yasukuni Shrine",      aliases: []}
+  - {name: "Mount Fuji",           aliases: ["Fujisan"]}
+
+roles:
+  - {name: "Prime Minister of Japan", aliases: ["Japanese PM", "PM of Japan"]}
+  - {name: "Chief Cabinet Secretary", aliases: []}
+  - {name: "Emperor of Japan",     aliases: ["Tenno"]}
+  - {name: "Foreign Minister of Japan", aliases: []}
+  - {name: "Defense Minister of Japan", aliases: []}
+  - {name: "Governor of the Bank of Japan", aliases: ["BOJ Governor"]}
+  - {name: "Speaker of the House of Representatives (Japan)", aliases: []}
+  - {name: "Governor (Japan)",     aliases: ["Tochiji", "Kenchiji"]}

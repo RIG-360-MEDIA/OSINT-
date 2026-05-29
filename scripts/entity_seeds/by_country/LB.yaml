@@ -1,0 +1,104 @@
+# Entity seed — Lebanese Republic
+country: LB
+version: v1
+notes: |
+  Sources: presidency.gov.lb, pcm.gov.lb, Al-Akhbar / L'Orient Today
+  mastheads. Reflects Jan 2025 govt formation (Aoun president, Salam PM).
+  Last updated: 2026-05-28.
+
+persons:
+  # --- New Govt (since Jan 2025) ---
+  - {name: "Joseph Aoun",          aliases: ["President Aoun (Joseph)"], role: "President of Lebanon (since Jan 2025)"}
+  - {name: "Nawaf Salam",          aliases: ["Salam"], role: "Prime Minister"}
+  - {name: "Youssef Raji",         aliases: [], role: "Foreign Minister"}
+  - {name: "Michel Menassa",       aliases: [], role: "Defence Minister"}
+  - {name: "Yassine Jaber",        aliases: [], role: "Finance Minister"}
+  - {name: "Ahmad al-Hajjar",      aliases: [], role: "Interior Minister"}
+
+  # --- Speaker (long-serving) ---
+  - {name: "Nabih Berri",          aliases: ["Berri"], role: "Speaker of Parliament", party: "Amal"}
+
+  # --- Former Presidents/PMs ---
+  - {name: "Michel Aoun",          aliases: [], role: "Former President (ended Oct 2022)"}
+  - {name: "Najib Mikati",         aliases: ["Mikati"], role: "Former PM"}
+  - {name: "Saad Hariri",          aliases: ["Hariri"], role: "Former PM"}
+  - {name: "Hassan Diab",          aliases: [], role: "Former PM"}
+  - {name: "Rafic Hariri",         aliases: ["Rafik Hariri"], notes: "Former PM (assassinated 2005)"}
+
+  # --- Hezbollah ---
+  - {name: "Hassan Nasrallah",     aliases: ["Nasrallah"], notes: "Hezbollah Secretary-General (killed Sept 2024)"}
+  - {name: "Naim Qassem",          aliases: [], role: "Hezbollah Secretary-General (since Oct 2024)"}
+  - {name: "Hashem Safieddine",    aliases: [], notes: "Killed before assuming Hezbollah leadership"}
+
+  # --- Other party leaders ---
+  - {name: "Samir Geagea",         aliases: ["Geagea"], role: "Lebanese Forces Leader", party: "Lebanese Forces"}
+  - {name: "Gebran Bassil",        aliases: ["Bassil"], role: "FPM Leader", party: "FPM"}
+  - {name: "Walid Jumblatt",       aliases: ["Jumblatt"], party: "PSP"}
+
+  # --- Central Bank ---
+  - {name: "Wassim Mansouri",      aliases: [], role: "Acting Banque du Liban Governor"}
+  - {name: "Riad Salameh",         aliases: ["Salameh"], role: "Former BdL Governor"}
+
+organizations:
+  - {name: "Government of Lebanon", aliases: ["Lebanese Govt"]}
+  - {name: "Lebanese Cabinet",     aliases: []}
+  - {name: "Parliament of Lebanon", aliases: ["Lebanese Parliament", "Majlis al-Nuwwab"]}
+
+  # --- Ministries ---
+  - {name: "Lebanese Ministry of Foreign Affairs", aliases: ["Lebanese MFA"]}
+  - {name: "Lebanese Ministry of Defense", aliases: []}
+  - {name: "Lebanese Ministry of Finance", aliases: []}
+
+  # --- Central Bank ---
+  - {name: "Banque du Liban",      aliases: ["BdL", "Lebanese Central Bank"]}
+
+  # --- Military / Security ---
+  - {name: "Lebanese Armed Forces", aliases: ["LAF"]}
+  - {name: "Internal Security Forces (Lebanon)", aliases: ["ISF Lebanon"]}
+  - {name: "General Security (Lebanon)", aliases: ["General Directorate of General Security"]}
+
+  # --- Parties / Militias ---
+  - {name: "Hezbollah",            aliases: ["Hizbullah", "Hizb Allah", "Hizbollah"]}
+  - {name: "Amal Movement",        aliases: ["Amal"]}
+  - {name: "Free Patriotic Movement", aliases: ["FPM"]}
+  - {name: "Lebanese Forces",      aliases: ["LF"]}
+  - {name: "Kataeb Party",         aliases: ["Phalanges"]}
+  - {name: "Progressive Socialist Party", aliases: ["PSP"]}
+  - {name: "Future Movement",      aliases: []}
+
+  # --- Media ---
+  - {name: "Al-Akhbar (Lebanon)",  aliases: ["Al Akhbar"]}
+  - {name: "L'Orient-Le Jour",     aliases: ["L'Orient Today"]}
+  - {name: "An-Nahar",             aliases: ["The Daily Star"]}
+  - {name: "Al-Manar",             aliases: [], notes: "Hezbollah-affiliated"}
+  - {name: "MTV (Lebanon)",        aliases: []}
+  - {name: "LBCI",                 aliases: ["Lebanese Broadcasting Corporation"]}
+  - {name: "OTV (Lebanon)",        aliases: []}
+  - {name: "Al-Jadeed",            aliases: []}
+  - {name: "National News Agency (Lebanon)", aliases: ["NNA"]}
+
+locations:
+  - {name: "Lebanon",              aliases: ["Lebanese Republic"]}
+  - {name: "Beirut",               aliases: []}
+  - {name: "Tripoli (Lebanon)",    aliases: []}
+  - {name: "Sidon",                aliases: ["Saida"]}
+  - {name: "Tyre",                 aliases: ["Sour"]}
+  - {name: "Nabatieh",             aliases: []}
+  - {name: "Zahle",                aliases: ["Zahlé"]}
+  - {name: "Jounieh",              aliases: []}
+  - {name: "Baalbek",              aliases: []}
+
+  # --- Strategic ---
+  - {name: "Bekaa Valley",         aliases: ["Beqaa"]}
+  - {name: "South Lebanon",        aliases: []}
+  - {name: "Blue Line",            aliases: [], notes: "Israel-Lebanon border"}
+  - {name: "Litani River",         aliases: []}
+  - {name: "Dahieh",               aliases: [], notes: "southern Beirut suburb"}
+
+roles:
+  - {name: "President of Lebanon", aliases: ["Lebanese President"]}
+  - {name: "Prime Minister of Lebanon", aliases: ["Lebanese PM"]}
+  - {name: "Speaker of the Lebanese Parliament", aliases: []}
+  - {name: "Secretary-General of Hezbollah", aliases: ["Hezbollah Secretary-General"]}
+  - {name: "Governor of the Banque du Liban", aliases: ["BdL Governor"]}
+  - {name: "Commander of the Lebanese Armed Forces", aliases: []}

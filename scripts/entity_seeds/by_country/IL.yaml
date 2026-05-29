@@ -1,0 +1,145 @@
+# Entity seed — State of Israel
+country: IL
+version: v1
+notes: |
+  Sources: gov.il cabinet, Knesset roster, IDF spokesperson site,
+  Wikipedia "List of Israeli" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Current Govt (Netanyahu Cabinet) ---
+  - {name: "Benjamin Netanyahu",   aliases: ["Bibi", "Netanyahu"], role: "Prime Minister", party: "Likud"}
+  - {name: "Isaac Herzog",         aliases: ["Buji Herzog", "Herzog"], role: "President"}
+  - {name: "Israel Katz",          aliases: ["Katz"], role: "Defense Minister", party: "Likud"}
+  - {name: "Gideon Sa'ar",         aliases: ["Saar"], role: "Foreign Minister", party: "New Hope"}
+  - {name: "Bezalel Smotrich",     aliases: ["Smotrich"], role: "Finance Minister", party: "Religious Zionist"}
+  - {name: "Itamar Ben-Gvir",      aliases: ["Ben Gvir"], role: "National Security Minister", party: "Otzma Yehudit"}
+  - {name: "Yariv Levin",          aliases: ["Levin"], role: "Justice Minister", party: "Likud"}
+  - {name: "Miri Regev",           aliases: ["Regev"], role: "Transport Minister", party: "Likud"}
+  - {name: "Yoav Gallant",         aliases: ["Gallant"], role: "Former Defense Minister", party: "Likud"}
+  - {name: "Ron Dermer",           aliases: ["Dermer"], role: "Strategic Affairs Minister"}
+
+  # --- Opposition ---
+  - {name: "Yair Lapid",           aliases: ["Lapid"], role: "Opposition Leader", party: "Yesh Atid"}
+  - {name: "Benny Gantz",          aliases: ["Gantz"], role: "Former Defense Minister", party: "National Unity"}
+  - {name: "Yair Golan",           aliases: [], party: "Democrats"}
+  - {name: "Avigdor Lieberman",    aliases: ["Liberman"], party: "Yisrael Beiteinu"}
+  - {name: "Naftali Bennett",      aliases: ["Bennett"], notes: "Former PM"}
+
+  # --- Defense / Intelligence ---
+  - {name: "Eyal Zamir",           aliases: [], role: "IDF Chief of Staff"}
+  - {name: "Herzi Halevi",         aliases: ["Halevi"], role: "Former IDF Chief of Staff"}
+  - {name: "Ronen Bar",            aliases: [], role: "Shin Bet Director"}
+  - {name: "David Barnea",         aliases: [], role: "Mossad Director"}
+  - {name: "Daniel Hagari",        aliases: ["Hagari"], role: "Former IDF Spokesperson"}
+
+  # --- Judiciary ---
+  - {name: "Isaac Amit",           aliases: [], role: "Supreme Court President"}
+  - {name: "Esther Hayut",         aliases: [], role: "Former Supreme Court President"}
+  - {name: "Gali Baharav-Miara",   aliases: [], role: "Attorney General"}
+
+  # --- Bank of Israel ---
+  - {name: "Amir Yaron",           aliases: [], role: "Governor of the Bank of Israel"}
+
+organizations:
+  - {name: "Government of Israel", aliases: ["Israeli Govt"]}
+  - {name: "Prime Minister's Office (Israel)", aliases: ["Israeli PMO"]}
+  - {name: "Knesset",              aliases: ["Israeli Parliament"]}
+  - {name: "Supreme Court of Israel", aliases: ["Israeli Supreme Court"]}
+  - {name: "Central Elections Committee (Israel)", aliases: []}
+  - {name: "Bank of Israel",       aliases: ["BoI"]}
+
+  # --- Ministries ---
+  - {name: "Israeli Ministry of Foreign Affairs", aliases: ["Israeli MFA"]}
+  - {name: "Israeli Ministry of Defense", aliases: ["Israeli MoD"]}
+  - {name: "Israeli Ministry of Finance", aliases: []}
+
+  # --- Military / Intel ---
+  - {name: "Israel Defense Forces", aliases: ["IDF", "Tzahal"]}
+  - {name: "Israeli Air Force",    aliases: ["IAF"]}
+  - {name: "Israeli Navy",         aliases: []}
+  - {name: "Mossad",               aliases: ["Israeli intelligence"]}
+  - {name: "Shin Bet",             aliases: ["Shabak", "Israeli Security Agency", "ISA"]}
+  - {name: "Aman",                 aliases: ["IDF Military Intelligence"]}
+  - {name: "Israel Police",        aliases: []}
+  - {name: "Border Police (Israel)", aliases: ["Magav"]}
+
+  # --- Parties ---
+  - {name: "Likud",                aliases: ["Likud Party"]}
+  - {name: "Yesh Atid",            aliases: []}
+  - {name: "National Unity (Israel)", aliases: ["Blue and White"]}
+  - {name: "Religious Zionist Party", aliases: ["RZP"]}
+  - {name: "Otzma Yehudit",        aliases: ["Jewish Power"]}
+  - {name: "Shas",                 aliases: []}
+  - {name: "United Torah Judaism", aliases: ["UTJ"]}
+  - {name: "Yisrael Beiteinu",     aliases: ["Yisrael Beytenu"]}
+  - {name: "Labor Party (Israel)", aliases: ["HaAvoda"]}
+  - {name: "The Democrats (Israel)", aliases: []}
+  - {name: "Hadash–Ta'al",         aliases: []}
+  - {name: "Ra'am",                aliases: ["United Arab List"]}
+
+  # --- Media ---
+  - {name: "Haaretz",              aliases: []}
+  - {name: "Yedioth Ahronoth",     aliases: ["Yediot Ahronot", "Ynet"]}
+  - {name: "Israel Hayom",         aliases: []}
+  - {name: "The Times of Israel",  aliases: ["Times of Israel", "TOI"]}
+  - {name: "The Jerusalem Post",   aliases: ["Jerusalem Post", "JPost"]}
+  - {name: "Channel 12 (Israel)",  aliases: ["Keshet 12"]}
+  - {name: "Channel 13 (Israel)",  aliases: ["Reshet 13"]}
+  - {name: "Kan 11",               aliases: ["Kan", "Israeli Public Broadcasting Corporation"]}
+  - {name: "i24NEWS",              aliases: []}
+  - {name: "Walla! News",          aliases: ["Walla"]}
+
+  # --- Corps ---
+  - {name: "Bank Hapoalim",        aliases: []}
+  - {name: "Bank Leumi",           aliases: []}
+  - {name: "Israel Aerospace Industries", aliases: ["IAI"]}
+  - {name: "Elbit Systems",        aliases: []}
+  - {name: "Rafael Advanced Defense Systems", aliases: ["Rafael"]}
+  - {name: "Check Point Software", aliases: ["Check Point"]}
+  - {name: "Teva Pharmaceutical",  aliases: ["Teva"]}
+
+locations:
+  - {name: "Jerusalem",            aliases: ["Yerushalayim", "Al-Quds"]}
+  - {name: "Tel Aviv",             aliases: ["Tel Aviv-Yafo"]}
+  - {name: "Haifa",                aliases: []}
+  - {name: "Beersheba",            aliases: ["Be'er Sheva"]}
+  - {name: "Ashdod",               aliases: []}
+  - {name: "Petah Tikva",          aliases: []}
+  - {name: "Netanya",              aliases: []}
+  - {name: "Rishon LeZion",        aliases: []}
+  - {name: "Ramat Gan",            aliases: []}
+  - {name: "Eilat",                aliases: []}
+  - {name: "Nazareth",             aliases: []}
+  - {name: "Sderot",               aliases: []}
+  - {name: "Ashkelon",             aliases: []}
+
+  # --- Disputed / occupied ---
+  - {name: "West Bank",            aliases: ["Judea and Samaria"]}
+  - {name: "Gaza Strip",           aliases: ["Gaza"]}
+  - {name: "Golan Heights",        aliases: []}
+  - {name: "East Jerusalem",       aliases: []}
+  - {name: "Ramallah",             aliases: []}
+  - {name: "Hebron",               aliases: ["Al-Khalil"]}
+  - {name: "Khan Younis",          aliases: []}
+  - {name: "Rafah",                aliases: []}
+  - {name: "Jenin",                aliases: []}
+  - {name: "Nablus",               aliases: []}
+  - {name: "Bethlehem",            aliases: []}
+
+  # --- Landmarks ---
+  - {name: "Knesset (location)",   aliases: []}
+  - {name: "Western Wall",         aliases: ["Kotel", "Wailing Wall"]}
+  - {name: "Temple Mount",         aliases: ["Haram al-Sharif", "Al-Aqsa compound"]}
+  - {name: "Al-Aqsa Mosque",       aliases: ["Al Aqsa"]}
+  - {name: "Kirya",                aliases: [], notes: "IDF HQ in Tel Aviv"}
+
+roles:
+  - {name: "Prime Minister of Israel", aliases: ["Israeli PM"]}
+  - {name: "President of Israel",  aliases: []}
+  - {name: "Foreign Minister of Israel", aliases: []}
+  - {name: "Defense Minister of Israel", aliases: []}
+  - {name: "IDF Chief of Staff",   aliases: ["Ramatkal"]}
+  - {name: "Shin Bet Director",    aliases: []}
+  - {name: "Mossad Director",      aliases: []}
+  - {name: "Governor of the Bank of Israel", aliases: []}

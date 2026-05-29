@@ -1,0 +1,124 @@
+# Entity seed — Islamic Republic of Iran
+country: IR
+version: v1
+notes: |
+  Sources: Leader.ir, President.ir, IRNA, PressTV mastheads, Wikipedia
+  "List of Iranian" pages, US/EU sanctions lists.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Leadership ---
+  - {name: "Ali Khamenei",         aliases: ["Ayatollah Khamenei", "Khamenei", "Supreme Leader"], role: "Supreme Leader"}
+  - {name: "Masoud Pezeshkian",    aliases: ["Pezeshkian"], role: "President of Iran"}
+  - {name: "Mohammad Reza Aref",   aliases: ["Aref"], role: "First Vice President"}
+  - {name: "Abbas Araghchi",       aliases: ["Araghchi"], role: "Foreign Minister"}
+
+  # --- Recent Presidents ---
+  - {name: "Ebrahim Raisi",        aliases: ["Raisi"], notes: "Former President (died May 2024)"}
+  - {name: "Hassan Rouhani",       aliases: ["Rouhani"], role: "Former President"}
+  - {name: "Mahmoud Ahmadinejad",  aliases: ["Ahmadinejad"], role: "Former President"}
+  - {name: "Mohammad Khatami",     aliases: ["Khatami"], role: "Former President"}
+
+  # --- IRGC / Military ---
+  - {name: "Hossein Salami",       aliases: [], role: "IRGC Commander-in-Chief"}
+  - {name: "Esmail Qaani",         aliases: ["Ismail Ghaani"], role: "Quds Force Commander"}
+  - {name: "Qasem Soleimani",      aliases: ["Soleimani"], notes: "Former Quds Commander (assassinated Jan 2020)"}
+  - {name: "Mohammad Bagheri",     aliases: [], role: "Chief of General Staff of Iranian Armed Forces"}
+  - {name: "Amir Hatami",          aliases: [], role: "Defense Minister"}
+
+  # --- Diplomacy ---
+  - {name: "Mohammad Javad Zarif", aliases: ["Zarif"], role: "Former Foreign Minister"}
+
+  # --- Judiciary / Powerful Clerics ---
+  - {name: "Gholam-Hossein Mohseni-Eje'i", aliases: ["Mohseni-Eje'i"], role: "Chief Justice"}
+  - {name: "Sadeq Larijani",       aliases: [], role: "Head of Expediency Council"}
+  - {name: "Mojtaba Khamenei",     aliases: [], notes: "Khamenei's son, potential successor"}
+
+  # --- Central Bank ---
+  - {name: "Mohammad Reza Farzin", aliases: [], role: "Central Bank of Iran Governor"}
+
+  # --- Opposition / activists ---
+  - {name: "Mir-Hossein Mousavi",  aliases: ["Mousavi"], notes: "Green Movement leader (house arrest)"}
+  - {name: "Mehdi Karroubi",       aliases: [], notes: "Opposition cleric (house arrest)"}
+  - {name: "Narges Mohammadi",     aliases: [], notes: "Nobel Peace Laureate 2023, jailed activist"}
+  - {name: "Mahsa Amini",          aliases: ["Jina Amini"], notes: "Triggered 2022 protests after death in custody"}
+  - {name: "Reza Pahlavi",         aliases: [], notes: "Exiled Crown Prince"}
+
+organizations:
+  - {name: "Government of Iran",   aliases: ["Iranian Govt"]}
+  - {name: "Iranian Presidency",   aliases: ["Office of the President of Iran"]}
+  - {name: "Office of the Supreme Leader of Iran", aliases: ["Leader's Office", "Beit Rahbari"]}
+  - {name: "Islamic Consultative Assembly", aliases: ["Iranian Majlis", "Majlis"]}
+  - {name: "Guardian Council",     aliases: []}
+  - {name: "Assembly of Experts",  aliases: []}
+  - {name: "Expediency Discernment Council", aliases: ["Expediency Council"]}
+  - {name: "Supreme National Security Council of Iran", aliases: ["SNSC"]}
+
+  # --- Ministries ---
+  - {name: "Ministry of Foreign Affairs (Iran)", aliases: ["Iran MFA"]}
+  - {name: "Ministry of Defense (Iran)",     aliases: ["Iran MOD"]}
+  - {name: "Ministry of Intelligence (Iran)", aliases: ["VAJA", "MOIS"]}
+  - {name: "Ministry of Petroleum (Iran)",   aliases: ["Iran Oil Ministry"]}
+
+  # --- Military / Intelligence ---
+  - {name: "Islamic Revolutionary Guard Corps", aliases: ["IRGC", "Sepah"]}
+  - {name: "Quds Force",           aliases: ["IRGC Quds"]}
+  - {name: "Basij",                aliases: ["Basij Resistance Force"]}
+  - {name: "Artesh",               aliases: ["Islamic Republic of Iran Army"]}
+  - {name: "Iranian Navy",         aliases: []}
+  - {name: "Law Enforcement Command of the Islamic Republic of Iran", aliases: ["FARAJA"]}
+
+  # --- Proxies / Allies ---
+  - {name: "Hezbollah",            aliases: [], notes: "Lebanese ally"}
+  - {name: "Houthi movement",      aliases: ["Ansar Allah", "Houthis"], notes: "Yemeni ally"}
+  - {name: "Hamas",                aliases: [], notes: "Palestinian ally"}
+  - {name: "Palestinian Islamic Jihad", aliases: ["PIJ"]}
+  - {name: "Kata'ib Hezbollah",    aliases: [], notes: "Iraqi militia"}
+  - {name: "Asa'ib Ahl al-Haq",    aliases: [], notes: "Iraqi militia"}
+
+  # --- Energy / Industrial ---
+  - {name: "National Iranian Oil Company", aliases: ["NIOC"]}
+  - {name: "Central Bank of Iran", aliases: ["CBI"]}
+  - {name: "Atomic Energy Organization of Iran", aliases: ["AEOI"]}
+
+  # --- Media ---
+  - {name: "IRIB",                 aliases: ["Islamic Republic of Iran Broadcasting"]}
+  - {name: "Press TV",             aliases: ["PressTV"]}
+  - {name: "IRNA",                 aliases: ["Islamic Republic News Agency"]}
+  - {name: "Fars News Agency",     aliases: ["Fars"]}
+  - {name: "Tasnim News Agency",   aliases: ["Tasnim"]}
+  - {name: "Mehr News Agency",     aliases: ["Mehr"]}
+  - {name: "Kayhan",               aliases: []}
+  - {name: "Etemad",               aliases: []}
+  - {name: "Iran International",   aliases: [], notes: "London-based opposition outlet"}
+
+locations:
+  - {name: "Tehran",               aliases: []}
+  - {name: "Isfahan",              aliases: ["Esfahan"]}
+  - {name: "Mashhad",              aliases: []}
+  - {name: "Tabriz",               aliases: []}
+  - {name: "Shiraz",               aliases: []}
+  - {name: "Karaj",                aliases: []}
+  - {name: "Qom",                  aliases: []}
+  - {name: "Ahvaz",                aliases: ["Ahwaz"]}
+  - {name: "Kermanshah",           aliases: []}
+  - {name: "Rasht",                aliases: []}
+  - {name: "Bandar Abbas",         aliases: []}
+  - {name: "Sistan and Baluchestan", aliases: []}
+  - {name: "Kurdistan Province (Iran)", aliases: []}
+  - {name: "Khuzestan",            aliases: []}
+  - {name: "Natanz",               aliases: [], notes: "nuclear facility"}
+  - {name: "Fordow",               aliases: ["Fordo"], notes: "nuclear facility"}
+  - {name: "Bushehr",              aliases: [], notes: "nuclear power plant"}
+  - {name: "Arak",                 aliases: [], notes: "heavy-water reactor"}
+  - {name: "Strait of Hormuz",     aliases: []}
+  - {name: "Persian Gulf",         aliases: []}
+
+roles:
+  - {name: "Supreme Leader of Iran", aliases: ["Rahbar", "Vali-e Faqih"]}
+  - {name: "President of Iran",    aliases: []}
+  - {name: "Foreign Minister of Iran", aliases: []}
+  - {name: "Chief of General Staff of the Iranian Armed Forces", aliases: []}
+  - {name: "IRGC Commander",       aliases: []}
+  - {name: "Quds Force Commander", aliases: []}
+  - {name: "Chief Justice of Iran", aliases: []}

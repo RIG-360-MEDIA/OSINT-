@@ -1,0 +1,113 @@
+# Entity seed — Arab Republic of Egypt
+country: EG
+version: v1
+notes: |
+  Sources: presidency.eg / cabinet.gov.eg rosters, Al Ahram mastheads,
+  EGX 30, Wikipedia "List of Egyptian" pages.
+  Last updated: 2026-05-28.
+
+persons:
+  # --- Govt ---
+  - {name: "Abdel Fattah el-Sisi", aliases: ["Sisi", "President Sisi", "El-Sisi"], role: "President"}
+  - {name: "Mostafa Madbouly",     aliases: ["Madbouly"], role: "Prime Minister"}
+  - {name: "Badr Abdelatty",       aliases: ["Abdelatty"], role: "Foreign Minister"}
+  - {name: "Mohamed Zaki",         aliases: [], role: "Defence Minister"}
+  - {name: "Ahmed Kouchouk",       aliases: [], role: "Finance Minister"}
+  - {name: "Mahmoud Tawfik",       aliases: [], role: "Interior Minister"}
+  - {name: "Adnan El-Fangary",     aliases: [], role: "Health Minister"}
+
+  # --- Recent Presidents ---
+  - {name: "Mohamed Morsi",        aliases: ["Morsi"], role: "Former President (deceased 2019)"}
+  - {name: "Hosni Mubarak",        aliases: ["Mubarak"], role: "Former President (deceased)"}
+
+  # --- Intelligence / Military ---
+  - {name: "Abbas Kamel",          aliases: ["Kamel"], role: "Director of General Intelligence (GIS)"}
+  - {name: "Ahmad Khalifa",        aliases: [], role: "Chief of Staff of the Armed Forces"}
+
+  # --- Central Bank ---
+  - {name: "Hassan Abdalla",       aliases: [], role: "Acting Governor of the Central Bank of Egypt"}
+
+  # --- Religious ---
+  - {name: "Ahmed el-Tayeb",       aliases: ["Tayeb"], role: "Grand Imam of Al-Azhar"}
+  - {name: "Tawadros II of Alexandria", aliases: ["Pope Tawadros II"], role: "Pope of the Coptic Orthodox Church"}
+
+organizations:
+  - {name: "Government of Egypt",  aliases: ["Egyptian Govt"]}
+  - {name: "Egyptian Presidency",  aliases: []}
+  - {name: "Cabinet of Egypt",     aliases: []}
+  - {name: "House of Representatives (Egypt)", aliases: ["Egyptian Parliament"]}
+  - {name: "Senate of Egypt",      aliases: []}
+  - {name: "Supreme Constitutional Court of Egypt", aliases: ["SCC Egypt"]}
+
+  # --- Ministries ---
+  - {name: "Ministry of Foreign Affairs of Egypt", aliases: ["Egyptian MFA"]}
+  - {name: "Ministry of Defence (Egypt)", aliases: ["Egyptian MoD"]}
+
+  # --- Intel / Military ---
+  - {name: "Egyptian Armed Forces", aliases: ["EAF"]}
+  - {name: "General Intelligence Service (Egypt)", aliases: ["GIS Egypt", "Mukhabarat"]}
+  - {name: "Egyptian Army",        aliases: []}
+  - {name: "Egyptian Navy",        aliases: []}
+  - {name: "Egyptian Air Force",   aliases: ["EAF Air"]}
+
+  # --- Central Bank ---
+  - {name: "Central Bank of Egypt", aliases: ["CBE"]}
+
+  # --- Religious ---
+  - {name: "Al-Azhar",             aliases: ["Al-Azhar University", "Al Azhar"]}
+  - {name: "Coptic Orthodox Church of Alexandria", aliases: ["Coptic Church"]}
+  - {name: "Muslim Brotherhood",   aliases: ["MB", "Ikhwan"]}
+
+  # --- Media ---
+  - {name: "Al-Ahram",             aliases: ["Al Ahram"]}
+  - {name: "Al-Akhbar (Egypt)",    aliases: []}
+  - {name: "Al-Gomhuria",          aliases: []}
+  - {name: "Daily News Egypt",     aliases: []}
+  - {name: "Egypt Independent",    aliases: []}
+  - {name: "Mada Masr",            aliases: []}
+  - {name: "Middle East News Agency", aliases: ["MENA"]}
+  - {name: "Nile TV",              aliases: []}
+  - {name: "ON E",                 aliases: ["ON Live"]}
+  - {name: "DMC (Egypt)",          aliases: []}
+
+  # --- Corps ---
+  - {name: "Suez Canal Authority", aliases: ["SCA"]}
+  - {name: "EgyptAir",             aliases: []}
+  - {name: "Orascom Construction", aliases: []}
+  - {name: "Commercial International Bank (Egypt)", aliases: ["CIB Egypt"]}
+  - {name: "Egyptian General Petroleum Corporation", aliases: ["EGPC"]}
+
+locations:
+  - {name: "Egypt",                aliases: []}
+  - {name: "Cairo",                aliases: []}
+  - {name: "Alexandria",           aliases: []}
+  - {name: "Giza",                 aliases: []}
+  - {name: "Shubra El Kheima",     aliases: []}
+  - {name: "Port Said",            aliases: []}
+  - {name: "Suez",                 aliases: []}
+  - {name: "Luxor",                aliases: []}
+  - {name: "Mansoura",             aliases: []}
+  - {name: "Asyut",                aliases: []}
+  - {name: "Ismailia",             aliases: []}
+  - {name: "Aswan",                aliases: []}
+  - {name: "Sharm El Sheikh",      aliases: []}
+  - {name: "Hurghada",             aliases: []}
+  - {name: "New Administrative Capital", aliases: ["NAC", "Egypt's new capital"]}
+
+  # --- Strategic ---
+  - {name: "Sinai Peninsula",      aliases: ["Sinai"]}
+  - {name: "Nile Delta",           aliases: []}
+  - {name: "Suez Canal",           aliases: []}
+  - {name: "Rafah Crossing",       aliases: []}
+
+  # --- Landmarks ---
+  - {name: "Tahrir Square",        aliases: []}
+  - {name: "Pyramids of Giza",     aliases: []}
+
+roles:
+  - {name: "President of Egypt",   aliases: ["Egyptian President"]}
+  - {name: "Prime Minister of Egypt", aliases: ["Egyptian PM"]}
+  - {name: "Foreign Minister of Egypt", aliases: []}
+  - {name: "Grand Imam of Al-Azhar", aliases: []}
+  - {name: "Director of the General Intelligence Service (Egypt)", aliases: []}
+  - {name: "Governor of the Central Bank of Egypt", aliases: ["CBE Governor"]}

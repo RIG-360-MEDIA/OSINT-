@@ -30,7 +30,7 @@ export default function OnboardingPage() {
   useEffect(() => {
     if (loading) return;
     if (!me) { router.push('/login?next=/onboarding'); return; }
-    if (me.onboarded) { router.push('/'); return; }
+    if (me.onboarded) { router.push('/brief'); return; }
   }, [loading, me, router]);
 
   const current = STEPS[step];
@@ -47,7 +47,7 @@ export default function OnboardingPage() {
           stance: {}, events: {}, delivery: {}, personality: {},
         }),
       });
-      router.push('/');
+      router.push('/brief');
     } catch (e) {
       setError(String(e.message || e));
     } finally {

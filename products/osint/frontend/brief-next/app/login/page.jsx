@@ -18,8 +18,8 @@ export default function LoginPage() {
     setBusy(false);
     if (err) { setError(err.message); return; }
     const next = typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('next') || '/'
-      : '/';
+      ? new URLSearchParams(window.location.search).get('next') || '/brief'
+      : '/brief';
     router.push(next);
   }
 

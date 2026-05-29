@@ -163,28 +163,31 @@ export const MetricNumber = ({ value, format = "int", duration = 1100, className
   const [seen, setSeen] = useState(false);
   const ref = useRef(null);
 
-  const reduced = useMemo(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    []
-  );
+  // reduced-motion is window-only — checking at render time mismatched SSR.
+  // Start false (matches SSR) and update after mount.
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia) {
+      setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    }
+  }, []);
 
+  // Fixed locale ("en-US") so server and client format numbers identically.
+  // Using undefined → user-locale → SSR-CSR mismatch on the formatted text.
   const formatter = useMemo(() => {
     if (format === "percent") {
-      return new Intl.NumberFormat(undefined, {
+      return new Intl.NumberFormat("en-US", {
         style: "percent",
         maximumFractionDigits: 1,
       });
     }
     if (format === "decimal") {
-      return new Intl.NumberFormat(undefined, {
+      return new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 1,
         maximumFractionDigits: 1,
       });
     }
-    return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+    return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
   }, [format]);
 
   useEffect(() => {

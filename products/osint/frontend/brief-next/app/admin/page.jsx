@@ -18,7 +18,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (loading) return;
     if (!me) { router.push('/login?next=/admin'); return; }
-    if (!me.is_super_admin) { router.push('/'); return; }
+    if (!me.is_super_admin) { router.push('/brief'); return; }
     reload();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, me]);

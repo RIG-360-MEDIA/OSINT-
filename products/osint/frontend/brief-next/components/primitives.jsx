@@ -1,6 +1,6 @@
 // Primitive components: icons, sparkline, metric number, glass building blocks
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useId, useRef, useState, useMemo } from 'react';
 
 /* ── Icons (inline, minimal Lucide-style) ─────────────────── */
 export const Icon = ({ name, size = 16, stroke = 1.6, color = "currentColor" }) => {
@@ -58,7 +58,9 @@ export const Sparkline = React.memo(function Sparkline({
   kpi = false,
 }) {
   const ref = useRef(null);
-  const id = useMemo(() => "sg-" + Math.random().toString(36).slice(2, 9), []);
+  // useId() is hydration-safe — Math.random() differed SSR vs client and
+  // collapsed boss's entire brief subtree on first paint.
+  const id = "sg-" + useId().replace(/:/g, "");
   const [drawn, setDrawn] = useState(false);
 
   const { linePath, fillPath, lastPoint } = useMemo(() => {
@@ -273,9 +275,18 @@ export const LiveDot = ({ tone = "live" }) => <span className={`live-dot ${tone}
 
 /* ── Countdown (MO-5: real refresh countdown) ──────────── */
 export const Countdown = ({ to, bare = false }) => {
-  const [now, setNow] = useState(Date.now());
+  // mounted gate prevents SSR/CSR hydration mismatch — Date.now() differs
+  // between server render and client hydration, which would unmount the
+  // entire <App> subtree below this component.
+  const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState(0);
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setNow(Date.now());
+  }, []);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -285,13 +296,22 @@ export const Countdown = ({ to, bare = false }) => {
     );
     obs.observe(ref.current);
     return () => obs.disconnect();
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
     if (!visible) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [visible]);
+
+  if (!mounted) {
+    // Static placeholder for SSR — same on server and first client render.
+    return (
+      <span ref={ref} className="countdown" aria-live="polite" suppressHydrationWarning>
+        {bare ? "—:—" : "Next refresh in —:—"}
+      </span>
+    );
+  }
 
   const diff = Math.max(0, to - now);
   const refreshing = diff === 0;

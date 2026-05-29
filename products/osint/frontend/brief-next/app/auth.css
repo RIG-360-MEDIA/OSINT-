@@ -390,3 +390,153 @@
 .entity-dd-meta { font-size: 12px; color: #8a7250; }
 .entity-dd-meta-faded { font-size: 11px; color: #4f4232; font-style: italic; }
 .entity-counter { font-size: 11px; color: #6b5a3c; margin: 8px 0 0; letter-spacing: 0.5px; text-transform: uppercase; }
+
+/* ── Wizard controls (steps 1,2,4-11) ───────────────────────────────────── */
+.ob-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8a7250;
+  margin: 0 0 10px;
+}
+
+/* Segmented single-select */
+.ob-segmented { display: flex; flex-wrap: wrap; gap: 8px; }
+.ob-seg {
+  background: transparent;
+  border: 1px solid rgba(233, 196, 106, 0.28);
+  border-radius: 6px;
+  padding: 10px 16px;
+  color: #c8b07a;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+.ob-seg:hover { border-color: rgba(94, 234, 212, 0.4); }
+.ob-seg.active {
+  background: linear-gradient(180deg, #e9c46a, #c9a44d);
+  border-color: #c9a44d;
+  color: #1a1100;
+  font-weight: 600;
+}
+
+/* Multi/tri-state chips */
+.ob-chipgroup { display: flex; flex-wrap: wrap; gap: 8px; }
+.ob-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid rgba(233, 196, 106, 0.25);
+  border-radius: 18px;
+  padding: 7px 14px;
+  color: #c8b07a;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+.ob-chip:hover { border-color: rgba(94, 234, 212, 0.45); color: #f5e3b3; }
+.ob-chip.on {
+  background: rgba(94, 234, 212, 0.14);
+  border-color: rgba(94, 234, 212, 0.5);
+  color: #f5e3b3;
+}
+.ob-chip-note { font-size: 10px; color: #6b5a3c; font-style: italic; }
+.ob-chip.tri.inc {
+  background: rgba(94, 234, 212, 0.16);
+  border-color: rgba(94, 234, 212, 0.55);
+  color: #5eead4;
+}
+.ob-chip.tri.exc {
+  background: rgba(251, 113, 133, 0.12);
+  border-color: rgba(251, 113, 133, 0.45);
+  color: #fb7185;
+  text-decoration: line-through;
+}
+.ob-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #6b5a3c;
+}
+.ob-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-left: 6px; }
+.ob-dot.inc { background: #5eead4; }
+.ob-dot.exc { background: #fb7185; }
+.ob-legend-count { margin-left: auto; color: #8a7250; }
+
+/* Toggle */
+.ob-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  color: #c8b07a;
+  text-align: left;
+}
+.ob-toggle-track {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: rgba(233, 196, 106, 0.18);
+  border: 1px solid rgba(233, 196, 106, 0.3);
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.ob-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #c8b07a;
+  transition: transform 0.15s, background 0.15s;
+}
+.ob-toggle.on .ob-toggle-track { background: rgba(94, 234, 212, 0.3); border-color: rgba(94, 234, 212, 0.6); }
+.ob-toggle.on .ob-toggle-knob { transform: translateX(20px); background: #5eead4; }
+.ob-toggle-label { font-size: 14px; }
+.ob-toggle-label em { display: block; font-size: 12px; color: #6b5a3c; font-style: italic; margin-top: 2px; }
+
+/* Search input + select reused in wizard */
+.ob-search, .ob-select {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(233, 196, 106, 0.25);
+  border-radius: 4px;
+  padding: 11px 14px;
+  color: #f5e3b3;
+  font-family: inherit;
+  font-size: 15px;
+}
+.ob-search:focus, .ob-select:focus { outline: none; border-color: #5eead4; box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.18); }
+
+/* Preview summary */
+.ob-summary { list-style: none; margin: 0; padding: 0; }
+.ob-summary li {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(233, 196, 106, 0.08);
+  align-items: baseline;
+}
+.ob-summary li span {
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #8a7250;
+}
+.ob-summary li strong { color: #f5e3b3; font-weight: 500; font-size: 14px; }

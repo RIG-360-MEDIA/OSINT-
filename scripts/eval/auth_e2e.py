@@ -183,13 +183,27 @@ async def main():
         r = await api("POST", "/api/onboarding/complete", json_body={})
         check("complete onboarding no token → 401", r.status_code == 401, f"status={r.status_code}")
 
+        # Fetch a real entity to exercise the non-null primary_subject_id (uuid)
+        # path — exactly what the wizard's Primary Subject step now sends.
+        r = await api("GET", "/api/onboarding/search_entities?q=Modi&limit=1")
+        ents = (r.json().get("results") or []) if r.status_code == 200 else []
+        psid = ents[0]["id"] if ents else None
         sample_prefs = {
+            "primary_subject_id": psid,
+            "primary_subject_meta": ents[0] if ents else {},
             "watchlist": {
-                "entity_ids": [], "entity_meta": [], "allies": [], "opposition": [],
-                "bureaucrats": [], "civil_society": [], "auto_adjacents": True,
+                "entity_ids": [e["id"] for e in ents], "entity_meta": ents,
+                "auto_adjacents": True,
             },
-            "regions": {}, "topics": {}, "languages": {}, "sources": {},
-            "stance": {}, "events": {}, "delivery": {}, "personality": {},
+            "regions": {"states": ["Telangana"], "countries": ["IN"], "districts": []},
+            "topics": {"include": ["POLITICS"], "exclude": ["SPORTS"]},
+            "languages": {"read": ["en", "te"]},
+            "sources": {"trusted": [], "excluded": []},
+            "stance": {"toward": "balanced", "echo_floor": True},
+            "events": {"types": ["election", "court"]},
+            "delivery": {"timezone": "Asia/Kolkata", "email_digest": False},
+            "personality": {"depth": "standard", "voice": "formal", "density": "comfortable",
+                            "use_cases": ["policy"], "llm_tone": "neutral"},
         }
         r = await api("POST", "/api/onboarding/complete", token=user_token, json_body=sample_prefs)
         cj = r.json() if r.status_code == 200 else {}
@@ -203,7 +217,7 @@ async def main():
 
         async with engine.begin() as conn:
             prow = (await conn.execute(text(
-                "SELECT user_id FROM analytics.user_brief_prefs WHERE user_id=(SELECT id FROM analytics.users WHERE email=:e)"
+                "SELECT user_id, primary_subject_id::text AS psid, topics->'include' AS inc FROM analytics.user_brief_prefs WHERE user_id=(SELECT id FROM analytics.users WHERE email=:e)"
             ), {"e": TEST_EMAIL})).fetchone()
             urow = (await conn.execute(text(
                 "SELECT onboarded_at FROM analytics.users WHERE email=:e"
@@ -211,6 +225,12 @@ async def main():
         check("user_brief_prefs row written", prow is not None)
         check("users.onboarded_at set", urow is not None and urow.onboarded_at is not None,
               f"onboarded_at={getattr(urow, 'onboarded_at', None)}")
+        check("primary_subject_id persisted (non-null uuid)",
+              prow is not None and prow.psid is not None and (psid is None or prow.psid == psid),
+              f"psid={getattr(prow, 'psid', None)} expected={psid}")
+        check("topics JSONB persisted (include=[POLITICS])",
+              prow is not None and prow.inc is not None and 'POLITICS' in str(prow.inc),
+              f"include={getattr(prow, 'inc', None)}")
 
         r = await api("POST", "/api/onboarding/complete", token=user_token, json_body=sample_prefs)
         check("complete onboarding again (upsert) → 200", r.status_code == 200, f"status={r.status_code}")

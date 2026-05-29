@@ -24,7 +24,7 @@ from sqlalchemy import text
 
 from config import load_settings
 from db import dispose_engine, get_db, get_engine
-from routers import entities, emerging, kpi, stories
+from routers import entities, emerging, kpi, me, stories
 
 settings = load_settings()
 
@@ -63,6 +63,7 @@ app.include_router(kpi.router)
 app.include_router(entities.router)
 app.include_router(emerging.router)
 app.include_router(stories.router)
+app.include_router(me.router)
 
 
 @app.get("/health", tags=["meta"])

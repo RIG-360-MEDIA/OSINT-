@@ -317,6 +317,9 @@ services:
       - OSINT_HOST=0.0.0.0
       - OSINT_PORT=8000
       - OSINT_LOG_LEVEL=INFO
+      # Supabase JWT verification (same secret rig-backend uses).
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - OSINT_ENVIRONMENT=production
     ports:
       - "8002:8000"
     networks:

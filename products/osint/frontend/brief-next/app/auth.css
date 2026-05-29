@@ -295,6 +295,14 @@
   font-style: italic;
   margin-bottom: 28px;
 }
+.onboarding-step-real { margin-bottom: 28px; }
+.onboarding-fieldhint {
+  font-size: 13px;
+  color: #8a7250;
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+.onboarding-fieldhint code { background: rgba(233,196,106,0.08); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
 .onboarding-controls {
   display: flex;
   justify-content: space-between;
@@ -317,3 +325,68 @@
   color: #c8b07a;
 }
 .onboarding-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Entity typeahead (used in wizard Step 3) ───────────────────────────── */
+.entity-typeahead { position: relative; margin: 12px 0; }
+.entity-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.entity-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(94,234,212,0.12);
+  border: 1px solid rgba(94,234,212,0.35);
+  border-radius: 18px;
+  padding: 6px 10px 6px 14px;
+  font-size: 13px;
+  color: #f5e3b3;
+}
+.entity-chip-meta { font-size: 11px; color: #8a7250; }
+.entity-chip button {
+  background: transparent;
+  color: #fb7185;
+  border: 0;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.entity-typeahead input {
+  width: 100%;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(233,196,106,0.25);
+  border-radius: 4px;
+  padding: 11px 14px;
+  color: #f5e3b3;
+  font-family: inherit;
+  font-size: 15px;
+}
+.entity-typeahead input:focus { outline: none; border-color: #5eead4; box-shadow: 0 0 0 3px rgba(94,234,212,0.18); }
+.entity-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0;
+  z-index: 20;
+  background: #0a0a0a;
+  border: 1px solid rgba(94,234,212,0.4);
+  border-radius: 4px;
+  margin: 6px 0 0;
+  padding: 4px;
+  list-style: none;
+  max-height: 320px;
+  overflow: auto;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.6);
+}
+.entity-dropdown li {
+  padding: 10px 12px;
+  border-radius: 3px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
+  color: #c8b07a;
+  font-size: 14px;
+}
+.entity-dropdown li.highlight, .entity-dropdown li:hover {
+  background: rgba(94,234,212,0.1);
+  color: #f5e3b3;
+}
+.entity-dd-name { font-weight: 500; }
+.entity-dd-meta { font-size: 12px; color: #8a7250; }
+.entity-dd-meta-faded { font-size: 11px; color: #4f4232; font-style: italic; }
+.entity-counter { font-size: 11px; color: #6b5a3c; margin: 8px 0 0; letter-spacing: 0.5px; text-transform: uppercase; }

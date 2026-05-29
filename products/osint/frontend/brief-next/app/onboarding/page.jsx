@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch } from '../../lib/supabase';
 import { useMe } from '../../lib/useMe';
+import { EntityTypeahead } from '../../components/EntityTypeahead.jsx';
 import '../auth.css';
 
 const STEPS = [
@@ -26,6 +27,8 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  // Real wizard state — replaces step placeholders as fields land.
+  const [watchlist, setWatchlist] = useState([]); // [{id, name, party, state, type}]
 
   useEffect(() => {
     if (loading) return;
@@ -38,11 +41,21 @@ export default function OnboardingPage() {
   async function finish() {
     setBusy(true); setError(null);
     try {
-      // Stub payload — Stream C will replace each {} with the wizard's real state.
+      // Real payload — Step 3 (Watchlist) now populated from typeahead.
+      // Remaining 11 steps still send placeholders {} until their forms land.
+      const watchlistPayload = {
+        // Single flat list for now; entities endpoint reads .entity_ids first.
+        entity_ids: watchlist.map((w) => w.id),
+        entity_meta: watchlist.map((w) => ({
+          id: w.id, name: w.name, party: w.party, state: w.state, type: w.type,
+        })),
+        allies: [], opposition: [], bureaucrats: [], civil_society: [],
+        auto_adjacents: true,
+      };
       await authFetch('/api/onboarding/complete', {
         method: 'POST',
         body: JSON.stringify({
-          watchlist: { allies: [], opposition: [], bureaucrats: [], civil_society: [], auto_adjacents: true },
+          watchlist: watchlistPayload,
           regions: {}, topics: {}, languages: {}, sources: {},
           stance: {}, events: {}, delivery: {}, personality: {},
         }),
@@ -68,9 +81,30 @@ export default function OnboardingPage() {
       <div className="onboarding-card">
         <h1>{current.title}</h1>
         <p className="onboarding-desc">{current.desc}</p>
-        <div className="onboarding-placeholder">
-          [Step {current.id} fields land in Stream C — click <strong>Continue</strong> to advance through the skeleton]
-        </div>
+        {current.id === 3 ? (
+          <div className="onboarding-step-real">
+            <p className="onboarding-fieldhint">
+              Type at least 2 letters. Pick people, parties, officials, or civil-society
+              voices you want the brief to track. Most are politicians but you can also
+              add bureaucrats, journalists, or anyone in <code>entity_dictionary</code>.
+            </p>
+            <EntityTypeahead
+              value={watchlist}
+              onChange={setWatchlist}
+              placeholder="Try: Modi, Rahul Gandhi, Owaisi, Yogi…"
+              types="person"
+              maxSelections={20}
+            />
+            <p className="onboarding-fieldhint" style={{ marginTop: 18 }}>
+              These will replace the default <em>Naidu / Rahul / Akhilesh / Owaisi</em>{' '}
+              entity cards in your brief once you finish onboarding.
+            </p>
+          </div>
+        ) : (
+          <div className="onboarding-placeholder">
+            [Step {current.id} fields land later — click <strong>Continue</strong> to advance]
+          </div>
+        )}
         <div className="onboarding-controls">
           {step > 0
             ? <button type="button" onClick={() => setStep(step - 1)}>← Back</button>

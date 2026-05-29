@@ -124,6 +124,9 @@ async def get_voices(
               JOIN sources s  ON s.id = a.source_id
               LEFT JOIN entity_dictionary ed ON ed.id = aq.speaker_entity_id
              WHERE aq.speaker_entity_id IS NOT NULL
+               -- Phase-4 fix: filter to actual people. 'location' (Litani River)
+               -- and 'role' (generic titles) were getting through as 'opp voices'.
+               AND LOWER(ed.entity_type) IN ('person', 'politician')
                AND LENGTH(aq.quote_text) BETWEEN 40 AND 280
                AND aq.is_direct = TRUE
                AND a.collected_at >= analytics.now_sim() - {window}
@@ -134,7 +137,7 @@ async def get_voices(
         """), params)).fetchall()
         opp_voices = [{
             "speaker": r.canonical_name or r.speaker_name or "—",
-            "role": (r.entity_type or "").replace("_", " ").title() or "—",
+            "role": (r.entity_type or "person").replace("_", " ").title() or "Person",
             "entity_id": r.eid,
             "text": r.quote_text[:180],
             "outlet": r.outlet or "—",

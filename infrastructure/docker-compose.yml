@@ -317,9 +317,16 @@ services:
       - OSINT_HOST=0.0.0.0
       - OSINT_PORT=8000
       - OSINT_LOG_LEVEL=INFO
-      # Supabase JWT verification (same secret rig-backend uses).
+      # Supabase JWT verification + admin API calls (same env rig-backend uses).
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
       - OSINT_ENVIRONMENT=production
+      # Where the brief-next frontend lives (used to build invite links).
+      - OSINT_FRONTEND_BASE=https://brief.rig360media.com
+      # First super-admin email — only this account can call /api/admin/bootstrap.
+      - OSINT_BOOTSTRAP_ADMIN_EMAIL=pranavsinghpuri09@gmail.com
     ports:
       - "8002:8000"
     networks:

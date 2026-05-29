@@ -326,7 +326,9 @@ services:
       # Where the brief-next frontend lives (used to build invite links).
       - OSINT_FRONTEND_BASE=https://brief.rig360media.com
       # First super-admin email — only this account can call /api/admin/bootstrap.
-      - OSINT_BOOTSTRAP_ADMIN_EMAIL=pranavsinghpuri09@gmail.com
+      # Must match an existing Supabase auth user; maverick092005@gmail.com is
+      # the rig-backend super_admin (verified 2026-05-29 via admin/users API).
+      - OSINT_BOOTSTRAP_ADMIN_EMAIL=maverick092005@gmail.com
     ports:
       - "8002:8000"
     networks:

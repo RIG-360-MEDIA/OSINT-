@@ -93,27 +93,6 @@ async def get_climbing(
             win_prior AS (
                 SELECT LOWER(ac.subject_text) AS entity,
                        COUNT(*)::numeric / {n_baseline_buckets} AS avg_n
-                  FROM article_claims ac JOIN articles a ON a.id = ae_aux.aa
-                       FROM article_claims ac JOIN articles a ON a.id = ac.article_id) ac_a -- placeholder removed below
-            )
-            SELECT 1 AS dummy
-        """), params)).fetchall()
-        # NOTE: above CTE is intentionally rewritten below — simpler & correct.
-
-        rows = (await db.execute(text(f"""
-            WITH win_now AS (
-                SELECT LOWER(ac.subject_text) AS entity, COUNT(*) AS n
-                  FROM article_claims ac JOIN articles a ON a.id = ac.article_id
-                 WHERE a.collected_at >= analytics.now_sim() - {win}
-                   AND a.collected_at <= analytics.now_sim()
-                   AND LENGTH(ac.subject_text) BETWEEN 4 AND 50
-                   {cc}
-                 GROUP BY 1
-                HAVING COUNT(*) >= 3
-            ),
-            win_prior AS (
-                SELECT LOWER(ac.subject_text) AS entity,
-                       COUNT(*)::numeric / {n_baseline_buckets} AS avg_n
                   FROM article_claims ac JOIN articles a ON a.id = ac.article_id
                  WHERE a.collected_at >= analytics.now_sim() - {base_lo}
                    AND a.collected_at <  analytics.now_sim() - {win}

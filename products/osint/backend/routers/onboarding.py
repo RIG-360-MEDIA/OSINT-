@@ -28,6 +28,64 @@ from db import get_db
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 
 
+# ─── Entity typeahead (used by wizard Step 2 + Step 3) ───────────────────────
+
+@router.get("/search_entities")
+async def search_entities(
+    q: str,
+    limit: int = 20,
+    types: str = "person,politician",
+) -> dict[str, Any]:
+    """Search entity_dictionary for the wizard's typeahead.
+
+    Returns rows where canonical_name OR any alias starts with `q` (case-
+    insensitive), restricted to the comma-list of entity_types (default
+    person+politician). Limits to 20 — small enough to render as chips.
+    """
+    if not q or len(q.strip()) < 2:
+        return {"results": []}
+    needle = f"{q.strip().lower()}%"
+    type_set = [t.strip().lower() for t in (types or "").split(",") if t.strip()]
+    if not type_set:
+        type_set = ["person", "politician"]
+    placeholders = ", ".join(f":t{i}" for i in range(len(type_set)))
+    params: dict[str, Any] = {"n": needle, "limit": int(limit)}
+    for i, t in enumerate(type_set):
+        params[f"t{i}"] = t
+
+    async with get_db() as db:
+        rows = (await db.execute(text(f"""
+            SELECT id::text AS id, canonical_name, entity_type, party, state, country, aliases
+              FROM entity_dictionary
+             WHERE LOWER(entity_type) IN ({placeholders})
+               AND (
+                 LOWER(canonical_name) LIKE :n
+                 OR EXISTS (
+                   SELECT 1 FROM unnest(aliases) a
+                    WHERE LOWER(a) LIKE :n
+                 )
+               )
+             ORDER BY
+               CASE WHEN LOWER(canonical_name) = LEFT(:n, GREATEST(LENGTH(:n)-1, 1)) THEN 0 ELSE 1 END,
+               LENGTH(canonical_name)
+             LIMIT :limit
+        """), params)).fetchall()
+
+    return {
+        "results": [{
+            "id": r.id,
+            "name": r.canonical_name,
+            "type": r.entity_type,
+            "party": r.party,
+            "state": r.state,
+            "country": (r.country or "").strip() or None,
+            "aliases": list(r.aliases) if r.aliases else [],
+        } for r in rows],
+        "query": q,
+        "types": type_set,
+    }
+
+
 # ─── Schemas ─────────────────────────────────────────────────────────────────
 
 class AcceptInviteIn(BaseModel):

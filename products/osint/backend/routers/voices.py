@@ -46,7 +46,9 @@ async def get_voices(
 ) -> dict[str, Any]:
     """Voices Overnight: featured quote + editorial voices + opposition voices."""
     cc = "AND a.source_country = :country" if country else ""
-    params: dict[str, Any] = {"limit": int(limit), "hours": int(since_hours)}
+    # since_hours bounded 1-168 by Pydantic, safe to interpolate as literal.
+    window = f"INTERVAL '{int(since_hours)} hours'"
+    params: dict[str, Any] = {"limit": int(limit)}
     if country:
         params["country"] = country
 
@@ -63,7 +65,7 @@ async def get_voices(
               JOIN sources s  ON s.id = a.source_id
              WHERE LENGTH(aq.quote_text) BETWEEN 60 AND 280
                AND aq.is_direct = TRUE
-               AND a.collected_at >= analytics.now_sim() - (CAST(:hours AS TEXT) || ' hours')::INTERVAL
+               AND a.collected_at >= analytics.now_sim() - {window}
                AND a.collected_at <= analytics.now_sim()
                {cc}
              ORDER BY LENGTH(aq.quote_text) DESC, a.collected_at DESC
@@ -95,7 +97,7 @@ async def get_voices(
              WHERE aq.speaker_entity_id IS NULL
                AND LENGTH(aq.quote_text) BETWEEN 40 AND 280
                AND aq.is_direct = TRUE
-               AND a.collected_at >= analytics.now_sim() - (CAST(:hours AS TEXT) || ' hours')::INTERVAL
+               AND a.collected_at >= analytics.now_sim() - {window}
                AND a.collected_at <= analytics.now_sim()
                {cc}
              ORDER BY a.collected_at DESC
@@ -124,7 +126,7 @@ async def get_voices(
              WHERE aq.speaker_entity_id IS NOT NULL
                AND LENGTH(aq.quote_text) BETWEEN 40 AND 280
                AND aq.is_direct = TRUE
-               AND a.collected_at >= analytics.now_sim() - (CAST(:hours AS TEXT) || ' hours')::INTERVAL
+               AND a.collected_at >= analytics.now_sim() - {window}
                AND a.collected_at <= analytics.now_sim()
                {cc}
              ORDER BY a.collected_at DESC

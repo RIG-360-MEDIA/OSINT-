@@ -12,6 +12,7 @@ import {
 } from '../lib/data.js';
 import { ExecutiveRead } from './ExecutiveRead.jsx';
 import { CMPerspective } from './CMPerspective.jsx';
+import { authFetch } from '../lib/supabase';
 
 
 // === Live API hook for KPI tiles (Day 1) ===
@@ -68,8 +69,7 @@ function useLiveStories() {
   const [stories, setStories] = React.useState(null);
   React.useEffect(() => {
     let cancelled = false;
-    const fetchIt = () => fetch(`${RIG_API_BASE}/api/brief/stories?limit=5`)
-      .then(r => r.ok ? r.json() : null)
+    const fetchIt = () => authFetch('/api/brief/stories?limit=5')
       .then(j => { if (j && j.stories && !cancelled) setStories(j.stories); })
       .catch(() => {});
     fetchIt();

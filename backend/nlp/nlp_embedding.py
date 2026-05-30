@@ -10,6 +10,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# ── LaBSE model pin (Worldwide Phase 0a, 2026-05-30) ─────────────────────────
+# The embedding model is PINNED to a fixed HuggingFace commit. By default LaBSE
+# resolves live from HF; a silent upstream update shifts the 768-dim vector
+# space so new vectors stop matching stored ones and clustering breaks with NO
+# error thrown. This revision is the exact snapshot on disk that produced the
+# current corpus. Changing it REQUIRES a full coordinated re-embed (Phase 0c).
+LABSE_MODEL_ID = "sentence-transformers/LaBSE"
+LABSE_REVISION = "836121a0533e5664b21c7aacc5d22951f2b8b25b"
+
 # Module-level singleton — loaded once per worker process, never reloaded.
 _LABSE_MODEL = None
 
@@ -19,9 +28,9 @@ def get_labse_model():
     global _LABSE_MODEL
     if _LABSE_MODEL is None:
         from sentence_transformers import SentenceTransformer
-        logger.info("Loading LaBSE model (768-dim, ~1.8 GB)...")
-        _LABSE_MODEL = SentenceTransformer("LaBSE")
-        logger.info("LaBSE model loaded. 768-dim embeddings ready.")
+        logger.info("Loading LaBSE (768-dim, ~1.8 GB) pinned @ %s ...", LABSE_REVISION[:12])
+        _LABSE_MODEL = SentenceTransformer(LABSE_MODEL_ID, revision=LABSE_REVISION)
+        logger.info("LaBSE loaded (pinned). 768-dim embeddings ready.")
     return _LABSE_MODEL
 
 

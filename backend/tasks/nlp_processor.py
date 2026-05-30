@@ -223,7 +223,7 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
     from sqlalchemy import text
 
     from backend.nlp.cm.geo_district import load_gazetteer, tag_districts
-    from backend.nlp.nlp_embedding import check_semantic_duplicate, generate_embedding
+    from backend.nlp.nlp_embedding import check_semantic_duplicate, generate_embedding, LABSE_REVISION
     from backend.nlp.nlp_entities import extract_entities
     from backend.nlp.nlp_geo import tag_geography
     from backend.nlp.nlp_language import detect_and_translate
@@ -334,6 +334,9 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
               topic_fine            = :topic_fine,
               geo_primary           = :geo_primary,
               labse_embedding       = CAST(:labse_embedding AS vector),
+              embedded_at           = CASE WHEN :embedding_model IS NOT NULL THEN now() ELSE embedded_at END,
+              embedding_model       = COALESCE(:embedding_model, embedding_model),
+              embedding_revision    = COALESCE(:embedding_revision, embedding_revision),
               is_duplicate          = :is_duplicate,
               duplicate_of          = CAST(:duplicate_of AS uuid),
               nlp_processed         = TRUE,
@@ -350,6 +353,8 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
             "topic_fine": topic_fine,
             "geo_primary": geo_primary,
             "labse_embedding": embedding_str,
+            "embedding_model": "sentence-transformers/LaBSE" if embedding else None,
+            "embedding_revision": LABSE_REVISION if embedding else None,
             "is_duplicate": is_duplicate,
             "duplicate_of": duplicate_of,
             "nlp_confidence": nlp_confidence,

@@ -19,9 +19,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# 2026-05-27 — global kill switch. When PLAYWRIGHT_ENABLED=0 (or unset to "false"),
+# all Chromium launches are short-circuited and adapters that need JS rendering
+# silently return None. Reason: Chromium processes were leaking (~5GB RAM
+# accumulated per 8h of operation), causing host swap thrashing and DB stalls.
+# Re-enable once the leak is fixed (proper try/finally + orphan-killer cron).
+_PLAYWRIGHT_ENABLED = os.environ.get("PLAYWRIGHT_ENABLED", "false").lower() in ("1", "true", "yes")
 
 _browser_lock = asyncio.Lock()
 _browser: Any = None  # playwright Browser; lazy-init
@@ -29,6 +37,8 @@ _browser: Any = None  # playwright Browser; lazy-init
 
 async def _get_browser():
     global _browser
+    if not _PLAYWRIGHT_ENABLED:
+        return None
     if _browser is not None:
         return _browser
     async with _browser_lock:
@@ -54,7 +64,12 @@ async def render_html(
 
     Always wrap caller in a try/except — never raises.
     """
+    if not _PLAYWRIGHT_ENABLED:
+        # Kill switch — adapters silently get None and skip the source.
+        return None
     browser = await _get_browser()
+    if browser is None:
+        return None
     context = None
     try:
         context = await browser.new_context(
@@ -107,6 +122,8 @@ async def probe() -> tuple[bool, str]:
     PNGRB) silently return ``[]`` on every collection run. Boot calls
     this and refuses to start unless it returns ok.
     """
+    if not _PLAYWRIGHT_ENABLED:
+        return True, "playwright disabled by env (PLAYWRIGHT_ENABLED=false)"
     try:
         html = await render_html("https://example.com", timeout_ms=10000)
     except Exception as exc:  # noqa: BLE001

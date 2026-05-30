@@ -24,7 +24,7 @@ echo "================================="
 # Dedicated collector worker — HTML scraping never starves NLP
 celery -A backend.celery_app worker \
   --queues=collectors \
-  --concurrency=1 \
+  --concurrency=3 \
   --hostname=worker-collectors@%h \
   --loglevel=info &
 

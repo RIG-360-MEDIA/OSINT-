@@ -33,3 +33,6 @@ infrastructure/Dockerfile.frontend.prod.tmp-*
 
 # in-place edit safety backups (created during scripted edits)
 *.bak.before-*
+.env.prod
+*.bak
+*.backup

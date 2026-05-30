@@ -420,21 +420,10 @@ def parse_html(html: str, article_url: str) -> dict[str, Any]:
         lang = soup.html["lang"].split("-")[0].lower()[:5]
 
     # ─── canonical url ────────────────────────────────────────────────
-    # 2026-05-26: reject homepage-collapse (some sources serve
-    # <link rel=canonical href=https://site/> on every article — corrupted
-    # 1,222 rows before we caught it).
     canonical = None
     link = soup.find("link", rel="canonical")
     if link and link.get("href"):
-        cand = (link["href"] or "").strip()
-        try:
-            from urllib.parse import urlparse
-            parsed = urlparse(cand)
-            path = (parsed.path or "").rstrip("/")
-            if path and len(path) > 1:
-                canonical = cand
-        except Exception:
-            canonical = None
+        canonical = link["href"]
 
     # ─── og / twitter image (hero) ───────────────────────────────────
     hero_url = None
@@ -554,7 +543,7 @@ REQUIRED fields (ALL must be present):
   events: [{date: YYYY-MM-DD|null, description: <=14 words, event_type: announcement|meeting|filing|statement|protest|release|election|accident|market_event|legal|sports_result|other, actors: [names], is_future: bool}] max 6, can be []
   quotes: [{speaker: str, text: str, context: press_conference|interview|tweet|statement|parliament|court|press_release|article|other, is_verbatim: bool}] max 5, can be []
   actor_stances: [{actor: str, stance: supportive|neutral|critical, intensity: 0-1}] max 5, can be []
-  claims: [{text: str, claimant: article|<name>, type: attributable|asserted|disputed, verifiable: bool}] max 5, can be []
+  claims: [{subject: str, predicate: str, object: str, text: str, claimant: article|<name>, type: attributable|asserted|disputed, verifiable: bool}] max 5, can be []
   numbers: [{value: str, unit: str|null, context: str}] max 5, can be []
   register: {rhetorical_style: factual|analytical|polemical|sympathetic|mocking|promotional|sensational, primary_emotion: neutral|alarm|approval|mockery|urgency|lament|curiosity|admiration, is_breaking: bool}
 
@@ -582,7 +571,12 @@ RULES:
     * stance='supportive'/'critical' weak (mere mention, formal language, brief endorsement) → 0.3-0.5.
     * stance='supportive'/'critical' clear (active advocacy, explicit criticism, multiple lines of argument) → 0.6-0.8.
     * stance='supportive'/'critical' maximal (defining ideological commitment, hostile rhetoric, sustained campaign) → 0.9-1.0. RESERVED for rare cases — most strong stances are 0.7-0.8, not 1.0.
-- claims: factual assertions made by article OR by named speakers.
+- claims: factual assertions by article OR named speakers. EVERY claim MUST be decomposed into subject + predicate + object. `text` carries the natural-language form.
+    Example: "Modi announced a new policy" -> {subject: "Narendra Modi", predicate: "announced", object: "a new policy", text: "Modi announced a new policy", claimant: "article", type: "asserted", verifiable: false}
+    subject = entity claim is ABOUT (NEVER "article" or pronoun; resolve pronouns).
+    predicate = verb/relation phrase. object = target/value/recipient.
+    claimant = WHO makes the claim ("article" if reporter; speaker name if attributed). Distinct from subject.
+    OMIT the claim if you cannot identify all three SPO parts cleanly.
 - numbers: every value with unit (lakh, crore, percent, count, date, currency). value as STRING to preserve "1.5 lakh" / "₹40 lakh" etc.
 - event_type MUST be one of: announcement, meeting, filing, statement, protest, release, election, accident, market_event, legal, sports_result, other. NEVER invent new types.
 - If article is empty/junk: article_type=other, all arrays empty, register defaults to neutral/factual.
@@ -612,10 +606,16 @@ MAX_BODY_FOR_GROQ_ENGLISH = 2400
 MAX_BODY_FOR_GROQ_INDIC = 2200
 MAX_BODY_FOR_GROQ_CJK = 1800
 
-MAX_TOKENS_ENGLISH = 3000   # bumped from 1500 — local vLLM has no cost, and
-                            # without strict-grammar enforcement the model
-                            # needs headroom to finish the JSON cleanly
-MAX_TOKENS_NON_ENGLISH = 4500  # extra room for english_translation field
+MAX_TOKENS_ENGLISH = 3000   # 2026-05-28 (v2): lowered 5000 → 3000. The 5000
+                            # bump was for Cerebras zai-glm reasoning overhead,
+                            # but D17 added reasoning_effort=none which cuts
+                            # actual Cerebras output to ~800 tokens. Groq
+                            # qwen3-32b output is ~1500-2500 tokens. Both fit
+                            # in 3000 with margin. Side-effect of the old 5000:
+                            # every Groq call reserved 5K of the 6K per-org
+                            # TPM budget → ~1.2 calls/min/org → constant 429s.
+                            # 3000 gives Groq ~2 calls/min/org headroom.
+MAX_TOKENS_NON_ENGLISH = 3500  # extra room for english_translation field
 
 INDIC_LANGS = ("te", "hi", "kn", "or", "ta", "ml", "bn", "pa", "mr", "gu", "ur")
 CJK_LANGS = ("zh", "ja", "ko")
@@ -683,45 +683,65 @@ async def groq_semantic(
         f"TITLE: {title}\n\nBODY:\n{body}\n\n"
         "Return ONLY the JSON object."
     )
-    try:
-        raw = await call_groq(
-            system=sys_prompt or GROQ_SYS,
-            user=user_prompt,
-            model=FAST_MODEL,
-            task_type=GROQ_TASK_TYPE,
-            json_response=True,
-            max_tokens_override=max_tokens,
-        )
-    except (GroqCallFailed, GroqQuotaExhausted) as exc:
-        logger.warning("substrate: groq failed: %s", exc)
-        return None
-    # Robust JSON parse — vLLM (without strict grammar) and some models
-    # occasionally wrap JSON in markdown fences or prose preamble.
-    # First try strict parse; if that fails, strip fences and isolate
-    # the outermost { ... } block, then retry.
-    raw_for_parse = (raw or "").strip()
+    # Two-attempt loop. 2026-05-28: added because Cerebras gpt-oss-120b
+    # truncates verbose substrate JSON ~46% of the time (free-tier output cap
+    # ≈1000 tokens, but our schema often needs 2-3K). Before this retry, ~25%
+    # of all drained articles were silently lost. The UnifiedPool rotates to
+    # a different slot on retry, so the second attempt typically lands on
+    # Groq (qwen3-32b) or Ollama, both of which finish cleanly.
     parsed: Any = None
-    try:
-        parsed = json.loads(raw_for_parse)
-    except (TypeError, ValueError):
-        cleaned = raw_for_parse
-        # strip markdown code fences
-        if cleaned.startswith("```"):
-            cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-            cleaned = re.sub(r"\s*```\s*$", "", cleaned)
-        # isolate outermost {...}
-        first = cleaned.find("{")
-        last = cleaned.rfind("}")
-        if first >= 0 and last > first:
-            cleaned = cleaned[first:last + 1]
+    raw_for_parse = ""
+    for attempt in range(2):
         try:
-            parsed = json.loads(cleaned)
-        except (TypeError, ValueError):
-            logger.warning(
-                "groq_semantic: json parse failed. raw[:240]=%r",
-                raw_for_parse[:240],
+            raw = await call_groq(
+                system=sys_prompt or GROQ_SYS,
+                user=user_prompt,
+                model=FAST_MODEL,
+                task_type=GROQ_TASK_TYPE,
+                json_response=True,
+                max_tokens_override=max_tokens,
             )
+        except (GroqCallFailed, GroqQuotaExhausted) as exc:
+            logger.warning("substrate: groq failed (attempt %d): %s", attempt + 1, exc)
+            if attempt == 0:
+                continue  # retry once on transport-level failure
             return None
+        # Robust JSON parse — vLLM (without strict grammar) and some models
+        # occasionally wrap JSON in markdown fences or prose preamble.
+        # First try strict parse; if that fails, strip fences and isolate
+        # the outermost { ... } block, then retry.
+        raw_for_parse = (raw or "").strip()
+        try:
+            parsed = json.loads(raw_for_parse)
+            break  # parsed cleanly — exit retry loop
+        except (TypeError, ValueError):
+            cleaned = raw_for_parse
+            # strip markdown code fences
+            if cleaned.startswith("```"):
+                cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+                cleaned = re.sub(r"\s*```\s*$", "", cleaned)
+            # isolate outermost {...}
+            first = cleaned.find("{")
+            last = cleaned.rfind("}")
+            if first >= 0 and last > first:
+                cleaned = cleaned[first:last + 1]
+            try:
+                parsed = json.loads(cleaned)
+                break  # cleaned + parsed — exit retry loop
+            except (TypeError, ValueError):
+                if attempt == 0:
+                    logger.info(
+                        "groq_semantic: parse fail on attempt 1 (likely Cerebras "
+                        "truncation), retrying. raw[-160:]=%r",
+                        raw_for_parse[-160:],
+                    )
+                    continue  # rotate to next pool slot
+                logger.warning(
+                    "groq_semantic: json parse failed after 2 attempts. "
+                    "raw[:240]=%r",
+                    raw_for_parse[:240],
+                )
+                return None
     if not isinstance(parsed, dict):
         logger.warning(
             "groq_semantic: parsed but not a dict (got %s). raw[:120]=%r",
@@ -1086,17 +1106,21 @@ async def _persist_quotes(db, aid: str, quotes: list[dict[str, Any]]) -> None:
 async def _persist_claims(db, aid: str, claims: list[dict[str, Any]]) -> None:
     """Replace all article_claims rows for this article.
 
-    Uses the existing v1 schema:
+    Schema:
       article_claims(article_id, claim_text, subject_text, subject_entity_id,
                      predicate, object_text, confidence, embedding, ...)
 
-    Mapping from our v2 extraction JSON:
-      text          → claim_text
-      claimant      → subject_text (who's making the claim)
-      verifiable    → confidence: true → 0.85, false → 0.5
-      type, predicate, object_text  → not used at substrate time
-                                       (extracted by future claim-decomposition task)
-      subject_entity_id  → NULL (filled later by entity resolution)
+    Mapping from v3 substrate JSON (2026-05-26 — SPO triple now extracted):
+      subject       → subject_text (the entity the claim is ABOUT)
+      predicate     → predicate    (verb / relation phrase)
+      object        → object_text  (target / value / recipient)
+      text          → claim_text   (natural-language sentence)
+      verifiable    → confidence   (true → 0.85, false → 0.5)
+      claimant      → (not stored as a column; lives inside claim_text context)
+      subject_entity_id → NULL (filled later by entity resolution)
+
+    Backward-compat: if subject/predicate/object are missing (old model output
+    or junk), fall back to claimant→subject_text and leave predicate/object NULL.
     """
     await db.execute(
         text("DELETE FROM article_claims WHERE article_id = :id"), {"id": aid}
@@ -1109,6 +1133,13 @@ async def _persist_claims(db, aid: str, claims: list[dict[str, Any]]) -> None:
         claim_text_v = (c.get("text") or "").strip()
         if not claim_text_v:
             continue
+        subject_v = (c.get("subject") or "").strip() or None
+        predicate_v = (c.get("predicate") or "").strip() or None
+        object_v = (c.get("object") or "").strip() or None
+        # Fallback: if the model did not emit SPO, put the claimant in subject_text
+        # so existing entity-link code still finds something to resolve against.
+        if not subject_v:
+            subject_v = (c.get("claimant") or "article")
         # Map verifiable bool → confidence float
         verifiable = bool(c.get("verifiable", False))
         confidence = 0.85 if verifiable else 0.5
@@ -1116,14 +1147,16 @@ async def _persist_claims(db, aid: str, claims: list[dict[str, Any]]) -> None:
             text(
                 """
                 INSERT INTO article_claims
-                  (article_id, claim_text, subject_text, confidence)
-                VALUES (:aid, :tx, :sub, :cf)
+                  (article_id, claim_text, subject_text, predicate, object_text, confidence)
+                VALUES (:aid, :tx, :sub, :pr, :ob, :cf)
                 """
             ),
             {
                 "aid": aid,
                 "tx": claim_text_v[:4000],
-                "sub": (c.get("claimant") or "article")[:200],
+                "sub": subject_v[:200] if subject_v else None,
+                "pr": predicate_v[:200] if predicate_v else None,
+                "ob": object_v[:600] if object_v else None,
                 "cf": confidence,
             },
         )
@@ -1398,13 +1431,26 @@ async def run(args: argparse.Namespace) -> int:
     logger.info("substrate-pass: processing %d articles", total)
     quartiles = {int(total * 0.25), int(total * 0.5), int(total * 0.75), total}
 
+    # 2026-05-28 (D19): atomic-claim with FOR UPDATE SKIP LOCKED. The old
+    # SELECT-only query let N concurrent drain instances pick the same rows
+    # and race to write substrate output, wasting 15-30% of LLM calls and
+    # producing duplicate work. The UPDATE...RETURNING pattern now marks each
+    # batch substrate_status='processing' so other workers' inner SELECT skips
+    # them. Orphaned 'processing' rows from a hard-killed script are re-picked
+    # by the next D1 reset cycle.
     fetched_q = text(
         """
-        SELECT id::text AS id, title, url
-        FROM articles
-        WHERE substrate_processed_at IS NULL AND url IS NOT NULL
-        ORDER BY collected_at DESC
-        LIMIT :batch
+        UPDATE articles
+           SET substrate_status = 'processing'
+         WHERE id IN (
+           SELECT id FROM articles
+            WHERE substrate_processed_at IS NULL AND url IS NOT NULL
+              AND (substrate_status IS NULL OR substrate_status = 'pending')
+            ORDER BY collected_at DESC
+            LIMIT :batch
+            FOR UPDATE SKIP LOCKED
+         )
+        RETURNING id::text AS id, title, url
         """
     )
 
@@ -1438,6 +1484,9 @@ async def run(args: argparse.Namespace) -> int:
     while processed < total:
         async with get_db() as db:
             rows = (await db.execute(fetched_q, {"batch": 64})).mappings().all()
+            # Commit the atomic UPDATE so the 'processing' marker persists and
+            # other concurrent workers actually see and skip these rows.
+            await db.commit()
         if not rows:
             break
         results = await asyncio.gather(

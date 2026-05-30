@@ -114,7 +114,7 @@ class GroqKeyManager:
         # actually retryable at second 60, but the longer cooldown locked
         # out the whole pool when many keys were hit by a burst. The Celery
         # beat task at 00:05 UTC still resets the daily TPD/RPD counters.
-        self._cooldown_seconds: float = 60.0
+        self._cooldown_seconds: float = 15.0  # 2026-05-28: was 60s; Groq's TPM 429s often resolve in 5-15s per the "try again in N.NNs" hint, so 60s held keys out 4x too long → cut to 15s for faster pool recovery
         # Hard cap on any individual key cooldown. Even when the SDK reports
         # a daily-quota (TPD/RPD) 429, we never hold a key out longer than
         # this — if Groq is genuinely still over-quota when the cooldown
@@ -317,9 +317,16 @@ _cerebras_index: int = 0
 # Groq model id → Cerebras model id. Same model weights, different naming
 # convention. Anything not in the map falls back to llama3.1-8b.
 _GROQ_TO_CEREBRAS_MODEL: dict[str, str] = {
-    # Qwen3 family — same as local Ollama. 22B active params on Cerebras
-    # (vs 3B on Ollama's qwen3-30b-a3b) → match or exceed local quality.
-    "qwen/qwen3-32b": "qwen-3-235b-a22b-instruct-2507",
+    # Qwen3 family fallback — Cerebras deprecated qwen-3-235b-a22b-instruct-2507
+    # on 2026-05-27 (and free tier no longer exposes any qwen-3-* identifier).
+    # Tested both available free-tier models against our substrate schema:
+    #   - gpt-oss-120b: VERBOSE, truncates JSON ~46%, EXTRACTS ZERO QUOTES
+    #     even when it completes (silent quality regression — discovered
+    #     2026-05-28 via head-to-head test).
+    #   - zai-glm-4.7: concise (finishes in ~3.4K tokens, fits max=5000),
+    #     extracts quotes correctly, parses cleanly on first try.
+    # zai-glm-4.7 is the strictly better choice here.
+    "qwen/qwen3-32b": "zai-glm-4.7",
     # Legacy fallbacks (kept in case env overrides force these):
     "llama-3.1-8b-instant": "llama3.1-8b",
     "llama-3.3-70b-versatile": "llama3.1-8b",  # no 70b on Cerebras free
@@ -373,6 +380,15 @@ async def _call_cerebras(
         }
         if json_response:
             body["response_format"] = {"type": "json_object"}
+        # 2026-05-28: zai-glm-4.7 is a reasoning model — without this flag it
+        # burns ~3K tokens on chain-of-thought BEFORE emitting any JSON,
+        # blowing past max_tokens on long articles → empty content / truncation
+        # in ~30% of calls. reasoning_effort="none" skips CoT entirely, cuts
+        # per-call output from ~3,800 tok to ~800 tok, and eliminates the
+        # empty-content failure mode. Probe-validated on real production
+        # article (5.5KB body): 30% failure → 0% failure.
+        if cerebras_model.startswith("zai-glm"):
+            body["reasoning_effort"] = "none"
         try:
             # Browser UA is REQUIRED — Cerebras's API sits behind Cloudflare
             # WAF which rejects default python-httpx/urllib UAs with error
@@ -557,11 +573,22 @@ _OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:30b-a3b")
 _OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT_SECONDS", "300"))
 # Short cooldown when local fails — we want to retry local quickly
 # because it's our primary capacity and free pool is overflow only.
-_LOCAL_FAIL_COOLDOWN = 0.0  # 2026-05-26: zero cooldown — network errors retry immediately
+_LOCAL_FAIL_COOLDOWN = 10.0
 # Concurrent in-flight cap on the local slot. Ollama defaults to
 # OLLAMA_NUM_PARALLEL=4. Workers beyond this fall through to the free
 # pool instead of piling onto local and getting connection-level errors.
 _LOCAL_MAX_CONCURRENT = int(os.getenv("LOCAL_LLM_MAX_CONCURRENT", "4"))
+
+# ── 2026-05-28: secondary local-LLM endpoint (llama.cpp / LM Studio) ────────
+# Optional OpenAI-compatible server on Trijya port 1234 running llama.cpp's
+# llama-server.exe with --cont-batching --parallel 8. Provides a parallel
+# lane to Ollama since Ollama's NUM_PARALLEL behaviour on Windows didn't
+# scale as projected. Verified end-to-end: 42 tok/s gen speed on the 4090.
+# Set LMSTUDIO_BASE_URL=http://100.92.126.27:1234 and LMSTUDIO_MODEL=<sha256-…>
+# to enable. Empty base URL = disabled.
+_LMSTUDIO_BASE = os.getenv("LMSTUDIO_BASE_URL", "").rstrip("/")
+_LMSTUDIO_MODEL = os.getenv("LMSTUDIO_MODEL", "")
+_LMSTUDIO_SLOTS = max(1, min(int(os.getenv("LMSTUDIO_CLIENT_SLOTS", "8")), 16))
 
 
 class _UnifiedSlot:
@@ -578,9 +605,25 @@ class _UnifiedPool:
 
     def __init__(self) -> None:
         self._slots: list[_UnifiedSlot] = []
-        # Local Ollama (RTX 4090) slot at index 0 — PRIMARY when enabled.
+        # Local Ollama (RTX 4090) — N slots (default 8) all pointing at the
+        # same Ollama URL. Each slot is an independent concurrency lane in
+        # our pool. Mirror OLLAMA_NUM_PARALLEL on the server (default 8 after
+        # D21 tune): if server runs 8-way parallel but we only open 1 client
+        # slot, we saturate at 1 in-flight call → log shows "0/1 slots
+        # remaining" constantly. With 8 client slots + 8 server parallel,
+        # Drain D throughput jumps from 3 → 24 calls/min as projected.
+        # Tunable via OLLAMA_CLIENT_SLOTS env var; cap at 16 for safety.
         if _LOCAL_LLM_ENABLED:
-            self._slots.append(_UnifiedSlot("local", 0, _OLLAMA_BASE))
+            n_local = max(1, min(int(os.getenv("OLLAMA_CLIENT_SLOTS", "8")), 16))
+            for i in range(n_local):
+                self._slots.append(_UnifiedSlot("local", i, _OLLAMA_BASE))
+        # LM Studio / llama.cpp secondary local endpoint (OpenAI-compatible).
+        # Independent of Ollama — runs on Trijya port 1234. When configured,
+        # adds N (default 8) parallel slots that share the same GPU but use
+        # llama.cpp's continuous batching instead of Ollama's NUM_PARALLEL.
+        if _LMSTUDIO_BASE and _LMSTUDIO_MODEL:
+            for i in range(_LMSTUDIO_SLOTS):
+                self._slots.append(_UnifiedSlot("lmstudio", i, _LMSTUDIO_BASE))
         # In LOCAL-ONLY mode we skip building Groq/Cerebras slots so the
         # pool can ONLY route to local. Used when free providers are
         # restricted/rate-limited.
@@ -591,7 +634,7 @@ class _UnifiedPool:
                 self._slots.append(_UnifiedSlot("cerebras", i, k))
         self._index: int = 0
         self._exhausted_until: dict[int, float] = {}
-        self._cooldown_seconds: float = 60.0
+        self._cooldown_seconds: float = 15.0  # 2026-05-28: was 60s; Groq's TPM 429s often resolve in 5-15s per the "try again in N.NNs" hint, so 60s held keys out 4x too long → cut to 15s for faster pool recovery
         self._max_cooldown_seconds: float = 300.0
         self._lock: asyncio.Lock | None = None
         # Concurrency cap on local slot — protects Ollama from being
@@ -710,6 +753,16 @@ async def _call_via_slot(
         # Qwen3 thinking-mode disabled via `think: false`; multilingual JSON
         # enforced via `format: "json"`. Proven 277 art/hr at concurrency=6.
         import httpx as _httpx
+        # 2026-05-28: per-request optimizations for 4090. We can't restart
+        # the Ollama server to set OLLAMA_NUM_PARALLEL / FLASH_ATTENTION /
+        # KV_CACHE_TYPE (no SSH access to Trijya), but Ollama accepts
+        # per-request `options` that override Modelfile defaults:
+        #   num_batch=2048  — default 512; 4× batch helps 4090 GPU utilization
+        #                     stay high during long-prompt processing
+        #   num_ctx=8192    — substrate prompts are ~3K tok, output ~3K → need
+        #                     8K context window per call (default 2K truncates)
+        #   num_keep=0      — don't pin tokens; full window available
+        # Note: num_parallel cannot be set per-request; only server env var.
         body: dict[str, Any] = {
             "model": _OLLAMA_MODEL,
             "messages": messages,
@@ -718,6 +771,9 @@ async def _call_via_slot(
             "options": {
                 "temperature": temperature,
                 "num_predict": max_tokens,
+                "num_batch": 2048,
+                "num_ctx": 8192,
+                "num_keep": 0,
             },
         }
         if json_response:
@@ -749,6 +805,57 @@ async def _call_via_slot(
             )
         return content.strip()
 
+    if slot.provider == "lmstudio":
+        # 2026-05-28: llama.cpp / LM Studio OpenAI-compatible server on
+        # local network (Trijya port 1234). Auth-free. Adds a continuous-
+        # batching lane parallel to Ollama. Disable qwen3 reasoning via
+        # chat_template_kwargs.enable_thinking=false (same root-cause fix
+        # as D17 for Cerebras zai-glm — saves ~3K tok/call).
+        import httpx as _httpx
+        body: dict[str, Any] = {
+            "model": _LMSTUDIO_MODEL,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "chat_template_kwargs": {"enable_thinking": False},
+        }
+        if json_response:
+            body["response_format"] = {"type": "json_object"}
+        async with _httpx.AsyncClient(timeout=_OLLAMA_TIMEOUT) as c:
+            r = await c.post(
+                f"{slot.key_string}/v1/chat/completions",
+                headers={"Content-Type": "application/json"},
+                json=body,
+            )
+        if r.status_code >= 400:
+            body_text = (r.text or "")[:300]
+            logger.warning("LMStudio %d body=%s", r.status_code, body_text[:200])
+            raise _LocalCallFailed(
+                f"LMStudio {r.status_code}: {body_text[:160]}"
+            )
+        data = r.json()
+        choices = data.get("choices") or []
+        if not choices:
+            raise _LocalCallFailed("LMStudio: no choices in response")
+        msg = choices[0].get("message") or {}
+        content = msg.get("content") or ""
+        if not content:
+            # Fallback: if the model emitted reasoning but not content
+            # (enable_thinking flag ignored), use the reasoning text rather
+            # than dropping the article. Better than a parse failure.
+            rc = msg.get("reasoning_content") or ""
+            if rc:
+                logger.info(
+                    "LMStudio returned reasoning_content only (len=%d); "
+                    "using as content. Consider verifying enable_thinking=false "
+                    "is propagated by the server's chat template.",
+                    len(rc),
+                )
+                content = rc
+            else:
+                raise _LocalCallFailed("LMStudio empty content")
+        return content.strip()
+
     if slot.provider == "groq":
         client = groq_manager._get_client(slot.key_index)
         kwargs: dict = {
@@ -773,6 +880,10 @@ async def _call_via_slot(
     }
     if json_response:
         body["response_format"] = {"type": "json_object"}
+    # See _call_cerebras for context: zai-glm is a reasoning model and needs
+    # reasoning_effort=none to skip chain-of-thought (saves ~3K tok/call).
+    if cerebras_model.startswith("zai-glm"):
+        body["reasoning_effort"] = "none"
     async with _httpx.AsyncClient(timeout=30.0) as c:
         r = await c.post(
             _CEREBRAS_BASE,

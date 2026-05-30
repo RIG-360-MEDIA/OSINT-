@@ -104,20 +104,21 @@ class HTMLCollector:
                     row_result = await conn.fetchrow(
                         """
                         UPDATE sources
-                        SET health_score = GREATEST(health_score - 0.2, 0.0),
+                        SET health_score = GREATEST(health_score - 0.2, 0.1),
                             consecutive_failures = consecutive_failures + 1
                         WHERE id = $1::uuid
                         RETURNING name, consecutive_failures
                         """,
                         str(source["id"]),
                     )
-                    if row_result and row_result["consecutive_failures"] >= 10:
+                    # 2026-05-27: auto-disable threshold raised 10 → 25
+                    if row_result and row_result["consecutive_failures"] >= 25:
                         await conn.execute(
                             "UPDATE sources SET is_active = FALSE WHERE id = $1::uuid",
                             str(source["id"]),
                         )
                         logger.warning(
-                            "Source '%s' auto-disabled after 10 failures",
+                            "Source '%s' auto-disabled after 25 failures",
                             source["name"],
                         )
         finally:

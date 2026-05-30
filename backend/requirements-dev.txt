@@ -5,7 +5,7 @@
 # fix/brief-prod-readiness P3.16. Audit found pytest was unavailable in
 # the deployed image, so the brief test suite couldn't run inside CI.
 
-pytest==9.0.3  # 2026-05-26: security patches
+pytest==8.3.3  # 2026-05-26: security patches
 pytest-asyncio==0.24.0
 pytest-cov==5.0.0
 freezegun==1.5.1

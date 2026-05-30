@@ -50,23 +50,52 @@ FEED_FETCH_TIMEOUT = 20
 MAX_CONCURRENT_FEEDS = 8
 
 # Browser-grade headers — many publishers 403 generic Python clients but accept
-# requests that look like Chrome on Windows. Order matters for some CDNs.
-_BROWSER_HEADERS: dict[str, str] = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": (
-        "application/rss+xml, application/atom+xml, application/xml;q=0.9, "
-        "text/xml;q=0.8, */*;q=0.5"
-    ),
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
-    "DNT": "1",
-    "Cache-Control": "no-cache",
-    "Pragma": "no-cache",
-}
+# requests that look like a real browser. We rotate the User-Agent across 6
+# different desktop/mobile profiles to defeat simple fingerprinting blocks
+# (sites that ban one specific UA but allow others).
+_BROWSER_UAS: tuple[str, ...] = (
+    # Chrome 124 / Windows 10
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    # Chrome 124 / macOS
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    # Safari 17.4 / macOS
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 "
+    "(KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+    # Firefox 124 / Linux
+    "Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0",
+    # Firefox 124 / Windows
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
+    # Safari 17.4 / iPhone
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 "
+    "(KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
+)
+
+
+def _browser_headers() -> dict[str, str]:
+    """Returns a fresh headers dict with a randomly-chosen User-Agent.
+
+    Rotating per-request defeats sites that block one specific UA string.
+    """
+    import random as _random  # local import keeps module-level scope clean
+    return {
+        "User-Agent": _random.choice(_BROWSER_UAS),
+        "Accept": (
+            "application/rss+xml, application/atom+xml, application/xml;q=0.9, "
+            "text/xml;q=0.8, */*;q=0.5"
+        ),
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "DNT": "1",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    }
+
+
+# Backward-compat — some callers reference the old constant name. Returns
+# the first UA in the rotation so existing code keeps working without imports.
+_BROWSER_HEADERS: dict[str, str] = _browser_headers()
 
 
 def _url_hash(url: str) -> str:
@@ -152,7 +181,7 @@ class DirectRSSCollector:
             async with httpx.AsyncClient(
                 timeout=FEED_FETCH_TIMEOUT,
                 follow_redirects=True,
-                headers=_BROWSER_HEADERS,
+                headers=_browser_headers(),
             ) as freshrss_client:
                 subscribed_urls = await _freshrss_subscription_urls(freshrss_client)
 
@@ -174,7 +203,7 @@ class DirectRSSCollector:
                 async with httpx.AsyncClient(
                     timeout=FEED_FETCH_TIMEOUT,
                     follow_redirects=True,
-                    headers=_BROWSER_HEADERS,
+                    headers=_browser_headers(),
                 ) as client:
                     # return_exceptions=True so one bad source doesn't cancel
                     # siblings and tear down the shared httpx client mid-flight.
@@ -407,7 +436,7 @@ class DirectRSSCollector:
         row = await conn.fetchrow(
             """
             UPDATE sources
-            SET health_score = GREATEST(health_score - 0.2, 0.0),
+            SET health_score = GREATEST(health_score - 0.2, 0.1),
                 consecutive_failures = consecutive_failures + 1,
                 last_collected_at = NOW()
             WHERE id = $1::uuid
@@ -415,13 +444,16 @@ class DirectRSSCollector:
             """,
             source_id,
         )
-        if row and row["consecutive_failures"] >= 10:
+        # 2026-05-27: only auto-disable after 25 consecutive failures (was 10).
+        # Combined with the 0.1 health floor, transient outages no longer
+        # permanently kill a source.
+        if row and row["consecutive_failures"] >= 25:
             await conn.execute(
                 "UPDATE sources SET is_active = FALSE WHERE id = $1::uuid",
                 source_id,
             )
             logger.warning(
-                "DirectRSS: '%s' auto-disabled after 10 consecutive failures",
+                "DirectRSS: '%s' auto-disabled after 25 consecutive failures",
                 row["name"],
             )
 

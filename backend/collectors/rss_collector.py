@@ -417,12 +417,15 @@ class RSSCollector:
         """
         # Quick best-effort fetch for thumbnail + author metadata only.
         # 10s timeout — JS sites return skeleton HTML fast enough for meta tags.
+        # Uses rotating browser UA so we don't get fingerprinted-and-banned
+        # by sites that block our custom "RIGBot" UA.
+        from backend.collectors.direct_rss_collector import _browser_headers
         html: str | None = None
         try:
             async with httpx.AsyncClient(
                 timeout=10,
                 follow_redirects=True,
-                headers={"User-Agent": "Mozilla/5.0 (compatible; RIGBot/1.0)"},
+                headers=_browser_headers(),
             ) as client:
                 resp = await client.get(url)
                 if resp.status_code == 200:
@@ -484,7 +487,7 @@ class RSSCollector:
                 row = await conn.fetchrow(
                     """
                     UPDATE sources
-                    SET health_score = GREATEST(health_score - 0.2, 0.0),
+                    SET health_score = GREATEST(health_score - 0.2, 0.1),
                         consecutive_failures = consecutive_failures + 1,
                         last_collected_at = NOW()
                     WHERE id = $1::uuid
@@ -492,7 +495,10 @@ class RSSCollector:
                     """,
                     source_id,
                 )
-                if row and row["consecutive_failures"] >= 10:
+                # 2026-05-27: only fully disable a source after 25 consecutive
+                # failures (was 10). Combined with the 0.1 health floor, this
+                # gives intermittent / transient failures more recovery time.
+                if row and row["consecutive_failures"] >= 25:
                     await conn.execute(
                         "UPDATE sources SET is_active = FALSE WHERE id = $1::uuid",
                         source_id,

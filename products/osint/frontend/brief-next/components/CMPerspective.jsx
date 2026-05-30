@@ -3,9 +3,13 @@ import { useEffect, useState } from 'react';
 import { authFetch } from '../lib/supabase';
 
 /**
- * Block 2 — CM Perspective. Replaces the old mock "Overnight Summary" + fake
- * pull-quote. Left: a real written read of how the principal is being covered.
- * Right: "Needs Your Attention" — real opposition attacks + risk coverage.
+ * CM Perspective — the full, consolidated view of how the principal is being
+ * covered and what it means. All real data + a grounded LLM strategic read:
+ *   - Narrative balance (real coverage-volume split: govt vs opposition driven)
+ *   - Strategic Read (LLM deep analysis) + recommended actions
+ *   - This week's coverage (LLM prose summary)
+ *   - Opposition fronts active
+ *   - Needs Your Attention (response-worthy items)
  */
 
 const DOT = { critical: '#fb7185', high: '#f59e0b', moderate: '#e9c46a', low: '#5b6b7a' };
@@ -24,53 +28,104 @@ export function CMPerspective() {
 
   if (err) {
     return (
-      <div className="mood-body">
-        <div className="synthesis"><p className="exec-err">Couldn&apos;t load coverage — {err}</p></div>
-      </div>
+      <section className="container section cm-section">
+        <p className="cmx-state">Couldn&apos;t load your perspective — {err}</p>
+      </section>
     );
   }
   if (!data) {
     return (
-      <div className="mood-body">
-        <div className="synthesis">
-          <div className="synth-label">Compiling coverage…</div>
-          <div className="exec-skeleton"><span /><span /><span /></div>
-        </div>
-      </div>
+      <section className="container section cm-section">
+        <div className="cmx-state">Compiling your perspective…</div>
+      </section>
     );
   }
 
+  const subj = data.subject || 'Your Principal';
+  const nb = data.narrative_balance || {};
+  const da = data.deep_analysis;
   const att = data.needs_attention || [];
-  return (
-    <div className="mood-body">
-      <div className="synthesis">
-        <div className="synth-label">{data.subject ? `On Your Watch — ${data.subject}` : 'On Your Watch'}</div>
-        <p className="cmp-summary">{data.summary}</p>
-      </div>
+  const fronts = data.opposition_fronts || [];
 
-      <aside className="needs-attention">
-        <div className="na-label"><span className="na-pulse" aria-hidden="true" />Needs Your Attention</div>
-        {att.length === 0 ? (
-          <p className="na-empty">Nothing pressing — no attacks or risk items on your watch in this window.</p>
-        ) : (
-          <ul>
-            {att.map((a, i) => (
-              <li key={a.cluster_id || i} className={`na-item ${a.kind}`} style={{ animationDelay: `${i * 90}ms` }}>
-                <span className="na-dot" style={{ background: DOT[a.severity] || DOT.moderate }} aria-hidden="true" />
-                <div className="na-body">
-                  <p className="na-head">{a.headline}</p>
-                  <div className="na-meta">
-                    <span className={`na-tag ${a.kind}`}>
+  return (
+    <section className="container section cm-section">
+      <header className="cmx-header">
+        <div>
+          <h2 className="cmx-title">CM Perspective — {subj}</h2>
+          <p className="cmx-sub">How your principal is being covered — and what it means.</p>
+        </div>
+        <aside className="cmx-header-quote">
+          <span className="cmx-q" aria-hidden="true">&ldquo;</span>
+          <p>Power is not only what is held, but what is perceived.</p>
+          <span className="cmx-q-attr">— RIG Intelligence Desk</span>
+        </aside>
+      </header>
+
+      {nb.total ? (
+        <div className="cmx-balance">
+          <div className="cmx-bal-bar" title={`${nb.govt_pct}% government-driven · ${nb.attack_pct}% opposition-driven`}>
+            <span className="cmx-bal-govt" style={{ width: `${nb.govt_pct}%` }} />
+            <span className="cmx-bal-opp" style={{ width: `${nb.attack_pct}%` }} />
+          </div>
+          <div className="cmx-bal-legend">
+            <span className="govt"><i /> {nb.govt_pct}% you / government setting the narrative</span>
+            <span className="opp"><i /> {nb.attack_pct}% opposition-driven</span>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="cmx-grid">
+        <div className="cmx-main">
+          {da && da.read ? (
+            <div className="cmx-block cmx-read-block">
+              <div className="cmx-label">Strategic Read</div>
+              <p className="cmx-read">{da.read}</p>
+              {da.actions && da.actions.length ? (
+                <>
+                  <div className="cmx-label cmx-label-actions">Recommended actions</div>
+                  <ul className="cmx-actions">{da.actions.map((a, i) => <li key={i}>{a}</li>)}</ul>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+
+          {data.summary ? (
+            <div className="cmx-block">
+              <div className="cmx-label">This Week&apos;s Coverage</div>
+              <p className="cmx-summary">{data.summary}</p>
+            </div>
+          ) : null}
+
+          {fronts.length ? (
+            <div className="cmx-fronts">
+              <span className="cmx-fronts-lbl">Opposition active —</span>
+              {fronts.map((f, i) => <span key={i} className="cmx-front-chip">{f}</span>)}
+            </div>
+          ) : null}
+        </div>
+
+        <aside className="cmx-attention">
+          <div className="cmx-att-label"><span className="na-pulse" aria-hidden="true" />Needs Your Attention</div>
+          {att.length === 0 ? (
+            <p className="cmx-att-empty">Nothing pressing — no attacks or risk items on your watch in this window.</p>
+          ) : (
+            <ul>
+              {att.map((a, i) => (
+                <li key={a.cluster_id || i} className={`cmx-att-item ${a.kind}`} style={{ animationDelay: `${i * 80}ms` }}>
+                  <span className="cmx-att-dot" style={{ background: DOT[a.severity] || DOT.moderate }} aria-hidden="true" />
+                  <div className="cmx-att-body">
+                    <p className="cmx-att-head">{a.headline}</p>
+                    <span className="cmx-att-meta">
                       {a.kind === 'opposition' ? `attack · ${a.matched}` : (a.matched || 'risk')}
+                      {a.outlets ? ` · ${a.outlets}` : ''}
                     </span>
-                    {a.outlets ? <span className="na-src">· {a.outlets}</span> : null}
                   </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </aside>
-    </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </aside>
+      </div>
+    </section>
   );
 }

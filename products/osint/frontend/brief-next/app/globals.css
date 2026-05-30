@@ -8995,6 +8995,47 @@ body, .synthesis p, .ds-summary, .blind-card .sub, .ts-story-summary {
 .we-id-text .we-name { margin:0; }
 .we-avatar-img { position:absolute; inset:0; width:100%; height:100%;
   object-fit:cover; border-radius:50%; transition:opacity .2s ease; }
+
+/* ── CM Perspective — full consolidated section ──────────────────────────── */
+.cmx-state { font-size:14px; color:#8c8068; font-style:italic; padding:20px 0; }
+.cmx-header { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin-bottom:18px; }
+.cmx-title { font-family:var(--font-serif,Georgia,serif); font-size:30px; color:#f1e7d0; margin:0; letter-spacing:.2px; }
+.cmx-sub { font-size:13.5px; color:#9a8f74; margin:5px 0 0; }
+.cmx-header-quote { max-width:300px; text-align:right; border-right:2px solid rgba(233,196,106,.3); padding-right:14px; }
+.cmx-header-quote p { font-family:var(--font-serif,Georgia,serif); font-style:italic; font-size:14px; color:#cbb88f; margin:0; line-height:1.5; }
+.cmx-q { color:#e9c46a; font-size:24px; font-family:var(--font-serif,Georgia,serif); }
+.cmx-q-attr { display:block; font-family:var(--font-mono,monospace); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:#8c8068; margin-top:6px; }
+.cmx-balance { margin:0 0 22px; }
+.cmx-bal-bar { height:8px; border-radius:4px; overflow:hidden; display:flex; background:rgba(255,255,255,.05); }
+.cmx-bal-govt { background:linear-gradient(90deg,#5fd47b,#3fae5e); }
+.cmx-bal-opp  { background:linear-gradient(90deg,#fb7185,#e11d48); }
+.cmx-bal-legend { display:flex; justify-content:space-between; margin-top:7px; font-size:12px; color:#9a8f74; }
+.cmx-bal-legend i { display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:5px; vertical-align:middle; }
+.cmx-bal-legend .govt i { background:#5fd47b; }
+.cmx-bal-legend .opp i { background:#fb7185; }
+.cmx-grid { display:grid; grid-template-columns:1.7fr 1fr; gap:26px; }
+@media (max-width:900px){ .cmx-grid{ grid-template-columns:1fr; } }
+.cmx-main { display:flex; flex-direction:column; gap:18px; }
+.cmx-read-block { border-left:2px solid #e9c46a; padding:14px 18px; border-radius:4px;
+  background:linear-gradient(135deg, rgba(233,196,106,.06), rgba(0,0,0,0) 70%); }
+.cmx-label { font-family:var(--font-mono,monospace); font-size:10px; font-weight:700; letter-spacing:.16em;
+  text-transform:uppercase; color:#e9c46a; margin-bottom:8px; }
+.cmx-label-actions { margin-top:14px; color:#cbb88f; }
+.cmx-read { font-size:15.5px; line-height:1.7; color:#e8dcbb; margin:0; }
+.cmx-actions { margin:4px 0 0; padding-left:18px; display:flex; flex-direction:column; gap:6px; }
+.cmx-actions li { font-size:14px; line-height:1.55; color:#cbb88f; }
+.cmx-summary { font-size:15px; line-height:1.72; color:#cdbb93; margin:0; }
+.cmx-fronts { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding-top:4px; }
+.cmx-fronts-lbl { font-size:12px; color:#8c8068; text-transform:uppercase; letter-spacing:.08em; }
+.cmx-front-chip { font-size:12px; color:#fb7185; border:1px solid rgba(251,113,133,.35); border-radius:3px; padding:3px 9px; }
+.cmx-attention { background:rgba(251,113,133,.04); border:1px solid rgba(251,113,133,.14); border-radius:6px; padding:16px 18px; align-self:start; }
+.cmx-att-label { display:flex; align-items:center; gap:8px; font-family:var(--font-mono,monospace); font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#fb7185; margin-bottom:12px; }
+.cmx-attention ul { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px; }
+.cmx-att-item { display:flex; gap:10px; animation:weReveal .3s ease both; }
+.cmx-att-dot { flex:0 0 8px; width:8px; height:8px; border-radius:50%; margin-top:5px; }
+.cmx-att-head { font-size:13.5px; line-height:1.4; color:#e4d8b8; margin:0; }
+.cmx-att-meta { font-size:11px; color:#8c8068; }
+.cmx-att-empty { font-size:13px; color:#7a7058; font-style:italic; margin:0; }
 .we-meter { height:4px; border-radius:2px; display:flex; overflow:hidden;
   background:rgba(255,255,255,.06); margin:1px 0 2px; }
 .we-meter-crit { background:#fb7185; }

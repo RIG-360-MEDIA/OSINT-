@@ -19,7 +19,7 @@ from sqlalchemy import text
 
 from auth.middleware import get_optional_user
 from db import get_db
-from llm_synth import synthesize_paragraph
+from llm_synth import synthesize_dossier, synthesize_paragraph
 from relevance import score_relevant
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
@@ -283,6 +283,44 @@ async def cm_perspective(
             summary = llm
             summary_source = "llm"
 
+    # ── Narrative balance (real) + deep strategic analysis (LLM, grounded). ───
+    # By COVERAGE VOLUME, not the sparse stance table: of the watched coverage,
+    # how much is opposition-driven vs principal/government-driven.
+    govt_cov = sum(1 for r in scored if r["ent_tier"] == 3 or _resolve(r.get("matched"))[1] == "govt")
+    opp_cov = len(opp_items)
+    _bt = govt_cov + opp_cov
+    narrative_balance = {
+        "attack": opp_cov,
+        "govt": govt_cov,
+        "total": _bt,
+        "attack_pct": round(100 * opp_cov / _bt) if _bt else 0,
+        "govt_pct": round(100 * govt_cov / _bt) if _bt else 0,
+    }
+    opposition_fronts = sorted(opp_fronts)
+
+    # The summary above is "what happened"; this is the analyst's "what it means
+    # + what to do" — a deeper strategic read over the same real facts.
+    deep_analysis = None
+    if facts:
+        da_facts = facts
+        if _bt:
+            da_facts += (f"\nNARRATIVE BALANCE (of stance-coded coverage on the watch): "
+                         f"{narrative_balance['attack_pct']}% opposition attack vs "
+                         f"{narrative_balance['govt_pct']}% government messaging.")
+        if opposition_fronts:
+            da_facts += "\nOPPOSITION FIGURES ACTIVE: " + ", ".join(opposition_fronts)
+        da_system = (
+            "/no_think\n"
+            f"You are a senior political-intelligence analyst briefing the office of {subj_name}. "
+            "Using ONLY the facts below, write a SHORT but deep strategic assessment (3-5 sentences): "
+            "the principal's standing right now, the main pressure or threat, who is setting the "
+            "narrative (the principal or the opposition), and the near-term outlook. Then give 2-3 "
+            "concrete recommended actions. Be analytical and decision-useful; describe momentum and "
+            "posture QUALITATIVELY and do NOT cite specific numbers or invent names, dates, or "
+            "outcomes.\nFormat EXACTLY:\nASSESSMENT: <3-5 sentences>\nACTIONS:\n- <action>\n- <action>"
+        )
+        deep_analysis = await synthesize_dossier(system=da_system, facts=da_facts, source_check=da_facts)
+
     return {
         "as_of": as_of,
         "personalized": True,
@@ -292,5 +330,8 @@ async def cm_perspective(
         "summary": summary,
         "summary_source": summary_source,
         "digest": digest,
+        "narrative_balance": narrative_balance,
+        "opposition_fronts": opposition_fronts,
+        "deep_analysis": deep_analysis,
         "needs_attention": attention,
     }

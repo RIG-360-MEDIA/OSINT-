@@ -568,8 +568,6 @@ const MoodSection = () => {
 
       <ExecutiveRead />
 
-      <CMPerspective />
-
       <div className="mood-footer">
         <div className="mf-cell">
           <span className="ic"><Icon name="target" size={14} stroke={1.4}/></span>
@@ -1759,10 +1757,10 @@ const App = () => (
     <TopBar />
     <div className="shell">
       <MoodSection />
+      <CMPerspective />
       <DefiningStories />
       <VoicesOvernight />
       <WatchedEntities />
-      <CmPerspective />
       <FooterStrip />
     </div>
   </>

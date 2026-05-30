@@ -16,12 +16,14 @@ endpoint behaves correctly whether scrapers are flowing or paused.
 """
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from fastapi import APIRouter, Query
 from sqlalchemy import text
 
 from db import get_db
+from llm_synth import synthesize_paragraph
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
 
@@ -312,6 +314,58 @@ async def _one_cluster(
     }
 
 
+async def _synthesize_story_summaries(
+    stories: list[dict[str, Any]], limit_synth: int = 5,
+) -> list[dict[str, Any]]:
+    """Replace each shown story's single-article summary with an LLM synthesis
+    over the cluster's real, multi-outlet signals (headline, coverage split,
+    lead outlets, a representative quote). Grounded + faithfulness-gated inside
+    synthesize_paragraph; on any failure the original summary is kept. Runs
+    concurrently across the top stories so latency stays bounded.
+    """
+    def _facts(s: dict[str, Any]) -> str:
+        cov = s.get("coverage") or {}
+        metrics = s.get("metrics") or {}
+        lines = [
+            f"HEADLINE: {s.get('headline', '')}",
+            f"COVERAGE: {metrics.get('outlets', 0)} outlets — "
+            f"{cov.get('sup', 0)}% supportive, {cov.get('crit', 0)}% critical, "
+            f"{cov.get('neu', 0)}% neutral",
+        ]
+        if s.get("outlets"):
+            lines.append(f"LEAD OUTLETS: {s['outlets']}")
+        if s.get("summary"):
+            lines.append(f"DETAIL: {s['summary']}")
+        for lc in (s.get("lens") or []):
+            q = (lc.get("quote") or "").strip()
+            if q and "no quote" not in q.lower():
+                lines.append(f'QUOTE ({lc.get("outlet", "outlet")}): "{q}"')
+                break
+        return "\n".join(lines)
+
+    system = (
+        "/no_think\n"
+        "You are an intelligence editor. In TWO sentences, summarise this news "
+        "story for a busy principal: first what happened, then where coverage "
+        "stands. Use ONLY the facts given; attribute any claim to its outlet or "
+        "speaker; do NOT assert contested claims as fact; do NOT invent numbers, "
+        "names, or outcomes. No preamble, no label — output only the two sentences."
+    )
+
+    async def _one(s: dict[str, Any]) -> dict[str, Any]:
+        facts = _facts(s)
+        llm = await synthesize_paragraph(
+            system=system, facts=facts, source_check=facts,
+            min_words=14, min_chars=60,
+        )
+        if llm:
+            return {**s, "summary": llm, "summary_source": "llm"}
+        return {**s, "summary_source": "template"}
+
+    head = await asyncio.gather(*[_one(s) for s in stories[:limit_synth]])
+    return list(head) + stories[limit_synth:]
+
+
 @router.get("/stories")
 async def get_stories(
     limit: int = Query(default=5, ge=1, le=20),
@@ -363,6 +417,11 @@ async def get_stories(
             await _one_cluster(db, r, i, since_hours, country)
             for i, r in enumerate(rows)
         ]
+
+    # LLM synthesis pass — OUTSIDE the DB context so no connection is held during
+    # the model calls. Concurrent across the shown stories; falls back per-story
+    # to the single-article summary on any failure.
+    stories = await _synthesize_story_summaries(stories, limit_synth=min(limit, 6))
     return {
         "stories": stories,
         "filters": {"since_hours": since_hours, "country": country, "limit": limit},

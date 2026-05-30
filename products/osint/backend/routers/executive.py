@@ -19,6 +19,7 @@ from sqlalchemy import text
 
 from auth.middleware import get_optional_user
 from db import get_db
+from llm_synth import synthesize_paragraph
 from relevance import score_relevant
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
@@ -118,6 +119,7 @@ async def get_executive(
             "cluster_id": r["id"],
         })
 
+    # Deterministic BLUF — always computed; the guaranteed fallback.
     need = sum(1 for f in findings if f["severity"] in ("critical", "high"))
     if not findings:
         bluf = "Quiet window — nothing on your watch crossed the threshold."
@@ -125,11 +127,47 @@ async def get_executive(
         bluf = f"{len(findings)} developments on your watch; nothing flagged for immediate attention."
     else:
         bluf = f"{len(findings)} developments on your watch · {need} need attention."
+    bluf_source = "template"
+
+    # LLM upgrade: a real bottom-line-up-front synthesised from the top findings
+    # (grounded + numeric-faithfulness-gated in llm_synth). Falls back to the
+    # deterministic count line on any failure (no keys, timeout, number drift).
+    if findings:
+        subj = (prefs.get("primary_subject_meta") or {}).get("name") or "the principal"
+        fact_lines = [
+            f"- [{f['severity']}] {f['headline']}"
+            + (f" (re: {f['matched']})" if f.get("matched") else "")
+            for f in findings[:6]
+        ]
+        facts = (
+            f"PRINCIPAL: {subj}\n"
+            f"WINDOW: last {window_hours} hours\n"
+            f"TOTALS: {len(findings)} developments in scope, {need} marked high-priority.\n"
+            "TOP DEVELOPMENTS ON THEIR WATCH (most important first):\n"
+            + "\n".join(fact_lines)
+        )
+        system = (
+            "/no_think\n"
+            f"You are an intelligence editor writing the bottom-line-up-front for "
+            f"{subj}'s morning brief. In ONE or TWO crisp sentences (max ~35 words), "
+            "state the single most important thing on their watch right now and the "
+            "overall posture. Use ONLY the developments listed; do NOT invent numbers, "
+            "names, places, or outcomes. No preamble, no list, no label — output only "
+            "the sentence(s)."
+        )
+        llm = await synthesize_paragraph(
+            system=system, facts=facts, source_check=facts,
+            min_words=6, min_chars=25,
+        )
+        if llm:
+            bluf = llm
+            bluf_source = "llm"
 
     return {
         "as_of": as_of,
         "window_hours": window_hours,
         "personalized": True,
         "bluf": bluf,
+        "bluf_source": bluf_source,
         "findings": findings,
     }

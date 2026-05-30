@@ -7542,19 +7542,10 @@ body.scrolled .ask-bar { height: 38px !important; transition: height 240ms ease;
   transition: width 60ms linear;
 }
 
-/* Defining Stories — hide 4th & 5th rows; show "+2 more" link */
-.ds-rows > .ds-row:nth-child(n+4) { display: none; }
-.ds-rows::after {
-  content: "+ 2 more stories"; display: block;
-  text-align: center;
-  margin: 14px auto 0;
-  padding: 10px 18px;
-  font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
-  letter-spacing: 0.18em; text-transform: uppercase;
-  color: rgba(232, 230, 224, 0.45);
-  border-top: 1px dashed rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-}
+/* Defining Stories — show the full personalized set. The old mock design
+   capped at 3 rows and painted a fake "+2 more" teaser; we render all 5. */
+.ds-rows > .ds-row:nth-child(n+4) { display: flex; }
+.ds-rows::after { content: none; }
 
 /* Velocity bars reduced */
 .we-bars { height: 18px !important; }

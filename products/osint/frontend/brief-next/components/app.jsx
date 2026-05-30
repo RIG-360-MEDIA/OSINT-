@@ -1762,8 +1762,6 @@ const App = () => (
       <DefiningStories />
       <VoicesOvernight />
       <WatchedEntities />
-      <BlindspotComparison />
-      <Horizon7Days />
       <CmPerspective />
       <FooterStrip />
     </div>

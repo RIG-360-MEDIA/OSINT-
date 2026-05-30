@@ -8924,6 +8924,37 @@ body, .synthesis p, .ds-summary, .blind-card .sub, .ts-story-summary {
 .ds-ext { margin-left:auto; color:#8c8068; font-size:15px; line-height:1; }
 .ds-row-link:hover .ds-ext { color:var(--tone,#e9c46a); }
 .ds-read { font-size:12px; font-weight:600; color:var(--tone,#e9c46a); letter-spacing:.2px; }
+
+/* ── Watched Entities — textual actionable card (replaces the dial card) ──── */
+.we-card-text { display:flex; flex-direction:column; gap:9px; padding:18px 20px;
+  border-left:2px solid var(--tone,#e9c46a);
+  background:linear-gradient(160deg, rgba(233,196,106,.05), rgba(0,0,0,0) 62%); }
+.we-card-text .we-card-head { display:flex; align-items:center; gap:10px; }
+.we-verdict { font-family:var(--font-mono,monospace); font-size:10px; font-weight:700;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--tone,#e9c46a);
+  border:1px solid rgba(233,196,106,.4); padding:3px 8px; border-radius:3px; }
+.we-card-text.rose .we-verdict { border-color:rgba(251,113,133,.45); }
+.we-card-text.cyan .we-verdict { border-color:rgba(94,234,212,.4); }
+.we-card-text.violet .we-verdict { border-color:rgba(192,132,252,.4); }
+.we-camprole { font-size:11px; color:#8c8068; letter-spacing:.05em; text-transform:uppercase; margin-left:auto; }
+.we-card-text .we-name { margin:2px 0 0; font-size:18px; color:#f1e7d0; }
+.we-card-text .we-party-line { font-size:12px; color:#9a8f74; letter-spacing:.02em; }
+.we-quote { position:relative; margin:4px 0; padding:2px 0 2px 14px; font-style:italic;
+  border-left:2px solid rgba(233,196,106,.3); color:#d7c8a2; font-size:14px; line-height:1.55; }
+.we-quote cite { display:block; margin-top:6px; font-style:normal; font-size:11.5px; color:#8c8068; }
+.we-noquote { font-size:13px; color:#7a7058; font-style:italic; margin:4px 0; }
+.we-intel { display:flex; flex-direction:column; gap:4px; padding-top:9px;
+  border-top:1px solid rgba(233,196,106,.1); }
+.we-intel-line { font-size:12.5px; color:#cbb88f; }
+.we-intel-line.crit { color:#fb7185; font-weight:600; }
+.we-intel-line.supp { color:#5fd47b; font-weight:600; }
+.we-intel-line.dim { color:#8c8068; font-size:11.5px; }
+.we-read { font-size:12px; font-weight:600; color:var(--tone,#e9c46a); margin-top:2px; }
+.we-card-link { text-decoration:none; color:inherit; cursor:pointer;
+  transition:background .18s ease, transform .18s ease; }
+.we-card-link:hover { transform:translateX(2px);
+  background:linear-gradient(160deg, rgba(233,196,106,.09), rgba(0,0,0,0) 60%); }
+.we-card-link:hover .we-name { color:#fff; }
 .ds-row-text .ds-row-head { display:flex; align-items:center; gap:10px; }
 .ds-row-text .ds-headline { margin:9px 0; font-size:18px; line-height:1.35; color:#f1e7d0; }
 .ds-row-text .ds-summary { font-size:15px; line-height:1.72; color:#cdbb93; margin:0 0 14px; }

@@ -39,8 +39,7 @@ function useLiveEntities() {
   const [entities, setEntities] = React.useState(null);  // null = use static WATCHED fallback
   React.useEffect(() => {
     let cancelled = false;
-    const fetchIt = () => fetch(`${RIG_API_BASE}/api/brief/entities`)
-      .then(r => r.ok ? r.json() : null)
+    const fetchIt = () => authFetch('/api/brief/entities')
       .then(j => { if (j && j.entities && !cancelled) setEntities(j.entities); })
       .catch(() => {});
     fetchIt();
@@ -692,67 +691,52 @@ const MiniIndia = ({ regionKey, tone }) => {
 
 const WatchedEntityCard = ({ e }) => {
   const color = weTone(e.tone);
-  return (
-    <article id={`entity-${slugify(e.name)}`} className={`we-card ${e.tone}`} style={{ "--tone": color }}>
+  const attacking = e.posture === "critical";
+  const verdict = e.verdict || e.classification;
+  const subtitle = [e.party, e.role].filter(Boolean).join(" · ") || e.region || "";
+  const body = (
+    <>
       <header className="we-card-head">
         <span className="we-rank">{e.rank}</span>
-        <span className="we-classification">{e.classification}</span>
+        <span className={`we-verdict ${e.tone}`} style={{ "--tone": color }}>{verdict}</span>
+        {e.campRole ? <span className="we-camprole">{e.campRole}</span> : null}
       </header>
       <h3 className="we-name">{e.name}</h3>
-      <div className="we-party-line">
-        <span className="we-party-name">{e.party}</span>
-        <span className="we-sep">·</span>
-        <span className="we-region">{e.region}</span>
+      {subtitle ? <div className="we-party-line">{subtitle}</div> : null}
+
+      {e.quote ? (
+        <blockquote className="we-quote">
+          <span className="we-quote-mark-sm" aria-hidden="true">“</span>{e.quote}”
+          {e.quoteOutlet ? <cite>— {e.quoteOutlet}{e.quoteTs ? ` · ${e.quoteTs}` : ""}</cite> : null}
+        </blockquote>
+      ) : (
+        <p className="we-noquote">No direct quote captured in this window.</p>
+      )}
+
+      <div className="we-intel">
+        {e.stanceN ? (
+          <span className={`we-intel-line ${attacking ? "crit" : "supp"}`}>
+            {attacking ? `On the attack — ${e.critPct}% of coverage is critical`
+                       : `Supportive posture — ${e.suppPct}% supportive`}
+          </span>
+        ) : null}
+        {e.mentions != null ? (
+          <span className="we-intel-line dim">
+            {e.mentions} mentions · {e.sov}% of your watch
+            {e.surge ? ` · ${e.surgeLabel?.toLowerCase()} ${e.surge}` : ""}
+            {e.outlets ? ` · ${e.outlets} outlets` : ""}
+          </span>
+        ) : null}
       </div>
-      <div className="we-portrait-row">
-        <div className={`we-portrait${e.image ? ' has-img' : ''}`}>
-          <span className="we-portrait-ring r1" aria-hidden="true"></span>
-          <span className="we-portrait-ring r2" aria-hidden="true"></span>
-          {e.image ? (
-            <img className="we-portrait-photo" src={e.image} alt={e.name}/>
-          ) : (
-            <span className="we-portrait-face">{e.init}</span>
-          )}
-        </div>
-        <div className="we-influence">
-          <span className="we-inf-lbl">Influence Score<M k="influenceScore"/></span>
-          <div className="we-inf-row">
-            <div className="we-inf-num"><b>{e.influence}</b><span className="we-inf-max">/100</span></div>
-            <div className="we-inf-spark"><Sparkline values={SPARK[e.spark]} height={20} color={color}/></div>
-          </div>
-          <div className="we-inf-change">
-            <span className="we-change-arrow">↗</span>
-            <span className="we-change-val">{e.change}</span>
-            <span className="we-change-sub">vs yesterday<M k="influenceDelta"/></span>
-          </div>
-        </div>
-      </div>
-      <div className="we-metric">
-        <div className="we-metric-head"><span className="we-metric-lbl">Sentiment Trend (7D)<M k="sevenDaySent"/></span></div>
-        <div className="we-sent-row">
-          <div className="we-sent-spark"><Sparkline values={SPARK[e.sentiment.spark]} height={28} color={color}/></div>
-          <div className="we-sent-meta">
-            <span className={`we-sent-label ${e.sentiment.label.toLowerCase()}`}>{e.sentiment.label}</span>
-            <span className="we-sent-val">{e.sentiment.value}</span>
-          </div>
-        </div>
-      </div>
-      <div className="we-metric we-velocity">
-        <div className="we-metric-head"><Icon name="activity" size={12} stroke={1.5}/><span className="we-metric-lbl">Media Velocity<M k="mediaVelocity"/></span><span className="we-metric-val">{e.velocity}</span></div>
-        <MiniBars values={e.velocityBars} color={color}/>
-      </div>
-      <div className="we-metric we-regional">
-        <div className="we-metric-head"><Icon name="target" size={12} stroke={1.5}/><span className="we-metric-lbl">Regional Traction<M k="regionalTrac"/></span><span className="we-metric-val">{e.regionalLabel}</span></div>
-        <div className="we-regional-map"><MiniIndia regionKey={e.regionKey} tone={color}/></div>
-      </div>
-      <div className="we-quote-block">
-        <div className="we-quote-head"><Icon name="chat" size={11} stroke={1.5}/><span>Latest Quote</span></div>
-        <span className="we-quote-mark-sm" aria-hidden="true">“</span>
-        <p>{e.quote}</p>
-        <span className="we-quote-attr-sm">— {e.quoteCtx}</span>
-      </div>
-      <div className="we-tag"><Icon name="warn" size={11} stroke={1.5}/><span>{e.tag}</span></div>
-    </article>
+      {e.quoteUrl ? <span className="we-read">Read source →</span> : null}
+    </>
+  );
+  const cls = `we-card we-card-text ${e.tone}`;
+  return e.quoteUrl ? (
+    <a id={`entity-${slugify(e.name)}`} className={`${cls} we-card-link`} style={{ "--tone": color }}
+       href={e.quoteUrl} target="_blank" rel="noopener noreferrer">{body}</a>
+  ) : (
+    <article id={`entity-${slugify(e.name)}`} className={cls} style={{ "--tone": color }}>{body}</article>
   );
 };
 

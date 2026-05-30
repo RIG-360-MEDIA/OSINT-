@@ -8,9 +8,11 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from sqlalchemy import text
 
+from auth.middleware import get_optional_user
+from brief_prefs import load_prefs
 from db import get_db
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
@@ -202,11 +204,161 @@ async def _one_entity(db, cfg: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+_CAMP_ROLE = {"opposition": "Opposition", "rival": "Rival", "govt": "Your side",
+              "centre": "Centre", "high_command": "High command",
+              "constitutional": "Constitutional", "agency": "Agency", "party": "Party"}
+
+
+def _verdict(camp: str | None, surge_pct: float | None, crit_pct: int | None) -> tuple[str, str]:
+    """Deterministic actionable badge from camp + momentum + posture.
+
+    `article_stances.stance` is the actor's OWN posture, so a high critical share
+    means they're on the offensive. Leads the card with what to DO: an opposition
+    figure who is attacking AND whose coverage is surging is ESCALATING.
+    """
+    opp = camp in ("opposition", "rival")
+    rising = surge_pct is not None and surge_pct >= 25
+    cooling = surge_pct is not None and surge_pct <= -40
+    attacking = crit_pct is not None and crit_pct >= 50
+    if opp and rising and attacking:
+        return ("Escalating", "rose")
+    if opp and attacking:
+        return ("On the attack", "rose")
+    if opp and rising:
+        return ("Rising", "amber")
+    if opp and cooling:
+        return ("Quieter", "cyan")
+    if opp:
+        return ("Active", "amber")
+    if camp == "centre":
+        return ("Centre signal", "violet")
+    if camp == "govt":
+        return ("On message", "amber")
+    return ("Watching", "amber")
+
+
+async def _watched_entities(db, prefs: dict[str, Any], limit: int = 6) -> list[dict[str, Any]]:
+    """Actionable threat/opportunity board over the user's watchlist (minus the
+    principal — they're covered in CM Perspective). 100% real data: prominence
+    from entity_mention_daily, entity-specific sentiment + stance split from
+    article_stances, the figure's own latest real quote from article_quotes.
+    """
+    meta = (prefs.get("watchlist") or {}).get("entity_meta") or []
+    psid = prefs.get("primary_subject_id")
+    psname = ((prefs.get("primary_subject_meta") or {}).get("name") or "").lower()
+    watched = [m for m in meta if m.get("name") and m.get("id") != psid
+               and (m.get("name") or "").lower() != psname]
+    if not watched:
+        return []
+
+    # 1) Prominence — one pass over entity_mention_daily (15k rows; LIKE ANY is fast).
+    pats = [f"%{m['name'].lower()}%" for m in watched]
+    emd = (await db.execute(text("""
+        SELECT lower(entity_text) et, SUM(n_mentions_total) men, MAX(n_sources) src,
+               SUM(CASE WHEN date = analytics.now_sim_date() THEN n_mentions_total ELSE 0 END) today,
+               COALESCE(SUM(CASE WHEN date BETWEEN analytics.now_sim_date()-6 AND analytics.now_sim_date()-1
+                                 THEN n_mentions_total ELSE 0 END) / 6.0, 0) baseline
+          FROM entity_mention_daily
+         WHERE date BETWEEN analytics.now_sim_date()-6 AND analytics.now_sim_date()
+           AND lower(entity_text) LIKE ANY(:pats)
+         GROUP BY lower(entity_text)
+    """), {"pats": pats})).fetchall()
+    prom: dict[str, dict[str, float]] = {}
+    for r in emd:
+        for m in watched:
+            nm = m["name"].lower()
+            if nm in r.et or r.et in nm:
+                p = prom.setdefault(nm, {"men": 0, "src": 0, "today": 0, "baseline": 0.0})
+                p["men"] += int(r.men or 0)
+                p["src"] = max(p["src"], int(r.src or 0))
+                p["today"] += int(r.today or 0)
+                p["baseline"] += float(r.baseline or 0)
+                break
+
+    total_men = sum(prom.get(m["name"].lower(), {}).get("men", 0) for m in watched) or 1
+    ranked = sorted(watched, key=lambda m: -prom.get(m["name"].lower(), {}).get("men", 0))
+    top = [m for m in ranked if prom.get(m["name"].lower(), {}).get("men", 0) > 0][:limit]
+    if not top:
+        return []
+    ids = [m["id"] for m in top]
+
+    # 2) Entity-specific sentiment + critical/supportive split (batched).
+    # 2) Posture split from the stance LABEL (critical/supportive = the actor's
+    #    own posture). intensity is magnitude only, so we do NOT use it here.
+    sent_by = {r.id: r for r in (await db.execute(text("""
+        SELECT actor_entity_id::text id, COUNT(*) n,
+               COUNT(*) FILTER (WHERE stance = 'critical')   crit,
+               COUNT(*) FILTER (WHERE stance = 'supportive') supp
+          FROM article_stances asn JOIN articles a ON a.id = asn.article_id
+         WHERE asn.actor_entity_id = ANY(CAST(:ids AS uuid[]))
+           AND a.collected_at BETWEEN analytics.now_sim() - INTERVAL '7 days' AND analytics.now_sim()
+         GROUP BY actor_entity_id
+    """), {"ids": ids})).fetchall()}
+
+    # 3) Each figure's own latest substantial quote (batched). Homonym guard:
+    #    require a stance row for this actor in the SAME article, so a beauty-
+    #    industry "Kapil Mishra" can't masquerade as the politician.
+    q_by = {r.id: r for r in (await db.execute(text("""
+        SELECT DISTINCT ON (aq.speaker_entity_id) aq.speaker_entity_id::text id,
+               COALESCE(aq.quote_text_en, aq.quote_text) q, s.name outlet, a.url, a.collected_at
+          FROM article_quotes aq JOIN articles a ON a.id = aq.article_id JOIN sources s ON s.id = a.source_id
+         WHERE aq.speaker_entity_id = ANY(CAST(:ids AS uuid[])) AND aq.is_direct = TRUE
+           AND LENGTH(aq.quote_text) BETWEEN 40 AND 280
+           AND a.collected_at BETWEEN analytics.now_sim() - INTERVAL '7 days' AND analytics.now_sim()
+           AND EXISTS (SELECT 1 FROM article_stances st
+                        WHERE st.article_id = a.id AND st.actor_entity_id = aq.speaker_entity_id)
+         ORDER BY aq.speaker_entity_id, LENGTH(aq.quote_text) DESC, a.collected_at DESC
+    """), {"ids": ids})).fetchall()}
+
+    out: list[dict[str, Any]] = []
+    for i, m in enumerate(top):
+        p = prom.get(m["name"].lower(), {})
+        men, today, base = p.get("men", 0), p.get("today", 0), p.get("baseline", 0.0)
+        surge = ((today - base) / base * 100) if base > 0 else None
+        # Suppress surge for low-volume entities (a 2->9 jump = +350% noise).
+        if base < 1.5:
+            surge = None
+        sr = sent_by.get(m["id"])
+        n_st = int(sr.n) if sr else 0
+        crit_pct = round(100 * int(sr.crit) / n_st) if n_st else None
+        supp_pct = round(100 * int(sr.supp) / n_st) if n_st else None
+        posture = (None if not n_st else
+                   "critical" if (crit_pct or 0) >= (supp_pct or 0) else "supportive")
+        camp = m.get("camp")
+        vlabel, vtone = _verdict(camp, surge, crit_pct)
+        q = q_by.get(m["id"])
+        out.append({
+            "rank": f"{i + 1:02d}", "name": m["name"], "party": m.get("party"),
+            "role": m.get("role"), "camp": camp, "campRole": _CAMP_ROLE.get(camp or "", "Watched"),
+            "tone": vtone, "verdict": vlabel,
+            "init": "".join(w[0] for w in m["name"].split()[:2]).upper(),
+            "mentions": men, "sov": round(100 * men / total_men, 1),
+            "outlets": p.get("src", 0),
+            "surge": (f"{'+' if surge >= 0 else ''}{surge:.0f}%" if surge is not None else None),
+            "surgeLabel": _classify_velocity(surge)[0] if surge is not None else None,
+            "posture": posture, "critPct": crit_pct, "suppPct": supp_pct, "stanceN": n_st,
+            "quote": (q.q[:240] if q else None),
+            "quoteOutlet": (q.outlet if q else None),
+            "quoteUrl": (q.url if q else None),
+            "quoteTs": (q.collected_at.strftime("%d %b") if q and q.collected_at else None),
+        })
+    return out
+
+
 @router.get("/entities")
-async def get_entities() -> dict[str, Any]:
+async def get_entities(
+    user: dict[str, str] | None = Depends(get_optional_user),
+) -> dict[str, Any]:
     async with get_db() as db:
+        prefs = await load_prefs(db, user["id"]) if user else None
+        if prefs:
+            watched = await _watched_entities(db, prefs)
+            if watched:
+                return {"entities": watched, "personalized": True,
+                        "generated_at": datetime.utcnow().isoformat() + "Z"}
+        # Anonymous / no-prefs → global 4-card fallback.
         items = [await _one_entity(db, cfg) for cfg in ENTITIES_CONFIG]
     return {
-        "entities": items,
+        "entities": items, "personalized": False,
         "generated_at": datetime.utcnow().isoformat() + "Z",
     }

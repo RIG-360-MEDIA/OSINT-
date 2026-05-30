@@ -85,8 +85,7 @@ function useLiveVoices() {
   const [v, setV] = React.useState(null);
   React.useEffect(() => {
     let c = false;
-    const f = () => fetch(`${RIG_API_BASE}/api/brief/voices?limit=5&since_hours=12`)
-      .then(r => r.ok ? r.json() : null)
+    const f = () => authFetch('/api/brief/voices?limit=5')
       .then(j => { if (j && !c) setV(j); }).catch(() => {});
     f(); const t = setInterval(f, 120000);
     return () => { c = true; clearInterval(t); };
@@ -1443,21 +1442,31 @@ const Horizon7Days = () => (
    ════════════════════════════════════════════════════════════ */
 const stanceTone = (s) => s === "supportive" ? "green" : s === "critical" ? "rose" : "amber";
 
-const QuoteCard = ({ q }) => (
-  <article className="voice-card" data-stance={q.stance}>
-    <p className="quote">"{q.quote}"</p>
-    <div className="meta-row">
-      <ImageSlot kind="avatar" id={`voice-${slugify(q.speaker)}`} src={q.image} className="avatar-slot"/>
-      <div className="attribution">
-        <span className="name">{q.speaker}</span>
-        <span className="role">{q.role} · {q.source}</span>
+const QuoteCard = ({ q }) => {
+  const inner = (
+    <>
+      <p className="quote">"{q.quote}"</p>
+      <div className="meta-row">
+        <ImageSlot kind="avatar" id={`voice-${slugify(q.speaker)}`} src={q.image} className="avatar-slot"/>
+        <div className="attribution">
+          <span className="name">{q.speaker}</span>
+          <span className="role">{q.role}{q.source ? ` · ${q.source}` : ""}</span>
+        </div>
+        {q.contextTag ? <span className="source-pill">{q.contextTag}</span> : null}
       </div>
-      <span className="source-pill">{q.contextTag}</span>
-    </div>
-  </article>
-);
+    </>
+  );
+  return q.url ? (
+    <a className="voice-card voice-card-link" data-stance={q.stance} href={q.url} target="_blank" rel="noopener noreferrer">{inner}</a>
+  ) : (
+    <article className="voice-card" data-stance={q.stance}>{inner}</article>
+  );
+};
 
-const VoicesOvernight = () => (
+const VoicesOvernight = () => {
+  const data = useLiveVoices();
+  const list = (data && data.voices && data.voices.length) ? data.voices : VOICES_DATA;
+  return (
   <section className="container section voices-section">
     <header className="voices-header">
       <div>
@@ -1466,10 +1475,11 @@ const VoicesOvernight = () => (
       </div>
     </header>
     <div className="voices-grid">
-      {VOICES_DATA.map((q, i) => <QuoteCard key={i} q={q}/>)}
+      {list.slice(0, 5).map((q, i) => <QuoteCard key={i} q={q}/>)}
     </div>
   </section>
-);
+  );
+};
 
 /* ════════════════════════════════════════════════════════════
    SECTION: CM PERSPECTIVE

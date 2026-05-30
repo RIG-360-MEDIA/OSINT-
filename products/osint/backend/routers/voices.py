@@ -19,10 +19,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 
+from auth.middleware import get_optional_user
+from brief_prefs import load_prefs
 from db import get_db
+from relevance import score_relevant
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
 
@@ -38,13 +41,95 @@ def _fmt_ts(dt: Any) -> str:
     return dt.strftime("%d %b · %H:%M IST") if dt else "—"
 
 
+async def _personal_voices(db, prefs: dict[str, Any], limit: int,
+                           window_hours: int = 72) -> list[dict[str, Any]]:
+    """Real, attributed quotes from the user's OWN relevant coverage.
+
+    Pulls direct quotes from the user's relevance stream, watchlist speakers
+    first, one quote per speaker for variety — so a Telangana CM hears Revanth
+    / KTR / Harish Rao, a Delhi CM hears Rekha Gupta / Kejriwal / Atishi. Maps
+    each speaker to the watchlist for role + party; English text preferred.
+    """
+    scored = await score_relevant(db, prefs, window_hours=window_hours, limit=160)
+    if not scored:
+        return []
+    ids = [r["id"] for r in scored]
+    meta = (prefs.get("watchlist") or {}).get("entity_meta") or []
+    wl_ids = [m["id"] for m in meta if m.get("id")] or ["00000000-0000-0000-0000-000000000000"]
+    wl_by_id = {m["id"]: m for m in meta if m.get("id")}
+    wl_by_name = {(m.get("name") or "").lower(): m for m in meta if m.get("name")}
+
+    rows = (await db.execute(text("""
+        SELECT aq.quote_text, COALESCE(aq.quote_text_en, aq.quote_text) AS quote_en,
+               aq.speaker_name, aq.speaker_entity_id::text AS eid,
+               ed.canonical_name, ed.entity_type,
+               s.name AS outlet, a.url, a.collected_at, a.language_iso,
+               (SELECT AVG(st.intensity) FROM article_stances st WHERE st.article_id = a.id) AS intensity
+          FROM article_quotes aq
+          JOIN articles a ON a.id = aq.article_id
+          JOIN sources s  ON s.id = a.source_id
+          LEFT JOIN entity_dictionary ed ON ed.id = aq.speaker_entity_id
+         WHERE aq.article_id = ANY(CAST(:ids AS uuid[]))
+           AND aq.is_direct = TRUE
+           AND LENGTH(aq.quote_text) BETWEEN 50 AND 280
+         ORDER BY (CASE WHEN aq.speaker_entity_id = ANY(CAST(:wl AS uuid[])) THEN 0 ELSE 1 END),
+                  LENGTH(aq.quote_text) DESC, a.collected_at DESC
+         LIMIT 80
+    """), {"ids": ids, "wl": wl_ids})).fetchall()
+
+    voices: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for r in rows:
+        name = r.canonical_name or r.speaker_name
+        if not name or len(name) < 3:
+            continue
+        key = name.lower()
+        if key in seen:
+            continue
+        m = wl_by_id.get(r.eid) or wl_by_name.get(key)
+        role = (m.get("role") if m else None) or (
+            (r.entity_type or "").replace("_", " ").title() if r.entity_type else None)
+        party = m.get("party") if m else None
+        role_line = " · ".join([x for x in [role, party] if x]) or "Voice"
+        stance = _stance_tag(float(r.intensity) if r.intensity is not None else None)
+        camp = (m or {}).get("camp")
+        # Pill = political alignment (reliable, from the watchlist). The per-article
+        # stance is an unreliable proxy for a quote's actual stance, so we do NOT
+        # surface it as a supportive/critical claim; we only use camp to tint the
+        # card border (opposition reads rose, govt green).
+        border = {"opposition": "critical", "rival": "critical",
+                  "govt": "supportive"}.get(camp or "", "neutral")
+        seen.add(key)
+        voices.append({
+            "speaker": name,
+            "role": role_line,
+            "party": party,
+            "camp": camp,
+            "stance": border,
+            "contextTag": camp.upper() if camp else None,
+            "quote": (r.quote_en or r.quote_text)[:280],
+            "source": r.outlet or "—",
+            "url": r.url,
+            "lang": r.language_iso or "en",
+            "init": "".join(w[0] for w in name.split()[:2]).upper(),
+            "timestamp": _fmt_ts(r.collected_at),
+            "watchlist": bool(m),
+        })
+        if len(voices) >= limit:
+            break
+    return voices
+
+
 @router.get("/voices")
 async def get_voices(
     since_hours: int = Query(default=12, ge=1, le=168),
     country: str | None = Query(default=None, pattern=r"^[A-Z]{2}$"),
     limit: int = Query(default=5, ge=1, le=20),
+    user: dict[str, str] | None = Depends(get_optional_user),
 ) -> dict[str, Any]:
-    """Voices Overnight: featured quote + editorial voices + opposition voices."""
+    """Voices Overnight. Personalised: real quotes from the signed-in user's
+    own relevant coverage (watchlist speakers first). Anonymous / no-prefs
+    requests get the global featured + editorial + opposition voices."""
     cc = "AND a.source_country = :country" if country else ""
     # since_hours bounded 1-168 by Pydantic, safe to interpolate as literal.
     window = f"INTERVAL '{int(since_hours)} hours'"
@@ -53,7 +138,16 @@ async def get_voices(
         params["country"] = country
 
     async with get_db() as db:
-        # ─── Featured: best-length quote in window ──────────────────────────
+        # ─── Personalised path: quotes from the user's own relevant coverage ─
+        prefs = await load_prefs(db, user["id"]) if user else None
+        if prefs:
+            voices = await _personal_voices(db, prefs, int(limit))
+            if voices:
+                return {"voices": voices, "personalized": True, "featured": None,
+                        "media_voices": [], "opp_voices": [],
+                        "filters": {"since_hours": since_hours, "country": country, "limit": limit}}
+
+        # ─── Featured: best-length quote in window (global fallback) ─────────
         feat_row = (await db.execute(text(f"""
             SELECT aq.quote_text, aq.speaker_name, aq.context,
                    COALESCE(aq.quote_text_en, aq.quote_text) AS quote_en,
@@ -147,6 +241,8 @@ async def get_voices(
         } for r in opp_rows]
 
     return {
+        "voices": [],
+        "personalized": False,
         "featured": featured,
         "media_voices": media_voices,
         "opp_voices": opp_voices,

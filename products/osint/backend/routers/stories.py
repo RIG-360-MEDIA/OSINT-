@@ -477,7 +477,8 @@ def _build_story(idx: int, members: list[dict[str, Any]], meta: dict,
         "coverage": coverage, "momentumBars": bars,
         "momentumLabel": _impact_label(max(bars) * 10) if any(bars) else "Low",
         "peakTime": "—", "thumbHue": tone, "principalQuote": pq, "lens": lens,
-        "metrics": {"articles": len(members), "outlets": len(outlets), "vs": ""},
+        "metrics": {"articles": len(members), "outlets": len(outlets), "vs": "",
+                    "stance_n": len(ints)},
         "matched": lead.get("matched"),
     }
 

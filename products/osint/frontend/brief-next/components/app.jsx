@@ -961,56 +961,42 @@ const Thumbnail = ({ hue, rank }) => {
 
 const DefiningStoryRow = ({ s }) => {
   const color = dsTone(s.tone);
-  const triad = (s.lens || []).slice(0, 3);
+  const m = s.metrics || {};
+  const pq = s.principalQuote;
+  const hasStance = (m.stance_n || 0) > 0;
+  const articles = m.articles || 0;
+  const outletText = m.outlets > 1 ? `${m.outlets} outlets` : (s.outlets || "single source");
   return (
-    <article className={`ds-row ${s.tone}`} style={{ "--tone": color }} id={`story-${s.rank}`}>
-      <ImageSlot kind="rect" id={`story-${s.rank}-thumb`} label="STORY IMAGE" src={s.image} className="ds-row-thumb" />
+    <article className={`ds-row ds-row-text ${s.tone}`} style={{ "--tone": color }} id={`story-${s.rank}`}>
       <div className="ds-row-content">
         <div className="ds-row-head">
           <span className="ds-rank">{s.rank}</span>
           <span className="ds-rule" style={{ background: color }}></span>
-          <div className="ds-cats">{s.categories.map((c, i) => <React.Fragment key={i}>{i > 0 && <span className="ds-cat-sep">·</span>}<span className="ds-cat">{c}</span></React.Fragment>)}</div>
+          <div className="ds-cats">{(s.categories || []).map((c, i) => <React.Fragment key={i}>{i > 0 && <span className="ds-cat-sep">·</span>}<span className="ds-cat">{c}</span></React.Fragment>)}</div>
         </div>
         <h3 className="ds-headline">{s.headline}</h3>
         <p className="ds-summary">{s.summary}</p>
-        <div className="ds-outlets">
-          {s.outletChips && s.outletChips.map((o, i) => <span key={i} className="ds-outlet-chip">{o}</span>)}
-          <span className="ds-outlet-more">{s.outletsMore || ""}</span>
-        </div>
-        {triad.length > 0 && (
-          <div className="ds-lens-triad" id={`lens-${s.rank}`}>
-            <div className="ds-lens-head"><span>Source Lens · 3 Perspectives</span></div>
-            <div className="ds-lens-row">
-              {triad.map((l, i) => <LensCard key={i} id={`lens-${s.rank}-${i}`} {...l} />)}
-            </div>
-          </div>
-        )}
-        <a href={`#lens-${s.rank}`} className="drill-link" onClick={handleAnchorClick(`lens-${s.rank}`)}>
-          Drill into evidence <Icon name="arrowRight" size={11} />
-        </a>
-      </div>
-      <div className="ds-row-metrics">
-        <div className="ds-impact-cell">
-          <span className="ds-cell-label">Impact Velocity<M k="impactVelocity" placement="left"/></span>
-          <ImpactRing value={s.impact} color={color} label={s.impactLabel}/>
-        </div>
-        <div className="ds-sent-cell">
-          <span className="ds-cell-label">Sentiment Shift<M k="sentimentShift" placement="left"/></span>
-          <div className="ds-sent-row">
-            <div className="ds-sent-spark"><Sparkline values={SPARK[s.sentimentSpark]} height={22} color={color}/></div>
-            <div className={`ds-sent-val ${s.sentimentLabel.toLowerCase()}`}>{s.sentiment}</div>
-          </div>
-          <div className="ds-sent-lbl">{s.sentimentLabel}</div>
-        </div>
-        <div className="ds-momentum-cell">
-          <span className="ds-cell-label">Media Momentum<M k="mediaMomentum" placement="left"/></span>
-          <MomentumBars values={s.momentumBars} color={color}/>
-          <div className="ds-momentum-lbl">{s.momentumLabel}</div>
-        </div>
-        <div className="ds-peak-cell">
-          <span className="ds-cell-label">Peak Time<M k="peakTime" placement="left"/></span>
-          <div className="ds-peak-time">{s.peakTime.split(" ")[0]}</div>
-          <div className="ds-peak-sub">{s.peakTime.split(" ").slice(1).join(" ")}</div>
+        {pq && pq.text ? (
+          <blockquote className="ds-quote">
+            <span className="ds-quote-mark" style={{ color }}>&ldquo;</span>
+            {pq.text}
+            <cite>— {pq.attribution || "—"}{pq.source && pq.source !== "—" ? `, ${pq.source}` : ""}</cite>
+          </blockquote>
+        ) : null}
+        <div className="ds-textmeta">
+          {s.matched ? (
+            <span className="ds-why" style={{ "--tone": color }}>
+              <Icon name="target" size={12} stroke={1.6} /> On your watch · {s.matched}
+            </span>
+          ) : null}
+          <span className="ds-source-line">
+            via {outletText}{articles ? ` · ${articles} report${articles > 1 ? "s" : ""}` : ""}
+          </span>
+          {hasStance && s.coverage ? (
+            <span className="ds-cov-line">
+              Coverage {s.coverage.crit}% critical · {s.coverage.sup}% supportive
+            </span>
+          ) : null}
         </div>
       </div>
     </article>
@@ -1024,9 +1010,8 @@ const DefiningStories = () => {
   <section className="container section ds-section">
     <DefiningHeader/>
     <div className="ds-rows">
-      {_list.slice(0, 3).map((s, i) => <DefiningStoryRow key={i} s={{...s, lens: (s.lens && s.lens.length) ? s.lens : (SOURCE_LENS_DATA[s.rank] || [])}}/>)}
+      {_list.slice(0, 5).map((s, i) => <DefiningStoryRow key={i} s={s}/>)}
     </div>
-    <button type="button" className="ts-cta ds-view-all"><Icon name="doc" size={13}/><span>View All Defining Stories</span></button>
   </section>
 );
 };

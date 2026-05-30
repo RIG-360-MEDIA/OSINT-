@@ -25,7 +25,10 @@ export function useMe() {
         const me = await authFetch('/api/me');
         if (!cancelled) setState({ loading: false, me, error: null });
       } catch (e) {
-        if (!cancelled) setState({ loading: false, me: null, error: String(e.message || e) });
+        // An auth failure (expired/invalid session) must route the user to
+        // sign-in — NOT fall through to the brief's "backend down" mock render.
+        const authFail = e?.status === 401 || e?.status === 403;
+        if (!cancelled) setState({ loading: false, me: null, error: authFail ? null : String(e.message || e) });
       }
     }
     load();

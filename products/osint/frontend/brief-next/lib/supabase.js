@@ -119,6 +119,10 @@ export async function authFetch(path, opts = {}) {
 
   let data;
   try { data = await r.json(); } catch { data = null; }
-  if (!r.ok) throw new Error(data?.detail || `HTTP ${r.status}`);
+  if (!r.ok) {
+    const err = new Error(data?.detail || `HTTP ${r.status}`);
+    err.status = r.status;  // let callers distinguish 401/403 (re-auth) from 5xx
+    throw err;
+  }
   return data;
 }

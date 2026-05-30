@@ -227,7 +227,7 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
     from backend.nlp.nlp_entities import extract_entities
     from backend.nlp.nlp_geo import tag_geography
     from backend.nlp.nlp_language import detect_and_translate
-    from backend.nlp.nlp_topic import classify_topic
+    from backend.nlp.nlp_topic import classify_topic, classify_topic_fine
 
     title = article.title or ""
     lead_original = article.lead_text_original
@@ -251,13 +251,29 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
     entities = extract_entities(title=title, text=working_text, nlp_model=nlp_model)
 
     # ── Step 3: Topic classification ──────────────────────────────────────────
+    # topic_category: original 15-bucket classifier, LEFT UNTOUCHED so every
+    # existing consumer keeps the same contract.
     topic = await classify_topic(
+        title=title,
+        lead_text_translated=working_text if has_good_text else None,
+    )
+    # topic_fine (migration 084): additive 25-bucket classifier with a
+    # don't-hedge instruction + India-aware buckets. Populated only for
+    # articles processed from 2026-05-30 onward; older rows stay NULL.
+    topic_fine = await classify_topic_fine(
         title=title,
         lead_text_translated=working_text if has_good_text else None,
     )
 
     # ── Step 4: Geographic tagging (state-level) ──────────────────────────────
-    geo_primary, geo_secondary = await tag_geography(
+    # NOTE (fix 2026-05-29): geo_secondary is no longer persisted. The column
+    # was dropped by scripts/backfill/category_a_fixes.sql (~2026-05-24), which
+    # moved geo to a single geo_primary synced from article_locations via
+    # trg_sync_geo_primary. The NLP UPDATE still wrote geo_secondary, raising
+    # UndefinedColumnError that aborted the ENTIRE _process_single UPDATE —
+    # zeroing entities_extracted + labse_embedding for every article from
+    # 2026-05-26 (gradual from 05-24 as asyncpg prepared statements recycled).
+    geo_primary, _geo_secondary = await tag_geography(
         title=title,
         lead_text_translated=working_text if has_good_text else None,
         entities_extracted=entities,
@@ -315,8 +331,8 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
               lead_text_translated  = :lead_text_translated,
               entities_extracted    = CAST(:entities_extracted AS jsonb),
               topic_category        = :topic_category,
+              topic_fine            = :topic_fine,
               geo_primary           = :geo_primary,
-              geo_secondary         = :geo_secondary,
               labse_embedding       = CAST(:labse_embedding AS vector),
               is_duplicate          = :is_duplicate,
               duplicate_of          = CAST(:duplicate_of AS uuid),
@@ -331,8 +347,8 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
             "lead_text_translated": lead_translated if has_good_text else None,
             "entities_extracted": json.dumps(entities),
             "topic_category": topic,
+            "topic_fine": topic_fine,
             "geo_primary": geo_primary,
-            "geo_secondary": geo_secondary,
             "labse_embedding": embedding_str,
             "is_duplicate": is_duplicate,
             "duplicate_of": duplicate_of,

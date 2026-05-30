@@ -266,14 +266,12 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
     )
 
     # ── Step 4: Geographic tagging (state-level) ──────────────────────────────
-    # NOTE (fix 2026-05-29): geo_secondary is no longer persisted. The column
-    # was dropped by scripts/backfill/category_a_fixes.sql (~2026-05-24), which
-    # moved geo to a single geo_primary synced from article_locations via
-    # trg_sync_geo_primary. The NLP UPDATE still wrote geo_secondary, raising
-    # UndefinedColumnError that aborted the ENTIRE _process_single UPDATE —
-    # zeroing entities_extracted + labse_embedding for every article from
-    # 2026-05-26 (gradual from 05-24 as asyncpg prepared statements recycled).
-    geo_primary, _geo_secondary = await tag_geography(
+    # geo_secondary history: category_a_fixes.sql (~2026-05-24) DROPPED this
+    # column, but the NLP UPDATE still wrote it -> UndefinedColumnError that
+    # zeroed entities + embeddings (the 2026-05-26 collapse). Migration 088
+    # (2026-05-30) re-added geo_secondary (text[]) because ~14 reader files
+    # still consume it, so NLP persists it again for read/write consistency.
+    geo_primary, geo_secondary = await tag_geography(
         title=title,
         lead_text_translated=working_text if has_good_text else None,
         entities_extracted=entities,
@@ -333,6 +331,7 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
               topic_category        = :topic_category,
               topic_fine            = :topic_fine,
               geo_primary           = :geo_primary,
+              geo_secondary         = CAST(:geo_secondary AS text[]),
               labse_embedding       = CAST(:labse_embedding AS vector),
               embedded_at           = CASE WHEN CAST(:embedding_model AS text) IS NOT NULL THEN now() ELSE embedded_at END,
               embedding_model       = COALESCE(:embedding_model, embedding_model),
@@ -352,6 +351,7 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
             "topic_category": topic,
             "topic_fine": topic_fine,
             "geo_primary": geo_primary,
+            "geo_secondary": geo_secondary or [],
             "labse_embedding": embedding_str,
             "embedding_model": "sentence-transformers/LaBSE" if embedding else None,
             "embedding_revision": LABSE_REVISION if embedding else None,

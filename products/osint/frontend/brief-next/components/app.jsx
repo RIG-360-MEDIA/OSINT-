@@ -966,13 +966,15 @@ const DefiningStoryRow = ({ s }) => {
   const hasStance = (m.stance_n || 0) > 0;
   const articles = m.articles || 0;
   const outletText = m.outlets > 1 ? `${m.outlets} outlets` : (s.outlets || "single source");
-  return (
-    <article className={`ds-row ds-row-text ${s.tone}`} style={{ "--tone": color }} id={`story-${s.rank}`}>
+  const thumb = s.image || s.thumbnail;
+  const inner = (
+    <>
       <div className="ds-row-content">
         <div className="ds-row-head">
           <span className="ds-rank">{s.rank}</span>
           <span className="ds-rule" style={{ background: color }}></span>
           <div className="ds-cats">{(s.categories || []).map((c, i) => <React.Fragment key={i}>{i > 0 && <span className="ds-cat-sep">·</span>}<span className="ds-cat">{c}</span></React.Fragment>)}</div>
+          {s.url ? <span className="ds-ext" aria-hidden="true">↗</span> : null}
         </div>
         <h3 className="ds-headline">{s.headline}</h3>
         <p className="ds-summary">{s.summary}</p>
@@ -997,9 +999,22 @@ const DefiningStoryRow = ({ s }) => {
               Coverage {s.coverage.crit}% critical · {s.coverage.sup}% supportive
             </span>
           ) : null}
+          {s.url ? <span className="ds-read">Read full story →</span> : null}
         </div>
       </div>
-    </article>
+      {thumb ? (
+        <div className="ds-thumb-wrap">
+          <img className="ds-thumb" src={thumb} alt="" loading="lazy"
+               onError={(e) => { const w = e.currentTarget.parentElement; if (w) w.style.display = "none"; }} />
+        </div>
+      ) : null}
+    </>
+  );
+  const cls = `ds-row ds-row-text ${s.url ? "ds-row-link" : ""} ${s.tone}`;
+  return s.url ? (
+    <a className={cls} style={{ "--tone": color }} href={s.url} target="_blank" rel="noopener noreferrer" id={`story-${s.rank}`}>{inner}</a>
+  ) : (
+    <article className={cls} style={{ "--tone": color }} id={`story-${s.rank}`}>{inner}</article>
   );
 };
 

@@ -8918,9 +8918,21 @@ body, .synthesis p, .ds-summary, .blind-card .sub, .ts-story-summary {
 .cmp-summary::first-letter { /* subtle lead */ }
 
 /* ── Defining Stories — textual card (replaces the mock metric dials) ─────── */
-.ds-row-text { display:block; padding:20px 22px; margin-bottom:14px; border-radius:4px;
-  border-left:2px solid var(--tone,#e9c46a);
+.ds-row-text { display:flex; gap:20px; align-items:flex-start; padding:20px 22px;
+  margin-bottom:14px; border-radius:4px; border-left:2px solid var(--tone,#e9c46a);
   background:linear-gradient(90deg, rgba(233,196,106,.045), rgba(233,196,106,0) 55%); }
+.ds-row-content { flex:1 1 auto; min-width:0; }
+.ds-thumb-wrap { flex:0 0 158px; }
+.ds-thumb { width:158px; height:104px; object-fit:cover; border-radius:6px; display:block;
+  border:1px solid rgba(233,196,106,.14); }
+.ds-row-link { text-decoration:none; color:inherit; cursor:pointer;
+  transition:background .18s ease, transform .18s ease, border-color .18s ease; }
+.ds-row-link:hover { transform:translateX(2px); border-left-color:var(--tone,#e9c46a);
+  background:linear-gradient(90deg, rgba(233,196,106,.09), rgba(233,196,106,0) 60%); }
+.ds-row-link:hover .ds-headline { color:#fff; }
+.ds-ext { margin-left:auto; color:#8c8068; font-size:15px; line-height:1; }
+.ds-row-link:hover .ds-ext { color:var(--tone,#e9c46a); }
+.ds-read { font-size:12px; font-weight:600; color:var(--tone,#e9c46a); letter-spacing:.2px; }
 .ds-row-text .ds-row-head { display:flex; align-items:center; gap:10px; }
 .ds-row-text .ds-headline { margin:9px 0; font-size:18px; line-height:1.35; color:#f1e7d0; }
 .ds-row-text .ds-summary { font-size:15px; line-height:1.72; color:#cdbb93; margin:0 0 14px; }

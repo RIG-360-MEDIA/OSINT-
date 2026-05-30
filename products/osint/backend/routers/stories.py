@@ -401,7 +401,7 @@ def _group_relevant(scored: list[dict[str, Any]], limit: int) -> list[list[dict[
 async def _enrich_batch(db, ids: list[str]) -> tuple[dict, dict, dict, Any]:
     """One batched pull of the per-article signals the story cards need."""
     meta = {r.id: r for r in (await db.execute(text("""
-        SELECT a.id::text AS id, a.collected_at, a.thumbnail_url, a.language_iso
+        SELECT a.id::text AS id, a.collected_at, a.thumbnail_url, a.language_iso, a.url
           FROM articles a WHERE a.id = ANY(CAST(:ids AS uuid[]))
     """), {"ids": ids})).fetchall()}
     stances: dict[str, list[float]] = {}
@@ -462,6 +462,8 @@ def _build_story(idx: int, members: list[dict[str, Any]], meta: dict,
         if len(lens) >= 5:
             break
     thumb = next((meta[i].thumbnail_url for i in ids if meta.get(i) and meta[i].thumbnail_url), None)
+    lead_meta = meta.get(lead["id"])
+    url = lead_meta.url if lead_meta else None
     impact = min(100, int((lead["score"] or 0) * 10))
     tone = TONE_BY_RANK[idx % len(TONE_BY_RANK)]
     return {
@@ -479,6 +481,7 @@ def _build_story(idx: int, members: list[dict[str, Any]], meta: dict,
         "peakTime": "—", "thumbHue": tone, "principalQuote": pq, "lens": lens,
         "metrics": {"articles": len(members), "outlets": len(outlets), "vs": "",
                     "stance_n": len(ints)},
+        "url": url,
         "matched": lead.get("matched"),
     }
 

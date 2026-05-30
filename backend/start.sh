@@ -26,6 +26,7 @@ celery -A backend.celery_app worker \
   --queues=collectors \
   --concurrency=3 \
   --hostname=worker-collectors@%h \
+  --max-memory-per-child=2500000 \
   --loglevel=info &
 
 # Dedicated social worker — Reddit / Telegram never starve behind
@@ -36,6 +37,7 @@ celery -A backend.celery_app worker \
   --concurrency=2 \
   --prefetch-multiplier=1 \
   --hostname=worker-social@%h \
+  --max-memory-per-child=2500000 \
   --loglevel=info &
 
 # Dedicated YouTube worker — transcript fetch + entity detection + embedding
@@ -43,6 +45,7 @@ celery -A backend.celery_app worker \
   --queues=youtube \
   --concurrency=1 \
   --hostname=worker-youtube@%h \
+  --max-memory-per-child=2500000 \
   --loglevel=info &
 
 # Dedicated documents worker — govt PDF extraction (Java JVM is heavy; isolate from RSS)
@@ -51,6 +54,7 @@ celery -A backend.celery_app worker \
   --concurrency=2 \
   --prefetch-multiplier=1 \
   --hostname=worker-documents@%h \
+  --max-memory-per-child=2500000 \
   --loglevel=info &
 
 # Dedicated NLP worker — 4 parallel batches
@@ -58,6 +62,7 @@ celery -A backend.celery_app worker \
   --queues=nlp \
   --concurrency=4 \
   --hostname=worker-nlp@%h \
+  --max-memory-per-child=2500000 \
   --loglevel=info &
 
 # Dedicated relevance/brief worker — scoring never waits on NLP
@@ -65,6 +70,7 @@ celery -A backend.celery_app worker \
   --queues=relevance,brief \
   --concurrency=4 \
   --hostname=worker-relevance@%h \
+  --max-memory-per-child=2500000 \
   --loglevel=info &
 
 # Dedicated whisper worker — THE NEWSROOM 3-Lens transcript pipeline +
@@ -76,6 +82,7 @@ celery -A backend.celery_app worker \
   --concurrency=1 \
   --prefetch-multiplier=1 \
   --hostname=worker-whisper@%h \
+  --max-memory-per-child=2500000 \
   --loglevel=info &
 
 # Start Celery Beat scheduler.

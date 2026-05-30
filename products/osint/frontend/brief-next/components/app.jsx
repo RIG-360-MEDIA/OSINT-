@@ -10,6 +10,7 @@ import {
 import {
   SPARK, STORIES, ENTITIES, HORIZON, CLIMBING, BLINDSPOT, RECOMMENDED, nextRefreshAt
 } from '../lib/data.js';
+import { ExecutiveRead } from './ExecutiveRead.jsx';
 
 
 // === Live API hook for KPI tiles (Day 1) ===
@@ -522,7 +523,6 @@ const KtrLink = ({ children }) => (
 );
 
 const MoodSection = () => {
-  const _kpi = useLiveKpi();
   return (
   <section className="container section">
     <div className="glass elevated mood-card">
@@ -566,12 +566,7 @@ const MoodSection = () => {
         </div>
       </header>
 
-      <div className="kpi-row">
-        <KpiTile label="Articles Parsed" value={_kpi.articlesParsed} tone="amber"  spark="articles"  delay={0} methodKey="articlesParsed" />
-        <KpiTile label="Outlets"         value={_kpi.outlets}  tone="cyan"   spark="outlets"   delay={100} methodKey="outlets" />
-        <KpiTile label="Languages"       value={_kpi.languages}   tone="violet" langStack         delay={200} methodKey="languages" />
-        <KpiTile label="Sentiment" value={_kpi.sentiment} format="decimal" tone="rose" spark="sentiment" delay={300} arrow methodKey="sentiment" />
-      </div>
+      <ExecutiveRead />
 
       <div className="mood-body">
         <div className="synthesis">

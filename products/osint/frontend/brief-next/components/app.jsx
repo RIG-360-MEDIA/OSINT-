@@ -694,49 +694,89 @@ const WatchedEntityCard = ({ e }) => {
   const attacking = e.posture === "critical";
   const verdict = e.verdict || e.classification;
   const subtitle = [e.party, e.role].filter(Boolean).join(" · ") || e.region || "";
-  const body = (
-    <>
-      <header className="we-card-head">
-        <span className="we-rank">{e.rank}</span>
-        <span className={`we-verdict ${e.tone}`} style={{ "--tone": color }}>{verdict}</span>
-        {e.campRole ? <span className="we-camprole">{e.campRole}</span> : null}
-      </header>
-      <h3 className="we-name">{e.name}</h3>
-      {subtitle ? <div className="we-party-line">{subtitle}</div> : null}
-
-      {e.quote ? (
-        <blockquote className="we-quote">
-          <span className="we-quote-mark-sm" aria-hidden="true">“</span>{e.quote}”
-          {e.quoteOutlet ? <cite>— {e.quoteOutlet}{e.quoteTs ? ` · ${e.quoteTs}` : ""}</cite> : null}
-        </blockquote>
-      ) : (
-        <p className="we-noquote">No direct quote captured in this window.</p>
-      )}
-
-      <div className="we-intel">
-        {e.stanceN ? (
-          <span className={`we-intel-line ${attacking ? "crit" : "supp"}`}>
-            {attacking ? `On the attack — ${e.critPct}% of coverage is critical`
-                       : `Supportive posture — ${e.suppPct}% supportive`}
-          </span>
-        ) : null}
-        {e.mentions != null ? (
-          <span className="we-intel-line dim">
-            {e.mentions} mentions · {e.sov}% of your watch
-            {e.surge ? ` · ${e.surgeLabel?.toLowerCase()} ${e.surge}` : ""}
-            {e.outlets ? ` · ${e.outlets} outlets` : ""}
-          </span>
-        ) : null}
+  const [open, setOpen] = React.useState(false);
+  const [doss, setDoss] = React.useState(null); // null | 'loading' | 'error' | 'empty' | {read,actions,quotes}
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && doss == null) {
+      setDoss('loading');
+      authFetch(`/api/brief/entity_read?name=${encodeURIComponent(e.name)}`)
+        .then(j => setDoss(j && (j.read || (j.quotes || []).length) ? j : 'empty'))
+        .catch(() => setDoss('error'));
+    }
+  };
+  const stop = (ev) => ev.stopPropagation();
+  return (
+    <article id={`entity-${slugify(e.name)}`} className={`we-card we-card-text ${e.tone}${open ? ' open' : ''}`} style={{ "--tone": color }}>
+      <div className="we-card-click" role="button" tabIndex={0} onClick={toggle}
+           onKeyDown={ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggle(); } }}>
+        <header className="we-card-head">
+          <span className="we-rank">{e.rank}</span>
+          <span className={`we-verdict ${e.tone}`} style={{ "--tone": color }}>{verdict}</span>
+          {e.campRole ? <span className="we-camprole">{e.campRole}</span> : null}
+          <span className="we-chev" aria-hidden="true">{open ? '▾' : '▸'}</span>
+        </header>
+        <h3 className="we-name">{e.name}</h3>
+        {subtitle ? <div className="we-party-line">{subtitle}</div> : null}
+        {e.quote ? (
+          <blockquote className="we-quote">
+            <span className="we-quote-mark-sm" aria-hidden="true">“</span>{e.quote}”
+            {e.quoteOutlet ? <cite>— {e.quoteOutlet}{e.quoteTs ? ` · ${e.quoteTs}` : ""}</cite> : null}
+          </blockquote>
+        ) : (
+          <p className="we-noquote">No direct quote captured in this window.</p>
+        )}
+        <div className="we-intel">
+          {e.stanceN ? (
+            <span className={`we-intel-line ${attacking ? "crit" : "supp"}`}>
+              {attacking ? `On the attack — ${e.critPct}% of coverage is critical`
+                         : `Supportive posture — ${e.suppPct}% supportive`}
+            </span>
+          ) : null}
+          {e.mentions != null ? (
+            <span className="we-intel-line dim">
+              {e.mentions} mentions · {e.sov}% of your watch
+              {e.surge ? ` · ${e.surgeLabel?.toLowerCase()} ${e.surge}` : ""}
+              {e.outlets ? ` · ${e.outlets} outlets` : ""}
+            </span>
+          ) : null}
+        </div>
+        <span className="we-read">{open ? 'Hide analyst read ▾' : 'Analyst read →'}</span>
       </div>
-      {e.quoteUrl ? <span className="we-read">Read source →</span> : null}
-    </>
-  );
-  const cls = `we-card we-card-text ${e.tone}`;
-  return e.quoteUrl ? (
-    <a id={`entity-${slugify(e.name)}`} className={`${cls} we-card-link`} style={{ "--tone": color }}
-       href={e.quoteUrl} target="_blank" rel="noopener noreferrer">{body}</a>
-  ) : (
-    <article id={`entity-${slugify(e.name)}`} className={cls} style={{ "--tone": color }}>{body}</article>
+
+      {open ? (
+        <div className="we-dossier">
+          {doss === 'loading' ? <div className="we-doss-load">Reading the room…</div> : null}
+          {doss === 'error' ? <div className="we-doss-empty">Couldn’t load the read — try again.</div> : null}
+          {doss === 'empty' ? <div className="we-doss-empty">Not enough signal for a read yet.</div> : null}
+          {doss && typeof doss === 'object' ? (
+            <>
+              {doss.read ? (<><div className="we-doss-label">The Read</div><p className="we-doss-read">{doss.read}</p></>) : null}
+              {doss.actions && doss.actions.length ? (
+                <>
+                  <div className="we-doss-label">Recommended actions</div>
+                  <ul className="we-doss-actions">{doss.actions.map((a, i) => <li key={i}>{a}</li>)}</ul>
+                </>
+              ) : null}
+              {doss.quotes && doss.quotes.length ? (
+                <>
+                  <div className="we-doss-label">In their words</div>
+                  {doss.quotes.map((q, i) => (
+                    <blockquote key={i} className="we-doss-quote">
+                      “{q.text}”
+                      {q.url ? (
+                        <a href={q.url} target="_blank" rel="noopener noreferrer" onClick={stop} className="we-doss-src">— {q.outlet}{q.ts ? ` · ${q.ts}` : ''} ↗</a>
+                      ) : <cite>— {q.outlet}</cite>}
+                    </blockquote>
+                  ))}
+                </>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      ) : null}
+    </article>
   );
 };
 

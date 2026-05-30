@@ -8,12 +8,13 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 
 from auth.middleware import get_optional_user
 from brief_prefs import load_prefs
 from db import get_db
+from llm_synth import synthesize_dossier
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
 
@@ -361,4 +362,98 @@ async def get_entities(
     return {
         "entities": items, "personalized": False,
         "generated_at": datetime.utcnow().isoformat() + "Z",
+    }
+
+
+@router.get("/entity_read")
+async def entity_read(
+    name: str = Query(..., min_length=2, max_length=80),
+    user: dict[str, str] | None = Depends(get_optional_user),
+) -> dict[str, Any]:
+    """On-demand analyst dossier for ONE watched figure: a grounded LLM "read"
+    + recommended actions over their real facts (prominence, posture, quotes).
+    Fired only when a card is expanded, so the grid stays LLM-free."""
+    empty = {"name": name, "read": None, "actions": [], "quotes": [], "source": "none"}
+    if not user:
+        return empty
+    async with get_db() as db:
+        prefs = await load_prefs(db, user["id"])
+        if not prefs:
+            return empty
+        meta = (prefs.get("watchlist") or {}).get("entity_meta") or []
+        m = next((x for x in meta if (x.get("name") or "").lower() == name.lower()), None)
+        if not m or not m.get("id"):
+            return empty
+        subj = (prefs.get("primary_subject_meta") or {}).get("name") or "the principal"
+        eid = m["id"]
+        pr = (await db.execute(text("""
+            SELECT COALESCE(SUM(n_mentions_total),0) men, COALESCE(MAX(n_sources),0) src,
+                   COALESCE(SUM(CASE WHEN date = analytics.now_sim_date() THEN n_mentions_total ELSE 0 END),0) today,
+                   COALESCE(SUM(CASE WHEN date BETWEEN analytics.now_sim_date()-6 AND analytics.now_sim_date()-1
+                                     THEN n_mentions_total ELSE 0 END)/6.0, 0) baseline
+              FROM entity_mention_daily
+             WHERE date BETWEEN analytics.now_sim_date()-6 AND analytics.now_sim_date()
+               AND lower(entity_text) LIKE :p
+        """), {"p": f"%{name.lower()}%"})).fetchone()
+        st = (await db.execute(text("""
+            SELECT COUNT(*) n, COUNT(*) FILTER (WHERE stance='critical') crit,
+                   COUNT(*) FILTER (WHERE stance='supportive') supp
+              FROM article_stances asn JOIN articles a ON a.id = asn.article_id
+             WHERE asn.actor_entity_id = CAST(:e AS uuid)
+               AND a.collected_at BETWEEN analytics.now_sim() - INTERVAL '7 days' AND analytics.now_sim()
+        """), {"e": eid})).fetchone()
+        qrows = (await db.execute(text("""
+            SELECT COALESCE(aq.quote_text_en, aq.quote_text) q, s.name outlet, a.url, a.collected_at
+              FROM article_quotes aq JOIN articles a ON a.id = aq.article_id JOIN sources s ON s.id = a.source_id
+             WHERE aq.speaker_entity_id = CAST(:e AS uuid) AND aq.is_direct = TRUE
+               AND LENGTH(aq.quote_text) BETWEEN 40 AND 280
+               AND a.collected_at BETWEEN analytics.now_sim() - INTERVAL '7 days' AND analytics.now_sim()
+               AND EXISTS (SELECT 1 FROM article_stances stx
+                            WHERE stx.article_id = a.id AND stx.actor_entity_id = aq.speaker_entity_id)
+             ORDER BY LENGTH(aq.quote_text) DESC, a.collected_at DESC LIMIT 3
+        """), {"e": eid})).fetchall()
+
+    men = int(pr.men or 0)
+    base = float(pr.baseline or 0)
+    surge = ((int(pr.today or 0) - base) / base * 100) if base >= 1.5 else None
+    n_st = int(st.n or 0) if st else 0
+    quotes = [{"text": r.q[:240], "outlet": r.outlet, "url": r.url,
+               "ts": r.collected_at.strftime("%d %b") if r.collected_at else None} for r in qrows]
+    camp, role, party = m.get("camp"), m.get("role"), m.get("party")
+
+    fl = [f"PRINCIPAL (your office): {subj}",
+          f"WATCHED FIGURE: {name}" + (f" — {party}" if party else "") + (f", {role}" if role else ""),
+          f"CAMP: {camp or 'unknown'}",
+          f"PROMINENCE: {men} mentions in 7 days across {int(pr.src or 0)} outlets"
+          + (f"; momentum {surge:+.0f}% vs the prior week" if surge is not None else "")]
+    if n_st:
+        fl.append(f"POSTURE: of {n_st} stance-coded items, "
+                  f"{round(100*int(st.crit)/n_st)}% critical / {round(100*int(st.supp)/n_st)}% supportive")
+    if quotes:
+        fl.append("THEIR RECENT WORDS:")
+        fl += [f"  - \"{q['text']}\" ({q['outlet']})" for q in quotes]
+    facts = "\n".join(fl)
+
+    frame = {"opposition": "a threat / pressure source — flag what they are attacking and whether it warrants a response",
+             "rival": "a rival whose moves may affect your turf",
+             "centre": "the central government — read it as a signal for your state",
+             "high_command": "your own party's high command",
+             "govt": "one of your own — flag exposure to defend"}.get(camp or "", "a watched figure")
+    system = (
+        "/no_think\n"
+        f"You are an intelligence analyst briefing the office of {subj}. The figure below is {frame}. "
+        "Write a SHORT assessment (2-3 sentences) of what is happening with them right now relative to "
+        f"{subj}, then 1-3 concrete recommended actions for the principal's office. Use ONLY the facts "
+        "given; do NOT invent names, dates, or outcomes. Describe momentum and posture QUALITATIVELY "
+        "(e.g. 'rising', 'mostly critical', 'escalating') and do NOT cite specific numbers or "
+        "percentages — those are already shown on the card. Be direct and decision-useful.\n"
+        "Format EXACTLY:\nASSESSMENT: <2-3 sentences>\nACTIONS:\n- <action>\n- <action>"
+    )
+    dossier = await synthesize_dossier(system=system, facts=facts, source_check=facts)
+    return {
+        "name": name, "camp": camp,
+        "read": (dossier or {}).get("read"),
+        "actions": (dossier or {}).get("actions", []),
+        "quotes": quotes,
+        "source": "llm" if dossier else "none",
     }

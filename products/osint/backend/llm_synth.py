@@ -110,3 +110,57 @@ async def synthesize_paragraph(
     if not _faithful(text, source_check):
         return None
     return text
+
+
+async def synthesize_dossier(*, system: str, facts: str, source_check: str) -> dict | None:
+    """One grounded call returning an assessment paragraph + action lines.
+
+    Returns ``{"read": str, "actions": [str]}`` or ``None`` on any failure /
+    faithfulness rejection. The model is asked to emit ``ASSESSMENT:`` then
+    ``ACTIONS:`` (a few bullets); we split, strip ``<think>``, gate the
+    assessment's numbers against the source facts, and drop any action that
+    introduces an unsupported number. Actions are advisory analysis, the
+    assessment is fact-grounded.
+    """
+    try:
+        from groq_client import generate  # lazy: avoid import-time key crash
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("llm_synth.dossier: pool unavailable (%s)", exc)
+        return None
+    try:
+        raw = await asyncio.wait_for(
+            generate(system=system, user=facts, task_type="brief_generation"),
+            timeout=_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("llm_synth.dossier: timed out")
+        return None
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("llm_synth.dossier: pool error (%s)", exc)
+        return None
+
+    text = _strip_think(raw)
+    parts = re.split(r"(?i)\bactions?\s*:", text, maxsplit=1)
+    read_raw = parts[0]
+    actions: list[str] = []
+    if len(parts) == 2:
+        for ln in parts[1].splitlines():
+            a = re.sub(r"^\s*[-*•\d.)\]]+\s*", "", ln).strip()
+            if len(a) >= 8:
+                actions.append(a)
+    read = re.sub(r"(?i)^\s*(assessment|read|the read)\s*:", "", read_raw).strip()
+    read = _WS.sub(" ", read).strip().strip('"')
+    # The assessment is qualitative (prompt forbids figures), so we only police
+    # LARGE fabricated amounts (>=4 digits — crore/lakh) rather than every
+    # incidental number; over-strict gating was nuking otherwise-good reads.
+    src_nums = _numbers(source_check)
+    big = [n for n in _numbers(read) if len(n) >= 4 and n not in src_nums]
+    if len(read) < 40:
+        logger.warning("llm_synth.dossier: read too short (%d) raw=%r", len(read), raw[:160])
+        return None
+    if big:
+        logger.warning("llm_synth.dossier: unsupported figure(s) %s → reject", big)
+        return None
+    actions = [a for a in actions
+               if not [n for n in _numbers(a) if len(n) >= 4 and n not in src_nums]][:3]
+    return {"read": read, "actions": actions}

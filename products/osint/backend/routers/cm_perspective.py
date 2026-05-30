@@ -71,7 +71,7 @@ async def _load_prefs(db, uid: str) -> dict[str, Any] | None:
 
 @router.get("/cm_perspective")
 async def cm_perspective(
-    window_hours: int = Query(default=48, ge=6, le=168),
+    window_hours: int = Query(default=96, ge=6, le=168),
     user: dict[str, str] | None = Depends(get_optional_user),
 ) -> dict[str, Any]:
     async with get_db() as db:
@@ -309,6 +309,13 @@ async def cm_perspective(
                          f"{narrative_balance['govt_pct']}% government messaging.")
         if opposition_fronts:
             da_facts += "\nOPPOSITION FIGURES ACTIVE: " + ", ".join(opposition_fronts)
+        # Thin-sample guard: when opposition signal is sparse, the analyst must
+        # hedge to "this window" rather than declare a durable narrative monopoly.
+        _thin = (not opposition_fronts) or (_bt < 8)
+        _hedge = (" NOTE: opposition signal in THIS window is limited — if pressure is "
+                  "low, say so plainly as 'limited opposition signal in this window' and "
+                  "do NOT over-claim a durable 'narrative monopoly' or permanent dominance; "
+                  "scope any such read to the current window only." if _thin else "")
         da_system = (
             "/no_think\n"
             f"You are a senior political-intelligence analyst briefing the office of {subj_name}. "
@@ -317,7 +324,8 @@ async def cm_perspective(
             "narrative (the principal or the opposition), and the near-term outlook. Then give 2-3 "
             "concrete recommended actions. Be analytical and decision-useful; describe momentum and "
             "posture QUALITATIVELY and do NOT cite specific numbers or invent names, dates, or "
-            "outcomes.\nFormat EXACTLY:\nASSESSMENT: <3-5 sentences>\nACTIONS:\n- <action>\n- <action>"
+            "outcomes." + _hedge +
+            "\nFormat EXACTLY:\nASSESSMENT: <3-5 sentences>\nACTIONS:\n- <action>\n- <action>"
         )
         deep_analysis = await synthesize_dossier(system=da_system, facts=da_facts, source_check=da_facts)
 

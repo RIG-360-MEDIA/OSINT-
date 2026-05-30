@@ -9,3 +9,5 @@ python-jose[cryptography]==3.3.0
 httpx==0.27.2
 # Pydantic email validation for invite endpoints.
 email-validator==2.2.0
+# LLM pool (ported from rig-backend groq_client.py): Groq SDK; Cerebras uses httpx.
+groq==0.11.0

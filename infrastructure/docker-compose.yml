@@ -329,6 +329,13 @@ services:
       # Must match an existing Supabase auth user; maverick092005@gmail.com is
       # the rig-backend super_admin (verified 2026-05-29 via admin/users API).
       - OSINT_BOOTSTRAP_ADMIN_EMAIL=maverick092005@gmail.com
+      # LLM pool (ported groq_client.py): multi-key Groq + Cerebras with
+      # rotation + failover. Keys come from infra/.env (copied from .env.prod,
+      # the same pool rig-backend uses); never baked into the image. Local
+      # lane forced off — the osint service must not touch any Ollama lane.
+      - GROQ_API_KEYS=${GROQ_API_KEYS}
+      - CEREBRAS_API_KEYS=${CEREBRAS_API_KEYS}
+      - LOCAL_LLM_ENABLED=0
     ports:
       - "8002:8000"
     networks:

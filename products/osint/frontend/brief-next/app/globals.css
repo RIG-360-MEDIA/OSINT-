@@ -8913,3 +8913,6 @@ body, .synthesis p, .ds-summary, .blind-card .sub, .ts-story-summary {
 .cmp-head { font-size:14.5px; line-height:1.45; color:#f0e6cf; }
 .cmp-more { font-size:11px; color:#7c6a48; letter-spacing:.3px; }
 @media (prefers-reduced-motion: reduce){ .cmp-row { animation:none; } }
+
+.cmp-summary { font-size:15.5px; line-height:1.78; color:#cdbb93; margin:0; letter-spacing:.1px; }
+.cmp-summary::first-letter { /* subtle lead */ }

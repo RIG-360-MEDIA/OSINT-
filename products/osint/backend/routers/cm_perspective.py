@@ -19,6 +19,7 @@ from sqlalchemy import text
 
 from auth.middleware import get_optional_user
 from db import get_db
+from llm_synth import synthesize_paragraph
 from relevance import score_relevant
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
@@ -169,12 +170,127 @@ async def cm_perspective(
     if opp_items:
         posture += f" · opposition active on {len(opp_items)} front{'s' if len(opp_items) != 1 else ''}"
 
+    # Flowing prose summary of the interval's events — grounded (built from real
+    # headlines), grouped govt / opposition / governance, connected with
+    # transitions, for the user to READ. Templated for now; swap to an LLM
+    # synthesis over these same facts (faithfulness-gated) once a key is wired.
+    def _clean(h: str | None) -> str:
+        return (h or "").split("|")[0].strip().rstrip(" .,-")
+
+    def _norm(h: str) -> str:
+        return re.sub(r"[^a-z0-9]+", " ", (h or "").lower()).strip()
+
+    def _good(h: str) -> bool:
+        # Drop degenerate headlines: a bare name / fragment with no clause reads
+        # as broken prose ("KCR — Harish Rao."). Require a real multi-word line.
+        return len(h) >= 24 and len(h.split()) >= 4
+
+    def _join(xs: list[str]) -> str:
+        xs = [x for x in xs if x]
+        if len(xs) <= 1:
+            return xs[0] if xs else ""
+        return "; ".join(xs[:-1]) + "; and " + xs[-1]
+
+    # One headline is used once, across all three groups (no repeats).
+    _used: set[str] = set()
+
+    def _take(title: str | None) -> str | None:
+        c = _clean(title)
+        if not _good(c):
+            return None
+        k = _norm(c)
+        if k in _used:
+            return None
+        _used.add(k)
+        return c
+
+    subj_lines: list[str] = []
+    for r in subject_items:
+        c = _take(r["title"])
+        if c:
+            subj_lines.append(c)
+        if len(subj_lines) >= 2:
+            break
+
+    opp_devs: list[str] = []
+    opp_fronts: set[str] = set()
+    for r in opp_items:
+        c = _take(r["title"])
+        if not c:
+            continue
+        nm, _c = _resolve(r.get("matched"))
+        if nm:
+            opp_fronts.add(nm)
+        opp_devs.append(f"{nm or 'the opposition'} — {c}")
+        if len(opp_devs) >= 3:
+            break
+
+    govt_other: list[str] = []
+    for r in scored:
+        _nm, camp = _resolve(r.get("matched"))
+        if camp != "govt" or r["ent_tier"] < 2:
+            continue
+        c = _take(r["title"])
+        if c:
+            govt_other.append(c)
+        if len(govt_other) >= 2:
+            break
+
+    parts: list[str] = []
+    if subj_lines:
+        parts.append(f"Over the last {window_hours} hours, coverage centres on {subj_name} — "
+                     + _join(subj_lines) + ".")
+    if opp_devs:
+        n_fronts = len(opp_fronts) or len(opp_devs)
+        lead = (f"The opposition is active on {n_fronts} fronts — " if n_fronts > 1
+                else "The opposition is active — ")
+        parts.append(lead + _join(opp_devs) + ".")
+    if govt_other:
+        parts.append("On the governance front, " + _join(govt_other) + ".")
+    summary = " ".join(parts) if parts else f"Little has centred on {subj_name} in this window."
+
+    # LLM synthesis over the SAME real, de-duped headlines — a smoother flowing
+    # paragraph than the template can produce. Grounded + faithfulness-gated
+    # inside synthesize_paragraph; on any failure (no keys, timeout, unsupported
+    # number) it returns None and we keep the deterministic template above.
+    summary_source = "template"
+    fact_lines: list[str] = []
+    if subj_lines:
+        fact_lines.append(f"PRINCIPAL ({subj_name}) — own actions / direct coverage:")
+        fact_lines += [f"  - {h}" for h in subj_lines]
+    if opp_devs:
+        fact_lines.append("OPPOSITION pressure (figure — what they said or did):")
+        fact_lines += [f"  - {d}" for d in opp_devs]
+    if govt_other:
+        fact_lines.append("GOVERNANCE / administration:")
+        fact_lines += [f"  - {h}" for h in govt_other]
+    facts = "\n".join(fact_lines)
+    if facts:
+        system = (
+            "/no_think\n"
+            f"You are an intelligence editor briefing the office of {subj_name}. "
+            "Write ONE tight, flowing paragraph (about 90-130 words) that "
+            "synthesises the developments below into a readable narrative for a "
+            "busy principal. Rules: use ONLY the facts given; do NOT invent "
+            "numbers, names, places, parties, or outcomes; do NOT add analysis, "
+            "opinion, or recommendations; move naturally from the principal's own "
+            "actions to opposition pressure to governance items, connecting with "
+            "transitions. No bullet points, no headings, no preamble, no closing "
+            "line — output only the paragraph."
+        )
+        llm = await synthesize_paragraph(system=system, facts=facts, source_check=facts)
+        if llm:
+            summary = llm
+            summary_source = "llm"
+
     return {
         "as_of": as_of,
         "personalized": True,
         "subject": subj_name,
         "coverage_count": n,
         "posture": posture,
+        "summary": summary,
+        "summary_source": summary_source,
         "digest": digest,
         "needs_attention": attention,
     }

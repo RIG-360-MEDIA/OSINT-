@@ -8980,7 +8980,7 @@ body, .synthesis p, .ds-summary, .blind-card .sub, .ts-story-summary {
 /* ── Watched Entities — portrait monogram, density, posture meter ─────────── */
 .we-grid { align-items:start; }            /* collapsed cards keep natural height */
 .we-id { display:flex; align-items:center; gap:12px; margin-top:1px; }
-.we-avatar { flex:0 0 44px; width:44px; height:44px; border-radius:50%;
+.we-avatar { position:relative; overflow:hidden; flex:0 0 44px; width:44px; height:44px; border-radius:50%;
   display:grid; place-items:center; font-weight:700; font-size:15px; letter-spacing:.02em;
   color:var(--tone,#e9c46a); border:1.5px solid rgba(233,196,106,.42);
   background:radial-gradient(circle at 32% 26%, rgba(233,196,106,.20), rgba(255,255,255,.02) 70%);
@@ -8993,6 +8993,8 @@ body, .synthesis p, .ds-summary, .blind-card .sub, .ts-story-summary {
   background:radial-gradient(circle at 32% 26%, rgba(192,132,252,.16), rgba(255,255,255,.02) 70%); }
 .we-id-text { min-width:0; }
 .we-id-text .we-name { margin:0; }
+.we-avatar-img { position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; border-radius:50%; transition:opacity .2s ease; }
 .we-meter { height:4px; border-radius:2px; display:flex; overflow:hidden;
   background:rgba(255,255,255,.06); margin:1px 0 2px; }
 .we-meter-crit { background:#fb7185; }

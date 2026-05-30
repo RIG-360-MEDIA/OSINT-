@@ -13,6 +13,7 @@ import {
 import { ExecutiveRead } from './ExecutiveRead.jsx';
 import { CMPerspective } from './CMPerspective.jsx';
 import { authFetch } from '../lib/supabase';
+import { ENTITY_PHOTOS } from '../lib/photos';
 
 
 // === Live API hook for KPI tiles (Day 1) ===
@@ -694,6 +695,7 @@ const WatchedEntityCard = ({ e }) => {
   const attacking = e.posture === "critical";
   const verdict = e.verdict || e.classification;
   const subtitle = [e.party, e.role].filter(Boolean).join(" · ") || e.region || "";
+  const photo = ENTITY_PHOTOS[(e.name || "").toLowerCase()];
   const [open, setOpen] = React.useState(false);
   const [doss, setDoss] = React.useState(null); // null | 'loading' | 'error' | 'empty' | {read,actions,quotes}
   const toggle = () => {
@@ -718,7 +720,11 @@ const WatchedEntityCard = ({ e }) => {
           <span className="we-chev" aria-hidden="true">{open ? '▾' : '▸'}</span>
         </header>
         <div className="we-id">
-          <span className="we-avatar" aria-hidden="true">{e.init}</span>
+          <span className="we-avatar" aria-hidden="true">
+            {e.init}
+            {photo ? <img className="we-avatar-img" src={photo} alt="" loading="lazy"
+                          onError={ev => { ev.currentTarget.style.opacity = "0"; }} /> : null}
+          </span>
           <div className="we-id-text">
             <h3 className="we-name">{e.name}</h3>
             {subtitle ? <div className="we-party-line">{subtitle}</div> : null}

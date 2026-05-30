@@ -11,6 +11,7 @@ CP or a PR lead gets their own principal + their own opposition, same engine.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query
@@ -117,23 +118,63 @@ async def cm_perspective(
         if len(attention) >= 3:
             break
 
-    # Left read — prominence + lead story (real; degrades gracefully).
+    # Left "digest" — the ACTUAL top news, grouped by the entity it is about,
+    # subject-first. This is the real "what's moving on your watch" content
+    # (not a meta count). Each entity shows its lead development + how many.
+    # Resolve a matched entity name to a WATCHLIST entity by shared distinctive
+    # token (generic words like 'congress'/'reddy' excluded so a stray "Trinamool
+    # Congress" tag doesn't masquerade as your INC, and "Kalvakuntla Kavitha"
+    # resolves to "K. Kavitha"). Unresolved = not on your watch → skipped.
+    _STOP = {"congress", "party", "india", "indian", "national", "bharat", "janata",
+             "samithi", "desam", "telugu", "majlis", "reddy", "rao", "kumar", "singh",
+             "chief", "minister", "government", "govt"}
+
+    def _toks(s: str | None) -> set[str]:
+        return {t for t in re.split(r"[^a-z]+", (s or "").lower()) if len(t) >= 4 and t not in _STOP}
+
+    _wl_tok = [(mm.get("name"), mm.get("camp"), _toks(mm.get("name"))) for mm in meta if mm.get("name")]
+
+    def _resolve(matched: str | None) -> tuple[str | None, str | None]:
+        mt = _toks(matched)
+        for nm, camp, toks in _wl_tok:
+            if toks & mt:
+                return nm, camp
+        return None, None
+
+    groups: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for r in scored:                       # scored is already sorted by score desc
+        name, camp = _resolve(r.get("matched"))
+        if name is None:                   # not a watchlist entity → skip noise
+            continue
+        if name not in groups:
+            groups[name] = {"entity": name, "camp": camp, "items": []}
+            order.append(name)
+        groups[name]["items"].append(r)
+
+    subj_l = subj_name.lower()
+    ranked = sorted(
+        (groups[k] for k in order),
+        key=lambda g: (0 if subj_l in g["entity"].lower() else 1, -g["items"][0]["score"]),
+    )
+    digest = [{
+        "entity": g["entity"], "camp": g["camp"],
+        "headline": (g["items"][0]["title"] or "").strip(),
+        "outlets": g["items"][0]["source"],
+        "count": len(g["items"]),
+    } for g in ranked[:6]]
+
     n = len(subject_items)
-    lead = subject_items[0]["title"].strip() if subject_items else None
-    if n == 0:
-        read = f"{subj_name} is quiet in coverage right now — nothing centred on them in this window."
-    else:
-        read = f"{n} development{'s' if n != 1 else ''} centre on {subj_name} right now."
-        if lead:
-            read += f" Leading: “{lead}”."
-        if opp_items:
-            read += f" The opposition is active — {len(opp_items)} stories driven by your rivals."
+    posture = (f"{subj_name} leads coverage" if n else f"{subj_name} is quiet today")
+    if opp_items:
+        posture += f" · opposition active on {len(opp_items)} front{'s' if len(opp_items) != 1 else ''}"
 
     return {
         "as_of": as_of,
         "personalized": True,
         "subject": subj_name,
         "coverage_count": n,
-        "read": read,
+        "posture": posture,
+        "digest": digest,
         "needs_attention": attention,
     }

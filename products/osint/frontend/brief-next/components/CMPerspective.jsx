@@ -44,8 +44,19 @@ export function CMPerspective() {
   return (
     <div className="mood-body">
       <div className="synthesis">
-        <div className="synth-label">{data.subject ? `${data.subject} — How You're Covered` : 'How You’re Covered'}</div>
-        <p>{data.read}</p>
+        <div className="synth-label">{data.subject ? `On Your Watch — ${data.subject}` : 'On Your Watch'}</div>
+        {data.posture ? <p className="cmp-posture">{data.posture}.</p> : null}
+        <ul className="cmp-digest">
+          {(data.digest || []).map((d, i) => (
+            <li key={i} className={`cmp-row ${d.camp || ''}`} style={{ animationDelay: `${i * 70}ms` }}>
+              <span className="cmp-entity">
+                {d.entity}{d.camp === 'opposition' ? <em className="cmp-opp"> · opposition</em> : null}
+              </span>
+              <span className="cmp-head">{d.headline}</span>
+              <span className="cmp-more">{d.count > 1 ? `+${d.count - 1} more · ` : ''}{d.outlets}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <aside className="needs-attention">

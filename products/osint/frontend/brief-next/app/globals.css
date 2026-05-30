@@ -8902,3 +8902,14 @@ body, .synthesis p, .ds-summary, .blind-card .sub, .ts-story-summary {
 .na-src { text-transform:none; color:#7c6a48; }
 @media (max-width: 880px){ .needs-attention { flex-basis:100%; max-width:100%; border-left:0; padding-left:0; border-top:1px solid rgba(233,196,106,.14); padding-top:20px; margin-top:8px; } }
 @media (prefers-reduced-motion: reduce){ .na-item, .na-pulse { animation:none; } }
+
+/* CM Perspective — left digest (entity-led top news) */
+.cmp-posture { font-size:12px; letter-spacing:.4px; text-transform:uppercase; color:#8a7250; margin:0 0 18px; }
+.cmp-digest { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:16px; }
+.cmp-row { display:flex; flex-direction:column; gap:3px; padding-left:14px; border-left:2px solid rgba(233,196,106,.25); animation:exec-rise .5s cubic-bezier(.2,.7,.2,1) both; }
+.cmp-row.opposition { border-left-color:rgba(251,113,133,.45); }
+.cmp-entity { font-size:12px; letter-spacing:1px; text-transform:uppercase; color:#e9c46a; font-weight:600; }
+.cmp-opp { color:#fb7185; font-style:normal; text-transform:none; letter-spacing:.3px; font-weight:500; }
+.cmp-head { font-size:14.5px; line-height:1.45; color:#f0e6cf; }
+.cmp-more { font-size:11px; color:#7c6a48; letter-spacing:.3px; }
+@media (prefers-reduced-motion: reduce){ .cmp-row { animation:none; } }

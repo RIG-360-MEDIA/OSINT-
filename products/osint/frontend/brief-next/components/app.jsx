@@ -11,6 +11,7 @@ import {
   SPARK, STORIES, ENTITIES, HORIZON, CLIMBING, BLINDSPOT, RECOMMENDED, nextRefreshAt
 } from '../lib/data.js';
 import { ExecutiveRead } from './ExecutiveRead.jsx';
+import { CMPerspective } from './CMPerspective.jsx';
 
 
 // === Live API hook for KPI tiles (Day 1) ===
@@ -568,65 +569,7 @@ const MoodSection = () => {
 
       <ExecutiveRead />
 
-      <div className="mood-body">
-        <div className="synthesis">
-          <div className="synth-label">Overnight Summary</div>
-          <p>
-            Overnight discourse pivoted from the <span className="entity-link">Musi Rejuvenation</span> announcement
-            toward fiscal-credibility framing, driven primarily by a 02:14 IST tweet from
-            <KtrLink> KTR</KtrLink> citing the ₹85,000 crore Kaleshwaram overrun figure.
-            Telugu vernaculars — <span className="entity-link">Eenadu</span>, <span className="entity-link">V6 News</span>,
-            <span className="entity-link"> Sakshi</span> — led overwhelmingly critical, with displacement testimony from the
-            <span className="entity-link"> Kothagudem</span> corridor providing the strongest emotional anchor.
-            <Cite n={1} /><Cite n={2} />
-          </p>
-          <p>
-            English desks took a measurably more descriptive posture. <span className="entity-link">The Hindu</span>,
-            <span className="entity-link"> Indian Express</span> and <span className="entity-link">Mint</span> foregrounded the
-            funding-architecture question and the cabinet's ₹1,500 crore Phase 1 clearance without taking up the
-            land-acquisition grievance that dominates regional bulletins. The asymmetry is consistent with the
-            seven-day rolling baseline (correlation 0.82). <Cite n={3} />
-          </p>
-
-          <details className="more-context">
-            <summary>More context</summary>
-            <p>
-              <span className="entity-link">CM Revanth Reddy</span>'s <span className="entity-link">Khammam</span> rally line —
-              that BRS "wasted ₹40,000 crore" — was repeated verbatim by three Hindi outlets but received only descriptive
-              English coverage. The principal should expect this framing to harden into a recurring attack line, given the
-              party's <span className="entity-link">Karimnagar</span> rally on Sunday is being pre-positioned along similar
-              fiscal-mismanagement themes. <Cite n={4} />
-            </p>
-            <p>
-              A small, favourable signal: the Adilabad farmer-loan-waiver second tranche was announced at Mancherial without
-              English national coverage. The waiver is fiscally modest and politically clean; surfacing it to friendly desks
-              today could rebalance the morning's net sentiment from −0.42 toward neutral. <Cite n={5} />
-            </p>
-          </details>
-        </div>
-
-        <aside className="pull-quote">
-          <svg className="pq-rings" viewBox="0 0 360 360" aria-hidden="true">
-            <circle className="r1" cx="260" cy="180" r="60"  fill="none" stroke="#e9c46a" strokeOpacity="0.40" strokeWidth="0.6"/>
-            <circle className="r2" cx="260" cy="180" r="105" fill="none" stroke="#e9c46a" strokeOpacity="0.28" strokeWidth="0.5"/>
-            <circle className="r3" cx="260" cy="180" r="150" fill="none" stroke="#e9c46a" strokeOpacity="0.18" strokeWidth="0.5"/>
-            <circle className="r4" cx="260" cy="180" r="195" fill="none" stroke="#e9c46a" strokeOpacity="0.10" strokeWidth="0.5"/>
-            <line x1="260" y1="5"   x2="260" y2="50"  stroke="#e9c46a" strokeOpacity="0.22" strokeWidth="0.5"/>
-            <line x1="260" y1="310" x2="260" y2="355" stroke="#e9c46a" strokeOpacity="0.22" strokeWidth="0.5"/>
-            <line x1="65"  y1="180" x2="110" y2="180" stroke="#e9c46a" strokeOpacity="0.18" strokeWidth="0.5"/>
-            <line x1="410" y1="180" x2="455" y2="180" stroke="#e9c46a" strokeOpacity="0.18" strokeWidth="0.5"/>
-            <circle cx="260" cy="180" r="2" fill="#e9c46a" opacity="0.8"/>
-          </svg>
-          <span className="big-mark" aria-hidden="true">“</span>
-          <div className="q">
-            We will not build Telangana on press releases. We will build it on <em>rivers, records, and receipts.</em>
-          </div>
-          <div className="meta">
-            <div className="who">— CM Revanth Reddy</div>
-            <div className="ctx">Press Briefing · 12 May 2026</div>
-          </div>
-        </aside>
-      </div>
+      <CMPerspective />
 
       <div className="mood-footer">
         <div className="mf-cell">

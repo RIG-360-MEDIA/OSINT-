@@ -334,7 +334,7 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
               topic_fine            = :topic_fine,
               geo_primary           = :geo_primary,
               labse_embedding       = CAST(:labse_embedding AS vector),
-              embedded_at           = CASE WHEN :embedding_model IS NOT NULL THEN now() ELSE embedded_at END,
+              embedded_at           = CASE WHEN CAST(:embedding_model AS text) IS NOT NULL THEN now() ELSE embedded_at END,
               embedding_model       = COALESCE(:embedding_model, embedding_model),
               embedding_revision    = COALESCE(:embedding_revision, embedding_revision),
               is_duplicate          = :is_duplicate,

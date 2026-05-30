@@ -8976,6 +8976,27 @@ body, .synthesis p, .ds-summary, .blind-card .sub, .ts-story-summary {
 .we-doss-quote cite, .we-doss-src { display:inline; font-style:normal; font-size:11.5px; color:#8c8068; margin-left:4px; }
 .we-doss-src { text-decoration:none; }
 .we-doss-src:hover { color:var(--tone,#e9c46a); }
+
+/* ── Watched Entities — portrait monogram, density, posture meter ─────────── */
+.we-grid { align-items:start; }            /* collapsed cards keep natural height */
+.we-id { display:flex; align-items:center; gap:12px; margin-top:1px; }
+.we-avatar { flex:0 0 44px; width:44px; height:44px; border-radius:50%;
+  display:grid; place-items:center; font-weight:700; font-size:15px; letter-spacing:.02em;
+  color:var(--tone,#e9c46a); border:1.5px solid rgba(233,196,106,.42);
+  background:radial-gradient(circle at 32% 26%, rgba(233,196,106,.20), rgba(255,255,255,.02) 70%);
+  text-shadow:0 0 10px rgba(0,0,0,.5); }
+.we-card-text.rose   .we-avatar { color:#fb7185; border-color:rgba(251,113,133,.45);
+  background:radial-gradient(circle at 32% 26%, rgba(251,113,133,.18), rgba(255,255,255,.02) 70%); }
+.we-card-text.cyan   .we-avatar { color:#5eead4; border-color:rgba(94,234,212,.42);
+  background:radial-gradient(circle at 32% 26%, rgba(94,234,212,.16), rgba(255,255,255,.02) 70%); }
+.we-card-text.violet .we-avatar { color:#c084fc; border-color:rgba(192,132,252,.42);
+  background:radial-gradient(circle at 32% 26%, rgba(192,132,252,.16), rgba(255,255,255,.02) 70%); }
+.we-id-text { min-width:0; }
+.we-id-text .we-name { margin:0; }
+.we-meter { height:4px; border-radius:2px; display:flex; overflow:hidden;
+  background:rgba(255,255,255,.06); margin:1px 0 2px; }
+.we-meter-crit { background:#fb7185; }
+.we-meter-supp { background:#5fd47b; }
 .ds-row-text .ds-row-head { display:flex; align-items:center; gap:10px; }
 .ds-row-text .ds-headline { margin:9px 0; font-size:18px; line-height:1.35; color:#f1e7d0; }
 .ds-row-text .ds-summary { font-size:15px; line-height:1.72; color:#cdbb93; margin:0 0 14px; }

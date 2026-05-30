@@ -717,8 +717,13 @@ const WatchedEntityCard = ({ e }) => {
           {e.campRole ? <span className="we-camprole">{e.campRole}</span> : null}
           <span className="we-chev" aria-hidden="true">{open ? '▾' : '▸'}</span>
         </header>
-        <h3 className="we-name">{e.name}</h3>
-        {subtitle ? <div className="we-party-line">{subtitle}</div> : null}
+        <div className="we-id">
+          <span className="we-avatar" aria-hidden="true">{e.init}</span>
+          <div className="we-id-text">
+            <h3 className="we-name">{e.name}</h3>
+            {subtitle ? <div className="we-party-line">{subtitle}</div> : null}
+          </div>
+        </div>
         {e.quote ? (
           <blockquote className="we-quote">
             <span className="we-quote-mark-sm" aria-hidden="true">“</span>{e.quote}”
@@ -729,10 +734,16 @@ const WatchedEntityCard = ({ e }) => {
         )}
         <div className="we-intel">
           {e.stanceN ? (
-            <span className={`we-intel-line ${attacking ? "crit" : "supp"}`}>
-              {attacking ? `On the attack — ${e.critPct}% of coverage is critical`
-                         : `Supportive posture — ${e.suppPct}% supportive`}
-            </span>
+            <>
+              <span className={`we-intel-line ${attacking ? "crit" : "supp"}`}>
+                {attacking ? `On the attack — ${e.critPct}% of coverage is critical`
+                           : `Supportive posture — ${e.suppPct}% supportive`}
+              </span>
+              <div className="we-meter" title={`${e.critPct}% critical · ${e.suppPct}% supportive · ${e.stanceN} items`}>
+                <span className="we-meter-crit" style={{ width: `${e.critPct}%` }} />
+                <span className="we-meter-supp" style={{ width: `${e.suppPct}%` }} />
+              </div>
+            </>
           ) : null}
           {e.mentions != null ? (
             <span className="we-intel-line dim">

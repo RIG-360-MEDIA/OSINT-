@@ -36,6 +36,18 @@ function useLiveKpi() {
   return kpi;
 }
 
+// ISO 639-1 → display name, for turning the live lang_breakdown into a
+// readable list (persona-agnostic: whatever the corpus actually carries).
+const LANG_NAMES = {
+  EN: 'English', HI: 'Hindi', TE: 'Telugu', UR: 'Urdu', TA: 'Tamil',
+  BN: 'Bengali', MR: 'Marathi', KN: 'Kannada', ML: 'Malayalam', GU: 'Gujarati',
+  PA: 'Punjabi', OR: 'Odia', AS: 'Assamese', NE: 'Nepali',
+};
+const langName = (code) => LANG_NAMES[String(code || '').toUpperCase()] || code;
+// Top-N language names present in the live KPI breakdown.
+const topLangNames = (kpi, n = 4) =>
+  (kpi?.lang_breakdown || []).slice(0, n).map((l) => langName(l.code)).filter(Boolean);
+
 function useLiveEntities() {
   const [entities, setEntities] = React.useState(null);  // null = use static WATCHED fallback
   React.useEffect(() => {
@@ -373,7 +385,11 @@ const Waveform = () => (
   </svg>
 );
 
-const SystemStatusBand = () => (
+const SystemStatusBand = () => {
+  const kpi = useLiveKpi();
+  const langs = topLangNames(kpi, 4);
+  const asOf = kpi?.as_of?.label;
+  return (
   <div className="status-band">
     <div className="container">
       <div className="status-ribbon" role="status" aria-label="System status">
@@ -381,16 +397,22 @@ const SystemStatusBand = () => (
           <span className="gdot" aria-hidden="true"></span>
           <div className="text">
             <span className="lbl">System Online</span>
-            <span className="val">Source integrity 98.7%</span>
+            <span className="val">Live intelligence feed</span>
           </div>
         </div>
         <div className="cell">
           <span className="ic-w"><Icon name="target" size={20} stroke={1.4}/></span>
           <div className="text">
-            <span className="lbl">247 Sources Monitored</span>
+            <span className="lbl">{kpi.outlets || '—'} Sources Monitored</span>
             <span className="val">
               <span className="lang-list">
-                Telugu <span className="dot"></span> English <span className="dot"></span> Hindi <span className="dot"></span> Urdu
+                {langs.length
+                  ? langs.map((l, i) => (
+                      <React.Fragment key={l}>
+                        {i ? <span className="dot"></span> : null}{l}
+                      </React.Fragment>
+                    ))
+                  : '—'}
               </span>
             </span>
           </div>
@@ -398,15 +420,15 @@ const SystemStatusBand = () => (
         <div className="cell">
           <span className="ic-w"><Icon name="clock" size={20} stroke={1.4}/></span>
           <div className="text">
-            <span className="lbl">Last Updated 05:42 IST</span>
-            <span className="val">Tuesday, 13 May 2026</span>
+            <span className="lbl">Updated</span>
+            <span className="val">{asOf || '—'}</span>
           </div>
         </div>
         <div className="cell next">
           <span className="ic-w"><Icon name="refresh" size={20} stroke={1.4}/></span>
           <div className="text">
-            <span className="lbl">Next Refresh In</span>
-            <span className="val"><Countdown to={nextRefreshAt} bare/></span>
+            <span className="lbl">Last 24 Hours</span>
+            <span className="val">{(kpi.articlesParsed || 0).toLocaleString()} articles</span>
           </div>
         </div>
       </div>
@@ -414,7 +436,8 @@ const SystemStatusBand = () => (
     <div className="status-waveform"><Waveform/></div>
     <div className="status-sweep" aria-hidden="true"></div>
   </div>
-);
+  );
+};
 
 const TopBar = () => (
   <>
@@ -523,6 +546,8 @@ const KtrLink = ({ children }) => (
 );
 
 const MoodSection = () => {
+  const kpi = useLiveKpi();
+  const asOf = kpi?.as_of?.label;
   return (
   <section className="container section">
     <div className="glass elevated mood-card">
@@ -554,15 +579,15 @@ const MoodSection = () => {
           </Reveal>
           <Reveal delay={300}>
             <div className="mood-meta">
-              <span>Tuesday, 13 May 2026</span>
+              <span>{asOf || '—'}</span>
               <span className="sep">|</span>
-              <span>06:00 AM IST</span>
+              <span>Daily Brief</span>
             </div>
           </Reveal>
         </div>
         <div className="masthead-right">
           <div className="mr-lbl">Overnight Synthesis<M k="synthesis"/></div>
-          <div className="mr-val">Compiled 05:42 AM IST</div>
+          <div className="mr-val">As of {asOf || '—'}</div>
         </div>
       </header>
 
@@ -572,28 +597,28 @@ const MoodSection = () => {
         <div className="mf-cell">
           <span className="ic"><Icon name="target" size={14} stroke={1.4}/></span>
           <span className="lbl">Sources Scanned</span>
-          <b className="val">247</b>
+          <b className="val">{kpi.outlets || '—'}</b>
           <span className="mini-spark"><Sparkline values={SPARK.articles} height={14} color="#5fd47b"/></span>
         </div>
         <div className="mf-cell langs">
-          <span className="lpair"><span className="lk">TE</span><b>142</b></span>
-          <span className="lpair"><span className="lk">HI</span><b>38</b></span>
-          <span className="lpair"><span className="lk">EN</span><b>67</b></span>
+          {((kpi.lang_breakdown || []).slice(0, 3)).map((l) => (
+            <span className="lpair" key={l.code}><span className="lk">{l.code}</span><b>{l.n}</b></span>
+          ))}
         </div>
         <div className="mf-cell">
-          <span className="ic"><Icon name="clock" size={14} stroke={1.4}/></span>
-          <span className="lbl">Process Time</span>
-          <b className="val">4M 22S</b>
+          <span className="ic"><Icon name="doc" size={14} stroke={1.4}/></span>
+          <span className="lbl">Articles · 24h</span>
+          <b className="val">{(kpi.articlesParsed || 0).toLocaleString()}</b>
         </div>
         <div className="mf-cell">
-          <span className="ic"><Icon name="building" size={14} stroke={1.4}/></span>
-          <span className="lbl">Editorial Desk</span>
-          <b className="val">Hyderabad Bureau</b>
+          <span className="ic"><Icon name="globe" size={14} stroke={1.4}/></span>
+          <span className="lbl">Languages</span>
+          <b className="val">{kpi.languages || '—'}</b>
         </div>
         <div className="mf-cell refresh">
-          <span className="ic"><Icon name="refresh" size={14} stroke={1.4}/></span>
-          <span className="lbl">Next Refresh In</span>
-          <b className="val time"><Countdown to={nextRefreshAt} bare/></b>
+          <span className="ic"><Icon name="clock" size={14} stroke={1.4}/></span>
+          <span className="lbl">Dateline</span>
+          <b className="val time">{kpi?.as_of?.iso || '—'}</b>
         </div>
       </div>
     </div>

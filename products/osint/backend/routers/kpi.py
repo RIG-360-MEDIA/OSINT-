@@ -44,10 +44,18 @@ async def get_kpi() -> dict[str, Any]:
              GROUP BY 1 ORDER BY 2 DESC LIMIT 6
         """))).fetchall()
 
+        # Real "as of" dateline (replay-harness sim clock) — so the masthead
+        # shows the brief's actual data date, never a hardcoded one.
+        asof = (await db.execute(text("""
+            SELECT to_char(analytics.now_sim(), 'FMDay, FMDD FMMon YYYY') AS label,
+                   to_char(analytics.now_sim(), 'YYYY-MM-DD')             AS iso
+        """))).fetchone()
+
     return {
         "articlesParsed": int(row.articles_parsed or 0),
         "outlets":        int(row.outlets or 0),
         "languages":      int(row.languages or 0),
         "sentiment":      round(float(row.sentiment_avg or 0), 2),
         "lang_breakdown": [{"code": l.code, "n": int(l.n)} for l in langs],
+        "as_of":          {"label": asof.label, "iso": asof.iso} if asof else None,
     }

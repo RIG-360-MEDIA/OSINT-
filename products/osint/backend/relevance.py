@@ -30,8 +30,31 @@ NOISE = [
 ]
 
 
+# Generic political words that must NEVER become a standalone match pattern.
+# A bare alias like "Party" or "Government" would otherwise match every
+# "… Party" / "… Government" entity in the corpus (e.g. the Mexican
+# "Institutional Revolutionary Party"), poisoning relevance with cross-persona
+# junk. Real identifiers are multi-word ("aam aadmi party") or specific acronyms
+# ("aap", "bjp") and are unaffected — only the bare generic token is dropped.
+_GENERIC_TERMS = frozenset({
+    "party", "government", "govt", "govt.", "minister", "ministry", "cabinet",
+    "leader", "leaders", "opposition", "ruling", "coalition", "alliance", "front",
+    "assembly", "parliament", "lok sabha", "rajya sabha", "house", "council",
+    "state", "states", "national", "central", "centre", "union", "federal",
+    "president", "vice president", "secretary", "spokesperson", "spokesman",
+    "chief", "deputy", "office", "the party", "mla", "mlas", "mp", "mps",
+    "candidate", "leadership", "high command",
+})
+
+
 def _pats(names: list[str | None]) -> list[str]:
-    out = {f"%{n.strip().lower()}%" for n in names if n and len(n.strip()) >= 3}
+    out: set[str] = set()
+    for n in names:
+        if not n:
+            continue
+        t = n.strip().lower()
+        if len(t) >= 3 and t not in _GENERIC_TERMS:
+            out.add(f"%{t}%")
     return sorted(out) or ["__nomatch__"]
 
 

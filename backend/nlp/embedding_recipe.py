@@ -37,13 +37,20 @@ class EmbeddingRecipe:
     model_rev: str = LABSE_REVISION
 
 
-# CURRENT recipe == A/B control V0. REPLACE with the A/B winner once locked.
+# LOCKED 2026-05-31 to A/B winner V4 (analytics confirm: rig-news db-chat-confirm-v4-2026-05-31).
+# translated lead + title prepended, 1024-char window, max_seq_length 512.
+# Chosen over original (V1): A2 showed original-language *coin-flips* catastrophically on
+# low-resource cross-lingual (the Telugu Harmanpreet twin cratered to rank ~700 under
+# original, held top-few under translated). V4 is reliable cross-lingual AND barely a
+# change from prod-V0 (already translated/512) — it just adds title + 1024.
+# 0a (embed-at-ingest) and 0c (full re-embed) BOTH read this. Changing it again ==
+# a coordinated full re-embed. translated => reads existing lead_text_translated (no NEW MT call).
 RECIPE = EmbeddingRecipe(
     language="translated",
-    title_prepend=False,
-    char_window=512,
-    max_seq_length=256,
-    recipe_version="v0-prod",
+    title_prepend=True,
+    char_window=1024,
+    max_seq_length=512,
+    recipe_version="v4-tr-title-1024",
 )
 
 

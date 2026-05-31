@@ -28,9 +28,21 @@ def get_labse_model():
     global _LABSE_MODEL
     if _LABSE_MODEL is None:
         from sentence_transformers import SentenceTransformer
+
+        from backend.nlp.embedding_recipe import RECIPE
+
         logger.info("Loading LaBSE (768-dim, ~1.8 GB) pinned @ %s ...", LABSE_REVISION[:12])
         _LABSE_MODEL = SentenceTransformer(LABSE_MODEL_ID, revision=LABSE_REVISION)
-        logger.info("LaBSE loaded (pinned). 768-dim embeddings ready.")
+        # max_seq_length is PART OF THE RECIPE (0a/0c must match). LaBSE defaults
+        # to 256; a recipe with a >512-char window silently truncates without this.
+        try:
+            _LABSE_MODEL.max_seq_length = RECIPE.max_seq_length
+        except Exception:  # noqa: BLE001 — never block embedding on this
+            pass
+        logger.info(
+            "LaBSE loaded (pinned, max_seq_length=%s). 768-dim embeddings ready.",
+            getattr(_LABSE_MODEL, "max_seq_length", "?"),
+        )
     return _LABSE_MODEL
 
 
@@ -50,6 +62,29 @@ def generate_embedding(text: str) -> list[float] | None:
     except Exception as exc:
         logger.error("LaBSE embedding failed: %s", exc)
         return None
+
+
+def encode_text(texts: "str | list[str]") -> list[list[float] | None]:
+    """Batch-encode text that is ALREADY recipe-windowed (0a/0c path).
+
+    Unlike generate_embedding, this does NOT char-truncate — the caller applied
+    the recipe's char_window via embedding_recipe.build_embedding_text(), and the
+    model's max_seq_length (set from RECIPE in get_labse_model) handles token cap.
+
+    Accepts a single string or a list; always returns a list with one entry per
+    input (a 768-dim list, or None on failure), so callers can zip with their ids.
+    """
+    if isinstance(texts, str):
+        texts = [texts]
+    if not texts:
+        return []
+    try:
+        model = get_labse_model()
+        vecs = model.encode(texts)
+        return [v.tolist() for v in vecs]
+    except Exception as exc:
+        logger.error("LaBSE encode_text failed: %s", exc)
+        return [None] * len(texts)
 
 
 async def check_semantic_duplicate(

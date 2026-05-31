@@ -26,6 +26,8 @@ app = Celery(
         "backend.tasks",
         "backend.tasks.collector_tasks",
         "backend.tasks.nlp_processor",
+        # 0a embed-at-ingest lane — dedicated fast embedding, decoupled from NLP
+        "backend.tasks.embed_task",
         "backend.tasks.dict_reload_task",
         # SearXNG-fallback thumbnail finder (fix for post-deploy og:image gap)
         "backend.tasks.thumbnail_task",
@@ -38,10 +40,32 @@ app = Celery(
         "backend.tasks.collectors.acled_sink_task",
         # Periodic byline backfill — runs every 6h, HTML-only, no LLM cost
         "backend.tasks.substrate.byline_periodic_task",
+        # 5-min journalist-name extractor — parses byline → author_name, no LLM
+        "backend.tasks.enrich_journalist",
+        # Weekly circuit-breaker reset — revives sources that hit health=0
+        "backend.tasks.source_health_reset_task",
+        # 6-hourly RSS URL refresher — follows 30x redirects, updates rss_url
+        "backend.tasks.rss_url_refresh_task",
         # Periodic tweet enrichment — catches v1→v2 upgrades + retries
         "backend.tasks.substrate.tweet_periodic_task",
         # Nightly gold-set regression for the data-quality observability stack
         "backend.tasks.quality_regression_task",
+        # 15-min postfix that keeps NEW articles clean (lang + is_future)
+        "backend.tasks.quality_postfix_task",
+        # Daily quality comparator — new articles vs backfilled baseline
+        "backend.tasks.quality_compare_task",
+        # 30-min event-cluster importance refresh (T5)
+        "backend.tasks.cluster_importance_task",
+        # Hourly entity-mention aggregator (T6)
+        "backend.tasks.entity_mention_task",
+        # Nightly v2→v3 upgrade pass (translation + register fields)
+        "backend.tasks.v3_upgrade_task",
+        # D13: 30-min reset of orphaned substrate 'processing' claims so a
+        # killed/crashed drain can never leave articles permanently stuck.
+        "backend.tasks.substrate.reset_stale_processing_task",
+        # D13 part-2: 10-min auto-trigger of v3 substrate extraction so new
+        # articles reach v3 without manual drains (replaces the v2 repass).
+        "backend.tasks.substrate.drain_tick_task",
     ],
 )
 
@@ -59,12 +83,29 @@ app.config_from_object(
             "tasks.collect_rss_direct": {"queue": "collectors"},
             "tasks.collect_html": {"queue": "collectors"},
             "tasks.quality.gold_regression": {"queue": "nlp"},
+            "tasks.quality.postfix": {"queue": "nlp"},
+            "tasks.quality.compare": {"queue": "nlp"},
+            "tasks.quality.cluster_importance": {"queue": "nlp"},
+            "tasks.quality.entity_mentions": {"queue": "nlp"},
+            "tasks.quality.v3_upgrade": {"queue": "nlp"},
             "tasks.fetch_og_images_batch": {"queue": "collectors"},
             "tasks.process_nlp_batch": {"queue": "nlp"},
+            # 0a embed-at-ingest lane — dedicated `embedding` queue
+            "tasks.embed.embed_pending_batch": {"queue": "embedding"},
+            # D13: orphaned-claim reset (runs on nlp queue, pure SQL)
+            "tasks.substrate.reset_stale_processing": {"queue": "nlp"},
+            # D13 part-2: 10-min auto-drain of pending articles → v3
+            "tasks.substrate.drain_tick": {"queue": "nlp"},
             # Byline / tweet substrate backfill — pure HTTP fetching, light
             # parsing, no LLM. Shares the collectors queue with HTML scraping.
             "tasks.backfill_bylines_periodic": {"queue": "collectors"},
             "tasks.backfill_tweets_periodic": {"queue": "collectors"},
+            # Journalist-name parser — reads byline, writes author_name. No LLM.
+            "tasks.enrich_journalist_batch": {"queue": "nlp"},
+            # Weekly source-health reset (revive circuit-breaker-locked sources)
+            "tasks.reset_source_circuit_breakers": {"queue": "collectors"},
+            # 6-hourly RSS URL refresher
+            "tasks.refresh_rss_urls": {"queue": "collectors"},
             # External-source collectors (atlas layers) — kept per cleanup spec.
             "tasks.collectors.mandi_agmarknet": {"queue": "collectors"},
             "tasks.collectors.cpcb_aqi":        {"queue": "collectors"},
@@ -119,6 +160,32 @@ app.config_from_object(
                 "schedule": timedelta(seconds=30),
                 "options": {"queue": "nlp"},
             },
+            # 0a embed-at-ingest — fast vector lane, decoupled from the NLP batch.
+            # Deployed only after the A/B recipe lock (see docs/plans/0a-embed-at-ingest-2026-05-31.md).
+            "embed-pending-every-15-seconds": {
+                "task": "tasks.embed.embed_pending_batch",
+                "schedule": timedelta(seconds=15),
+                "options": {"queue": "embedding"},
+            },
+            "enrich-journalist-every-5-minutes": {
+                "task": "tasks.enrich_journalist_batch",
+                "schedule": timedelta(minutes=5),
+                "options": {"queue": "nlp"},
+                "kwargs": {"batch_size": 200},
+            },
+            # Weekly Monday 00:00 UTC — revive sources whose health hit the floor
+            "reset-source-circuit-breakers-weekly": {
+                "task": "tasks.reset_source_circuit_breakers",
+                "schedule": crontab(hour=0, minute=0, day_of_week=1),
+                "options": {"queue": "collectors"},
+            },
+            # Every 6 hours — follow 30x redirects on low-health sources, save new URL
+            "refresh-rss-urls-every-6h": {
+                "task": "tasks.refresh_rss_urls",
+                "schedule": crontab(hour="*/6", minute=20),
+                "options": {"queue": "collectors"},
+                "kwargs": {"limit": 80},
+            },
             "reset-groq-keys-daily": {
                 "task": "tasks.reset_groq_keys",
                 "schedule": crontab(hour=0, minute=5),
@@ -164,6 +231,65 @@ app.config_from_object(
             "quality-gold-regression-nightly": {
                 "task": "tasks.quality.gold_regression",
                 "schedule": crontab(hour=21, minute=30),
+                "options": {"queue": "nlp"},
+            },
+            # 15-min postfix keeps NEW articles auto-clean
+            "quality-postfix-every-15-min": {
+                "task": "tasks.quality.postfix",
+                "schedule": timedelta(minutes=15),
+                "kwargs": {"lookback_hours": 1},
+                "options": {"queue": "nlp"},
+            },
+            # Daily new-vs-baseline comparison — 22:00 UTC = 03:30 IST
+            "quality-compare-daily": {
+                "task": "tasks.quality.compare",
+                "schedule": crontab(hour=22, minute=0),
+                "options": {"queue": "nlp"},
+            },
+            # Event-cluster importance refresh every 30 min
+            "cluster-importance-every-30-min": {
+                "task": "tasks.quality.cluster_importance",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "nlp"},
+            },
+            # D13: reset orphaned substrate 'processing' claims every 30 min.
+            # Self-heals drains that were killed/crashed mid-batch (1-hour
+            # grace window means it never touches live work).
+            "reset-stale-substrate-processing-every-30-min": {
+                "task": "tasks.substrate.reset_stale_processing",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "nlp"},
+            },
+            # Entity-mention aggregator every 60 min
+            "entity-mentions-every-60-min": {
+                "task": "tasks.quality.entity_mentions",
+                "schedule": timedelta(minutes=60),
+                "options": {"queue": "nlp"},
+            },
+            # DISABLED 2026-05-29: the v1→v2 nightly repass (register +
+            # translation only) is now redundant — new articles go straight
+            # to v3 via the drain-tick task below, and v3 already produces
+            # register_style + english_translation + the full fact layer.
+            # Removing the "v2 step" so articles aren't diverted to a partial
+            # version. (The 23,971 legacy v1 articles are an accepted blind
+            # spot; re-extracting them would need a one-off claim-filter run.)
+            # "v3-upgrade-nightly": {
+            #     "task": "tasks.quality.v3_upgrade",
+            #     "schedule": crontab(hour=22, minute=30),
+            #     "options": {"queue": "nlp"},
+            # },
+            # D13 part-2: auto-fire v3 substrate extraction every 10 min so
+            # new articles reach v3 within minutes — no manual drains, no lag.
+            # limit=300 + 9-min soft limit guarantees ticks never overlap.
+            "drain-substrate-v3-every-10-min": {
+                "task": "tasks.substrate.drain_tick",
+                "schedule": timedelta(minutes=10),
+                "options": {"queue": "nlp"},
+            },
+            # Daily contradiction detection — 23:00 UTC = 04:30 IST
+            "contradictions-daily": {
+                "task": "tasks.refresh_contradictions",
+                "schedule": crontab(hour=23, minute=0),
                 "options": {"queue": "nlp"},
             },
         },

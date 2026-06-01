@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import re
 
-TEMPLATE_GUARD_VERSION = "tg-v2-2026-06-02"  # v2: + subject-template entity-key
+TEMPLATE_GUARD_VERSION = "tg-v3-2026-06-02"  # v3: entity-SET key (shared template entity can't mask the distinguisher)
 TRGM_MIN = 0.85
 SUBJ_MIN = 0.85   # subject-template guard: near-identical primary_subject threshold
 
@@ -41,6 +41,7 @@ def title_dates(title: str) -> frozenset[str]:
 
 
 def block_edge(*, same_source: bool, title_trgm: float, a_title: str, b_title: str,
+               a_entities=None, b_entities=None,
                a_lead_entity: str | None = None, b_lead_entity: str | None = None,
                subj_trgm: float | None = None,
                trgm_min: float = TRGM_MIN, subj_min: float = SUBJ_MIN) -> tuple[bool, str]:
@@ -58,15 +59,17 @@ def block_edge(*, same_source: bool, title_trgm: float, a_title: str, b_title: s
     """
     if not same_source:
         return False, "different source — not a template pair"
-    diff_entity = bool(a_lead_entity and b_lead_entity
-                       and a_lead_entity.strip().lower() != b_lead_entity.strip().lower())
+    a_set = {e.strip().lower() for e in (a_entities or ([a_lead_entity] if a_lead_entity else [])) if e}
+    b_set = {e.strip().lower() for e in (b_entities or ([b_lead_entity] if b_lead_entity else [])) if e}
+    a_only, b_only = a_set - b_set, b_set - a_set
+    diff_entity = bool(a_set and b_set and a_only and b_only)
     if title_trgm >= trgm_min:
         da, db = title_dates(a_title), title_dates(b_title)
         if da and db and da != db:
             return True, f"same-source title-template, different title date {sorted(da)} vs {sorted(db)}"
         if diff_entity:
-            return True, f"same-source title-template, different lead entity '{a_lead_entity}' vs '{b_lead_entity}'"
+            return True, f"same-source title-template, distinct entities {sorted(a_only)} vs {sorted(b_only)}"
     if subj_trgm is not None and subj_trgm >= subj_min and diff_entity:
         return True, (f"same-source subject-template (trgm_subj {subj_trgm:.2f}), "
-                      f"different lead entity '{a_lead_entity}' vs '{b_lead_entity}'")
+                      f"distinct entities {sorted(a_only)} vs {sorted(b_only)}")
     return False, "no differing instance-key — allow merge"

@@ -97,13 +97,14 @@ def main() -> int:
     # nodes: every V4 fixture article (window)
     cur.execute("""
         SELECT a.id, a.source_id, COALESCE(a.title,''), COALESCE(a.language_detected,''),
-          (SELECT lower(e->>'name') FROM jsonb_array_elements(COALESCE(a.entities_extracted,'[]'::jsonb)) e
-           WHERE e->>'name' IS NOT NULL
-           ORDER BY (e->>'prominence')::float DESC NULLS LAST, (e->>'confidence')::float DESC NULLS LAST
-           LIMIT 1) AS lead_entity
+          (SELECT array_agg(n) FROM (
+             SELECT lower(e->>'name') n FROM jsonb_array_elements(COALESCE(a.entities_extracted,'[]'::jsonb)) e
+             WHERE e->>'name' IS NOT NULL
+             ORDER BY (e->>'prominence')::float DESC NULLS LAST, (e->>'confidence')::float DESC NULLS LAST
+             LIMIT 3) t) AS lead_entities
         FROM analytics._fixture_ids f JOIN articles a ON a.id = f.id
     """)
-    nodes = {str(r[0]): {"source_id": r[1], "title": r[2], "lang": r[3], "lead": r[4]}
+    nodes = {str(r[0]): {"source_id": r[1], "title": r[2], "lang": r[3], "ents": r[4]}
              for r in cur.fetchall()}
     log.info("window: %d V4 fixture articles", len(nodes))
 
@@ -152,7 +153,7 @@ def main() -> int:
             same_source=(fr["same_source"] == 1),
             title_trgm=float(fr["trgm_title"]) if fr["trgm_title"] not in ("", None) else 0.0,
             a_title=nodes[a]["title"], b_title=nodes[b]["title"],
-            a_lead_entity=nodes[a]["lead"], b_lead_entity=nodes[b]["lead"],
+            a_entities=nodes[a]["ents"], b_entities=nodes[b]["ents"],
             subj_trgm=float(fr["trgm_subject"]) if fr["trgm_subject"] not in ("", None) else None,
         )
         if block:

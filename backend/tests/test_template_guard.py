@@ -114,6 +114,28 @@ def test_merges_subject_template_same_entity():
     assert block is False
 
 
+def test_blocks_entity_set_shared_template_entity():
+    # #6: same source, near-identical title, shared TEMPLATE entity ("UK Spring Holiday")
+    # masks the distinguisher (Wickes vs Lidl) -> entity-SET catches it (top-1 missed it)
+    block, _ = block_edge(same_source=True, title_trgm=0.90,
+                          a_title="UK Spring Holiday 2026: Wickes Supermarket hours",
+                          b_title="UK Spring Holiday 2026: Lidl Supermarket hours",
+                          a_entities=["uk spring holiday", "wickes"],
+                          b_entities=["uk spring holiday", "lidl"])
+    assert block is True
+
+
+def test_merges_entity_set_one_sided_extra():
+    # RETENTION: same event, near-identical title, one side has an EXTRA secondary entity
+    # (one-sided diff, NOT both-sided distinct) -> must MERGE (NER noise must not over-block)
+    block, _ = block_edge(same_source=True, title_trgm=0.90,
+                          a_title="Suvendu Adhikari sworn in as West Bengal CM",
+                          b_title="Suvendu Adhikari sworn in as West Bengal CM amid cheers",
+                          a_entities=["suvendu adhikari", "west bengal"],
+                          b_entities=["suvendu adhikari", "west bengal", "bjp"])
+    assert block is False
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     passed = 0

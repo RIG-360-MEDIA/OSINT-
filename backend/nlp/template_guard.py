@@ -22,8 +22,9 @@ from __future__ import annotations
 
 import re
 
-TEMPLATE_GUARD_VERSION = "tg-v1-2026-06-02"
+TEMPLATE_GUARD_VERSION = "tg-v2-2026-06-02"  # v2: + subject-template entity-key
 TRGM_MIN = 0.85
+SUBJ_MIN = 0.85   # subject-template guard: near-identical primary_subject threshold
 
 _MONTHS = "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec"
 # English month+day  OR  language-agnostic numeric DD-MM(-YYYY) / DD/MM (tolerates stray spaces).
@@ -41,20 +42,31 @@ def title_dates(title: str) -> frozenset[str]:
 
 def block_edge(*, same_source: bool, title_trgm: float, a_title: str, b_title: str,
                a_lead_entity: str | None = None, b_lead_entity: str | None = None,
-               trgm_min: float = TRGM_MIN) -> tuple[bool, str]:
+               subj_trgm: float | None = None,
+               trgm_min: float = TRGM_MIN, subj_min: float = SUBJ_MIN) -> tuple[bool, str]:
     """Decide whether to BLOCK an edge between two articles (template-instance guard).
 
-    Returns (block, reason). block=True  -> do NOT create the edge (different instance of
-    the same recurring template). block=False -> the guard does not apply; let the scorer
-    decide. Numbers are intentionally NOT a parameter (positive-only signal lives elsewhere).
+    Same-source only. Two template forms, each requires a differing instance-key:
+      * TITLE-template (title_trgm >= trgm_min): different calendar DATE (trusted, ~91%)
+        OR different lead ENTITY.
+      * SUBJECT-template (subj_trgm >= subj_min): titles differ, but the primary_subject is
+        template-similar ("Q4 Results", "Memorial Day store hours") AND the lead ENTITY
+        differs (different company / store) -> different instance.
+    Never on entity-difference alone (the same-source + similarity conjunction gates it);
+    numbers are never consulted (positive-only signal lives elsewhere). block=False ->
+    guard does not apply; let the scorer decide.
     """
     if not same_source:
         return False, "different source — not a template pair"
-    if title_trgm < trgm_min:
-        return False, f"titles not near-identical (trgm {title_trgm:.2f} < {trgm_min})"
-    da, db = title_dates(a_title), title_dates(b_title)
-    if da and db and da != db:
-        return True, f"same-source template, different title date {sorted(da)} vs {sorted(db)}"
-    if a_lead_entity and b_lead_entity and a_lead_entity.strip().lower() != b_lead_entity.strip().lower():
-        return True, f"same-source template, different lead entity '{a_lead_entity}' vs '{b_lead_entity}'"
-    return False, "same template, no differing instance-key — allow merge"
+    diff_entity = bool(a_lead_entity and b_lead_entity
+                       and a_lead_entity.strip().lower() != b_lead_entity.strip().lower())
+    if title_trgm >= trgm_min:
+        da, db = title_dates(a_title), title_dates(b_title)
+        if da and db and da != db:
+            return True, f"same-source title-template, different title date {sorted(da)} vs {sorted(db)}"
+        if diff_entity:
+            return True, f"same-source title-template, different lead entity '{a_lead_entity}' vs '{b_lead_entity}'"
+    if subj_trgm is not None and subj_trgm >= subj_min and diff_entity:
+        return True, (f"same-source subject-template (trgm_subj {subj_trgm:.2f}), "
+                      f"different lead entity '{a_lead_entity}' vs '{b_lead_entity}'")
+    return False, "no differing instance-key — allow merge"

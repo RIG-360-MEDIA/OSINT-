@@ -76,6 +76,44 @@ def test_entity_key_requires_near_identical_title():
     assert block is False
 
 
+def test_blocks_same_source_q4_diff_company():
+    # mirrors the real fp084 false-merge: same source, "Q4 Results" template, different company
+    block, _ = block_edge(same_source=True, title_trgm=0.90,
+                          a_title="NTPC Green Energy Q4 Results: PAT declines 15%",
+                          b_title="Pine Labs Q4 Results: Co turns to black",
+                          a_lead_entity="NTPC Green Energy", b_lead_entity="Pine Labs")
+    assert block is True
+
+
+def test_merges_same_source_same_entity_evolving():
+    # RETENTION (over-block guard): same source + near-identical title + SAME lead entity
+    # (an evolving same-event story) -> entity-key must NOT fire -> MERGE
+    block, _ = block_edge(same_source=True, title_trgm=0.92,
+                          a_title="Suvendu Adhikari sworn in as West Bengal CM",
+                          b_title="Suvendu Adhikari takes oath as West Bengal CM",
+                          a_lead_entity="Suvendu Adhikari", b_lead_entity="Suvendu Adhikari")
+    assert block is False
+
+
+def test_blocks_subject_template_diff_entity():
+    # SUBJECT-template (titles NOT near-identical, template subject + different entity) —
+    # mirrors fp084/fp091: same source, "Q4 Results" subject, different company
+    block, _ = block_edge(same_source=True, title_trgm=0.30, subj_trgm=0.90,
+                          a_title="NTPC Green Energy Q4 Results: PAT declines 15%",
+                          b_title="Pine Labs Q4 Results: Co turns to black",
+                          a_lead_entity="NTPC Green Energy", b_lead_entity="Pine Labs")
+    assert block is True
+
+
+def test_merges_subject_template_same_entity():
+    # RETENTION: same source + template subject + SAME lead entity -> must MERGE (no over-block)
+    block, _ = block_edge(same_source=True, title_trgm=0.30, subj_trgm=0.90,
+                          a_title="Reliance Q4 Results: profit up 12%",
+                          b_title="Reliance Industries Q4: net profit rises",
+                          a_lead_entity="Reliance Industries", b_lead_entity="Reliance Industries")
+    assert block is False
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     passed = 0

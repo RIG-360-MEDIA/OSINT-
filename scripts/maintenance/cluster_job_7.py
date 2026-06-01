@@ -50,6 +50,7 @@ tg = _load(os.environ.get("TG_PATH", "/tmp/template_guard.py"), "template_guard"
 CAND_COS = float(os.environ.get("CAND_COS", "0.45"))
 OUT = os.environ.get("OUT", "/tmp/clustering.csv")
 FIT_REPORT = os.environ.get("FIT_REPORT", "/tmp/edge-fit.json")
+THETA_OVERRIDE = float(os.environ["THETA"]) if os.environ.get("THETA") else None  # sweep: global theta_high
 INDIC = {"te", "hi", "kn", "bn", "ml", "ta", "mr", "gu", "pa", "or", "ne", "as"}
 FALLBACK = {"indic-indic", "indic-other", "other-other"}  # degenerate / insufficient -> en-en
 
@@ -81,7 +82,7 @@ def score_pair(feat: dict, regs: dict, regime: str) -> tuple[float, float]:
         mean = sc["mean"].get(f, 0.0)
         std = sc["std"].get(f, 1.0) or 1.0
         z += float(wi) * ((x - mean) / std)
-    return 1.0 / (1.0 + math.exp(-z)), float(thi)
+    return 1.0 / (1.0 + math.exp(-z)), (THETA_OVERRIDE if THETA_OVERRIDE is not None else float(thi))
 
 
 def main() -> int:
@@ -95,10 +96,15 @@ def main() -> int:
 
     # nodes: every V4 fixture article (window)
     cur.execute("""
-        SELECT a.id, a.source_id, COALESCE(a.title,''), COALESCE(a.language_detected,'')
+        SELECT a.id, a.source_id, COALESCE(a.title,''), COALESCE(a.language_detected,''),
+          (SELECT lower(e->>'name') FROM jsonb_array_elements(COALESCE(a.entities_extracted,'[]'::jsonb)) e
+           WHERE e->>'name' IS NOT NULL
+           ORDER BY (e->>'prominence')::float DESC NULLS LAST, (e->>'confidence')::float DESC NULLS LAST
+           LIMIT 1) AS lead_entity
         FROM analytics._fixture_ids f JOIN articles a ON a.id = f.id
     """)
-    nodes = {str(r[0]): {"source_id": r[1], "title": r[2], "lang": r[3]} for r in cur.fetchall()}
+    nodes = {str(r[0]): {"source_id": r[1], "title": r[2], "lang": r[3], "lead": r[4]}
+             for r in cur.fetchall()}
     log.info("window: %d V4 fixture articles", len(nodes))
 
     # candidate-gen: V4 cosine >= CAND_COS among the fixture window (label='' for the SSOT SQL)
@@ -146,6 +152,8 @@ def main() -> int:
             same_source=(fr["same_source"] == 1),
             title_trgm=float(fr["trgm_title"]) if fr["trgm_title"] not in ("", None) else 0.0,
             a_title=nodes[a]["title"], b_title=nodes[b]["title"],
+            a_lead_entity=nodes[a]["lead"], b_lead_entity=nodes[b]["lead"],
+            subj_trgm=float(fr["trgm_subject"]) if fr["trgm_subject"] not in ("", None) else None,
         )
         if block:
             blocked += 1

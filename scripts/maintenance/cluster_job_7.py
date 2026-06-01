@@ -51,6 +51,8 @@ CAND_COS = float(os.environ.get("CAND_COS", "0.45"))
 OUT = os.environ.get("OUT", "/tmp/clustering.csv")
 FIT_REPORT = os.environ.get("FIT_REPORT", "/tmp/edge-fit.json")
 THETA_OVERRIDE = float(os.environ["THETA"]) if os.environ.get("THETA") else None  # sweep: global theta_high
+WINDOW_DAYS = os.environ.get("WINDOW_DAYS")     # scale test: cluster V4 articles from the last N days (else fixtures)
+CAND_K = int(os.environ.get("CAND_K", "30"))    # ANN top-K neighbours per article (scale candidate-gen)
 INDIC = {"te", "hi", "kn", "bn", "ml", "ta", "mr", "gu", "pa", "or", "ne", "as"}
 FALLBACK = {"indic-indic", "indic-other", "other-other"}  # degenerate / insufficient -> en-en
 
@@ -94,7 +96,17 @@ def main() -> int:
     conn = psycopg2.connect(dsn)
     cur = conn.cursor()
 
-    # nodes: every V4 fixture article (window)
+    # window: fixtures (default, locked v1.1) OR a recent V4 date-window (scale test)
+    cur.execute("DROP TABLE IF EXISTS analytics._win")
+    if WINDOW_DAYS:
+        cur.execute("CREATE TABLE analytics._win AS SELECT id FROM articles "
+                    "WHERE embedding_revision='v4-tr-title-1024' "
+                    "AND collected_at > now() - (%s || ' days')::interval", (WINDOW_DAYS,))
+    else:
+        cur.execute("CREATE TABLE analytics._win AS SELECT id FROM analytics._fixture_ids")
+    cur.execute("CREATE INDEX ON analytics._win(id)")
+    conn.commit()
+
     cur.execute("""
         SELECT a.id, a.source_id, COALESCE(a.title,''), COALESCE(a.language_detected,''),
           (SELECT array_agg(n) FROM (
@@ -102,22 +114,41 @@ def main() -> int:
              WHERE e->>'name' IS NOT NULL
              ORDER BY (e->>'prominence')::float DESC NULLS LAST, (e->>'confidence')::float DESC NULLS LAST
              LIMIT 3) t) AS lead_entities
-        FROM analytics._fixture_ids f JOIN articles a ON a.id = f.id
+        FROM analytics._win f JOIN articles a ON a.id = f.id
     """)
     nodes = {str(r[0]): {"source_id": r[1], "title": r[2], "lang": r[3], "ents": r[4]}
              for r in cur.fetchall()}
-    log.info("window: %d V4 fixture articles", len(nodes))
+    log.info("window: %d V4 articles (mode=%s, K=%s)", len(nodes),
+             "ANN" if WINDOW_DAYS else "all-pairs", CAND_K)
 
-    # candidate-gen: V4 cosine >= CAND_COS among the fixture window (label='' for the SSOT SQL)
-    cur.execute("""
-        DROP TABLE IF EXISTS analytics._cand_pairs;
-        CREATE TABLE analytics._cand_pairs AS
-        SELECT a.id AS a_id, b.id AS b_id, ''::text AS label
-        FROM (SELECT ar.id, ar.labse_embedding FROM analytics._fixture_ids f JOIN articles ar ON ar.id=f.id) a
-        JOIN (SELECT ar.id, ar.labse_embedding FROM analytics._fixture_ids f JOIN articles ar ON ar.id=f.id) b
-          ON a.id < b.id
-        WHERE (a.labse_embedding <=> b.labse_embedding) < %s;
-    """, (1.0 - CAND_COS,))
+    cur.execute("DROP TABLE IF EXISTS analytics._cand_pairs")
+    if WINDOW_DAYS:
+        # ANN candidate-gen: per-article HNSW kNN over the corpus, neighbours filtered to the window.
+        cur.execute("SET hnsw.ef_search = %s", (max(CAND_K * 2, 80),))
+        cur.execute("""
+            CREATE TABLE analytics._cand_pairs AS
+            SELECT DISTINCT least(a.id, n.id) AS a_id, greatest(a.id, n.id) AS b_id, ''::text AS label
+            FROM analytics._win w
+            JOIN articles a ON a.id = w.id
+            CROSS JOIN LATERAL (
+              SELECT b.id, a.labse_embedding <=> b.labse_embedding AS d
+              FROM articles b
+              ORDER BY a.labse_embedding <=> b.labse_embedding
+              LIMIT %s
+            ) n
+            JOIN analytics._win wn ON wn.id = n.id
+            WHERE n.id <> a.id AND n.d < %s
+        """, (CAND_K, 1.0 - CAND_COS))
+    else:
+        # all-pairs cosine (small fixture window — the locked v1.1 path)
+        cur.execute("""
+            CREATE TABLE analytics._cand_pairs AS
+            SELECT a.id AS a_id, b.id AS b_id, ''::text AS label
+            FROM (SELECT ar.id, ar.labse_embedding FROM analytics._win f JOIN articles ar ON ar.id=f.id) a
+            JOIN (SELECT ar.id, ar.labse_embedding FROM analytics._win f JOIN articles ar ON ar.id=f.id) b
+              ON a.id < b.id
+            WHERE (a.labse_embedding <=> b.labse_embedding) < %s
+        """, (1.0 - CAND_COS,))
     conn.commit()
     cur.execute("SELECT count(*) FROM analytics._cand_pairs")
     n_cand = cur.fetchone()[0]
@@ -191,6 +222,16 @@ def main() -> int:
     log.info("clusters=%d  singletons=%d  biggest_cluster=%d", n_clusters, singletons, biggest)
     log.info("cluster-size histogram (size:count, top 12): %s",
              dict(sorted(sizes.items())[:12]))
+    blobs = []
+    for members in comp.values():
+        if len(members) >= 10:
+            srcs = len({nodes[m]["source_id"] for m in members})
+            ratio = len(members) / max(srcs, 1)
+            if ratio >= 5.0 or len(members) >= 100:
+                blobs.append((len(members), srcs, round(ratio, 1)))
+    blobs.sort(reverse=True)
+    log.info("BLOB CHECK: %d oversized comps (size>=10 & [ratio>=5 or size>=100]); top(size,src,ratio)=%s",
+             len(blobs), blobs[:8])
     log.info("wrote %s", OUT)
     conn.close()
     return 0

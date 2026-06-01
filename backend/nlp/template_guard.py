@@ -20,11 +20,12 @@ proven in the v2 mine). This module takes no number input by construction.
 """
 from __future__ import annotations
 
+import os
 import re
 
 TEMPLATE_GUARD_VERSION = "tg-v3-2026-06-02"  # v3: entity-SET key (shared template entity can't mask the distinguisher)
 TRGM_MIN = 0.85
-SUBJ_MIN = 0.85   # subject-template guard: near-identical primary_subject threshold
+SUBJ_MIN = float(os.environ.get("TG_SUBJ_MIN", "0.85"))  # subject-template threshold (env-tunable for the knee sweep)
 
 _MONTHS = "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec"
 # English month+day  OR  language-agnostic numeric DD-MM(-YYYY) / DD/MM (tolerates stray spaces).

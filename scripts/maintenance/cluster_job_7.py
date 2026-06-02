@@ -94,6 +94,8 @@ def main() -> int:
     regs = json.load(open(FIT_REPORT))["regimes"]
     log.info("loaded fit regimes: %s (CAND_COS=%.2f, gray->no-edge, no judge)",
              list(regs.keys()), CAND_COS)
+    log.info("config: THETA=%s LEIDEN=%s RESOLUTION=%s R_OVERSIZE=%s WINDOW_DAYS=%s CAND_K=%s",
+             THETA_OVERRIDE, LEIDEN_ON, RESOLUTION, R_OVERSIZE, WINDOW_DAYS, CAND_K)
     dsn = (os.environ.get("AB_DSN") or os.environ.get("DATABASE_URL_SYNC")
            or os.environ.get("DATABASE_URL"))
     conn = psycopg2.connect(dsn)

@@ -119,31 +119,50 @@ def structured_sql(staging_table: str) -> str:
     """
 
 
+def row_to_feature(cols: list[str], raw) -> dict:
+    """One (cursor.description cols, raw row) -> feature dict. Extracted as the single
+    per-row core shared by rows_to_features (batch) and iter_features (streaming), so
+    both paths emit byte-identical dicts — no train/serve and no batch/stream skew."""
+    r = dict(zip(cols, raw))
+    return {
+        "a_id": r["a_id"], "b_id": r["b_id"], "label": r["label"],
+        "a_language": r["a_language"] or "", "b_language": r["b_language"] or "",
+        "trgm_subject": _num(r["trgm_subject"]), "trgm_title": _num(r["trgm_title"]),
+        "shared_actors": r["shared_actors"] or 0,
+        "shared_speakers": r["shared_speakers"] or 0,
+        "shared_locations": r["shared_locations"] or 0,
+        "shared_primary_loc": _b(r["shared_primary_loc"]),
+        "idf_loc_score": _num(r["idf_loc_score"]),
+        "canonical_url_match": _b(r["canonical_url_match"]),
+        "event_date_match": _b(r["event_date_match"]),
+        "length_ratio": _num(r["length_ratio"]),
+        "time_diff_hours": _num(r["time_diff_hours"]),
+        "same_source": _b(r["same_source"]),
+        "shared_numbers": shared_numbers(r["a_numtext"], r["b_numtext"]),
+    }
+
+
 def rows_to_features(cursor) -> list[dict]:
     """Run a cursor already executed on structured_sql(); fold in shared_numbers.
     Returns dicts keyed by FEATURE_HEADER (booleans as 0/1, label passthrough)."""
     cols = [d[0] for d in cursor.description]
-    out: list[dict] = []
-    for raw in cursor.fetchall():
-        r = dict(zip(cols, raw))
-        rec = {
-            "a_id": r["a_id"], "b_id": r["b_id"], "label": r["label"],
-            "a_language": r["a_language"] or "", "b_language": r["b_language"] or "",
-            "trgm_subject": _num(r["trgm_subject"]), "trgm_title": _num(r["trgm_title"]),
-            "shared_actors": r["shared_actors"] or 0,
-            "shared_speakers": r["shared_speakers"] or 0,
-            "shared_locations": r["shared_locations"] or 0,
-            "shared_primary_loc": _b(r["shared_primary_loc"]),
-            "idf_loc_score": _num(r["idf_loc_score"]),
-            "canonical_url_match": _b(r["canonical_url_match"]),
-            "event_date_match": _b(r["event_date_match"]),
-            "length_ratio": _num(r["length_ratio"]),
-            "time_diff_hours": _num(r["time_diff_hours"]),
-            "same_source": _b(r["same_source"]),
-            "shared_numbers": shared_numbers(r["a_numtext"], r["b_numtext"]),
-        }
-        out.append(rec)
-    return out
+    return [row_to_feature(cols, raw) for raw in cursor.fetchall()]
+
+
+def iter_features(cursor, batch: int = 20000):
+    """Streaming twin of rows_to_features: yields the SAME feature dicts one at a time,
+    fetching `batch` rows at a time so a large candidate set never fully materialises.
+    Pair with a server-side (named) psycopg2 cursor to also bound libpq's client buffer
+    — at whole-corpus scale (500K+ candidate pairs) fetchall() alone peaks multi-GiB."""
+    cols = None
+    while True:
+        chunk = cursor.fetchmany(batch)
+        if not chunk:
+            break
+        if cols is None:  # named (server-side) cursors populate .description only AFTER first fetch
+            cols = [d[0] for d in cursor.description]
+        for raw in chunk:
+            yield row_to_feature(cols, raw)
 
 
 def _b(v) -> int:

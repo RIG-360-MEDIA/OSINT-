@@ -159,9 +159,13 @@ def main() -> int:
     n_cand = cur.fetchone()[0]
     log.info("candidate pairs (cosine>=%.2f): %d", CAND_COS, n_cand)
 
-    # features via the SSOT extractor, unchanged
-    cur.execute(pf.structured_sql("analytics._cand_pairs"))
-    feats = pf.rows_to_features(cur)
+    # features via the SSOT extractor — STREAMED through a server-side (named) cursor so
+    # the candidate set (500K+ pairs at whole-corpus scale) never materialises in memory.
+    # Postgres streams in itersize batches; only ~20K feature dicts are live at a time.
+    # (fetchall here peaked ~11.6 GiB at 530K pairs — 0.4 GiB under the 12 GiB cgroup OOM.)
+    score_cur = conn.cursor(name="feat_stream")
+    score_cur.itersize = 20000
+    score_cur.execute(pf.structured_sql("analytics._cand_pairs"))
 
     # union-find over edges
     parent: dict[str, str] = {n: n for n in nodes}
@@ -181,7 +185,7 @@ def main() -> int:
 
     edges = blocked = gray_or_below = 0
     edge_list = []
-    for fr in feats:
+    for fr in pf.iter_features(score_cur, batch=20000):
         a, b = str(fr["a_id"]), str(fr["b_id"])
         if a not in nodes or b not in nodes:
             continue
@@ -203,6 +207,7 @@ def main() -> int:
             edges += 1
         else:
             gray_or_below += 1
+    score_cur.close()
     log.info("edges=%d  guard-blocked=%d  gray/below(no-edge)=%d", edges, blocked, gray_or_below)
 
     # connected components (CC = single-linkage stopgap) -> stable id = min member

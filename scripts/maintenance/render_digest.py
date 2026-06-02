@@ -123,7 +123,7 @@ def main() -> int:
         return "\n".join(out)
 
     L = []
-    L.append("# Latest-window clustering digest — 2026-06-02")
+    L.append(f"# {os.environ.get('TITLE', 'Latest-window clustering digest')} — 2026-06-02")
     L.append(f"**Config:** {CONFIG}. **Rendered, not re-clustered** — this is what the locked "
              "engine produced, for human judgement.\n")
     L.append("> **How to read this.** ~92% singletons is the **known recall-hobbled v1.1 setting** "
@@ -142,7 +142,7 @@ def main() -> int:
              f"({100.0*singletons/max(n_clusters,1):.1f}% of clusters)  ·  "
              f"**multi-article clusters:** {multi:,}")
     L.append(f"- **Oversized components split by Leiden (res=1.0):** {SPLIT_COUNT} "
-             "(914 Trump|Iran|petrol, 597 IPL, 131 APC, + 5 small) — from the run log")
+             "(article:source ratio >= 5; per-blob breakdown in the run log)")
     L.append("- **Language mix:** " + " · ".join(f"{l or '?'}={c:,}" for l, c in lang_mix))
 
     real_ms = sum(1 for r in rows if r["indep"] >= 3)

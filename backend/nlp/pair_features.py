@@ -124,6 +124,7 @@ def row_to_feature(cols: list[str], raw) -> dict:
     per-row core shared by rows_to_features (batch) and iter_features (streaming), so
     both paths emit byte-identical dicts — no train/serve and no batch/stream skew."""
     r = dict(zip(cols, raw))
+    _an, _bn = numbers_of(r["a_numtext"]), numbers_of(r["b_numtext"])
     return {
         "a_id": r["a_id"], "b_id": r["b_id"], "label": r["label"],
         "a_language": r["a_language"] or "", "b_language": r["b_language"] or "",
@@ -138,7 +139,11 @@ def row_to_feature(cols: list[str], raw) -> dict:
         "length_ratio": _num(r["length_ratio"]),
         "time_diff_hours": _num(r["time_diff_hours"]),
         "same_source": _b(r["same_source"]),
-        "shared_numbers": shared_numbers(r["a_numtext"], r["b_numtext"]),
+        "shared_numbers": len(_an & _bn),
+        # extra keys (NOT in FEATURE_HEADER -> ignored by scorer/training): for the
+        # cross-source template guard's "both sides have figures" condition.
+        "a_has_numbers": 1 if _an else 0,
+        "b_has_numbers": 1 if _bn else 0,
     }
 
 

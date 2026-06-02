@@ -14,7 +14,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, "/tmp")  # box run location
-from template_guard import block_edge  # noqa: E402
+from template_guard import block_cross_source_template, block_edge  # noqa: E402
 
 
 # ---- MUST BLOCK (v3 date-keyed template negatives) ----
@@ -133,6 +133,84 @@ def test_merges_entity_set_one_sided_extra():
                           b_title="Suvendu Adhikari sworn in as West Bengal CM amid cheers",
                           a_entities=["suvendu adhikari", "west bengal"],
                           b_entities=["suvendu adhikari", "west bengal", "bjp"])
+    assert block is False
+
+
+# ---- CROSS-SOURCE template veto (tg-v4 / block_cross_source_template), both ways ----
+# MUST BLOCK: structural match + both-sided distinct entities + divergent numbers + no anchor
+def test_xs_blocks_q4_diff_company():
+    block, _ = block_cross_source_template(subj_trgm=0.88, a_entities=["ntpc green energy"],
+        b_entities=["pine labs"], shared_numbers=0, a_has_numbers=True, b_has_numbers=True,
+        shared_locations=0)
+    assert block is True
+
+
+def test_xs_blocks_store_hours_diff_store():
+    block, _ = block_cross_source_template(subj_trgm=0.90, a_entities=["walmart"],
+        b_entities=["costco"], shared_numbers=0, a_has_numbers=True, b_has_numbers=True,
+        shared_locations=0)
+    assert block is True
+
+
+def test_xs_blocks_share_price_diff_stock():
+    block, _ = block_cross_source_template(subj_trgm=0.92, a_entities=["tech mahindra"],
+        b_entities=["hcl tech"], shared_numbers=0, a_has_numbers=True, b_has_numbers=True,
+        shared_locations=0)
+    assert block is True
+
+
+# MUST MERGE (retention): the conjunction must spare real multi-source events
+def test_xs_merges_psg_shared_location_anchor():
+    # different top angle but SHARED location anchor (Paris) -> real event, merge
+    block, _ = block_cross_source_template(subj_trgm=0.82, a_entities=["psg", "paris"],
+        b_entities=["arsenal", "paris"], shared_numbers=0, a_has_numbers=True,
+        b_has_numbers=True, shared_locations=1)
+    assert block is False
+
+
+def test_xs_merges_ebola_shared_anchor():
+    # both-sided distinct secondaries (who vs uganda) but shared Congo location -> merge
+    block, _ = block_cross_source_template(subj_trgm=0.85, a_entities=["ebola", "who"],
+        b_entities=["ebola", "uganda"], shared_numbers=0, a_has_numbers=True,
+        b_has_numbers=True, shared_locations=1)
+    assert block is False
+
+
+def test_xs_merges_china_mine_divergent_numbers_same_actor():
+    # THE key retention case: numbers diverge (82->90) but SAME actor -> must merge
+    block, _ = block_cross_source_template(subj_trgm=0.93, a_entities=["china"],
+        b_entities=["china"], shared_numbers=0, a_has_numbers=True, b_has_numbers=True,
+        shared_locations=0)
+    assert block is False
+
+
+def test_xs_merges_petrol_shared_entity():
+    block, _ = block_cross_source_template(subj_trgm=0.88, a_entities=["petrol", "india"],
+        b_entities=["petrol", "india"], shared_numbers=0, a_has_numbers=True,
+        b_has_numbers=True, shared_locations=0)
+    assert block is False
+
+
+def test_xs_numbers_divergence_alone_never_vetoes():
+    # same actor, divergent numbers, no anchor -> still MERGE (numbers-divergence insufficient)
+    block, _ = block_cross_source_template(subj_trgm=0.95, a_entities=["narendra modi"],
+        b_entities=["narendra modi"], shared_numbers=0, a_has_numbers=True,
+        b_has_numbers=True, shared_locations=0)
+    assert block is False
+
+
+def test_xs_requires_structural_similarity():
+    block, _ = block_cross_source_template(subj_trgm=0.40, a_entities=["ntpc"],
+        b_entities=["zydus"], shared_numbers=0, a_has_numbers=True, b_has_numbers=True,
+        shared_locations=0)
+    assert block is False
+
+
+def test_xs_requires_both_sides_have_numbers():
+    # one side has no figures -> not a different-instance signal -> merge
+    block, _ = block_cross_source_template(subj_trgm=0.90, a_entities=["ntpc"],
+        b_entities=["zydus"], shared_numbers=0, a_has_numbers=True, b_has_numbers=False,
+        shared_locations=0)
     assert block is False
 
 

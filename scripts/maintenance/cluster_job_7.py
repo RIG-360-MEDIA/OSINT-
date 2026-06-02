@@ -55,6 +55,7 @@ THETA_OVERRIDE = float(os.environ["THETA"]) if os.environ.get("THETA") else None
 WINDOW_DAYS = os.environ.get("WINDOW_DAYS")     # scale test: cluster V4 articles from the last N days (else fixtures)
 CAND_K = int(os.environ.get("CAND_K", "30"))    # ANN top-K neighbours per article (scale candidate-gen)
 LEIDEN_ON = os.environ.get("LEIDEN") == "1"             # v2 blob-splitter: Louvain on oversized comps only
+XS_GUARD = os.environ.get("XS_GUARD") == "1"            # v2 #1: cross-source template veto (tg-v4); off => v1.1
 R_OVERSIZE = float(os.environ.get("R_OVERSIZE", "5.0")) # article:source ratio trigger (validated at scale)
 RESOLUTION = float(os.environ.get("RESOLUTION", "1.0")) # Louvain resolution = granularity knob (higher -> finer)
 INDIC = {"te", "hi", "kn", "bn", "ml", "ta", "mr", "gu", "pa", "or", "ne", "as"}
@@ -95,8 +96,8 @@ def main() -> int:
     regs = json.load(open(FIT_REPORT))["regimes"]
     log.info("loaded fit regimes: %s (CAND_COS=%.2f, gray->no-edge, no judge)",
              list(regs.keys()), CAND_COS)
-    log.info("config: THETA=%s LEIDEN=%s RESOLUTION=%s R_OVERSIZE=%s WINDOW_DAYS=%s CAND_K=%s",
-             THETA_OVERRIDE, LEIDEN_ON, RESOLUTION, R_OVERSIZE, WINDOW_DAYS, CAND_K)
+    log.info("config: THETA=%s LEIDEN=%s RESOLUTION=%s R_OVERSIZE=%s WINDOW_DAYS=%s CAND_K=%s XS_GUARD=%s",
+             THETA_OVERRIDE, LEIDEN_ON, RESOLUTION, R_OVERSIZE, WINDOW_DAYS, CAND_K, XS_GUARD)
     dsn = (os.environ.get("AB_DSN") or os.environ.get("DATABASE_URL_SYNC")
            or os.environ.get("DATABASE_URL"))
     conn = psycopg2.connect(dsn)
@@ -184,23 +185,34 @@ def main() -> int:
         if ra != rb:
             parent[max(ra, rb)] = min(ra, rb)  # deterministic: smaller id wins
 
-    edges = blocked = gray_or_below = 0
+    edges = blocked = gray_or_below = xs_blocked = 0
     edge_list = []
     for fr in pf.iter_features(score_cur, batch=20000):
         a, b = str(fr["a_id"]), str(fr["b_id"])
         if a not in nodes or b not in nodes:
             continue
         regime = regime_of(fr["a_language"], fr["b_language"])
+        subj = float(fr["trgm_subject"]) if fr["trgm_subject"] not in ("", None) else None
         block, _ = tg.block_edge(
             same_source=(fr["same_source"] == 1),
             title_trgm=float(fr["trgm_title"]) if fr["trgm_title"] not in ("", None) else 0.0,
             a_title=nodes[a]["title"], b_title=nodes[b]["title"],
             a_entities=nodes[a]["ents"], b_entities=nodes[b]["ents"],
-            subj_trgm=float(fr["trgm_subject"]) if fr["trgm_subject"] not in ("", None) else None,
+            subj_trgm=subj,
         )
         if block:
             blocked += 1
             continue
+        if XS_GUARD:
+            xblock, _ = tg.block_cross_source_template(
+                subj_trgm=subj, a_entities=nodes[a]["ents"], b_entities=nodes[b]["ents"],
+                shared_numbers=int(float(fr["shared_numbers"])) if fr["shared_numbers"] not in ("", None) else 0,
+                a_has_numbers=bool(fr.get("a_has_numbers")), b_has_numbers=bool(fr.get("b_has_numbers")),
+                shared_locations=int(float(fr["shared_locations"])) if fr["shared_locations"] not in ("", None) else 0,
+            )
+            if xblock:
+                xs_blocked += 1
+                continue
         s, thi = score_pair(fr, regs, regime)
         if s >= thi:
             union(a, b)
@@ -209,7 +221,8 @@ def main() -> int:
         else:
             gray_or_below += 1
     score_cur.close()
-    log.info("edges=%d  guard-blocked=%d  gray/below(no-edge)=%d", edges, blocked, gray_or_below)
+    log.info("edges=%d  guard-blocked=%d  xs-template-blocked=%d  gray/below(no-edge)=%d",
+             edges, blocked, xs_blocked, gray_or_below)
     if EDGES_OUT:
         import csv as _csv
         with open(EDGES_OUT, "w", newline="") as _fh:

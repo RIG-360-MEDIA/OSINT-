@@ -23,9 +23,10 @@ from __future__ import annotations
 import os
 import re
 
-TEMPLATE_GUARD_VERSION = "tg-v3-2026-06-02"  # v3: entity-SET key (shared template entity can't mask the distinguisher)
+TEMPLATE_GUARD_VERSION = "tg-v4-2026-06-02"  # v4: + cross-source template veto; same-source block_edge unchanged
 TRGM_MIN = 0.85
 SUBJ_MIN = float(os.environ.get("TG_SUBJ_MIN", "0.85"))  # subject-template threshold (env-tunable for the knee sweep)
+T_STRUCT = float(os.environ.get("T_STRUCT", "0.75"))     # cross-source: structural (subject) near-identity threshold
 
 _MONTHS = "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec"
 # English month+day  OR  language-agnostic numeric DD-MM(-YYYY) / DD/MM (tolerates stray spaces).
@@ -74,3 +75,38 @@ def block_edge(*, same_source: bool, title_trgm: float, a_title: str, b_title: s
         return True, (f"same-source subject-template (trgm_subj {subj_trgm:.2f}), "
                       f"distinct entities {sorted(a_only)} vs {sorted(b_only)}")
     return False, "no differing instance-key — allow merge"
+
+
+def block_cross_source_template(*, subj_trgm, a_entities=None, b_entities=None,
+                                shared_numbers: int = 0,
+                                a_has_numbers: bool = False, b_has_numbers: bool = False,
+                                shared_locations: int = 0,
+                                t_struct: float = T_STRUCT) -> tuple[bool, str]:
+    """Cross-source template veto (v2 #1, spec cross-source-template-guard §2a).
+
+    Same SHAPE as block_edge's entity-key, but DROPS the same_source requirement and ADDS a
+    numbers-divergence condition — which is what makes it safe across outlets: two outlets on
+    the SAME event share numbers and/or a location anchor; two outlets on DIFFERENT template
+    instances (NTPC-Q4 vs Zydus-Q4, Walmart-hours vs Costco-hours) share neither. Blocks IFF
+    ALL hold:
+      * subject structurally near-identical   (subj_trgm >= t_struct), AND
+      * primary entities BOTH-SIDED DISTINCT   (different instance actor), AND
+      * numbers DIVERGE: both sides carry figures but share NONE, AND
+      * NO shared specific-location anchor      (real events share a place).
+
+    Retention (§3): numbers-divergence ALONE never vetoes — the entity-divergence AND
+    no-anchor conditions protect a real evolving event ("82->90 dead", same place/actor,
+    diverging numbers). Returns (block, reason); block=False -> let the scorer decide.
+    """
+    if subj_trgm is None or subj_trgm < t_struct:
+        return False, "subject not structurally near-identical — not a template pair"
+    a_set = {e.strip().lower() for e in (a_entities or []) if e}
+    b_set = {e.strip().lower() for e in (b_entities or []) if e}
+    if not (a_set and b_set and (a_set - b_set) and (b_set - a_set)):
+        return False, "entities not both-sided distinct (shared actor -> likely same event)"
+    if not (a_has_numbers and b_has_numbers and (shared_numbers or 0) == 0):
+        return False, "numbers not divergent (shared/absent figures -> not a template instance)"
+    if (shared_locations or 0) > 0:
+        return False, "shared location anchor -> likely same event, not a template"
+    return True, (f"cross-source template: structural match + distinct entities "
+                  f"{sorted(a_set - b_set)} vs {sorted(b_set - a_set)} + divergent numbers + no anchor")

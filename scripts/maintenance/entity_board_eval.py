@@ -4,7 +4,10 @@
 Same canonical labeled pairs, same locked edge-fit.json scorer (train==serve). Computes the
 board on:
   NEW entities  -> features via SSOT pair_features.structured_sql (live, re-backfilled)
-  OLD entities  -> features from analytics.pair_scores (pre-computed on old entities)
+  OLD entities  -> the SAME structured_sql, entity source swapped to the pre-backfill snapshot
+                   (entities_extracted_bak_20260602), live-fallback for articles not in it.
+Embeddings / numbers / trgm / dates are identical between the two runs, so the OLD<->NEW
+delta isolates EXACTLY the entity-backfill effect (the only thing the scorer-refit hinges on).
 Reports precision / must-link recall / false-merge, POOLED + PER-REGIME, OLD vs NEW.
 
 Sets (settled by analytics):
@@ -125,6 +128,13 @@ def main():
     conn.commit()
     print(f"labeled universe: {len(lab)} distinct pairs (pos={sum(1 for v in lab.values() if v=='pos')}, "
           f"neg={sum(1 for v in lab.values() if v=='neg')}, fm-tagged={len(fmset)})")
+    cur.execute("""SELECT count(*) FILTER (WHERE bak.id IS NOT NULL), count(*) FROM (
+                     SELECT a_id x FROM analytics._board_pairs
+                     UNION SELECT b_id FROM analytics._board_pairs) q
+                   LEFT JOIN entities_extracted_bak_20260602 bak ON bak.id = q.x""")
+    inbak, totart = cur.fetchone()
+    print(f"backup coverage: {inbak}/{totart} distinct articles in pre-backfill snapshot "
+          f"(the {totart-inbak} not in it use live = unchanged entities)")
 
     # NEW entities: structured_sql stream
     st = conn.cursor(name="bstream")
@@ -134,22 +144,25 @@ def main():
     npool, nreg, nfm, nseen = tally(new_rows, lab, fmset)
     st.close()
 
-    # OLD entities: full pair_scores row as the feature dict (robust to which columns exist)
-    ocur = conn.cursor()
-    ocur.execute("""SELECT ps.* FROM analytics.pair_scores ps JOIN analytics._board_pairs bp
-          ON (ps.a_id=bp.a_id AND ps.b_id=bp.b_id) OR (ps.a_id=bp.b_id AND ps.b_id=bp.a_id)""")
-    ocols = [d[0] for d in ocur.description]
-
-    def old_iter():
-        for row in ocur.fetchall():
-            d = dict(zip(ocols, row))
-            yield d["a_id"], d["b_id"], d.get("a_language"), d.get("b_language"), d
-
-    opool, oreg, ofm, oseen = tally(old_iter(), lab, fmset)
+    # OLD entities: SAME structured_sql + scorer + pairs, entity source swapped to the
+    # pre-backfill snapshot. coalesce(backup, live) so articles NOT re-backfilled fall back
+    # to their (unchanged) live entities. Everything else in the SQL is byte-identical to NEW.
+    OLD_A = "coalesce((SELECT entities_extracted FROM entities_extracted_bak_20260602 WHERE id=a.id), a.entities_extracted)"
+    OLD_B = "coalesce((SELECT entities_extracted FROM entities_extracted_bak_20260602 WHERE id=b.id), b.entities_extracted)"
+    sql_old = (pf.structured_sql("analytics._board_pairs")
+               .replace("a.entities_extracted", OLD_A)
+               .replace("b.entities_extracted", OLD_B))
+    ost = conn.cursor(name="ostream")
+    ost.itersize = 5000
+    ost.execute(sql_old)
+    old_rows = ((fr["a_id"], fr["b_id"], fr["a_language"], fr["b_language"], fr) for fr in pf.iter_features(ost, batch=5000))
+    opool, oreg, ofm, oseen = tally(old_rows, lab, fmset)
+    ost.close()
     cur.execute("DROP TABLE IF EXISTS analytics._board_pairs")
     conn.commit()
 
-    print(f"\nscored: NEW={nseen} pairs (live structured_sql), OLD={oseen} pairs (pair_scores coverage)")
+    print(f"\nscored: NEW={nseen} pairs (live entities), OLD={oseen} pairs (pre-backfill snapshot) "
+          f"— SAME pairs, SAME scorer, only entity source differs")
     for tag, pool, reg, fm in (("OLD", opool, oreg, ofm), ("NEW", npool, nreg, nfm)):
         p, r, tp, fp, pos, neg = board(pool)
         print(f"\n=== {tag} entities ===")

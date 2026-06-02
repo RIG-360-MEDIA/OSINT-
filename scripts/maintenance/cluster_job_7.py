@@ -53,6 +53,9 @@ EDGES_OUT = os.environ.get("EDGES_OUT")  # optional: dump scorer-high edges (a_i
 FIT_REPORT = os.environ.get("FIT_REPORT", "/tmp/edge-fit.json")
 THETA_OVERRIDE = float(os.environ["THETA"]) if os.environ.get("THETA") else None  # sweep: global theta_high
 WINDOW_DAYS = os.environ.get("WINDOW_DAYS")     # scale test: cluster V4 articles from the last N days (else fixtures)
+WINDOW_START = os.environ.get("WINDOW_START")   # OR an absolute [start,end) date window — frozen + reproducible A/B
+WINDOW_END = os.environ.get("WINDOW_END")
+WINDOWED = bool(WINDOW_DAYS or (WINDOW_START and WINDOW_END))  # ANN windowed mode (vs all-pairs fixtures)
 CAND_K = int(os.environ.get("CAND_K", "30"))    # ANN top-K neighbours per article (scale candidate-gen)
 LEIDEN_ON = os.environ.get("LEIDEN") == "1"             # v2 blob-splitter: Louvain on oversized comps only
 XS_GUARD = os.environ.get("XS_GUARD") == "1"            # v2 #1: cross-source template veto (tg-v4); off => v1.1
@@ -105,7 +108,12 @@ def main() -> int:
 
     # window: fixtures (default, locked v1.1) OR a recent V4 date-window (scale test)
     cur.execute("DROP TABLE IF EXISTS analytics._win")
-    if WINDOW_DAYS:
+    if WINDOW_START and WINDOW_END:
+        cur.execute("CREATE TABLE analytics._win AS SELECT id FROM articles "
+                    "WHERE embedding_revision='v4-tr-title-1024' "
+                    "AND collected_at >= %s::timestamptz AND collected_at < %s::timestamptz",
+                    (WINDOW_START, WINDOW_END))
+    elif WINDOW_DAYS:
         cur.execute("CREATE TABLE analytics._win AS SELECT id FROM articles "
                     "WHERE embedding_revision='v4-tr-title-1024' "
                     "AND collected_at > now() - (%s || ' days')::interval", (WINDOW_DAYS,))
@@ -126,10 +134,10 @@ def main() -> int:
     nodes = {str(r[0]): {"source_id": r[1], "title": r[2], "lang": r[3], "ents": r[4]}
              for r in cur.fetchall()}
     log.info("window: %d V4 articles (mode=%s, K=%s)", len(nodes),
-             "ANN" if WINDOW_DAYS else "all-pairs", CAND_K)
+             "ANN" if WINDOWED else "all-pairs", CAND_K)
 
     cur.execute("DROP TABLE IF EXISTS analytics._cand_pairs")
-    if WINDOW_DAYS:
+    if WINDOWED:
         # ANN candidate-gen: per-article HNSW kNN over the corpus, neighbours filtered to the window.
         cur.execute("SET hnsw.ef_search = %s", (max(CAND_K * 2, 80),))
         cur.execute("""

@@ -71,6 +71,7 @@ def tally(rows_iter, lab, fmset):
     pooled = defaultdict(lambda: {"e": 0, "n": 0})
     perreg = defaultdict(lambda: defaultdict(lambda: {"e": 0, "n": 0}))
     fmp = {"e": 0, "n": 0}
+    feat_acc = defaultdict(lambda: {"sa": 0, "sl": 0, "sa0": 0, "n": 0})  # (regime,label) -> feature sums
     seen = 0
     for a, b, al, bl, feat in rows_iter:
         fs = frozenset((str(a), str(b)))
@@ -84,11 +85,18 @@ def tally(rows_iter, lab, fmset):
         pooled[g]["n"] += 1
         perreg[rg][g]["e"] += e
         perreg[rg][g]["n"] += 1
+        sa = feat.get("shared_actors", 0) or 0
+        for key in ((rg, g), ("POOLED", g)):
+            d = feat_acc[key]
+            d["sa"] += sa
+            d["sl"] += feat.get("shared_locations", 0) or 0
+            d["sa0"] += 1 if sa == 0 else 0
+            d["n"] += 1
         if fs in fmset:
             fmp["e"] += e
             fmp["n"] += 1
         seen += 1
-    return pooled, perreg, fmp, seen
+    return pooled, perreg, fmp, feat_acc, seen
 
 
 def board(d):
@@ -141,7 +149,7 @@ def main():
     st.itersize = 5000
     st.execute(pf.structured_sql("analytics._board_pairs"))
     new_rows = ((fr["a_id"], fr["b_id"], fr["a_language"], fr["b_language"], fr) for fr in pf.iter_features(st, batch=5000))
-    npool, nreg, nfm, nseen = tally(new_rows, lab, fmset)
+    npool, nreg, nfm, nfeat, nseen = tally(new_rows, lab, fmset)
     st.close()
 
     # OLD entities: SAME structured_sql + scorer + pairs, entity source swapped to the
@@ -156,7 +164,7 @@ def main():
     ost.itersize = 5000
     ost.execute(sql_old)
     old_rows = ((fr["a_id"], fr["b_id"], fr["a_language"], fr["b_language"], fr) for fr in pf.iter_features(ost, batch=5000))
-    opool, oreg, ofm, oseen = tally(old_rows, lab, fmset)
+    opool, oreg, ofm, ofeat, oseen = tally(old_rows, lab, fmset)
     ost.close()
     cur.execute("DROP TABLE IF EXISTS analytics._board_pairs")
     conn.commit()
@@ -171,6 +179,17 @@ def main():
         for rg in sorted(reg):
             p, r, tp, fp, pos, neg = board(reg[rg])
             print(f"  {rg:13s} P={p:.3f} ({tp}/{tp+fp})  recall={r:.3f} ({tp}/{pos})  neg_edges={fp}/{neg}")
+
+    print("\n=== feature diagnostic: mean shared_actors / shared_locations, OLD -> NEW ===")
+    print("  (recall-loss smoking gun = shared_actors DROPS on 'pos'; FP-growth = RISES on 'neg')")
+    for rg, g in (("POOLED", "pos"), ("POOLED", "neg"), ("en-en", "pos"), ("en-en", "neg"),
+                  ("en-indic", "pos"), ("en-other", "pos"), ("other-other", "pos")):
+        o, nf = ofeat.get((rg, g)), nfeat.get((rg, g))
+        if not o or not nf:
+            continue
+        print(f"  {rg:11s} {g}: shared_actors {o['sa']/max(o['n'],1):.2f}->{nf['sa']/max(nf['n'],1):.2f}  "
+              f"shared_loc {o['sl']/max(o['n'],1):.2f}->{nf['sl']/max(nf['n'],1):.2f}  "
+              f"zero-actor {100*o['sa0']/max(o['n'],1):.0f}%->{100*nf['sa0']/max(nf['n'],1):.0f}%  n={nf['n']}")
     conn.close()
     return 0
 

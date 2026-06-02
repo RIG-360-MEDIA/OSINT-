@@ -49,6 +49,7 @@ tg = _load(os.environ.get("TG_PATH", "/tmp/template_guard.py"), "template_guard"
 
 CAND_COS = float(os.environ.get("CAND_COS", "0.45"))
 OUT = os.environ.get("OUT", "/tmp/clustering.csv")
+EDGES_OUT = os.environ.get("EDGES_OUT")  # optional: dump scorer-high edges (a_id,b_id,score) for the loader
 FIT_REPORT = os.environ.get("FIT_REPORT", "/tmp/edge-fit.json")
 THETA_OVERRIDE = float(os.environ["THETA"]) if os.environ.get("THETA") else None  # sweep: global theta_high
 WINDOW_DAYS = os.environ.get("WINDOW_DAYS")     # scale test: cluster V4 articles from the last N days (else fixtures)
@@ -209,6 +210,13 @@ def main() -> int:
             gray_or_below += 1
     score_cur.close()
     log.info("edges=%d  guard-blocked=%d  gray/below(no-edge)=%d", edges, blocked, gray_or_below)
+    if EDGES_OUT:
+        import csv as _csv
+        with open(EDGES_OUT, "w", newline="") as _fh:
+            _w = _csv.writer(_fh)
+            _w.writerow(["a_id", "b_id", "score"])
+            _w.writerows(edge_list)
+        log.info("wrote %d scorer-high edges -> %s", len(edge_list), EDGES_OUT)
 
     # connected components (CC = single-linkage stopgap) -> stable id = min member
     comp = defaultdict(list)

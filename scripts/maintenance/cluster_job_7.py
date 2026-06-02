@@ -53,6 +53,9 @@ FIT_REPORT = os.environ.get("FIT_REPORT", "/tmp/edge-fit.json")
 THETA_OVERRIDE = float(os.environ["THETA"]) if os.environ.get("THETA") else None  # sweep: global theta_high
 WINDOW_DAYS = os.environ.get("WINDOW_DAYS")     # scale test: cluster V4 articles from the last N days (else fixtures)
 CAND_K = int(os.environ.get("CAND_K", "30"))    # ANN top-K neighbours per article (scale candidate-gen)
+LEIDEN_ON = os.environ.get("LEIDEN") == "1"             # v2 blob-splitter: Louvain on oversized comps only
+R_OVERSIZE = float(os.environ.get("R_OVERSIZE", "5.0")) # article:source ratio trigger (validated at scale)
+RESOLUTION = float(os.environ.get("RESOLUTION", "1.0")) # Louvain resolution = granularity knob (higher -> finer)
 INDIC = {"te", "hi", "kn", "bn", "ml", "ta", "mr", "gu", "pa", "or", "ne", "as"}
 FALLBACK = {"indic-indic", "indic-other", "other-other"}  # degenerate / insufficient -> en-en
 
@@ -175,6 +178,7 @@ def main() -> int:
             parent[max(ra, rb)] = min(ra, rb)  # deterministic: smaller id wins
 
     edges = blocked = gray_or_below = 0
+    edge_list = []
     for fr in feats:
         a, b = str(fr["a_id"]), str(fr["b_id"])
         if a not in nodes or b not in nodes:
@@ -193,16 +197,55 @@ def main() -> int:
         s, thi = score_pair(fr, regs, regime)
         if s >= thi:
             union(a, b)
+            edge_list.append((a, b, s))
             edges += 1
         else:
             gray_or_below += 1
     log.info("edges=%d  guard-blocked=%d  gray/below(no-edge)=%d", edges, blocked, gray_or_below)
 
-    # stable cluster ids = min member id per component
+    # connected components (CC = single-linkage stopgap) -> stable id = min member
     comp = defaultdict(list)
     for n in nodes:
         comp[find(n)].append(n)
     cluster_of = {n: root for root, members in comp.items() for n in members}
+
+    # ---- Leiden/Louvain on OVERSIZED components ONLY (ratio >= R_OVERSIZE) ----
+    # Splits single-linkage over-merges into sub-communities; components under the
+    # trigger are left exactly as CC found them (the high-precision majority).
+    if LEIDEN_ON:
+        import networkx as nx
+        comp_edges = defaultdict(list)
+        for a, b, s in edge_list:
+            comp_edges[find(a)].append((a, b, s))
+        split_log = []
+        for root, members in comp.items():
+            srcs = len({nodes[m]["source_id"] for m in members})
+            ratio = len(members) / max(srcs, 1)
+            if len(members) < 10 or ratio < R_OVERSIZE:
+                continue  # not oversized -> untouched
+            g = nx.Graph()
+            g.add_nodes_from(members)
+            for a, b, s in comp_edges[root]:
+                g.add_edge(a, b, weight=s)
+            try:
+                communities = nx.community.louvain_communities(
+                    g, weight="weight", resolution=RESOLUTION, seed=42)
+            except Exception:  # noqa: BLE001 - older networkx fallback
+                communities = list(nx.community.greedy_modularity_communities(g, weight="weight"))
+            for community in communities:
+                cid = min(community)
+                for m in community:
+                    cluster_of[m] = cid
+            split_log.append((len(members), srcs, round(ratio, 1), len(communities),
+                              sorted((len(c) for c in communities), reverse=True)[:6]))
+        split_log.sort(reverse=True)
+        log.info("LEIDEN res=%s ratio>=%s: split %d oversized comps; (origN,src,ratio,->k,subsizes)=%s",
+                 RESOLUTION, R_OVERSIZE, len(split_log), split_log[:8])
+
+    # final clusters (post-Leiden) for output + §5
+    final = defaultdict(list)
+    for n in nodes:
+        final[cluster_of[n]].append(n)
 
     with open(OUT, "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
@@ -210,20 +253,17 @@ def main() -> int:
         for n in nodes:
             w.writerow([n, cluster_of[n], nodes[n]["source_id"] or ""])
 
-    # ---- §5 self-checks ----
-    sizes = Counter(len(m) for m in comp.values())
-    n_clusters = len(comp)
-    singletons = sizes.get(1, 0)
-    biggest = max((len(m) for m in comp.values()), default=0)
+    # ---- §5 self-checks (on FINAL clusters) ----
+    sizes = Counter(len(m) for m in final.values())
     missing_src = sum(1 for n in nodes if not nodes[n]["source_id"])
     log.info("=== §5 CSV self-check ===")
     log.info("rows=%d  articles=%d  missing_id=0  source_id_null=%d  coverage=%d/%d=%.1f%%",
              len(nodes), len(nodes), missing_src, len(nodes), len(nodes), 100.0)
-    log.info("clusters=%d  singletons=%d  biggest_cluster=%d", n_clusters, singletons, biggest)
-    log.info("cluster-size histogram (size:count, top 12): %s",
-             dict(sorted(sizes.items())[:12]))
+    log.info("clusters=%d  singletons=%d  biggest_cluster=%d",
+             len(final), sizes.get(1, 0), max((len(m) for m in final.values()), default=0))
+    log.info("cluster-size histogram (size:count, top 12): %s", dict(sorted(sizes.items())[:12]))
     blobs = []
-    for members in comp.values():
+    for members in final.values():
         if len(members) >= 10:
             srcs = len({nodes[m]["source_id"] for m in members})
             ratio = len(members) / max(srcs, 1)

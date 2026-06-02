@@ -7,8 +7,13 @@ V4-only, theta=0.90, CAND_COS=0.80, tg-v3 guards, Leiden res=1.0) and emits a ma
 digest a human can read to answer "are these stories good?" — face validity, grouping
 correctness, granularity, cross-lingual, headline quality.
 
-Output: docs/plans/latest-window-digest-2026-06-02.md (via OUT). Clusters ranked by
-INDEPENDENT-SOURCE count (source diversity = real significance, not raw size).
+Wire-dedup (Problem 1): syndicated copies inflate the source count — a PTI/Reuters wire
+carried by 70 outlets is ONE piece of reporting, not 70. We collapse reprints by
+near-identical BODY (lead_text_original prefix; headline fallback) into "unique reports",
+then rank by INDEPENDENT SOURCES = min(distinct outlets, unique reports): syndication
+can't inflate it, and one outlet writing 5 angles can't either.
+
+Output: docs/plans/latest-window-digest-2026-06-02.md (via OUT).
 
 Env: AB_DSN/DATABASE_URL_SYNC · CSV (/tmp/scale_leiden.csv) · OUT (/tmp/digest.md)
      SPLIT_COUNT (oversized comps split by Leiden, from the run log) · CONFIG (header line)
@@ -17,6 +22,7 @@ from __future__ import annotations
 
 import os
 import random
+import re
 import sys
 from collections import Counter, defaultdict
 
@@ -29,22 +35,30 @@ CONFIG = os.environ.get("CONFIG", "last 10d, V4-only, CAND_COS=0.80, theta=0.90,
 random.seed(42)
 
 
-def rep_headline(titles):  # titles: list of (title, lang)
+def rep_headline(arts):  # arts: list of (title, lang, lead)
     # median-length English title in a clean band -> avoids verbose clickbait (the longest)
     # and truncated stubs (the shortest); falls back to any title.
-    en = sorted([t for t, l in titles if l == "en" and t and 25 <= len(t) <= 95], key=len)
+    en = sorted([t for t, l, _ in arts if l == "en" and t and 25 <= len(t) <= 95], key=len)
     if not en:
-        en = sorted([t for t, l in titles if t], key=len)
+        en = sorted([t for t, _, _ in arts if t], key=len)
     return en[len(en) // 2][:96] if en else "(no title)"
 
 
-def member_titles(titles):
-    en = [t for t, l in titles if l == "en" and t]
-    non_en = [(t, l) for t, l in titles if l != "en" and t]
+def member_titles(arts):
+    en = [t for t, l, _ in arts if l == "en" and t]
+    non_en = [(t, l) for t, l, _ in arts if l != "en" and t]
     out = [t[:60] for t in en[:3]]
     if non_en:
         out.append(non_en[0][0][:56] + f"  [{non_en[0][1]}]")
     return out[:4]
+
+
+def reprint_key(title, lead):
+    # wire-dedup key: same BODY (lead_text_original) => one report, even if the outlet
+    # tweaked the headline. Short/missing body falls back to the normalised headline.
+    lead = (lead or "").strip()
+    base = lead if len(lead) >= 60 else (title or "")
+    return " ".join(re.sub(r"[^a-z0-9 ]", " ", base.lower()).split())[:120]
 
 
 def main() -> int:
@@ -66,17 +80,19 @@ def main() -> int:
                 "GROUP BY 1 ORDER BY 2 DESC NULLS LAST LIMIT 8")
     lang_mix = cur.fetchall()
 
-    # multi-article cluster member rows
+    # multi-article cluster member rows (+ body prefix for wire-dedup)
     cur.execute("""
-        SELECT s.cluster_id, s.source_id, a.title, a.language_detected, a.geo_primary
+        SELECT s.cluster_id, s.source_id, a.title, a.language_detected,
+               left(a.lead_text_original, 240) AS lead, a.geo_primary
         FROM _dg s JOIN articles a ON a.id = s.article_id
         WHERE s.cluster_id IN (SELECT cluster_id FROM _dg GROUP BY 1 HAVING count(*) > 1)
     """)
-    cl = defaultdict(lambda: {"src": set(), "titles": [], "langs": set(), "geos": Counter()})
-    for cid, src, title, lang, geo in cur.fetchall():
+    cl = defaultdict(lambda: {"src": set(), "arts": [], "keys": [], "langs": set(), "geos": Counter()})
+    for cid, src, title, lang, lead, geo in cur.fetchall():
         d = cl[str(cid)]
         d["src"].add(str(src))
-        d["titles"].append((title, lang or "?"))
+        d["arts"].append((title, lang or "?", lead))
+        d["keys"].append(reprint_key(title, lead))
         if lang:
             d["langs"].add(lang)
         if geo:
@@ -85,18 +101,23 @@ def main() -> int:
 
     rows = []
     for cid, d in cl.items():
-        n = len(d["titles"])
+        n = len(d["arts"])
         srcn = len(d["src"])
+        uniq = len(set(d["keys"]))           # distinct reports after wire-dedup
+        indep = min(srcn, uniq)              # independent sources: syndication-proof, angle-proof
         region = d["geos"].most_common(1)[0][0] if d["geos"] else "—"
-        rows.append({"cid": cid, "n": n, "src": srcn, "langs": sorted(d["langs"]),
-                     "region": region, "ratio": round(n / max(srcn, 1), 1),
-                     "rep": rep_headline(d["titles"]), "members": member_titles(d["titles"])})
+        rows.append({"cid": cid, "n": n, "src": srcn, "uniq": uniq, "indep": indep,
+                     "langs": sorted(d["langs"]), "region": region,
+                     "ratio": round(n / max(srcn, 1), 1),
+                     "rep": rep_headline(d["arts"]), "members": member_titles(d["arts"])})
 
-    by_src = sorted(rows, key=lambda r: (r["src"], r["n"]), reverse=True)
+    by_src = sorted(rows, key=lambda r: (r["indep"], r["uniq"], r["n"]), reverse=True)
 
     def block(r, i):
+        rp = r["n"] - r["uniq"]
         out = [f"**{i}. {r['rep']}**",
-               f"  · {r['n']} articles · **{r['src']} independent sources** · "
+               f"  · **{r['indep']} independent sources** · {r['uniq']} unique reports · "
+               f"{r['src']} outlets · {r['n']} articles ({rp} reprint{'s' if rp != 1 else ''}) · "
                f"{'/'.join(r['langs']) or '?'} · region: {r['region']}"]
         out += [f"  · _{m}_" for m in r["members"]]
         return "\n".join(out)
@@ -108,8 +129,9 @@ def main() -> int:
     L.append("> **How to read this.** ~92% singletons is the **known recall-hobbled v1.1 setting** "
              "(gray->no-edge, no live judge) — we are judging *the clusters that formed*, not "
              "\"why isn't everything grouped.\" **\"Story\" = cluster + representative headline**, "
-             "not generated prose (that's Phase 4). Clusters are ranked by **independent-source "
-             "count** (cross-source corroboration = real significance), not raw size.\n")
+             "not generated prose (that's Phase 4). Clusters are ranked by **independent sources** "
+             "= min(distinct outlets, unique reports after wire-dedup) — a wire syndicated across "
+             "70 outlets counts once, and one outlet writing 5 angles counts once.\n")
     L.append("> **What to judge:** (1) face validity — are the big clusters the period's big "
              "stories? (2) grouping correctness — is each cluster one event? (3) granularity — does "
              "event-level feel right or too fine? (4) cross-lingual — do te/hi articles land right? "
@@ -122,10 +144,22 @@ def main() -> int:
     L.append(f"- **Oversized components split by Leiden (res=1.0):** {SPLIT_COUNT} "
              "(914 Trump|Iran|petrol, 597 IPL, 131 APC, + 5 small) — from the run log")
     L.append("- **Language mix:** " + " · ".join(f"{l or '?'}={c:,}" for l, c in lang_mix))
-    L.append("- _independent sources = distinct source_id (each outlet once); explicit wire-dedup "
-             "was not a separate step in this run, so this is the proxy._\n")
 
-    L.append(f"## Top 50 multi-article clusters (by independent-source count)\n")
+    real_ms = sum(1 for r in rows if r["indep"] >= 3)
+    ms5 = sum(1 for r in rows if r["indep"] >= 5)
+    ms10 = sum(1 for r in rows if r["indep"] >= 10)
+    tot_art = sum(r["n"] for r in rows)
+    tot_uniq = sum(r["uniq"] for r in rows)
+    L.append(f"- **Wire-dedup (Problem 1):** multi-article clusters hold {tot_art:,} articles but "
+             f"only {tot_uniq:,} unique reports — {100.0*(tot_art-tot_uniq)/max(tot_art,1):.0f}% "
+             "were reprints / syndication (body-level)")
+    L.append(f"- **Real multi-source stories (>=3 independent sources):** {real_ms:,} of {multi:,} "
+             f"multi-article clusters ({100.0*real_ms/max(multi,1):.0f}%)  ·  >=5 indep: {ms5:,}"
+             f"  ·  >=10 indep: {ms10:,}")
+    L.append("- _independent sources = min(distinct outlets, unique bodies); the outlets-vs-unique "
+             "gap is syndication; unique reprint key = lead_text_original prefix, headline fallback._\n")
+
+    L.append("## Top 50 multi-article clusters (by independent sources, wire-dedup)\n")
     for i, r in enumerate(by_src[:50], 1):
         L.append(block(r, i))
         L.append("")
@@ -135,7 +169,7 @@ def main() -> int:
     L.append("_If these are coherent single stories from few outlets, fine; if chained, Leiden left "
              "something._\n")
     for i, r in enumerate(sorted(blobs, key=lambda r: r["ratio"], reverse=True)[:20], 1):
-        L.append(f"{i}. ratio **{r['ratio']}** ({r['n']}a/{r['src']}s) — {r['rep']}")
+        L.append(f"{i}. ratio **{r['ratio']}** ({r['n']}a/{r['src']}s, {r['uniq']} unique) — {r['rep']}")
         L.append(f"   _{' · '.join(r['members'][:3])}_")
     L.append("")
 
@@ -148,7 +182,7 @@ def main() -> int:
     with open(OUT, "w", encoding="utf-8") as fh:
         fh.write("\n".join(L))
     sys.stderr.write(f"wrote {OUT}: {n_articles} articles, {multi} multi-clusters, "
-                     f"{len(blobs)} ratio>=4, top by {by_src[0]['src']} sources\n")
+                     f"{real_ms} real multi-source (>=3 indep), top indep={by_src[0]['indep']}\n")
     return 0
 
 

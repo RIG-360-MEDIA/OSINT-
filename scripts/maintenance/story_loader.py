@@ -67,6 +67,26 @@ TCOH_CAP = int(os.environ.get("TCOH_CAP", "1000"))  # tcoh-spare void above this
 SIZE_CORE_LOW = float(os.environ.get("SIZE_CORE_LOW", "0.25"))         # C_low — entity-core ceiling
 SIZE_CORE_NMID = int(os.environ.get("SIZE_CORE_NMID", "15"))          # N_mid — size floor (tiny real stories spared)
 SIZE_CORE_VERN_ZERO = float(os.environ.get("SIZE_CORE_VERN_ZERO", "0.05"))  # vernacular core~0 carve-out cutoff
+# F-3 (2026-06-03): event-location country name -> ISO-3166-1 alpha-2, for subject_country derived
+# from article_locations (NOT source_country, which is coverage-biased: the cruise read IN because
+# Indian outlets covered it). Built + verified off the 68 distinct dominant event-countries across
+# the surfaced corpus. Names NOT in this map fall back to source-country (surface-when-unsure: a
+# wrong ISO is worse than the old known value). Migration 094 mirrors this map for the live keeper.
+NAME_TO_ISO = {
+    "india": "IN", "united states": "US", "united kingdom": "GB", "nigeria": "NG", "china": "CN",
+    "australia": "AU", "france": "FR", "iran": "IR", "italy": "IT", "ukraine": "UA",
+    "democratic republic of the congo": "CD", "russia": "RU", "spain": "ES", "pakistan": "PK",
+    "singapore": "SG", "cuba": "CU", "sri lanka": "LK", "canada": "CA", "norway": "NO", "mexico": "MX",
+    "nepal": "NP", "colombia": "CO", "hungary": "HU", "brazil": "BR", "south africa": "ZA",
+    "bangladesh": "BD", "germany": "DE", "south korea": "KR", "kenya": "KE", "turkey": "TR",
+    "austria": "AT", "ghana": "GH", "greece": "GR", "indonesia": "ID", "japan": "JP", "laos": "LA",
+    "namibia": "NA", "netherlands": "NL", "north korea": "KP", "philippines": "PH", "saudi arabia": "SA",
+    "sudan": "SD", "thailand": "TH", "uganda": "UG", "united arab emirates": "AE", "romania": "RO",
+    "lebanon": "LB", "cameroon": "CM", "senegal": "SN", "jamaica": "JM", "israel": "IL", "ethiopia": "ET",
+    "south sudan": "SS", "eswatini": "SZ", "estonia": "EE", "belarus": "BY", "switzerland": "CH",
+    "taiwan": "TW", "vatican city": "VA", "denmark": "DK", "myanmar": "MM", "vietnam": "VN",
+    "morocco": "MA", "czech republic": "CZ", "mali": "ML", "malaysia": "MY", "zimbabwe": "ZW", "poland": "PL",
+}
 
 
 def reprint_key(title, lead):  # wire-dedup key (same as the digest): same body => one report
@@ -92,6 +112,23 @@ def rep_pick(arts, core_ent=None, art_ents=None):  # representative = median-len
         return None, None
     pick = en[len(en) // 2]
     return pick["id"], pick["title"][:300]
+
+
+def _subject_country(loc_counts, fallback):
+    """F-3: subject country by EVENT location (article_locations is_primary), margin-guarded and
+    ISO-mapped; fall back to the source-country mode when there is no clear plurality (the top
+    located country must beat the runner-up by >=2x) or the name is unmappable. Surface-when-unsure:
+    an unmapped/ambiguous location keeps the old known value rather than guessing a wrong ISO.
+    The >=2x margin kills the mentioned-not-subject tail (Putin-in-Delhi -> stays IN, not China)."""
+    if not loc_counts:
+        return fallback
+    top = loc_counts.most_common(2)
+    c1_name, c1 = top[0]
+    c2 = top[1][1] if len(top) > 1 else 0
+    iso = NAME_TO_ISO.get((c1_name or "").lower())
+    if iso and c1 >= 2 and c1 >= 2 * c2:
+        return iso
+    return fallback
 
 
 def _require_igraph() -> bool:
@@ -137,7 +174,10 @@ def main() -> int:
                (SELECT array_agg(n) FROM (
                   SELECT lower(e->>'name') n FROM jsonb_array_elements(coalesce(a.entities_extracted,'[]'::jsonb)) e
                   WHERE e->>'name' IS NOT NULL
-                  ORDER BY (e->>'prominence')::float DESC NULLS LAST LIMIT 3) t) AS ents
+                  ORDER BY (e->>'prominence')::float DESC NULLS LAST LIMIT 3) t) AS ents,
+               (SELECT al.country FROM public.article_locations al
+                  WHERE al.article_id = a.id AND al.is_primary AND al.country IS NOT NULL AND al.country <> ''
+                  ORDER BY al.mention_count DESC NULLS LAST, al.confidence DESC NULLS LAST LIMIT 1) AS loc_country
         FROM _m m JOIN articles a ON a.id = m.article_id
     """)
     rows = []
@@ -145,10 +185,10 @@ def main() -> int:
     art_titles: dict[str, str] = {}
     src_of: dict[str, str | None] = {}
     init_members: dict[str, list] = defaultdict(list)
-    for cid, aid, sid, title, lang, geo, country, topic, coll, lead, ents in cur:
+    for cid, aid, sid, title, lang, geo, country, topic, coll, lead, ents, loc_country in cur:
         cid, aid = str(cid), str(aid)
         sids = str(sid) if sid else None
-        rows.append((cid, aid, sids, title, lang, geo, country, topic, coll, lead, ents or []))
+        rows.append((cid, aid, sids, title, lang, geo, country, topic, coll, lead, ents or [], loc_country))
         art_ents[aid] = ents or []
         art_titles[aid] = title or ""
         src_of[aid] = sids
@@ -184,10 +224,10 @@ def main() -> int:
     # ---- build clusters keyed by FINAL cluster id (rescued subs split out as 'cid::rN') ----
     cl: dict[str, dict] = defaultdict(lambda: {
         "arts": [], "src": set(), "langs": Counter(), "geos": Counter(),
-        "countries": Counter(), "topics": Counter(), "ents": Counter(),
+        "countries": Counter(), "loc_countries": Counter(), "topics": Counter(), "ents": Counter(),
         "first": None, "last": None, "by_key": defaultdict(list)})
     as_of = None
-    for cid0, aid, sids, title, lang, geo, country, topic, coll, lead, ents in rows:
+    for cid0, aid, sids, title, lang, geo, country, topic, coll, lead, ents, loc_country in rows:
         d = cl[final_of.get(aid, cid0)]
         d["arts"].append({"id": aid, "title": title, "lang": lang, "src": sids})
         if sids:
@@ -197,6 +237,8 @@ def main() -> int:
             d["geos"][geo] += 1
         if country:
             d["countries"][country] += 1
+        if loc_country:
+            d["loc_countries"][loc_country] += 1
         if topic:
             d["topics"][topic] += 1
         for e in ents:
@@ -235,8 +277,9 @@ def main() -> int:
         indep = min(srcn, uniq_bodies) if srcn else uniq_bodies
         s2 = s2b_of.get(cid, {})
         rep_id, rep_title = rep_pick(d["arts"], s2.get("core_ent"), art_ents)  # F-1: on-core rep title
-        region = d["geos"].most_common(1)[0][0] if d["geos"] else None
-        country = d["countries"].most_common(1)[0][0] if d["countries"] else None
+        region = d["geos"].most_common(1)[0][0] if d["geos"] else None   # subject_region: geo_primary mode (content, left as-is)
+        src_country = d["countries"].most_common(1)[0][0] if d["countries"] else None
+        country = _subject_country(d["loc_countries"], src_country)  # F-3: event-location ISO, margin-guarded; else source-country
         topic = d["topics"].most_common(1)[0][0] if d["topics"] else None
         rescued_from_sid = story_id_of.get(s2["rescued_from"]) if s2.get("rescued_from") else None
         cluster_rows.append((

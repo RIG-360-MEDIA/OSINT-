@@ -192,7 +192,7 @@ def main() -> int:
         if topic:
             d["topics"][topic] += 1
         for e in ents:
-            if e:
+            if e and e not in story_rescue.DISPLAY_STOP:   # F-2: junk out of DISPLAY rollup only (core untouched)
                 d["ents"][e] += 1
         if coll:
             d["first"] = coll if d["first"] is None else min(d["first"], coll)

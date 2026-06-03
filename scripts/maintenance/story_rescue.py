@@ -35,6 +35,23 @@ STOPWORDS = set(
     "this that will more than has have had not no".split()
 )
 
+# DISPLAY-ONLY junk stoplist (F-2, 2026-06-03). Generic common-nouns + role-titles + wire
+# services that pollute primary_entities (audit #4). Applied to the loader's primary_entities
+# ROLLUP only — NEVER to _core (the §B measurement proved de-junking does not move core, and the
+# gates read core; this must have zero gate impact). "atlantic council" is deliberately OMITTED:
+# it is a real org (only 1 of its 2 surfaced uses is the cruise Atlantic-Ocean mis-tag) — a global
+# stoplist would clip the real one; that mis-tag is the NER workstream's, not the display layer's.
+JUNK_ENT = {
+    "passengers", "passenger", "people", "officials", "official", "residents", "resident",
+    "workers", "worker", "citizens", "authorities", "staff", "employees", "customers",
+    "victims", "protesters", "voters", "farmers", "doctors", "patients", "students", "student",
+    "women", "men", "children", "locals", "crew", "tourists", "villagers", "commuters", "users",
+    "others", "family", "man", "woman", "spokesperson", "government officials",
+    "chief minister", "minister of defence", "prime minister", "chief justice", "governor",
+    "european countries", "western countries",
+}
+DISPLAY_STOP = STOP_ENT | JUNK_ENT   # primary_entities rollup excludes BOTH; _core excludes STOP_ENT only
+
 
 def grams(title: str) -> set[str]:
     toks = [t for t in re.sub(r"[^a-z0-9 ]", " ", (title or "").lower()).split() if t]

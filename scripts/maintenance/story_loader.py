@@ -75,9 +75,17 @@ def reprint_key(title, lead):  # wire-dedup key (same as the digest): same body 
     return " ".join(re.sub(r"[^a-z0-9 ]", " ", base.lower()).split())[:120]
 
 
-def rep_pick(arts):  # representative = median-length clean English title (avoids clickbait/stubs)
-    en = sorted([a for a in arts if a["lang"] == "en" and a["title"] and 25 <= len(a["title"]) <= 95],
-                key=lambda a: len(a["title"]))
+def rep_pick(arts, core_ent=None, art_ents=None):  # representative = median-length clean English title
+    cand = [a for a in arts if a["lang"] == "en" and a["title"] and 25 <= len(a["title"]) <= 95]
+    # F-1 (2026-06-03): prefer ON-CORE members — those whose extracted entities include the cluster's
+    # core entity — so the headline comes from an article actually about the subject (fixes the
+    # donkey-on-PSG bug, audit #5). Graceful: only narrow when on-core candidates exist, so a concept-
+    # subject story whose core entity rarely appears keeps a sensible title rather than a worse one.
+    if core_ent and art_ents:
+        on_core = [a for a in cand if core_ent in (art_ents.get(a["id"]) or [])]
+        if on_core:
+            cand = on_core
+    en = sorted(cand, key=lambda a: len(a["title"]))
     if not en:
         en = sorted([a for a in arts if a["title"]], key=lambda a: len(a["title"] or ""))
     if not en:
@@ -225,11 +233,11 @@ def main() -> int:
         n, srcn = len(d["arts"]), len(d["src"])
         uniq_bodies = len(d["by_key"])
         indep = min(srcn, uniq_bodies) if srcn else uniq_bodies
-        rep_id, rep_title = rep_pick(d["arts"])
+        s2 = s2b_of.get(cid, {})
+        rep_id, rep_title = rep_pick(d["arts"], s2.get("core_ent"), art_ents)  # F-1: on-core rep title
         region = d["geos"].most_common(1)[0][0] if d["geos"] else None
         country = d["countries"].most_common(1)[0][0] if d["countries"] else None
         topic = d["topics"].most_common(1)[0][0] if d["topics"] else None
-        s2 = s2b_of.get(cid, {})
         rescued_from_sid = story_id_of.get(s2["rescued_from"]) if s2.get("rescued_from") else None
         cluster_rows.append((
             sid_story, run_id, ALGO_VERSION, PROVISIONAL,

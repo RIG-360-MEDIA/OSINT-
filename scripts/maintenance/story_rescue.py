@@ -99,18 +99,24 @@ def _community_split(members, edge_triples, resolution):
             return [set(members)]
 
 
-def s2b(members, art_ents, art_titles, src_of, flag_min_src=25, core_t=0.45, tcoh_t=0.35):
-    """§2b fields for one cluster's member list."""
+def s2b(members, art_ents, art_titles, src_of, flag_min_src=25, core_t=0.45, tcoh_t=0.35, tcoh_cap=1000):
+    """§2b fields for one cluster's member list. The title-cohesion spare (tcoh>=tcoh_t) protects
+    a BOUNDED real-event-with-broken-entities (the Myanmar class). It does NOT apply above
+    tcoh_cap articles — a cluster that large is a broad TOPIC (e.g. a 46-day "IPL 2026"
+    season-pile), not an event, so it stays flagged and is handed to the rescue to unpack.
+    (Cap locked off the 2026-06-03 band-check: tcoh-spared clusters were 4305(IPL),522,330,<=9 —
+    nothing real in 522..4305, so 1000 sits in the empty gap.)"""
     core, ent = _core(members, art_ents)
     tcoh = _tcoh(members, art_titles)
     src = _src(members, src_of)
-    is_tf = src >= flag_min_src and core < core_t and tcoh < tcoh_t
+    spared_by_tcoh = tcoh >= tcoh_t and len(members) <= tcoh_cap
+    is_tf = src >= flag_min_src and core < core_t and not spared_by_tcoh
     return {"core": round(core, 3), "core_ent": ent, "tcoh": round(tcoh, 3), "src": src, "is_tf": is_tf}
 
 
 def rescue(members_by_cluster, edges, art_ents, art_titles, src_of, *,
            res=4.0, min_sz_sub=10, min_src_sub=12, core_t=0.45, tcoh_t=0.35,
-           allow_tcoh=False, flag_min_src=25):
+           allow_tcoh=False, flag_min_src=25, tcoh_cap=1000):
     """Flag §2b blobs and rescue buried real stories out of them.
 
     members_by_cluster: {cluster_id: [article_id,...]}
@@ -125,7 +131,7 @@ def rescue(members_by_cluster, edges, art_ents, art_titles, src_of, *,
     stats = {"flagged": 0, "rescued": 0, "dry": 0}
     flagged = {}
     for cid, members in members_by_cluster.items():
-        info = s2b(members, art_ents, art_titles, src_of, flag_min_src, core_t, tcoh_t)
+        info = s2b(members, art_ents, art_titles, src_of, flag_min_src, core_t, tcoh_t, tcoh_cap)
         if info["is_tf"]:
             flagged[cid] = members
         else:
@@ -172,7 +178,7 @@ def rescue(members_by_cluster, edges, art_ents, art_titles, src_of, *,
         for m in residual:
             final_of[m] = cid
         if residual:
-            s2b_of[cid] = {**s2b(list(residual), art_ents, art_titles, src_of, flag_min_src, core_t, tcoh_t),
+            s2b_of[cid] = {**s2b(list(residual), art_ents, art_titles, src_of, flag_min_src, core_t, tcoh_t, tcoh_cap),
                            "rescued_from": None}
         stats["rescued"] += got
         stats["dry"] += 1 if got == 0 else 0

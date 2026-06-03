@@ -59,6 +59,7 @@ RESCUE_ALLOW_TCOH = os.environ.get("RESCUE_ALLOW_TCOH", "0") == "1"  # LOCKED of
 FLAG_MIN_SRC = int(os.environ.get("FLAG_MIN_SRC", "25"))      # §2b flag floor (locked 2026-06-02 contract)
 CORE_T = float(os.environ.get("CORE_T", "0.45"))
 TCOH_T = float(os.environ.get("TCOH_T", "0.35"))
+TCOH_CAP = int(os.environ.get("TCOH_CAP", "1000"))  # tcoh-spare void above this size (broad topic -> flag + unpack)
 
 
 def reprint_key(title, lead):  # wire-dedup key (same as the digest): same body => one report
@@ -146,7 +147,8 @@ def main() -> int:
         init_members, edge_best, art_ents, art_titles, src_of,
         res=RESCUE_RES, min_sz_sub=RESCUE_MIN_SZ,
         min_src_sub=(RESCUE_MIN_SRC if RESCUE_ON else 10 ** 9),
-        core_t=CORE_T, tcoh_t=TCOH_T, allow_tcoh=RESCUE_ALLOW_TCOH, flag_min_src=FLAG_MIN_SRC)
+        core_t=CORE_T, tcoh_t=TCOH_T, allow_tcoh=RESCUE_ALLOW_TCOH, flag_min_src=FLAG_MIN_SRC,
+        tcoh_cap=TCOH_CAP)
 
     # ---- build clusters keyed by FINAL cluster id (rescued subs split out as 'cid::rN') ----
     cl: dict[str, dict] = defaultdict(lambda: {

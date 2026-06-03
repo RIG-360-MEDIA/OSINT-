@@ -171,6 +171,20 @@ def main() -> int:
     print(f"\n-- the {len(dry)} blobs that yielded NOTHING (correctly stay suppressed — true category-blobs) --")
     for sz, src, core, ent, topgram in sorted(dry, reverse=True):
         print(f"  DRY n={sz:4d} src={src:3d} core={core:.2f}({ent[:18]:18s}) topgram={topgram[:22]}")
+
+    import statistics as _st
+    print("\n-- RESCUE DISTRIBUTION (for analytics to lock the source floor off the distribution) --")
+    srcs = [r[1] for r in rescued]
+    for floor in (10, 12, 15, 20, 25, 30):
+        n = sum(1 for s in srcs if s >= floor)
+        print(f"  source floor src>={floor:2d}  ->  {n:3d} rescues kept")
+    core_pass = sum(1 for r in rescued if r[2] >= CORE_T)
+    tcoh_only = sum(1 for r in rescued if r[2] < CORE_T and r[4] >= TCOH_T)
+    print(f"  cohesion path: via core>={CORE_T}: {core_pass}  |  via tcoh>={TCOH_T} only (broken-entity real story): {tcoh_only}")
+    if rescued:
+        print(f"  rescue size n:  min={min(r[0] for r in rescued)} median={int(_st.median([r[0] for r in rescued]))} max={max(r[0] for r in rescued)}")
+        print(f"  rescue sources: min={min(srcs)} median={int(_st.median(srcs))} max={max(srcs)}")
+        print(f"  rescue core:    min={min(r[2] for r in rescued):.2f} median={_st.median([r[2] for r in rescued]):.2f} max={max(r[2] for r in rescued):.2f}")
     conn.close()
     return 0
 

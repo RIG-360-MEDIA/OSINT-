@@ -18,14 +18,53 @@ Env: AB_DSN/DATABASE_URL_SYNC · PHASE (structural) · BREAKING_VELOCITY (10 = a
 from __future__ import annotations
 
 import os
+import re
 import sys
 import time
+from collections import defaultdict
 
 import psycopg2
+from psycopg2.extras import execute_values
 
 PHASE = os.environ.get("PHASE", "structural")
 BREAKING_VELOCITY = float(os.environ.get("BREAKING_VELOCITY", "10"))
 SURF = "(NOT is_template_family AND (independent_source_count >= 3 OR rescued_from_story_id IS NOT NULL))"
+
+NUM_RE = re.compile(r"(\d[\d,]*(?:\.\d+)?)")
+SCALE_RE = re.compile(r"\b(crore|lakhs?|million|billion|trillion|thousand|percent|per cent)\b", re.I)
+CUR_RE = re.compile(r"[₹$€£]")
+
+
+def extract_num_unit(object_text):
+    """First number + a unit token (currency/scale/%) from a claim's object_text. Numbers compare
+    only WITHIN a same-unit group, so no cross-unit scaling is needed."""
+    if not object_text:
+        return None, ""
+    m = NUM_RE.search(object_text)
+    if not m:
+        return None, ""
+    try:
+        num = float(m.group(1).replace(",", ""))
+    except ValueError:
+        return None, ""
+    unit = ""
+    cur = CUR_RE.search(object_text)
+    if cur:
+        unit += cur.group(0)
+    sc = SCALE_RE.search(object_text)
+    if sc:
+        unit += sc.group(1).lower()
+    if unit == "" and num == int(num) and 1900 <= num <= 2099:
+        return None, ""   # bare 4-digit year -> a date, not a quantity fact (under-include, safe)
+    if "%" in object_text:
+        unit += "%"
+    return num, unit
+
+
+def norm_measure(subject_text):
+    """Normalized 'what is measured' = the claim subject. Conservative grouping key: subject
+    variants collapse only when they really match; when in doubt they differ -> under-merge (safe)."""
+    return " ".join(re.sub(r"[^a-z0-9 ]", " ", (subject_text or "").lower()).split())[:60]
 
 
 def structural(cur, run_id: int) -> None:
@@ -116,6 +155,92 @@ def structural(cur, run_id: int) -> None:
                      f"geo={n_geo} status={n_st}\n")
 
 
+def extraction(cur, run_id: int) -> None:
+    surf_cte = f"surf AS (SELECT story_id FROM analytics.story_clusters WHERE {SURF})"
+
+    # --- story_quotes: direct row-map from article_quotes (surfaced-only) ---
+    cur.execute("TRUNCATE analytics.story_quotes")
+    cur.execute(f"""
+        WITH {surf_cte}
+        INSERT INTO analytics.story_quotes
+          (story_id, quote_text, quote_text_en, speaker, speaker_entity_id, article_id, is_direct, run_id)
+        SELECT m.story_id, q.quote_text, q.quote_text_en, q.speaker_name, q.speaker_entity_id,
+               q.article_id, q.is_direct, %s
+        FROM analytics.story_cluster_members m
+        JOIN public.article_quotes q ON q.article_id = m.article_id
+        WHERE m.story_id IN (SELECT story_id FROM surf)
+    """, (run_id,))
+    n_q = cur.rowcount
+
+    # --- story_stance: aggregate article_stances; sentiment carries n (mean-over-2 != over-40) ---
+    cur.execute("TRUNCATE analytics.story_stance")
+    cur.execute(f"""
+        WITH {surf_cte},
+        st AS (SELECT m.story_id, s.stance, s.intensity FROM analytics.story_cluster_members m
+               JOIN public.article_stances s ON s.article_id = m.article_id
+               WHERE m.story_id IN (SELECT story_id FROM surf) AND s.stance IS NOT NULL),
+        dist AS (SELECT story_id, stance, count(*) c FROM st GROUP BY 1, 2),
+        agg AS (SELECT story_id, round(avg(intensity)::numeric, 3) mean_int, count(*) tot FROM st GROUP BY 1)
+        INSERT INTO analytics.story_stance (story_id, stance_distribution, sentiment, n_stances, run_id)
+        SELECT d.story_id, jsonb_object_agg(d.stance, d.c),
+               jsonb_build_object('mean_intensity', a.mean_int, 'n', a.tot), a.tot, %s
+        FROM dist d JOIN agg a ON a.story_id = d.story_id
+        GROUP BY d.story_id, a.mean_int, a.tot
+    """, (run_id,))
+    n_s = cur.rowcount
+
+    # --- story_facts: B-minus conservative grouping (subject + unit + entity; under-merge when unsure) ---
+    cur.execute("TRUNCATE analytics.story_facts")
+    cur.execute(f"""
+        WITH {surf_cte}
+        SELECT m.story_id, c.subject_text, c.object_text, c.claim_text, c.subject_entity_id,
+               c.article_id, a.collected_at
+        FROM analytics.story_cluster_members m
+        JOIN public.article_claims c ON c.article_id = m.article_id
+        JOIN articles a ON a.id = m.article_id
+        WHERE m.story_id IN (SELECT story_id FROM surf)
+    """)
+    # A-with-corroboration: the key INCLUDES the value, so identical values aggregate (N sources
+    # assert the same number) and different values stay SEPARATE rows. NEVER a cross-value min->max
+    # range — the B-minus grouping-integrity check (2026-06-03) found those were entity-keyed
+    # collisions ("virat kohli 28->675" = runs vs balls vs totals), so divergence is deferred to a
+    # measure-detection v1.1. value_min==value_max==value here; a consumer sees the distinct values
+    # + corroboration counts and infers spread itself rather than us asserting a fabricated range.
+    groups = defaultdict(list)  # (story, measure, unit, value) -> [(article_id, collected_at, claim_text)]
+    for story_id, subj, obj, claim, ent, aid, coll in cur.fetchall():
+        num, unit = extract_num_unit(obj)
+        if num is None:
+            continue
+        measure = norm_measure(subj)
+        if not measure:                 # un-keyable number (no subject) -> skip; never mis-group
+            continue
+        groups[(str(story_id), measure, unit, round(num, 4))].append((str(aid), coll, claim))
+    rows = []
+    for (sid, measure, unit, val), items in groups.items():
+        cite = sorted({x[0] for x in items})
+        sample = next((x[2] for x in items if x[2]), None)
+        rows.append((sid, measure, unit, val, val, val, len(cite), cite,
+                     len(cite) == 1, (sample or "")[:300], run_id))
+    execute_values(cur, """
+        INSERT INTO analytics.story_facts
+          (story_id, fact_key, unit, value_min, value_max, value_latest, member_count,
+           citing_article_ids, single_source, sample_claim, run_id)
+        VALUES %s
+    """, rows, template="(%s,%s,%s,%s,%s,%s,%s,%s::uuid[],%s,%s,%s)", page_size=2000)
+    n_f = len(rows)
+
+    # --- update coverage status counts (Phase A populated coverage; Phase B fills the counts) ---
+    cur.execute("""
+        UPDATE analytics.story_enrichment_status s SET
+          facts_count  = coalesce((SELECT count(*) FROM analytics.story_facts  f WHERE f.story_id = s.story_id), 0),
+          quotes_count = coalesce((SELECT count(*) FROM analytics.story_quotes q WHERE q.story_id = s.story_id), 0),
+          stance_count = coalesce((SELECT n_stances FROM analytics.story_stance st WHERE st.story_id = s.story_id), 0)
+    """)
+    corrob = sum(1 for r in rows if not r[8])
+    sys.stderr.write(f"EXTRACTION enriched (run_id={run_id}): quotes={n_q} stance={n_s} facts={n_f} "
+                     f"(corroborated mc>=2: {corrob}, single-source: {n_f - corrob}) — A-with-corroboration, no fabricated ranges\n")
+
+
 def main() -> int:
     dsn = os.environ.get("AB_DSN") or os.environ.get("DATABASE_URL_SYNC") or os.environ.get("DATABASE_URL")
     conn = psycopg2.connect(dsn)
@@ -125,7 +250,8 @@ def main() -> int:
         structural(cur, run_id)
         conn.commit()
     if PHASE in ("extraction", "all"):
-        sys.stderr.write("PHASE extraction not in this build (facts/quotes/stance ship in Phase B)\n")
+        extraction(cur, run_id)
+        conn.commit()
     conn.close()
     return 0
 

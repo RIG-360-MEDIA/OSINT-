@@ -95,6 +95,34 @@ def score_pair(feat: dict, regs: dict, regime: str) -> tuple[float, float]:
     return 1.0 / (1.0 + math.exp(-z)), (THETA_OVERRIDE if THETA_OVERRIDE is not None else float(thi))
 
 
+def _community_split(members, edge_triples, resolution):
+    """Louvain community detection — igraph (C-backed: tens of MB even at 100k+ nodes) when
+    available, networkx fallback. edge_triples: list of (a,b,weight), no duplicate undirected
+    edges. Returns a list of sets of member ids. (Memory-safe Leiden on the whole-corpus
+    megablob — the constraint that previously forced windowing.)"""
+    members = list(members)
+    et = list(edge_triples)
+    try:
+        import igraph as ig
+        idx = {v: i for i, v in enumerate(members)}
+        elist = [(idx[a], idx[b]) for a, b, _ in et if a in idx and b in idx]
+        wlist = [w for a, b, w in et if a in idx and b in idx]
+        g = ig.Graph(n=len(members), edges=elist)
+        vc = g.community_multilevel(weights=(wlist or None), resolution=resolution)
+        return [set(members[i] for i in comm) for comm in vc]
+    except ImportError:
+        import networkx as nx
+        g = nx.Graph()
+        g.add_nodes_from(members)
+        for a, b, w in et:
+            g.add_edge(a, b, weight=w)
+        try:
+            return [set(c) for c in nx.community.louvain_communities(
+                g, weight="weight", resolution=resolution, seed=42)]
+        except Exception:  # noqa: BLE001
+            return list(nx.community.greedy_modularity_communities(g, weight="weight"))
+
+
 def main() -> int:
     regs = json.load(open(FIT_REPORT))["regimes"]
     log.info("loaded fit regimes: %s (CAND_COS=%.2f, gray->no-edge, no judge)",
@@ -249,7 +277,6 @@ def main() -> int:
     # Splits single-linkage over-merges into sub-communities; components under the
     # trigger are left exactly as CC found them (the high-precision majority).
     if LEIDEN_ON:
-        import networkx as nx
         comp_edges = defaultdict(list)
         for a, b, s in edge_list:
             comp_edges[find(a)].append((a, b, s))
@@ -259,15 +286,7 @@ def main() -> int:
             ratio = len(members) / max(srcs, 1)
             if len(members) < 10 or ratio < R_OVERSIZE:
                 continue  # not oversized -> untouched
-            g = nx.Graph()
-            g.add_nodes_from(members)
-            for a, b, s in comp_edges[root]:
-                g.add_edge(a, b, weight=s)
-            try:
-                communities = nx.community.louvain_communities(
-                    g, weight="weight", resolution=RESOLUTION, seed=42)
-            except Exception:  # noqa: BLE001 - older networkx fallback
-                communities = list(nx.community.greedy_modularity_communities(g, weight="weight"))
+            communities = _community_split(members, comp_edges[root], RESOLUTION)
             for community in communities:
                 cid = min(community)
                 for m in community:

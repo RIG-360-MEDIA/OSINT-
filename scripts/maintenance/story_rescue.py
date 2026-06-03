@@ -72,6 +72,33 @@ def _src(members, src_of):
     return len({src_of.get(m) for m in members if src_of.get(m)})
 
 
+def _community_split(members, edge_triples, resolution):
+    """Louvain community detection — igraph (C-backed: tens of MB even at 100k+ nodes) when
+    available, networkx fallback. edge_triples: list of (a,b,weight) with NO duplicate undirected
+    edges (igraph would make them multi-edges). Returns a list of sets of member ids."""
+    members = list(members)
+    et = list(edge_triples)
+    try:
+        import igraph as ig
+        idx = {v: i for i, v in enumerate(members)}
+        elist = [(idx[a], idx[b]) for a, b, _ in et if a in idx and b in idx]
+        wlist = [w for a, b, w in et if a in idx and b in idx]
+        g = ig.Graph(n=len(members), edges=elist)
+        vc = g.community_multilevel(weights=(wlist or None), resolution=resolution)
+        return [set(members[i] for i in comm) for comm in vc]
+    except ImportError:
+        import networkx as nx
+        g = nx.Graph()
+        g.add_nodes_from(members)
+        for a, b, w in et:
+            g.add_edge(a, b, weight=w)
+        try:
+            return [set(c) for c in nx.community.louvain_communities(
+                g, weight="weight", resolution=resolution, seed=42)]
+        except Exception:  # noqa: BLE001
+            return [set(members)]
+
+
 def s2b(members, art_ents, art_titles, src_of, flag_min_src=25, core_t=0.45, tcoh_t=0.35):
     """§2b fields for one cluster's member list."""
     core, ent = _core(members, art_ents)
@@ -94,8 +121,6 @@ def rescue(members_by_cluster, edges, art_ents, art_titles, src_of, *,
       s2b_of:   {final_cluster_id: {core,core_ent,tcoh,src,is_tf,rescued_from}}
       stats:    {flagged, rescued, dry}
     """
-    import networkx as nx
-
     final_of, s2b_of = {}, {}
     stats = {"flagged": 0, "rescued": 0, "dry": 0}
     flagged = {}
@@ -120,16 +145,15 @@ def rescue(members_by_cluster, edges, art_ents, art_titles, src_of, *,
     for cid, members in flagged.items():
         stats["flagged"] += 1
         memset = set(members)
-        g = nx.Graph()
-        g.add_nodes_from(members)
+        et, seen_e = [], set()
         for a in members:
             for b, sc in adj.get(a, []):
                 if b in memset:
-                    g.add_edge(a, b, weight=sc)
-        try:
-            comms = nx.community.louvain_communities(g, weight="weight", resolution=res, seed=42)
-        except Exception:  # noqa: BLE001
-            comms = [set(members)]
+                    k = (a, b) if a < b else (b, a)
+                    if k not in seen_e:
+                        seen_e.add(k)
+                        et.append((a, b, sc))
+        comms = _community_split(members, et, res)
         residual, got = set(members), 0
         for i, comm in enumerate(sorted((set(c) for c in comms), key=len, reverse=True)):
             if len(comm) < min_sz_sub or _src(comm, src_of) < min_src_sub:

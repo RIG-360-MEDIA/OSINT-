@@ -73,30 +73,19 @@ def _src(members, src_of):
 
 
 def _community_split(members, edge_triples, resolution):
-    """Louvain community detection — igraph (C-backed: tens of MB even at 100k+ nodes) when
-    available, networkx fallback. edge_triples: list of (a,b,weight) with NO duplicate undirected
-    edges (igraph would make them multi-edges). Returns a list of sets of member ids."""
+    """Louvain community detection via igraph (C-backed: tens of MB even at 100k+ nodes). igraph is
+    REQUIRED — no silent networkx fallback (that is the OOM-prone path + a different clustering than
+    validated; the loader asserts igraph at startup). edge_triples: list of (a,b,weight) with NO
+    duplicate undirected edges (igraph would make them multi-edges). Returns a list of sets."""
+    import igraph as ig
     members = list(members)
     et = list(edge_triples)
-    try:
-        import igraph as ig
-        idx = {v: i for i, v in enumerate(members)}
-        elist = [(idx[a], idx[b]) for a, b, _ in et if a in idx and b in idx]
-        wlist = [w for a, b, w in et if a in idx and b in idx]
-        g = ig.Graph(n=len(members), edges=elist)
-        vc = g.community_multilevel(weights=(wlist or None), resolution=resolution)
-        return [set(members[i] for i in comm) for comm in vc]
-    except ImportError:
-        import networkx as nx
-        g = nx.Graph()
-        g.add_nodes_from(members)
-        for a, b, w in et:
-            g.add_edge(a, b, weight=w)
-        try:
-            return [set(c) for c in nx.community.louvain_communities(
-                g, weight="weight", resolution=resolution, seed=42)]
-        except Exception:  # noqa: BLE001
-            return [set(members)]
+    idx = {v: i for i, v in enumerate(members)}
+    elist = [(idx[a], idx[b]) for a, b, _ in et if a in idx and b in idx]
+    wlist = [w for a, b, w in et if a in idx and b in idx]
+    g = ig.Graph(n=len(members), edges=elist)
+    vc = g.community_multilevel(weights=(wlist or None), resolution=resolution)
+    return [set(members[i] for i in comm) for comm in vc]
 
 
 def s2b(members, art_ents, art_titles, src_of, flag_min_src=25, core_t=0.45, tcoh_t=0.35, tcoh_cap=1000):

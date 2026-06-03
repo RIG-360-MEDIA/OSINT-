@@ -95,35 +95,40 @@ def score_pair(feat: dict, regs: dict, regime: str) -> tuple[float, float]:
     return 1.0 / (1.0 + math.exp(-z)), (THETA_OVERRIDE if THETA_OVERRIDE is not None else float(thi))
 
 
+def _require_igraph() -> bool:
+    """Fail loud if igraph is absent. A silent fall back to networkx Louvain is the GB-scale OOM
+    path this pipeline was rebuilt to escape — AND it produces a DIFFERENT clustering than the
+    validated one (confident wrongness). So we refuse to run, not degrade."""
+    try:
+        import igraph  # noqa: F401
+        return True
+    except ImportError:
+        log.error("FATAL: python-igraph not importable. Refusing to run — community detection would "
+                  "otherwise fall back to networkx Louvain: the OOM-prone path AND a different "
+                  "clustering than validated. Install igraph+leidenalg (baked into the backend "
+                  "image via requirements.txt). Aborting.")
+        return False
+
+
 def _community_split(members, edge_triples, resolution):
-    """Louvain community detection — igraph (C-backed: tens of MB even at 100k+ nodes) when
-    available, networkx fallback. edge_triples: list of (a,b,weight), no duplicate undirected
-    edges. Returns a list of sets of member ids. (Memory-safe Leiden on the whole-corpus
-    megablob — the constraint that previously forced windowing.)"""
+    """Louvain community detection via igraph (C-backed: tens of MB even at 100k+ nodes — the
+    memory-safe Leiden on the whole-corpus megablob that removed the need to window). igraph is
+    REQUIRED (see _require_igraph, asserted at startup); no silent networkx fallback. edge_triples:
+    list of (a,b,weight) with no duplicate undirected edges. Returns a list of sets of member ids."""
+    import igraph as ig
     members = list(members)
     et = list(edge_triples)
-    try:
-        import igraph as ig
-        idx = {v: i for i, v in enumerate(members)}
-        elist = [(idx[a], idx[b]) for a, b, _ in et if a in idx and b in idx]
-        wlist = [w for a, b, w in et if a in idx and b in idx]
-        g = ig.Graph(n=len(members), edges=elist)
-        vc = g.community_multilevel(weights=(wlist or None), resolution=resolution)
-        return [set(members[i] for i in comm) for comm in vc]
-    except ImportError:
-        import networkx as nx
-        g = nx.Graph()
-        g.add_nodes_from(members)
-        for a, b, w in et:
-            g.add_edge(a, b, weight=w)
-        try:
-            return [set(c) for c in nx.community.louvain_communities(
-                g, weight="weight", resolution=resolution, seed=42)]
-        except Exception:  # noqa: BLE001
-            return list(nx.community.greedy_modularity_communities(g, weight="weight"))
+    idx = {v: i for i, v in enumerate(members)}
+    elist = [(idx[a], idx[b]) for a, b, _ in et if a in idx and b in idx]
+    wlist = [w for a, b, w in et if a in idx and b in idx]
+    g = ig.Graph(n=len(members), edges=elist)
+    vc = g.community_multilevel(weights=(wlist or None), resolution=resolution)
+    return [set(members[i] for i in comm) for comm in vc]
 
 
 def main() -> int:
+    if LEIDEN_ON and not _require_igraph():
+        return 2
     regs = json.load(open(FIT_REPORT))["regimes"]
     log.info("loaded fit regimes: %s (CAND_COS=%.2f, gray->no-edge, no judge)",
              list(regs.keys()), CAND_COS)

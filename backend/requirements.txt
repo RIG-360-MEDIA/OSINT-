@@ -52,6 +52,14 @@ supabase==2.7.4
 # Data processing
 python-dateutil==2.9.0
 
+# Clustering — community detection (story layer). igraph's C-backed Louvain splits the
+# whole-corpus megablob in tens of MB; networkx Louvain needs GBs (the 12 GiB OOM wall).
+# REQUIRED, not optional: cluster_job_7 + story_loader FAIL LOUD (refuse to run) if igraph is
+# absent rather than silently falling back to the OOM-prone — and differently-clustering —
+# networkx path. Keep both pinned so an image rebuild can never quietly drop them.
+igraph==1.0.0
+leidenalg==0.12.0
+
 # PDF export (collections)
 reportlab==4.2.2
 

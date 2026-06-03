@@ -79,7 +79,23 @@ def rep_pick(arts):  # representative = median-length clean English title (avoid
     return pick["id"], pick["title"][:300]
 
 
+def _require_igraph() -> bool:
+    """Fail loud if igraph is absent — the §2b rescue's community split would otherwise fall back
+    to networkx Louvain (the OOM-prone path AND a different clustering than validated). Refuse to
+    run, don't silently degrade."""
+    try:
+        import igraph  # noqa: F401
+        return True
+    except ImportError:
+        sys.stderr.write("FATAL: python-igraph not importable — refusing to run. The §2b rescue "
+                         "would fall back to networkx Louvain (OOM-prone + a different clustering "
+                         "than validated). Install igraph+leidenalg (baked into the image). Aborting.\n")
+        return False
+
+
 def main() -> int:
+    if not _require_igraph():  # rescue() always re-clusters flagged blobs (igraph) regardless of RESCUE_ON
+        return 2
     dsn = (os.environ.get("AB_DSN") or os.environ.get("DATABASE_URL_SYNC")
            or os.environ.get("DATABASE_URL"))
     conn = psycopg2.connect(dsn)

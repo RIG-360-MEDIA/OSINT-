@@ -103,6 +103,37 @@ def s2b(members, art_ents, art_titles, src_of, flag_min_src=25, core_t=0.45, tco
     return {"core": round(core, 3), "core_ent": ent, "tcoh": round(tcoh, 3), "src": src, "is_tf": is_tf}
 
 
+def size_core_suppress(core, n, surfaced, en_count, total_lang, *,
+                       c_low=0.25, n_mid=15, vern_zero=0.05):
+    """Size x core surfacing gate (ship-blocker fix 2026-06-03) — REFERENCE predicate.
+
+    The executable copies are SQL: scripts/migrations/093_low_core_surfacing_gate.sql (one-shot
+    for the pre-gate keeper) and the post-INSERT step in story_loader.py (every load). Keep all
+    three in sync — backend/tests/test_size_core_gate.py guards both the truth table and the SQL.
+
+    Suppress (set is_template_family) a SURFACED cluster that is a mid-size low-entity-core
+    grab-bag — the NASA (n=19, core 0.16) / exam-pile (n=52, core 0.21) class that escaped §2b's
+    src>=FLAG_MIN_SRC floor — while:
+      * sparing tiny real stories  (size floor n_mid; junk is mid-size, real-small is tiny), and
+      * sparing vernacular clusters whose core~0 is an NER-on-foreign artifact, not incoherence
+        (the carve-out: dominantly non-English AND core below vern_zero -> core is unknown, not low).
+
+      core        entity_core_cov (max stoplist-cleaned entity coverage)
+      n           article_count
+      surfaced    independent_source_count >= 3 OR rescued_from_story_id is not None
+      en_count    English article count = languages["en"];  total_lang = sum(languages.values())
+    Returns True iff the cluster should be suppressed from surfacing.
+    """
+    if not surfaced:
+        return False
+    if not (core < c_low and n >= n_mid):
+        return False
+    vernacular_dominant = en_count * 2 < total_lang
+    if vernacular_dominant and core < vern_zero:   # vernacular_core_zero: core is unknown, not low
+        return False
+    return True
+
+
 def rescue(members_by_cluster, edges, art_ents, art_titles, src_of, *,
            res=4.0, min_sz_sub=10, min_src_sub=12, core_t=0.45, tcoh_t=0.35,
            allow_tcoh=False, flag_min_src=25, tcoh_cap=1000):

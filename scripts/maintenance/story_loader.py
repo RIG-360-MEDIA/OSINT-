@@ -60,6 +60,13 @@ FLAG_MIN_SRC = int(os.environ.get("FLAG_MIN_SRC", "25"))      # §2b flag floor 
 CORE_T = float(os.environ.get("CORE_T", "0.45"))
 TCOH_T = float(os.environ.get("TCOH_T", "0.35"))
 TCOH_CAP = int(os.environ.get("TCOH_CAP", "1000"))  # tcoh-spare void above this size (broad topic -> flag + unpack)
+# size x core surfacing gate (ship-blocker fix 2026-06-03; migration 093 mirrors the SQL below).
+# Catches mid-size low-core grab-bags that escaped §2b's src>=FLAG_MIN_SRC floor (the NASA n=19 /
+# exam n=52 class). Thresholds locked off the §B distribution; the incoherent/legit dead-zone was
+# empty. Carve-out spares vernacular-dominant clusters whose core~0 is an NER-on-foreign artifact.
+SIZE_CORE_LOW = float(os.environ.get("SIZE_CORE_LOW", "0.25"))         # C_low — entity-core ceiling
+SIZE_CORE_NMID = int(os.environ.get("SIZE_CORE_NMID", "15"))          # N_mid — size floor (tiny real stories spared)
+SIZE_CORE_VERN_ZERO = float(os.environ.get("SIZE_CORE_VERN_ZERO", "0.05"))  # vernacular core~0 carve-out cutoff
 
 
 def reprint_key(title, lead):  # wire-dedup key (same as the digest): same body => one report
@@ -285,6 +292,27 @@ def main() -> int:
     cur.execute(f"""DELETE FROM analytics.story_clusters{TBL} c WHERE c.provisional AND NOT EXISTS
                    (SELECT 1 FROM analytics.story_cluster_members{TBL} m WHERE m.story_id=c.story_id)""")
     orphans = cur.rowcount
+
+    # ---- size x core surfacing gate (ship-blocker fix 2026-06-03; migration 093 mirrors this SQL) ----
+    # Flag mid-size low-core grab-bags that escaped §2b's src>=FLAG_MIN_SRC floor (NASA/exam class):
+    # surfaced AND entity_core_cov<C_low AND article_count>=N_mid, EXCEPT a vernacular-dominant cluster
+    # with core~0 (an NER-on-foreign artifact, not incoherence). Reversible suppress-flag; no delete.
+    cur.execute(f"""
+        UPDATE analytics.story_clusters{TBL}
+        SET is_template_family=true, suppression_reason='size-core-gate', updated_at=now()
+        WHERE is_template_family=false
+          AND (independent_source_count>=3 OR rescued_from_story_id IS NOT NULL)
+          AND entity_core_cov < %s
+          AND article_count  >= %s
+          AND NOT (COALESCE((languages->>'en')::int,0)*2
+                     < (SELECT COALESCE(sum(value::int),0) FROM jsonb_each_text(languages))
+                   AND entity_core_cov < %s)""",
+        (SIZE_CORE_LOW, SIZE_CORE_NMID, SIZE_CORE_VERN_ZERO))
+    size_core_flagged = cur.rowcount
+    # provenance for the pre-existing §2b template-families (everything else suppressed).
+    cur.execute(f"""UPDATE analytics.story_clusters{TBL}
+                    SET suppression_reason='template-family'
+                    WHERE is_template_family=true AND suppression_reason IS NULL""")
     conn.commit()
 
     cur.execute(f"""SELECT count(*), count(*) FILTER (WHERE article_count>1),
@@ -304,7 +332,8 @@ def main() -> int:
         f"(rescue: flagged={rstats['flagged']} rescued={rstats['rescued']} dry={rstats['dry']})\n"
         f"  story_ids: {reused} reused (Jaccard>={JACCARD_MIN}) + {len(cl)-reused} new; orphans removed={orphans}\n"
         f"  story_clusters={tot} (multi-article={multi}, surfaced>=3indep={surfaced}, "
-        f"template-family={flagged}, rescued={rescued})  members={mem}  edges={eg}\n")
+        f"template-family={flagged} [size-core-gate={size_core_flagged}], rescued={rescued})  "
+        f"members={mem}  edges={eg}\n")
     return 0
 
 

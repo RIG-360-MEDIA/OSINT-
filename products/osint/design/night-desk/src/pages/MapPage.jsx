@@ -199,7 +199,12 @@ export default function MapPage() {
         <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(440px, 92vw)', background: 'var(--void-2,#0b0a10)', borderLeft: '1px solid var(--line)', overflowY: 'auto', boxShadow: '-20px 0 60px rgba(0,0,0,.5)', padding: '18px 18px 48px' }}>
           <button onClick={() => setDist(null)} style={{ position: 'absolute', top: 12, right: 14, background: 'transparent', border: 'none', color: 'var(--faint)', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1 }}>×</button>
           {dist.loading && <div style={{ color: 'var(--faint)', padding: '30px 0' }}>Opening district…</div>}
-          {dist.file && !dist.file.found && <div style={{ color: 'var(--faint)' }}>No file for this district.</div>}
+          {dist.file && !dist.file.found && (
+            <div style={{ color: 'var(--faint)', padding: '20px 0' }}>
+              {dist.file.error
+                ? <>Couldn’t load this district — {dist.file.error}. <button onClick={() => openDistrict({ id: dist.id })} style={{ background: 'none', border: '1px solid var(--line)', color: 'var(--gold)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', marginLeft: 6 }}>retry</button></>
+                : 'No coverage on file for this district.'}
+            </div>)}
           {dist.file && dist.file.found && (
             <>
               <div className="eyebrow" style={{ color: 'var(--gold)' }}>DISTRICT · {dist.file.state}</div>

@@ -1,0 +1,123 @@
+"""Per-persona Home payload cache + 30-min background refresher.
+
+`build_home` is too heavy (~12-30s on the live window) to run per request, so we
+serve a precomputed snapshot and refresh it on a 30-min cadence (aligned with the
+matview refresh). The user never waits for the compute; a background task absorbs it.
+
+  * get_home(...)      — serve cache if fresh (<FRESH_MIN); else compute live, store,
+                         serve; on compute failure fall back to stale cache.
+  * precompute_all()   — recompute + store every onboarded persona, EACH on its own
+                         connection so one slow/failed persona can't poison the rest.
+  * start_scheduler()  — fire-and-forget asyncio loop: warm on boot, then every REFRESH_MIN.
+
+Table: analytics.home_cache(user_id pk, payload jsonb, computed_at timestamptz).
+Writes commit explicitly — get_db() does not auto-commit. analytics_user has RW on analytics.*.
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+from typing import Any
+
+from sqlalchemy import text
+
+from brief_prefs import load_prefs
+from db import get_db
+from home_sections import build_home
+
+logger = logging.getLogger("osint-backend.home_cache")
+
+FRESH_MIN = 35           # serve a cached payload up to this old (matview refreshes ~30m)
+REFRESH_MIN = 30         # background recompute cadence
+_BOOT_DELAY_S = 20       # let the app finish booting before the first warm
+_COMPUTE_TIMEOUT_BG = "180s"   # generous ceiling for the background job
+_COMPUTE_TIMEOUT_REQ = "60s"   # cold-miss lazy fill on the request path
+
+
+async def _store(db, uid: str, payload: dict[str, Any]) -> None:
+    await db.execute(text("""
+        INSERT INTO analytics.home_cache (user_id, payload, computed_at)
+        VALUES (CAST(:u AS uuid), CAST(:p AS jsonb), now())
+        ON CONFLICT (user_id)
+        DO UPDATE SET payload = EXCLUDED.payload, computed_at = now()
+    """), {"u": uid, "p": json.dumps(payload, default=str)})
+    await db.commit()
+
+
+async def _read_row(db, uid: str):
+    return (await db.execute(text("""
+        SELECT payload, EXTRACT(EPOCH FROM (now() - computed_at)) / 60.0 AS age_min
+          FROM analytics.home_cache WHERE user_id = CAST(:u AS uuid)
+    """), {"u": uid})).fetchone()
+
+
+async def get_home(db, uid: str, prefs: dict[str, Any], display_name: str | None,
+                   *, max_age_min: float = FRESH_MIN) -> dict[str, Any]:
+    """Cached payload if fresh; else compute live + store; else serve stale."""
+    row = await _read_row(db, uid)
+    if row and row.age_min is not None and row.age_min <= max_age_min:
+        payload = dict(row.payload)
+        payload["cache"] = {"hit": True, "age_min": round(float(row.age_min), 1)}
+        return payload
+
+    try:
+        await db.execute(text(f"SET statement_timeout = '{_COMPUTE_TIMEOUT_REQ}'"))
+        payload = await build_home(db, prefs, display_name=display_name)
+        await _store(db, uid, payload)
+        payload["cache"] = {"hit": False, "age_min": 0.0}
+        return payload
+    except Exception as exc:  # noqa: BLE001 — never 500 if we can serve something
+        logger.warning("home_cache: live compute failed for %s (%s)", uid, exc)
+        try:
+            await db.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        if row and row.payload is not None:  # serve stale rather than error
+            payload = dict(row.payload)
+            payload["cache"] = {"hit": True, "stale": True,
+                                "age_min": round(float(row.age_min), 1) if row.age_min else None}
+            return payload
+        raise
+
+
+async def precompute_all() -> int:
+    """Recompute + store the Home payload for every onboarded persona, each on its
+    own connection so a slow/failed persona is isolated."""
+    async with get_db() as db:
+        rows = (await db.execute(text(
+            "SELECT id::text AS id, full_name FROM analytics.users WHERE onboarded_at IS NOT NULL"
+        ))).fetchall()
+
+    done = 0
+    for r in rows:
+        try:
+            async with get_db() as db:
+                await db.execute(text(f"SET statement_timeout = '{_COMPUTE_TIMEOUT_BG}'"))
+                prefs = await load_prefs(db, r.id)
+                if not prefs:
+                    continue
+                payload = await build_home(db, prefs, display_name=r.full_name)
+                await _store(db, r.id, payload)
+            done += 1
+        except Exception as exc:  # noqa: BLE001 — one bad persona must not kill the batch
+            logger.warning("home_cache: precompute failed for %s (%s)", r.id, exc)
+    logger.info("home_cache: precomputed %d/%d personas", done, len(rows))
+    return done
+
+
+async def _loop() -> None:
+    await asyncio.sleep(_BOOT_DELAY_S)
+    while True:
+        try:
+            await precompute_all()
+        except Exception as exc:  # noqa: BLE001 — keep the loop alive across failures
+            logger.warning("home_cache: precompute loop error (%s)", exc)
+        await asyncio.sleep(REFRESH_MIN * 60)
+
+
+def start_scheduler() -> asyncio.Task:
+    """Fire-and-forget background refresher. osint-backend runs a single uvicorn
+    worker, so there is exactly one scheduler."""
+    logger.info("home_cache: starting %d-min precompute scheduler", REFRESH_MIN)
+    return asyncio.create_task(_loop())

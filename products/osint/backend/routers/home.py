@@ -15,7 +15,7 @@ from sqlalchemy import text
 from auth.middleware import get_optional_user
 from brief_prefs import load_prefs
 from db import get_db
-from home_sections import build_home
+from home_cache import get_home as get_home_cached
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
 
@@ -32,4 +32,5 @@ async def get_home(user: dict[str, str] | None = Depends(get_optional_user)) -> 
             text("SELECT full_name FROM analytics.users WHERE id = CAST(:u AS uuid)"),
             {"u": user["id"]},
         )).scalar()
-        return await build_home(db, prefs, display_name=display_name)
+        # Served from the 30-min precomputed cache (lazy-fills on a cold miss).
+        return await get_home_cached(db, user["id"], prefs, display_name)

@@ -39,7 +39,10 @@ logger = logging.getLogger("osint-backend")
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("osint-backend starting; pool_size=%d", settings.db_pool_size)
     get_engine()  # eager init so a bad DB URL fails fast
+    from home_cache import start_scheduler  # lazy import to avoid cycles
+    refresher = start_scheduler()  # 30-min background Home precompute
     yield
+    refresher.cancel()
     await dispose_engine()
     logger.info("osint-backend stopped cleanly")
 

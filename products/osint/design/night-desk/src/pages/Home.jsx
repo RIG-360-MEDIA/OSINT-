@@ -25,7 +25,7 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    async function load() {
       try {
         const [h, s] = await Promise.all([
           authFetch('/api/brief/home'),
@@ -38,8 +38,14 @@ export default function Home() {
       } catch (e) {
         if (!cancelled) setStatus({ loading: false, error: String(e?.message || e) });
       }
-    })();
-    return () => { cancelled = true; };
+    }
+    load();
+    // Auto-refresh every 30 min (matches the matview refresh cadence) — no reload.
+    // Silent swap: load() doesn't reset to the loading screen on refetch.
+    const id = setInterval(load, 30 * 60 * 1000);
+    const onFocus = () => load();
+    window.addEventListener('focus', onFocus);
+    return () => { cancelled = true; clearInterval(id); window.removeEventListener('focus', onFocus); };
   }, []);
 
   if (status.loading) return <Notice>Assembling your situation brief…</Notice>;

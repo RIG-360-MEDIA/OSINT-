@@ -17,7 +17,7 @@ function timeAgo(ts) {
 
 function Section({ eyebrow, title, sub, children }) {
   return (
-    <section style={{ marginTop: 30 }}>
+    <section className="wm-sec" style={{ marginTop: 30 }}>
       <div className="eyebrow" style={{ color: 'var(--gold)' }}>{eyebrow}</div>
       <h2 className="h-sec" style={{ margin: '4px 0' }}>{title}</h2>
       {sub && <div className="sub" style={{ marginBottom: 16 }}>{sub}</div>}

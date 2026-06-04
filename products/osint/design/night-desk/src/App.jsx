@@ -17,9 +17,12 @@ const PAGES = [Home, WarRoom, Analytics, Dossier, MapPage, Dispatch];
 
 function AppShell() {
   const [i, setI] = useState(0);
-  const [railOpen, setRailOpen] = useState(true);
+  // Sidebar is collapsed by default (and remembers the user's choice). It stays
+  // whatever it is across page switches since this state lives above the pages.
+  const [railOpen, setRailOpen] = useState(() => { try { return localStorage.getItem('nd-rail') === 'open'; } catch { return false; } });
   const [theme, setTheme] = useState(() => { try { return localStorage.getItem('nd-theme') || 'dark'; } catch { return 'dark'; } });
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [i]);
+  useEffect(() => { try { localStorage.setItem('nd-rail', railOpen ? 'open' : 'closed'); } catch { /* ignore */ } }, [railOpen]);
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem('nd-theme', theme); } catch { /* ignore */ }

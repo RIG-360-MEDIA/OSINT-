@@ -14,7 +14,7 @@ function embedSrc(c) {
 
 // Mounts the heavy YouTube iframe only once the tile scrolls near the viewport —
 // keeps the map snappy and avoids 6 live HLS streams loading at once on page open.
-function ChannelTile({ c }) {
+function ChannelTile({ c, n }) {
   const ref = useRef(null);
   const [show, setShow] = useState(false);
   useEffect(() => {
@@ -27,7 +27,7 @@ function ChannelTile({ c }) {
     return () => io.disconnect();
   }, [show]);
   return (
-    <div ref={ref} style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--line)', background: '#000', boxShadow: '0 2px 18px rgba(0,0,0,0.45)' }}>
+    <div ref={ref} className="wm-tile" style={{ borderRadius: 7, overflow: 'hidden', border: '1px solid var(--line)', background: '#06070a' }}>
       <div style={{ position: 'relative', paddingTop: '56.25%' }}>
         {show
           ? (
@@ -39,11 +39,16 @@ function ChannelTile({ c }) {
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
             />
           )
-          : <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: 'var(--faint)', fontSize: '0.72rem', letterSpacing: '0.12em' }}>● LOADING STREAM…</div>}
+          : <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: 'var(--faint)', fontFamily: 'var(--mono)', fontSize: '0.66rem', letterSpacing: '0.14em' }}>◴ LOADING STREAM</div>}
       </div>
-      <div style={{ padding: '9px 13px', fontSize: '0.86rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span>{c.name}</span>
-        <span style={{ fontSize: '0.6rem', color: 'var(--neg, #fb7185)', letterSpacing: '0.12em' }}>● LIVE</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 11px', background: '#0a0b10', borderTop: '1px solid var(--line)' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: '0.6rem', color: 'var(--faint)' }}>{String(n).padStart(2, '0')}</span>
+          <span style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--mono)', fontSize: '0.56rem', letterSpacing: '0.16em', color: '#fb6a6a', flex: 'none' }}>
+          <i className="wm-livedot" />LIVE
+        </span>
       </div>
     </div>
   );
@@ -67,14 +72,21 @@ export default function LiveChannels({ scope, stateCode }) {
     return () => { cancelled = true; };
   }, [scope, stateCode]);
   return (
-    <section>
-      <div className="eyebrow" style={{ color: 'var(--gold)' }}>LIVE CHANNELS</div>
-      <h2 className="h-sec" style={{ margin: '4px 0' }}>On air<span className="h-sub"> — {scope === 'global' ? 'worldwide' : 'your region, live'}</span></h2>
-      <div className="sub" style={{ marginBottom: 18 }}>
+    <section className="wm-sec">
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <div className="eyebrow" style={{ color: 'var(--gold)' }}>LIVE CHANNELS</div>
+          <h2 className="h-sec" style={{ margin: '4px 0' }}>On air<span className="h-sub"> — {scope === 'global' ? 'worldwide' : 'your region, live'}</span></h2>
+        </div>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--mono)', fontSize: '0.62rem', letterSpacing: '0.16em', color: '#fb6a6a' }}>
+          <i className="wm-livedot" />{items.length} STREAMING
+        </span>
+      </div>
+      <div className="sub" style={{ marginBottom: 16 }}>
         {scope === 'global' ? 'Global news wires, streaming live.' : 'National + regional channels for your turf, streaming live.'}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(440px, 1fr))', gap: 16 }}>
-        {items.map((c) => <ChannelTile key={c.id} c={c} />)}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(404px, 1fr))', gap: 12 }}>
+        {items.map((c, ix) => <ChannelTile key={c.id} c={c} n={ix + 1} />)}
       </div>
     </section>
   );

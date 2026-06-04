@@ -160,7 +160,7 @@ export default function MapPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 22, paddingBottom: 40 }}>
-      <div style={{ position: 'relative', height: '66vh', minHeight: 480, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)' }}>
+      <div style={{ position: 'relative', height: '66vh', minHeight: 480, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--line)' }}>
       <DeckGL viewState={view} onViewStateChange={(e) => setView(e.viewState)} controller={true} layers={layers} style={{ position: 'absolute', inset: 0 }}>
         <Map reuseMaps mapStyle={DARK_STYLE} attributionControl={false} />
       </DeckGL>
@@ -176,7 +176,7 @@ export default function MapPage() {
           </div>
         </div>
         <div style={{ pointerEvents: 'auto', display: 'flex', gap: 8 }}>
-          <div style={{ display: 'flex', gap: 6, background: 'var(--void-2,#0b0a10)', border: '1px solid var(--line)', borderRadius: 10, padding: 5 }}>
+          <div className="wm-hud" style={{ display: 'flex', gap: 6, padding: 5 }}>
             {['mine', 'global'].map((s) => (
               <button key={s} onClick={() => setScope(s)}
                 style={{ padding: '8px 16px', borderRadius: 7, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem', letterSpacing: '0.08em',
@@ -185,7 +185,7 @@ export default function MapPage() {
               </button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 6, background: 'var(--void-2,#0b0a10)', border: '1px solid var(--line)', borderRadius: 10, padding: 5 }}>
+          <div className="wm-hud" style={{ display: 'flex', gap: 6, padding: 5 }}>
             {[['3D', false], ['2D', true]].map(([lbl, val]) => (
               <button key={lbl} onClick={() => { if (flat !== val) toggleFlat(); }}
                 style={{ padding: '8px 13px', borderRadius: 7, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem', letterSpacing: '0.08em',
@@ -197,8 +197,8 @@ export default function MapPage() {
         </div>
       </div>
 
-      <div style={{ position: 'absolute', bottom: 16, left: 16, background: 'var(--void-2,#0b0a10cc)', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 14px', fontSize: '0.72rem', color: 'var(--faint)' }}>
-        <div style={{ marginBottom: 6, letterSpacing: '0.1em' }}>{useChoropleth ? (flat ? 'DISTRICT COLOUR = NET STANCE' : 'DISTRICT COLOUR = NET STANCE · HEIGHT = COVERAGE') : (flat ? 'COLOUR = STANCE' : 'COLUMN HEIGHT = COVERAGE · COLOUR = STANCE')}</div>
+      <div className="wm-hud" style={{ position: 'absolute', bottom: 16, left: 16, padding: '10px 14px', fontSize: '0.72rem', color: 'var(--faint)' }}>
+        <div className="wm-label" style={{ marginBottom: 6 }}>{useChoropleth ? (flat ? 'DISTRICT COLOUR = NET STANCE' : 'DISTRICT COLOUR = NET STANCE · HEIGHT = COVERAGE') : (flat ? 'COLOUR = STANCE' : 'COLUMN HEIGHT = COVERAGE · COLOUR = STANCE')}</div>
         <div style={{ display: 'flex', gap: 14 }}>
           {[['supportive', 'supportive'], ['neutral', 'neutral'], ['hostile', 'critical']].map(([k, lbl]) => (
             <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>

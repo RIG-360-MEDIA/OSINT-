@@ -104,6 +104,20 @@ button { font-family: inherit; }
   font-size: 1.05rem; line-height: 1; padding: 2px 4px; border-radius: 6px; transition: 0.18s; }
 .rail-collapse:hover { color: var(--gold); }
 .main { min-width: 0; }
+
+/* ── World-Monitor chrome (Situation Room) ──────────────────────────────── */
+@keyframes wm-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+.wm-livedot { width: 7px; height: 7px; border-radius: 50%; background: #fb4d4d;
+  box-shadow: 0 0 8px #fb4d4d; animation: wm-pulse 1.6s ease-in-out infinite; display: inline-block; flex: none; }
+.wm-tile { transition: border-color 0.18s ease, transform 0.18s ease; }
+.wm-tile:hover { border-color: var(--gold); transform: translateY(-2px); }
+/* HUD panel: semi-transparent slate, hairline border, sharp corners, mono label feel */
+.wm-hud { background: oklch(0.11 0.012 265 / 0.82); border: 1px solid var(--line);
+  border-radius: 6px; backdrop-filter: blur(7px); }
+.wm-label { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--faint); }
+/* Section eyebrow with a leading accent tick, World-Monitor style */
+.wm-sec { border-left: 2px solid var(--gold); padding-left: 12px; }
 .page { padding: clamp(18px, 2vw, 30px) clamp(20px, 3vw, 46px) 110px; max-width: 1480px; }
 .stack > * + * { margin-top: var(--mt, 24px); }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }

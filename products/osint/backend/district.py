@@ -35,7 +35,7 @@ async def build_district_file(db, did: str) -> dict[str, Any]:
         WITH da AS (
           SELECT a.id, (SELECT avg(({POL}) * st.intensity) FROM article_stances st WHERE st.article_id = a.id) lean
             FROM article_districts ad JOIN articles a ON a.id = ad.article_id
-           WHERE ad.district_id = :d AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh))
+           WHERE ad.district_id = :d AND a.source_country = 'IN' AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh))
         SELECT count(*) articles,
                count(*) FILTER (WHERE lean >= 0.10) sup,
                count(*) FILTER (WHERE lean <= -0.10) crit,
@@ -57,7 +57,7 @@ async def build_district_file(db, did: str) -> dict[str, Any]:
         SELECT a.id::text id, a.title, a.language_iso lang, s.name src, a.thumbnail_url thumb, a.url,
                (SELECT round(avg(({POL}) * st.intensity)::numeric, 2) FROM article_stances st WHERE st.article_id = a.id) lean
           FROM article_districts ad JOIN articles a ON a.id = ad.article_id JOIN sources s ON s.id = a.source_id
-         WHERE ad.district_id = :d AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+         WHERE ad.district_id = :d AND a.source_country = 'IN' AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
          ORDER BY a.collected_at DESC LIMIT 6
     """), p)).fetchall()]
     await i18n.attach_en(db, top_stories, "headline")
@@ -66,7 +66,7 @@ async def build_district_file(db, did: str) -> dict[str, Any]:
         SELECT ed.canonical_name nm, ed.entity_type et, count(DISTINCT m.article_id) n
           FROM article_districts ad JOIN article_entity_mentions m ON m.article_id = ad.article_id
           JOIN entity_dictionary ed ON ed.id = m.entity_id JOIN articles a ON a.id = ad.article_id
-         WHERE ad.district_id = :d AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+         WHERE ad.district_id = :d AND a.source_country = 'IN' AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
            AND ed.entity_type IN ('person', 'organization')
          GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 8
     """), p)).fetchall()]
@@ -74,7 +74,7 @@ async def build_district_file(db, did: str) -> dict[str, Any]:
     topics = [{"label": (r.topic or "—").title(), "value": int(r.n)} for r in (await db.execute(text("""
         SELECT a.topic_category topic, count(DISTINCT a.id) n
           FROM article_districts ad JOIN articles a ON a.id = ad.article_id
-         WHERE ad.district_id = :d AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+         WHERE ad.district_id = :d AND a.source_country = 'IN' AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
            AND a.topic_category IS NOT NULL
          GROUP BY 1 ORDER BY 2 DESC LIMIT 6
     """), p)).fetchall()]
@@ -83,7 +83,7 @@ async def build_district_file(db, did: str) -> dict[str, Any]:
               for r in (await db.execute(text("""
         SELECT q.quote_text q, NULLIF(q.quote_text_en, '') qen, COALESCE(q.speaker_name_en, q.speaker_name) who, s.name src
           FROM article_quotes q JOIN articles a ON a.id = q.article_id JOIN sources s ON s.id = a.source_id
-         WHERE a.id IN (SELECT article_id FROM article_districts WHERE district_id = :d)
+         WHERE a.id IN (SELECT article_id FROM article_districts WHERE district_id = :d) AND a.source_country = 'IN'
            AND length(COALESCE(q.quote_text_en, q.quote_text)) BETWEEN 16 AND 280 AND q.speaker_name IS NOT NULL
          ORDER BY a.collected_at DESC LIMIT 4
     """), {"d": did})).fetchall()]
@@ -93,14 +93,14 @@ async def build_district_file(db, did: str) -> dict[str, Any]:
         SELECT s.name nm, count(*) FILTER (WHERE ({POL}) > 0) pos, count(*) FILTER (WHERE ({POL}) < 0) neg
           FROM article_districts ad JOIN articles a ON a.id = ad.article_id
           JOIN sources s ON s.id = a.source_id JOIN article_stances st ON st.article_id = a.id
-         WHERE ad.district_id = :d AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+         WHERE ad.district_id = :d AND a.source_country = 'IN' AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
          GROUP BY s.name HAVING count(*) >= 3 ORDER BY count(DISTINCT a.id) DESC LIMIT 6
     """), p)).fetchall()]
 
     lang = {r.lang: int(r.n) for r in (await db.execute(text("""
         SELECT COALESCE(a.language_iso, '?') lang, count(DISTINCT a.id) n
           FROM article_districts ad JOIN articles a ON a.id = ad.article_id
-         WHERE ad.district_id = :d AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+         WHERE ad.district_id = :d AND a.source_country = 'IN' AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
          GROUP BY 1
     """), p)).fetchall()}
 
@@ -109,7 +109,7 @@ async def build_district_file(db, did: str) -> dict[str, Any]:
         SELECT a.title, EXTRACT(EPOCH FROM (analytics.now_sim() - a.collected_at)) / 3600.0 age_h, s.name src,
                (SELECT avg(({POL}) * st.intensity) FROM article_stances st WHERE st.article_id = a.id) lean
           FROM article_districts ad JOIN articles a ON a.id = ad.article_id JOIN sources s ON s.id = a.source_id
-         WHERE ad.district_id = :d AND a.collected_at >= analytics.now_sim() - make_interval(hours => 168)
+         WHERE ad.district_id = :d AND a.source_country = 'IN' AND a.collected_at >= analytics.now_sim() - make_interval(hours => 168)
          ORDER BY a.collected_at DESC LIMIT 60
     """), {"d": did})).fetchall()
     chosen, inwin = 168, list(rec)
@@ -149,7 +149,7 @@ async def district_articles(db, did: str, cursor: str | None, limit: int) -> dic
                a.collected_at,
                (SELECT round(avg(({POL}) * st.intensity)::numeric, 2) FROM article_stances st WHERE st.article_id = a.id) lean
           FROM article_districts ad JOIN articles a ON a.id = ad.article_id JOIN sources s ON s.id = a.source_id
-         WHERE ad.district_id = :d
+         WHERE ad.district_id = :d AND a.source_country = 'IN'
            AND (CAST(:cursor AS timestamptz) IS NULL OR a.collected_at < CAST(:cursor AS timestamptz))
          ORDER BY a.collected_at DESC LIMIT :limit
     """), {"d": did, "cursor": cursor, "limit": limit})).fetchall()

@@ -19,6 +19,31 @@ _DICT_LOADED: bool = False
 _LOADED_VERSION: int = 0
 _LAST_VERSION_CHECK: float = 0.0
 
+# Migration 095 (2026-06-04) Tier 4: durable NER fix. Strip leading honorifics/office-titles/
+# article-particles BEFORE the entity_dictionary lookup so a span like "Chief Minister Revanth
+# Reddy" resolves to the bare "Revanth Reddy" entry, EVEN IF no alias was pre-loaded for it.
+# Without this, NER on a fresh "Chief Minister Smith" article (Smith not yet in dict variants)
+# would emit a brand-new titled row and re-create the dupe class. Regex anchored at start,
+# case-insensitive, dot optional. Must match the migration 095 strip regex byte-for-byte.
+_TITLE_STRIP_RE = re.compile(
+    r"^(chief minister|deputy chief minister|prime minister|deputy prime minister|"
+    r"vice president|president|minister|senator|justice|governor|mayor|"
+    r"honourable|honorable|hon\.?|speaker|"
+    r"sri|shri|smt|sm|dr|mr|mrs|ms|prof|capt|col|gen|lt|maj|adv|engr|"
+    r"a|an|the|cm|pm)\.?\s+",
+    re.IGNORECASE,
+)
+
+
+def _strip_title(key: str) -> str:
+    """Strip a single leading title/honorific/article from a lowercase entity-span key.
+    Returns the bare form, or the original key if no prefix matched. Used as a fallback at
+    dict-lookup time when the full span isn't directly in _ENTITY_DICT — preserves canonical
+    resolution for NEW (not-yet-aliased) entities."""
+    bare = _TITLE_STRIP_RE.sub("", key, count=1).strip()
+    return bare if bare and bare != key and len(bare) > 2 else key
+
+
 _COMMON_WORDS: frozenset[str] = frozenset({
     "india", "indian", "new", "united",
     "national", "state", "party", "press",
@@ -222,7 +247,13 @@ def extract_entities(
         if not key or key == "none" or len(key) < 3 or key in _COMMON_WORDS:
             continue
         if key not in _ENTITY_DICT:
-            continue
+            # Tier 4 fallback: strip leading title/honorific/article and re-try ONCE. Catches
+            # NEW articles whose titled span isn't yet aliased in dict ("Chief Minister Smith"
+            # -> "smith") so we don't keep creating dupes downstream.
+            bare = _strip_title(key)
+            if bare == key or bare not in _ENTITY_DICT:
+                continue
+            key = bare
         entry = _ENTITY_DICT[key]
         canonical = entry["canonical_name"]
         if canonical in seen_canonical:
@@ -249,8 +280,14 @@ def extract_entities(
         if i + 2 < len(words):
             cands.add(f"{words[i]} {words[i+1]} {words[i+2]}")
     for key in cands:
-        if len(key) < 3 or key in _COMMON_WORDS or key not in _ENTITY_DICT:
+        if len(key) < 3 or key in _COMMON_WORDS:
             continue
+        if key not in _ENTITY_DICT:
+            # Tier 4 fallback (mirrors the SpaCy-resolution branch above)
+            bare = _strip_title(key)
+            if bare == key or bare not in _ENTITY_DICT or bare in _COMMON_WORDS:
+                continue
+            key = bare
         entry = _ENTITY_DICT[key]
         canonical = entry["canonical_name"]
         if canonical in seen_canonical:

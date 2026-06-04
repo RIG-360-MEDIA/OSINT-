@@ -160,7 +160,8 @@ def _situation(bubbles: list[dict[str, Any]], region: str, window_days: int, uni
     topics = Counter(b["topic"] for b in bubbles
                      if b.get("topic") and str(b["topic"]).upper() != "OTHER")
     tone = "supportive" if sup > crit * 1.25 else "critical" if crit > sup * 1.25 else "mixed"
-    units = unit if len(bubbles) == 1 else f"{unit}s"
+    plural = f"{unit[:-1]}ies" if unit.endswith("y") else f"{unit}s"
+    units = unit if len(bubbles) == 1 else plural
     parts = [f"Across {region}, {total:,} stories landed in the last {window_days} days "
              f"from {len(bubbles)} {units} ({sup} supportive, {crit} critical — {tone})."]
     parts.append(f"{top['name']} leads with {top['articles']:,} stories.")

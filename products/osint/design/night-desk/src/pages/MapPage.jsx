@@ -6,6 +6,7 @@ import { Map } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { authFetch } from '../lib/supabase';
 import LiveChannels from '../components/LiveChannels';
+import MapSections from '../components/MapSections';
 import AP_GEO from '../data/andhra-pradesh-districts.json';
 import TG_GEO from '../data/telangana-districts.json';
 
@@ -266,6 +267,7 @@ export default function MapPage() {
       )}
       </div>
       <LiveChannels scope={scope} stateCode={data && data.state_code} />
+      {data && <MapSections data={data} scope={scope} onOpen={openDistrict} />}
     </div>
   );
 }

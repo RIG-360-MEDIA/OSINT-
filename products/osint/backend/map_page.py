@@ -11,11 +11,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from collections import Counter
+
 from sqlalchemy import text
 
+import i18n
 from posture import POL, principal_of
 
 WH = 504  # 21-day window
+FEED_WH = 168  # live feed: last 7 days, newest first
 
 # Indian state name -> districts.state_code (extend as personas grow).
 STATE_CODE = {
@@ -101,6 +105,65 @@ async def _state_bubbles(db) -> list[dict[str, Any]]:
     return out
 
 
+def _lean_tone(lean: float | None) -> str:
+    if (lean or 0) >= 0.1:
+        return "supportive"
+    if (lean or 0) <= -0.1:
+        return "hostile"
+    return "neutral"
+
+
+async def _region_feed(db, state_code: str | None) -> list[dict[str, Any]]:
+    """Newest geo-tagged stories — for the persona's state (mine) or corpus-wide (global)."""
+    if state_code:
+        sql = f"""
+            SELECT DISTINCT a.id::text id, a.title, a.language_iso lang, s.name src, a.url,
+                   a.thumbnail_url thumb, a.collected_at,
+                   (SELECT round(avg(({POL}) * st.intensity)::numeric, 2) FROM article_stances st WHERE st.article_id = a.id) lean
+              FROM article_districts ad JOIN districts d ON d.id = ad.district_id
+              JOIN articles a ON a.id = ad.article_id JOIN sources s ON s.id = a.source_id
+             WHERE d.state_code = :sc AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+             ORDER BY a.collected_at DESC LIMIT 12
+        """
+        params = {"sc": state_code, "wh": FEED_WH}
+    else:
+        sql = f"""
+            SELECT a.id::text id, a.title, a.language_iso lang, s.name src, a.url,
+                   a.thumbnail_url thumb, a.collected_at,
+                   (SELECT round(avg(({POL}) * st.intensity)::numeric, 2) FROM article_stances st WHERE st.article_id = a.id) lean
+              FROM articles a JOIN sources s ON s.id = a.source_id
+             WHERE a.id IN (SELECT article_id FROM article_districts)
+               AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+             ORDER BY a.collected_at DESC LIMIT 12
+        """
+        params = {"wh": FEED_WH}
+    rows = (await db.execute(text(sql), params)).fetchall()
+    feed = [{"id": r.id, "headline": r.title, "lang": r.lang, "source": r.src, "url": r.url,
+             "thumbnail": r.thumb, "collected_at": str(r.collected_at) if r.collected_at else None,
+             "tone": _lean_tone(r.lean)} for r in rows]
+    await i18n.attach_en(db, feed, "headline")
+    return feed
+
+
+def _situation(bubbles: list[dict[str, Any]], region: str, window_days: int) -> str:
+    """A factual restatement of the aggregate — no inference beyond what the data says."""
+    if not bubbles:
+        return f"No mapped coverage for {region} in the last {window_days} days."
+    total = sum(b["articles"] for b in bubbles)
+    sup = sum(b["sup"] for b in bubbles)
+    crit = sum(b["crit"] for b in bubbles)
+    top = max(bubbles, key=lambda b: b["articles"])
+    topics = Counter(b["topic"] for b in bubbles if b.get("topic"))
+    tone = "supportive" if sup > crit * 1.25 else "critical" if crit > sup * 1.25 else "mixed"
+    parts = [f"Across {region}, {total:,} stories landed in the last {window_days} days "
+             f"from {len(bubbles)} {'district' if len(bubbles) == 1 else 'districts'} "
+             f"({sup} supportive, {crit} critical — {tone})."]
+    parts.append(f"{top['name']} is the busiest dateline ({top['articles']:,} stories).")
+    if topics:
+        parts.append(f"Coverage skews toward {topics.most_common(1)[0][0]}.")
+    return " ".join(parts)
+
+
 def _bbox(bubbles: list[dict[str, Any]]) -> dict[str, float] | None:
     pts = [(b["lat"], b["lon"]) for b in bubbles if b.get("lat") is not None]
     if not pts:
@@ -113,21 +176,27 @@ def _bbox(bubbles: list[dict[str, Any]]) -> dict[str, float] | None:
 
 async def build_map(db, prefs: dict[str, Any], scope: str = "mine") -> dict[str, Any]:
     pid, pname = principal_of(prefs)
+    wd = round(WH / 24)
     if scope == "global":
         bubbles = await _state_bubbles(db)
         return {"scope": "global", "level": "state", "region": "All coverage",
-                "bubbles": bubbles, "bbox": _bbox(bubbles), "window_days": round(WH / 24)}
+                "bubbles": bubbles, "bbox": _bbox(bubbles), "window_days": wd,
+                "feed": await _region_feed(db, None),
+                "situation": _situation(bubbles, "all coverage", wd)}
 
     sc = _primary_state_code(prefs)
     if not sc:
         # no mapped primary state — fall back to global
         bubbles = await _state_bubbles(db)
         return {"scope": "mine", "level": "state", "region": "All coverage",
-                "bubbles": bubbles, "bbox": _bbox(bubbles), "window_days": round(WH / 24),
+                "bubbles": bubbles, "bbox": _bbox(bubbles), "window_days": wd,
+                "feed": await _region_feed(db, None),
+                "situation": _situation(bubbles, "all coverage", wd),
                 "note": "No mapped primary state; showing all."}
     region = next((s for s in (prefs.get("regions") or {}).get("states", [])
                    if STATE_CODE.get((s or "").lower()) == sc), sc)
     bubbles = await _district_bubbles(db, sc)
     return {"scope": "mine", "level": "district", "region": region, "state_code": sc,
             "principal": pname, "bubbles": bubbles, "bbox": _bbox(bubbles),
-            "window_days": round(WH / 24)}
+            "window_days": wd, "feed": await _region_feed(db, sc),
+            "situation": _situation(bubbles, region, wd)}

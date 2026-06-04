@@ -193,12 +193,12 @@ export default function Dossier() {
               {file.quotes.length > 0 && (
                 <FPanel title="In their words" sub="quotes by them" source="article_quotes">
                   <div className="df-quotes">{file.quotes.map((qq, i) => (
-                    <div key={i} className="df-quote"><p>“{qq.q}”</p><span>{qq.src} · {qq.date}</span></div>))}</div>
+                    <div key={i} className="df-quote"><p>“{qq.q}”</p>{qq.q_en && <div className="en-gloss"><b>EN</b>{qq.q_en}</div>}<span>{qq.src} · {qq.date}</span></div>))}</div>
                 </FPanel>)}
               {file.claims.length > 0 && (
                 <FPanel title="The ledger" sub="claims about them" source="article_claims">
                   <div className="df-claims">{file.claims.map((cc, i) => (
-                    <div key={i} className="df-cl"><span className="df-clp">{cc.pred}</span><p>{cc.text}</p><span className="df-cls">{cc.src}</span></div>))}</div>
+                    <div key={i} className="df-cl"><span className="df-clp">{cc.pred}</span><p>{cc.text}</p>{cc.text_en && <div className="en-gloss"><b>EN</b>{cc.text_en}</div>}<span className="df-cls">{cc.src}</span></div>))}</div>
                 </FPanel>)}
               {file.network.length > 0 && (
                 <FPanel title="Network" sub="who they move with" source="entity co-mention">
@@ -216,7 +216,7 @@ export default function Dossier() {
               {file.timeline.length > 0 && (
                 <FPanel title="Timeline" sub="events" source="article_events" span>
                   <div className="df-timeline">{file.timeline.map((t, i) => (
-                    <div key={i} className="df-tl"><span className="df-tld">{t.date}</span><span className="df-tlw">{t.what}</span></div>))}</div>
+                    <div key={i} className="df-tl"><span className="df-tld">{t.date}</span><span className="df-tlw">{t.what}{t.what_en && <span className="en-gloss"><b>EN</b>{t.what_en}</span>}</span></div>))}</div>
                 </FPanel>)}
 
               {/* LIVE WHOLE-CORPUS COVERAGE FEED — newest first, paginated */}
@@ -226,6 +226,7 @@ export default function Dossier() {
                     <a className="df-feedrow" key={a.id} href={a.url || '#'} target="_blank" rel="noreferrer">
                       <span className="df-feedthumb">{a.thumbnail ? <img src={a.thumbnail} alt="" loading="lazy" /> : <i className={'df-recdot ' + a.tone} />}</span>
                       <span className="df-feedmain"><span className="df-feedhead">{a.headline}</span>
+                        {a.headline_en && <span className="en-gloss"><b>EN</b>{a.headline_en}</span>}
                         <span className="df-feedmeta"><span className={'df-recdot ' + a.tone} /> {a.source} · {ageOf(a.collected_at)}{a.topic ? ` · ${a.topic}` : ''}</span></span>
                     </a>
                   ))}

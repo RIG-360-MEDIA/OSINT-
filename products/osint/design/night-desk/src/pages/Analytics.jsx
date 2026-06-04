@@ -44,7 +44,7 @@ const EventCal = ({ items }) => (
 );
 const QuotesBlock = ({ items }) => (
   <div className="qblock">{items.map((q, i) => (
-    <div className="dqb" key={i}><p className="dqb-q">“{q.q}”</p><div className="dqb-m"><b>{q.who}</b> · {q.role}<span>{q.src}</span></div></div>
+    <div className="dqb" key={i}><p className="dqb-q">“{q.q}”</p>{q.q_en && <div className="en-gloss"><b>EN</b>{q.q_en}</div>}<div className="dqb-m"><b>{q.who}</b> · {q.role}<span>{q.src}</span></div></div>
   ))}</div>
 );
 const ClaimsBlock = ({ items }) => (

@@ -13,6 +13,7 @@ from sqlalchemy import text
 
 from posture import POL, _BODY_PRESENT, compute_posture, principal_of
 from llm_synth import synthesize_paragraph
+import i18n
 
 WH = 504  # 21-day crisis window
 _MONTHS = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -38,7 +39,7 @@ async def _threat_cables(db, pid: str, wh: int) -> list[dict[str, Any]]:
     """Adverse storylines: the principal's negative-stance coverage grouped by topic."""
     rows = (await db.execute(text(f"""
         WITH pa AS (
-          SELECT a.id, a.title, a.topic_category, a.collected_at, s.name src,
+          SELECT a.id, a.title, a.topic_category, a.collected_at, s.name src, a.language_iso lang,
                  COALESCE(s.source_tier, 3) tier,
                  count(*) FILTER (WHERE ({POL}) < 0) negn,
                  avg(CASE WHEN ({POL}) < 0 THEN abs(st.intensity) END) negint
@@ -49,13 +50,15 @@ async def _threat_cables(db, pid: str, wh: int) -> list[dict[str, Any]]:
            WHERE m.entity_id = CAST(:pid AS uuid)
              AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
              AND {_BODY_PRESENT}
-           GROUP BY a.id, a.title, a.topic_category, a.collected_at, s.name, s.source_tier
+           GROUP BY a.id, a.title, a.topic_category, a.collected_at, s.name, a.language_iso, s.source_tier
           HAVING count(*) FILTER (WHERE ({POL}) < 0) > 0
         )
         SELECT COALESCE(topic_category, 'OTHER') topic, count(*) n, count(DISTINCT src) outlets,
                round(avg(negint)::numeric, 2) avgneg, min(tier) tier,
                max(collected_at) latest, min(collected_at) first,
                (array_agg(title ORDER BY negint DESC NULLS LAST, collected_at DESC))[1] rep,
+               (array_agg(id::text ORDER BY negint DESC NULLS LAST, collected_at DESC))[1] rep_id,
+               (array_agg(lang ORDER BY negint DESC NULLS LAST, collected_at DESC))[1] rep_lang,
                (array_agg(src   ORDER BY collected_at ASC))[1] origin,
                (array_agg(DISTINCT src))[1:4] hits
           FROM pa GROUP BY 1 ORDER BY count(*) DESC, avg(negint) DESC NULLS LAST LIMIT 6
@@ -71,11 +74,13 @@ async def _threat_cables(db, pid: str, wh: int) -> list[dict[str, Any]]:
             "score": f"−{round(neg * 100)}", "src": int(r.n),
             "receipt": {"reach": round(int(r.outlets) / 6, 2), "neg": round(neg, 2),
                         "vel": round(n / maxn, 2), "tier": round((4 - int(r.tier)) / 3, 2)},
-            "claim": r.rep, "who": r.origin, "date": _day(r.latest), "origin": r.origin,
+            "claim": r.rep, "rep_id": r.rep_id, "rep_lang": r.rep_lang,
+            "who": r.origin, "date": _day(r.latest), "origin": r.origin,
             "facets": {"what": topic.title(), "hurts": f"{n} pieces, {int(r.outlets)} outlets",
                        "acts": "Contest in your warmest outlet" if neg >= 0.4 else "Monitor",
                        "hits": list(r.hits or [])},
         })
+    await i18n.attach_en(db, cables, "claim")
     return cables
 
 
@@ -172,7 +177,7 @@ async def _intercepts(db, pid: str, person_ids: list[str], wh: int) -> list[dict
     """Watched voices quoted in articles that ALSO cover the principal AND carry a
     negative stance — i.e. opposition on record where it touches you."""
     rows = (await db.execute(text(f"""
-        SELECT COALESCE(NULLIF(q.quote_text_en,''), q.quote_text) txt, ed.canonical_name who,
+        SELECT q.quote_text q, NULLIF(q.quote_text_en,'') qen, ed.canonical_name who,
                s.name src, COALESCE(s.source_tier,3) tier
           FROM article_quotes q
           JOIN articles a ON a.id = q.article_id
@@ -185,7 +190,10 @@ async def _intercepts(db, pid: str, person_ids: list[str], wh: int) -> list[dict
            AND EXISTS (SELECT 1 FROM article_stances st WHERE st.article_id = a.id AND ({POL}) < 0)
          ORDER BY a.collected_at DESC LIMIT 3
     """), {"ids": person_ids, "pid": pid, "wh": wh})).fetchall()
-    return [{"quote": r.txt, "who": r.who, "role": "watchlist", "tier": f"T{r.tier}", "src": r.src} for r in rows]
+    out = [{"quote": r.q, "quote_en": (r.qen if (r.qen and r.qen != r.q) else None),
+            "who": r.who, "role": "watchlist", "tier": f"T{r.tier}", "src": r.src} for r in rows]
+    await i18n.attach_en(db, out, "quote")
+    return out
 
 
 async def build_war_room(db, prefs: dict[str, Any]) -> dict[str, Any]:

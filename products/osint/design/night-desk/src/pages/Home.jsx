@@ -102,7 +102,7 @@ export default function Home() {
               <div className="sblk"><div className="kicker">What Happened</div>
                 <div className="record">
                   {(B.whatHappened || []).map((w, i) => (
-                    <div className="r" key={i}><span className="d">{w.date}</span><span className="t">{w.text}<span className="src">{w.src}</span></span></div>
+                    <div className="r" key={i}><span className="d">{w.date}</span><span className="t">{w.text}<span className="src">{w.src}</span>{w.text_en && <span className="en-gloss"><b>EN</b>{w.text_en}</span>}</span></div>
                   ))}
                 </div>
               </div>
@@ -129,6 +129,7 @@ export default function Home() {
                   <span>{s.source}</span>
                 </div>
                 <div className="hd"><StanceDot t={s.tone} /><span>{s.headline}</span></div>
+                {s.headline_en && <div className="en-gloss"><b>EN</b>{s.headline_en}</div>}
                 <div className="meta">{s.source} · {s.age}</div>
                 <div className="fy"><b>For you</b>{s.summary || (s.matched ? `Matched on ${s.matched}.` : 'In your coverage this window.')}</div>
               </Panel>

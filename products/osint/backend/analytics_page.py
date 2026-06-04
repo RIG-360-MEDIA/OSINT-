@@ -11,6 +11,7 @@ from typing import Any
 
 from sqlalchemy import text
 
+import i18n
 from posture import POL, principal_of
 
 WH = 1128  # 47-day window (~ whole corpus for this dataset)
@@ -256,14 +257,17 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
         "count grouped by event_type", "article_events", ["event typing"])))
 
     # 17 — quotes (quotes)
-    qt = await _rows(db, """SELECT COALESCE(NULLIF(q.quote_text_en,''),q.quote_text) qx,
+    qt = await _rows(db, """SELECT q.quote_text q, NULLIF(q.quote_text_en,'') qen,
             COALESCE(q.speaker_name_en,q.speaker_name) who, s.name src
           FROM article_quotes q JOIN _univ u ON u.id=q.article_id JOIN sources s ON s.id=u.source_id
          WHERE length(COALESCE(q.quote_text_en,q.quote_text)) BETWEEN 24 AND 220 AND q.speaker_name IS NOT NULL
          ORDER BY u.collected_at DESC LIMIT 4""")
+    qt_items = [{"q": r.q, "q_en": (r.qen if (r.qen and r.qen != r.q) else None), "who": r.who or "—", "role": "", "src": r.src} for r in qt]
+    await i18n.attach_en(db, qt_items, "q")
     mods.append(_card("quotes", "THE DETAIL", "quotes", "In Their Words",
         "Actual quotes from your coverage", "article_quotes.quote_text",
-        {"foot": "Verbatim, latest first.", "items": [{"q": r.qx, "who": r.who or "—", "role": "", "src": r.src} for r in qt]},
+        {"foot": "Verbatim, latest first — English below where translated.",
+         "items": qt_items},
         len(qt), "high", _verify("Verbatim quotes and their speakers.", "article_quotes.quote_text + speaker",
         "article_quotes", ["latest 4, English preferred"])))
 

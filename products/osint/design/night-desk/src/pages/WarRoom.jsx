@@ -101,6 +101,7 @@ export default function WarRoom() {
                   <Spark label="tier" v={c.receipt.tier} />
                 </div>
                 <p className="cd-claim">{c.claim}</p>
+                {c.claim_en && <div className="en-gloss"><b>EN</b>{c.claim_en}</div>}
                 <div className="cd-meta"><span>● {c.who}</span><span>{c.date} · {c.origin}</span></div>
                 <dl className="cd-facets">
                   <div><dt>WHAT</dt><dd>{c.facets.what}</dd></div>
@@ -131,6 +132,7 @@ export default function WarRoom() {
             {(ARSENAL.intercepts || []).map((qq, i) => (
               <div className="cd-intercept" key={i}>
                 <div className="cd-iq">“{qq.quote}”</div>
+                {qq.quote_en && <div className="en-gloss"><b>EN</b>{qq.quote_en}</div>}
                 <div className="cd-im"><b>{qq.who}</b> · {qq.role}<span className="cd-tier">{qq.tier}</span><span className="cd-isrc">{qq.src}</span></div>
               </div>
             ))}

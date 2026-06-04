@@ -27,6 +27,7 @@ from sqlalchemy import text
 
 from posture import POL, _BODY_PRESENT, compute_posture, principal_of
 from relevance import score_relevant
+import i18n as _i18n
 
 _MIN = "−"  # unicode minus, matches the design's typography
 
@@ -435,13 +436,15 @@ async def _what_happened(db, ranked: list[dict[str, Any]], k: int = 4) -> list[d
     ids = [r["id"] for r in ranked[:k]]
     if not ids:
         return []
-    dates = {r.id: r.d for r in (await db.execute(text("""
-        SELECT id::text id, collected_at d FROM articles WHERE id = ANY(CAST(:ids AS uuid[]))
+    meta = {r.id: r for r in (await db.execute(text("""
+        SELECT id::text id, collected_at d, language_iso lang FROM articles WHERE id = ANY(CAST(:ids AS uuid[]))
     """), {"ids": ids})).fetchall()}
     out = []
     for r in ranked[:k]:
-        out.append({"date": _fmt_day(dates.get(r["id"])),
-                    "text": r["title"], "src": r.get("source") or ""})
+        m = meta.get(r["id"])
+        out.append({"id": r["id"], "date": _fmt_day(m.d if m else None),
+                    "text": r["title"], "src": r.get("source") or "", "lang": (m.lang if m else None)})
+    await _i18n.attach_en(db, out, "text")
     return out
 
 

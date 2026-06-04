@@ -1206,3 +1206,8 @@ button { font-family: inherit; }
   border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 0.8rem; cursor: pointer; }
 .df-loadmore:hover { border-color: var(--gold); }
 .df-loadmore:disabled { opacity: .5; cursor: default; }
+
+/* ── bilingual rule: English rendering under any non-English text ───────── */
+.en-gloss { margin-top: 4px; font-size: 0.78rem; line-height: 1.3; color: var(--faint);
+  border-left: 2px solid var(--line); padding-left: 8px; }
+.en-gloss b { color: var(--cool); font-weight: 600; font-size: 0.66rem; letter-spacing: 0.08em; margin-right: 5px; }

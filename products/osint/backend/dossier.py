@@ -17,6 +17,7 @@ from typing import Any
 
 from sqlalchemy import text
 
+import i18n
 from posture import POL, _BODY_PRESENT
 
 STATS_WH = 2160  # 90 days — the corpus only spans ~7 weeks, so this is effectively all-time
@@ -160,15 +161,17 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
          ORDER BY d
     """), {"eid": eid, "days": PULSE_DAYS})).fetchall()]
 
-    quotes = [{"q": (r.qe or r.q), "src": r.src, "date": str(r.d.date()) if r.d else ""}
+    quotes = [{"q": r.q, "q_en": (r.qen if (r.qen and r.qen != r.q) else None),
+               "src": r.src, "date": str(r.d.date()) if r.d else ""}
               for r in (await db.execute(text("""
-        SELECT COALESCE(NULLIF(q.quote_text_en,''), q.quote_text) -- prefer EN
-                 AS qe, q.quote_text q, s.name src, a.published_at d
+        SELECT q.quote_text q, NULLIF(q.quote_text_en, '') qen, s.name src, a.published_at d
           FROM article_quotes q JOIN articles a ON a.id = q.article_id
           JOIN sources s ON s.id = a.source_id
          WHERE q.speaker_entity_id = CAST(:eid AS uuid) AND length(COALESCE(q.quote_text_en, q.quote_text)) > 12
          ORDER BY a.collected_at DESC LIMIT 4
     """), {"eid": eid})).fetchall()]
+
+    await i18n.attach_en(db, quotes, "q")
 
     claims = [{"pred": (r.predicate or "claim"), "text": (r.object_text or r.claim_text or "")[:160], "src": r.src}
               for r in (await db.execute(text("""
@@ -178,6 +181,8 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
          WHERE c.subject_entity_id = CAST(:eid AS uuid)
          ORDER BY a.collected_at DESC LIMIT 4
     """), {"eid": eid})).fetchall()]
+
+    await i18n.attach_en(db, claims, "text")
 
     network = [{"name": r.nm, "rel": "co-appears", "n": int(r.shared)} for r in (await db.execute(text(f"""
         SELECT m2.entity_id::text id, ed.canonical_name nm, count(DISTINCT m1.article_id) shared
@@ -217,6 +222,8 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
            AND e.event_description IS NOT NULL
          ORDER BY d DESC LIMIT 8
     """), {"eid": eid})).fetchall()]
+
+    await i18n.attach_en(db, timeline, "what")
 
     name = ident.canonical_name
     fn = name.split()[0]
@@ -274,5 +281,6 @@ async def entity_articles(db, eid: str, cursor: str | None, limit: int) -> dict[
             "collected_at": str(r.collected_at) if r.collected_at else None,
             "lang": r.language_iso, "topic": r.topic_category,
         })
+    await i18n.attach_en(db, items, "headline")
     next_cursor = str(rows[-1].collected_at) if len(rows) == limit else None
     return {"articles": items, "next_cursor": next_cursor, "count": len(items)}

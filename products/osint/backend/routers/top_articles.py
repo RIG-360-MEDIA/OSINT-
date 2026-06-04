@@ -24,6 +24,7 @@ from auth.middleware import get_optional_user
 from brief_prefs import load_prefs
 from db import get_db
 from relevance import score_relevant
+import i18n
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
 
@@ -71,7 +72,7 @@ async def get_top_articles(
 
         ids = [r["id"] for r in top]
         meta = {r.id: r for r in (await db.execute(text("""
-            SELECT a.id::text AS id, a.thumbnail_url, a.url,
+            SELECT a.id::text AS id, a.thumbnail_url, a.url, a.language_iso,
                    EXTRACT(EPOCH FROM (analytics.now_sim() - a.collected_at)) / 3600.0 AS age_h
               FROM articles a WHERE a.id = ANY(CAST(:ids AS uuid[]))
         """), {"ids": ids})).fetchall()}
@@ -88,6 +89,7 @@ async def get_top_articles(
             m = meta.get(r["id"])
             articles.append({
                 "rank": i + 1,
+                "id": r["id"],
                 "headline": r["title"],
                 "summary": r.get("summary"),
                 "source": r["source"],
@@ -97,7 +99,9 @@ async def get_top_articles(
                 "topic": r.get("topic"),
                 "geo": r.get("geo"),
                 "score": r["score"],
+                "lang": (m.language_iso if m else None),
                 "url": (m.url if m else None),
                 "thumbnail": (m.thumbnail_url if m else None),
             })
+        await i18n.attach_en(db, articles, "headline")
         return {"personalized": True, "articles": articles, "window_hours": window_hours}

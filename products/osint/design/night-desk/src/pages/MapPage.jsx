@@ -39,13 +39,55 @@ function viewForBbox(bbox, scope) {
   }
 }
 
+const dRow = { display: 'flex', gap: 10, alignItems: 'flex-start', padding: '7px 0', textDecoration: 'none', color: 'inherit', borderBottom: '1px solid var(--line)' };
+const dBar = { display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', padding: '4px 0', color: 'var(--faint)' };
+function DCard({ title, children }) {
+  return <div style={{ marginTop: 14 }}><div style={{ fontFamily: 'var(--mono)', fontSize: '0.62rem', letterSpacing: '0.14em', color: 'var(--gold)', marginBottom: 6 }}>{title.toUpperCase()}</div>{children}</div>;
+}
+function DStance({ s }) {
+  const tot = (s.sup + s.crit) || 1, supPct = Math.round(100 * s.sup / tot);
+  return (
+    <div>
+      <div style={{ display: 'flex', height: 8, borderRadius: 5, overflow: 'hidden' }}>
+        <i style={{ width: supPct + '%', background: 'var(--supportive,#3cd6a0)' }} /><i style={{ width: (100 - supPct) + '%', background: 'var(--hostile,#f05c5c)' }} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--faint)', marginTop: 4 }}>
+        <span>{s.sup} for</span><span>{s.neu} neutral</span><span>{s.crit} against</span>
+      </div>
+    </div>
+  );
+}
+
 export default function MapPage() {
   const [scope, setScope] = useState('mine');
   const [data, setData] = useState(null);
   const [status, setStatus] = useState({ loading: true, error: null });
   const [view, setView] = useState(WORLD);
   const [hover, setHover] = useState(null);
+  const [dist, setDist] = useState(null); // { id, loading, file, feed, cursor, more }
   const cache = useRef({});
+
+  async function openDistrict(b) {
+    if (!b || !b.id) return;
+    setDist({ id: b.id, loading: true, file: null, feed: [], cursor: null });
+    try {
+      const [f, fd] = await Promise.all([
+        authFetch(`/api/brief/district/${b.id}`),
+        authFetch(`/api/brief/district/${b.id}/articles?limit=15`),
+      ]);
+      setDist({ id: b.id, loading: false, file: f, feed: fd.articles || [], cursor: fd.next_cursor || null, more: false });
+    } catch (e) {
+      setDist({ id: b.id, loading: false, file: { found: false, error: String(e?.message || e) }, feed: [], cursor: null });
+    }
+  }
+  async function loadMoreD() {
+    if (!dist || !dist.cursor || dist.more) return;
+    setDist((d) => ({ ...d, more: true }));
+    try {
+      const fd = await authFetch(`/api/brief/district/${dist.id}/articles?limit=15&cursor=${encodeURIComponent(dist.cursor)}`);
+      setDist((d) => ({ ...d, feed: [...d.feed, ...(fd.articles || [])], cursor: fd.next_cursor || null, more: false }));
+    } catch { setDist((d) => ({ ...d, more: false })); }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +128,7 @@ export default function MapPage() {
         transitions: { getElevation: 550, getFillColor: 400 },
         updateTriggers: { getFillColor: [lookup], getElevation: [lookup, maxArt] },
         onHover: (info) => setHover(info.object ? { x: info.x, y: info.y, b: lookup[norm(info.object.properties.district)] || { name: info.object.properties.district, articles: 0, sup: 0, crit: 0, net: 0 } } : null),
+        onClick: (info) => info.object && openDistrict(lookup[norm(info.object.properties.district)]),
       }), labelLayer];
     }
     return [new ColumnLayer({
@@ -97,6 +140,7 @@ export default function MapPage() {
       autoHighlight: true, highlightColor: [245, 200, 90, 200],
       transitions: { getElevation: 550, getFillColor: 400 }, updateTriggers: { getElevation: [maxArt, scope] },
       onHover: (info) => setHover(info.object ? { x: info.x, y: info.y, b: info.object } : null),
+      onClick: (info) => info.object && openDistrict(info.object),
     }), labelLayer];
   }, [bubbles, maxArt, scope, geo, useChoropleth, lookup]);
 
@@ -148,6 +192,48 @@ export default function MapPage() {
           <h4>{hover.b.name}</h4>
           <div className="cv">{(hover.b.articles || 0).toLocaleString()} stories{hover.b.topic ? ` · ${hover.b.topic}` : ''}</div>
           <div className="cr">+{hover.b.sup} / −{hover.b.crit} (net {hover.b.net > 0 ? '+' : ''}{hover.b.net})</div>
+        </div>
+      )}
+
+      {dist && (
+        <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 'min(440px, 92vw)', background: 'var(--void-2,#0b0a10)', borderLeft: '1px solid var(--line)', overflowY: 'auto', boxShadow: '-20px 0 60px rgba(0,0,0,.5)', padding: '18px 18px 48px' }}>
+          <button onClick={() => setDist(null)} style={{ position: 'absolute', top: 12, right: 14, background: 'transparent', border: 'none', color: 'var(--faint)', fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1 }}>×</button>
+          {dist.loading && <div style={{ color: 'var(--faint)', padding: '30px 0' }}>Opening district…</div>}
+          {dist.file && !dist.file.found && <div style={{ color: 'var(--faint)' }}>No file for this district.</div>}
+          {dist.file && dist.file.found && (
+            <>
+              <div className="eyebrow" style={{ color: 'var(--gold)' }}>DISTRICT · {dist.file.state}</div>
+              <h2 style={{ margin: '4px 0 2px', fontSize: '1.5rem' }}>{dist.file.name.toUpperCase()}</h2>
+              <div className="sub" style={{ marginBottom: 12 }}>{dist.file.hq ? `HQ ${dist.file.hq} · ` : ''}{dist.file.window_days}d window</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 14 }}>
+                {[['ARTICLES', dist.file.tiles.articles.toLocaleString()], ['ENTITIES', dist.file.tiles.entities], ['QUOTES', dist.file.tiles.quotes.toLocaleString()], ['NET', (dist.file.tiles.net > 0 ? '+' : '') + dist.file.tiles.net]].map(([k, v]) => (
+                  <div key={k} style={{ background: 'var(--surface,#14110d)', borderRadius: 8, padding: '8px 4px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.55rem', color: 'var(--faint)', letterSpacing: '0.08em' }}>{k}</div><div style={{ fontSize: '1.02rem', fontWeight: 600 }}>{v}</div>
+                  </div>))}
+              </div>
+              <div className="df-summary"><div className="df-stamp">RECENT ACTIVITY</div><p style={{ margin: '6px 0 0' }}>{dist.file.summary}</p></div>
+              <DCard title="Standing"><DStance s={dist.file.standing} /></DCard>
+              {dist.file.top_stories.length > 0 && <DCard title="Top stories">{dist.file.top_stories.map((s, i) => (
+                <a key={i} href={s.url || '#'} target="_blank" rel="noreferrer" style={dRow}>
+                  <span className={'df-recdot ' + s.tone} style={{ marginTop: 5 }} />
+                  <span><span style={{ color: 'var(--ink)' }}>{s.headline}</span>{s.headline_en && <span className="en-gloss"><b>EN</b>{s.headline_en}</span>}<span style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: '0.64rem', color: 'var(--faint)' }}>{s.source}</span></span>
+                </a>))}</DCard>}
+              {dist.file.entities.length > 0 && <DCard title="Who's in the news here">{dist.file.entities.map((e, i) => <span key={i} className="pill" style={{ marginRight: 6, marginBottom: 6, display: 'inline-block' }}>{e.name} · {e.n}</span>)}</DCard>}
+              {dist.file.topics.length > 0 && <DCard title="Topics">{dist.file.topics.map((t, i) => <div key={i} style={dBar}><span>{t.label}</span><b>{t.value}</b></div>)}</DCard>}
+              {dist.file.quotes.length > 0 && <DCard title="In the words">{dist.file.quotes.map((q, i) => (
+                <div key={i} style={{ marginBottom: 8 }}><p style={{ margin: 0, fontSize: '0.85rem' }}>“{q.q}”</p>{q.q_en && <div className="en-gloss"><b>EN</b>{q.q_en}</div>}<span style={{ fontSize: '0.66rem', color: 'var(--faint)' }}>{q.who} · {q.src}</span></div>))}</DCard>}
+              {dist.file.outlets.length > 0 && <DCard title="Who covers it">{dist.file.outlets.map((o, i) => { const net = Math.round(100 * (o.pos - o.neg) / ((o.pos + o.neg) || 1)); return <div key={i} style={dBar}><span>{o.name}</span><b style={{ color: net < 0 ? 'var(--hostile)' : 'var(--supportive)' }}>{net > 0 ? '+' : ''}{net}%</b></div>; })}</DCard>}
+              <DCard title="Reach"><div style={{ fontSize: '0.8rem', color: 'var(--faint)' }}>English {dist.file.reach.en} · Telugu {dist.file.reach.te}</div></DCard>
+              <DCard title="Full coverage">
+                {dist.feed.map((a, i) => (
+                  <a key={i} href={a.url || '#'} target="_blank" rel="noreferrer" style={dRow}>
+                    <span style={{ flex: '0 0 52px', height: 34, borderRadius: 5, overflow: 'hidden', background: 'var(--surface-2,#1a1712)', display: 'grid', placeItems: 'center' }}>{a.thumbnail ? <img src={a.thumbnail} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <i className={'df-recdot ' + a.tone} />}</span>
+                    <span><span style={{ color: 'var(--ink)', fontSize: '0.82rem' }}>{a.headline}</span>{a.headline_en && <span className="en-gloss"><b>EN</b>{a.headline_en}</span>}<span style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: '0.62rem', color: 'var(--faint)' }}>{a.source}</span></span>
+                  </a>))}
+                {dist.cursor && <button onClick={loadMoreD} disabled={dist.more} className="df-loadmore">{dist.more ? 'Loading…' : 'Load more'}</button>}
+              </DCard>
+            </>
+          )}
         </div>
       )}
     </div>

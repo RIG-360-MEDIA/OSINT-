@@ -20,7 +20,13 @@ import httpx
 
 _UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
-_HEADERS = {"user-agent": _UA, "accept-language": "en-US,en;q=0.9"}
+# YouTube serves a consent interstitial to datacenter IPs (no videoId in the HTML).
+# The CONSENT/SOCS cookies pass it so the /live page resolves to the live video.
+_HEADERS = {
+    "user-agent": _UA,
+    "accept-language": "en-US,en;q=0.9",
+    "cookie": "CONSENT=YES+cb; SOCS=CAISEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg",
+}
 _VID_RE = re.compile(r'"videoId":"([\w-]{11})"')
 
 MAX_TILES = 6
@@ -74,15 +80,19 @@ _CACHE: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
 
 async def _resolve_one(client: httpx.AsyncClient, name: str, cid: str) -> dict[str, Any] | None:
-    """Return {name, id, live} if the channel is live + embeddable, else None."""
+    """Resolve the channel's current /live videoId. /live redirects to the live
+    broadcast when the channel is on air; we embed that id (deterministic, unlike
+    live_stream?channel= which fails for multi-stream channels).
+
+    Note: the consent-passed datacenter page is SSR-stripped, so live-state markers
+    (hlsManifestUrl/isLiveNow) aren't present to verify against — we trust the /live
+    redirect. For a channel that's briefly off air this may resolve a recent upload.
+    """
     try:
-        r = await client.get(f"https://www.youtube.com/channel/{cid}/live", headers=_HEADERS,
+        r = await client.get(f"https://www.youtube.com/channel/{cid}/live?hl=en", headers=_HEADERS,
                              timeout=_FETCH_TIMEOUT, follow_redirects=True)
-        t = r.text
-        m = _VID_RE.search(t)
-        is_live = "hlsManifestUrl" in t
-        embeddable = '"playableInEmbed":true' in t
-        if m and is_live and embeddable:
+        m = _VID_RE.search(r.text)
+        if m:
             return {"name": name, "id": cid, "live": m.group(1)}
     except (httpx.HTTPError, asyncio.TimeoutError):
         return None

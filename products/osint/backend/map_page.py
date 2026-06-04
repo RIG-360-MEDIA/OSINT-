@@ -46,7 +46,7 @@ def _tone(sup: int, crit: int) -> str:
 async def _district_bubbles(db, state_code: str) -> list[dict[str, Any]]:
     rows = (await db.execute(text(f"""
         WITH da AS (
-          SELECT d.name dist, d.centroid_lat lat, d.centroid_lon lon, a.id,
+          SELECT d.id did, d.name dist, d.centroid_lat lat, d.centroid_lon lon, a.id,
                  a.topic_category topic,
                  (SELECT avg(({POL}) * st.intensity) FROM article_stances st WHERE st.article_id = a.id) lean
             FROM districts d
@@ -55,18 +55,18 @@ async def _district_bubbles(db, state_code: str) -> list[dict[str, Any]]:
            WHERE d.state_code = :sc
              AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
         )
-        SELECT dist, lat, lon, count(*) articles,
+        SELECT did, dist, lat, lon, count(*) articles,
                count(*) FILTER (WHERE lean >= 0.10) sup,
                count(*) FILTER (WHERE lean <= -0.10) crit,
                mode() WITHIN GROUP (ORDER BY topic) top_topic
           FROM da WHERE lat IS NOT NULL
-         GROUP BY dist, lat, lon ORDER BY articles DESC
+         GROUP BY did, dist, lat, lon ORDER BY articles DESC
     """), {"sc": state_code, "wh": WH})).fetchall()
     out = []
     for r in rows:
         sup, crit = int(r.sup), int(r.crit)
         out.append({
-            "name": r.dist.title(), "lat": float(r.lat), "lon": float(r.lon),
+            "id": r.did, "name": r.dist.title(), "lat": float(r.lat), "lon": float(r.lon),
             "articles": int(r.articles), "sup": sup, "crit": crit,
             "net": sup - crit, "tone": _tone(sup, crit), "topic": r.top_topic,
         })

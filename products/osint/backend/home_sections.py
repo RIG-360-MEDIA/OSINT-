@@ -450,12 +450,13 @@ async def _what_happened(db, ranked: list[dict[str, Any]], k: int = 4) -> list[d
 
 def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
                    ranked: list[dict[str, Any]], what_happened: list[dict[str, Any]],
-                   wh: int) -> dict[str, Any]:
+                   wh: int, ao_en: str | None = None) -> dict[str, Any]:
     M = posture.get("metrics", {})
     overall, ov_n = _overall_fav(posture)
     traj = M.get("stance_trajectory", {})
     direction = traj.get("direction")
     ao = M.get("attack_origination", {}).get("origin") or {}
+    ao_title = ao_en or ao.get("title")  # English where the headline was non-English
     qsb = M.get("quote_selection_bias", {}).get("items", [])
     you_q = sum(i["quotes_principal"] for i in qsb)
     opp_q = sum(i["quotes_opposition"] for i in qsb)
@@ -465,7 +466,7 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
 
     stance_word = ("favourable" if (overall or 0) >= 10 else
                    "mixed" if (overall or 0) > -10 else "adverse")
-    top_story = ranked[0]["title"] if ranked else "—"
+    top_story = (ranked[0].get("title_en") or ranked[0]["title"]) if ranked else "—"
 
     bottom_line = [
         {"k": "Where You Stand",
@@ -475,7 +476,7 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
     ]
     if ao.get("title"):
         bottom_line.append({"k": "The Attack",
-                            "v": f"“{ao['title']}” — {ao.get('outlet','')}."})
+                            "v": f"“{ao_title}” — {ao.get('outlet','')}."})
     bottom_line.append({"k": "Your Move",
                         "v": (f"Get ahead of the {contested[0]['topic'].lower()} front before it sets."
                               if contested else "Push your warmest win into your warmest outlet today."),
@@ -484,7 +485,7 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
     what_it_means = (
         f"The week reads {stance_word}. " +
         (f"Your dominant story is “{top_story}”. " if ranked else "") +
-        (f"The one adverse thread is “{ao['title']}” ({ao.get('outlet','')}), still contained. "
+        (f"The one adverse thread is “{ao_title}” ({ao.get('outlet','')}), still contained. "
          if ao.get("title") else "No single adverse thread is dominating. ") +
         (f"You are quoted {you_q} to {opp_q} — your voice, not the opposition's, is carrying the coverage."
          if you_q else "")
@@ -496,7 +497,7 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
         + "Silence on the one adverse line is what would turn it from noise into a story."
     )
     whats_next = {
-        "text": (f"Watch whether “{ao['title']}” jumps outlets — the day a second tier-1 outlet "
+        "text": (f"Watch whether “{ao_title}” jumps outlets — the day a second tier-1 outlet "
                  f"carries it, it stops being contained. " if ao.get("title")
                  else "No adverse line is near a tipping point; the trajectory is the thing to watch. ")
                 + f"Trajectory is currently {direction or 'flat'}.",
@@ -554,7 +555,11 @@ async def build_home(db, prefs: dict[str, Any], *, display_name: str | None = No
     ranked = await score_relevant(db, prefs, window_hours=relevance_wh, limit=40)
 
     wh_events = await _what_happened(db, ranked, k=4)
-    briefing = build_briefing(prefs, posture, ranked, wh_events, relevance_wh)
+    await _i18n.attach_en(db, ranked[:5], "title")  # English for titles the briefing prose embeds
+    ao_o = posture.get("metrics", {}).get("attack_origination", {}).get("origin") or {}
+    ao_t = ao_o.get("title")
+    ao_en = (await _i18n.ensure_en(db, {ao_t})).get(ao_t) if (ao_t and not _i18n.is_english(ao_t)) else None
+    briefing = build_briefing(prefs, posture, ranked, wh_events, relevance_wh, ao_en=ao_en)
     players_out = await build_players(db, prefs, posture_wh)
     six = build_six(prefs, posture, posture_wh)
 

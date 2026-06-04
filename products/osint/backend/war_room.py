@@ -160,7 +160,7 @@ async def _bloc(db, person_ids: list[str], wh: int) -> dict[str, Any]:
             "_paired": list(paired)}
 
 
-async def _ammunition(db, pid: str, wh: int) -> list[str]:
+async def _ammunition(db, pid: str, wh: int) -> list[dict[str, Any]]:
     rows = (await db.execute(text(f"""
         SELECT a.title FROM article_entity_mentions m
           JOIN articles a ON a.id = m.article_id JOIN article_stances st ON st.article_id = a.id
@@ -170,7 +170,9 @@ async def _ammunition(db, pid: str, wh: int) -> list[str]:
          GROUP BY a.id, a.title HAVING avg(CASE WHEN ({POL}) > 0 THEN 1 WHEN ({POL}) < 0 THEN -1 ELSE 0 END) > 0.3
          ORDER BY max(a.collected_at) DESC LIMIT 4
     """), {"pid": pid, "wh": wh})).fetchall()
-    return [r.title for r in rows]
+    items = [{"text": r.title} for r in rows]
+    await i18n.attach_en(db, items, "text")
+    return items
 
 
 async def _intercepts(db, pid: str, person_ids: list[str], wh: int) -> list[dict[str, Any]]:
@@ -226,7 +228,7 @@ async def build_war_room(db, prefs: dict[str, Any]) -> dict[str, Any]:
         "tag": "CRISIS WATCH",
         "slug": (lead_cable["facets"]["what"] if lead_cable else "No active crisis"),
         "windowEst": ("~48h to spread" if lead_cable and lead_cable["sev"] in ("CRITICAL", "HIGH") else "contained"),
-        "read": (f"“{lead_cable['claim']}” — your sharpest adverse line, {lead_cable['facets']['hurts']}."
+        "read": (f"“{lead_cable.get('claim_en') or lead_cable['claim']}” — your sharpest adverse line, {lead_cable['facets']['hurts']}."
                  if lead_cable else "No concentrated adverse storyline in the window."),
         "trigger": (f"origin {ao.get('outlet','')}" if ao.get("outlet") else "—"),
         "basis": f"{wp.get('negative_signals', 0)} negative signals",
@@ -245,7 +247,7 @@ async def build_war_room(db, prefs: dict[str, Any]) -> dict[str, Any]:
             facts=facts, source_check=facts, min_words=10, min_chars=40)
     arsenal = {
         "forCable": (lead_cable["facets"]["what"] if lead_cable else "—"),
-        "ammunition": ammo or ["No clean supportive lines surfaced this window."],
+        "ammunition": ammo or [{"text": "No clean supportive lines surfaced this window."}],
         "predraft": {"lang": "EN", "words": len((predraft_en or "").split()),
                      "en": predraft_en or "Draft unavailable — compose from the ammunition above.",
                      "flag": "Draft only — sign-off required."},

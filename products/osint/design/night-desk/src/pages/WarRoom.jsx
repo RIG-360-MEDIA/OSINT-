@@ -118,7 +118,9 @@ export default function WarRoom() {
         <aside className="cd-arsenal">
           <div className="cd-block">
             <div className="cd-bh">AMMUNITION <em>· for {ARSENAL.forCable}</em></div>
-            {(ARSENAL.ammunition || []).map((a, i) => <div className="cd-ammo" key={i}>▸ {a}</div>)}
+            {(ARSENAL.ammunition || []).map((a, i) => (
+              <div className="cd-ammo" key={i}>▸ {a.text || a}{a.text_en && <div className="en-gloss"><b>EN</b>{a.text_en}</div>}</div>
+            ))}
           </div>
           {ARSENAL.predraft && (
             <div className="cd-block">

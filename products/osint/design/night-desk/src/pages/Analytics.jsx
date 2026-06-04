@@ -39,7 +39,7 @@ const DonutBlock = ({ d }) => (
 );
 const EventCal = ({ items }) => (
   <div className="eventcal">{items.map((e, i) => (
-    <div className="dec" key={i}><span className="dec-d">{e.date}</span><span className="dec-l">{e.label}</span><span className="dec-t">{e.type}</span></div>
+    <div className="dec" key={i}><span className="dec-d">{e.date}</span><span className="dec-l">{e.label}{e.label_en && <span className="en-gloss"><b>EN</b>{e.label_en}</span>}</span><span className="dec-t">{e.type}</span></div>
   ))}</div>
 );
 const QuotesBlock = ({ items }) => (
@@ -49,11 +49,11 @@ const QuotesBlock = ({ items }) => (
 );
 const ClaimsBlock = ({ items }) => (
   <div className="cblock">{items.map((c, i) => (
-    <div className="dcb" key={i}><span className="dcb-p">{c.pred}</span><p className="dcb-t">{c.text}</p><span className="dcb-s">{c.src}</span></div>
+    <div className="dcb" key={i}><span className="dcb-p">{c.pred}</span><p className="dcb-t">{c.text}</p>{c.text_en && <div className="en-gloss"><b>EN</b>{c.text_en}</div>}<span className="dcb-s">{c.src}</span></div>
   ))}</div>
 );
 const FiguresBlock = ({ items }) => (
-  <div className="figblock">{items.map((f, i) => (<div className="dfig" key={i}><div className="dfig-v">{f.value}</div><div className="dfig-c">{f.ctx}</div></div>))}</div>
+  <div className="figblock">{items.map((f, i) => (<div className="dfig" key={i}><div className="dfig-v">{f.value}</div><div className="dfig-c">{f.ctx}{f.ctx_en && <div className="en-gloss"><b>EN</b>{f.ctx_en}</div>}</div></div>))}</div>
 );
 const IMG_TINT = { hostile: 'oklch(0.5 0.2 25 / .5)', supportive: 'oklch(0.55 0.15 165 / .45)', neutral: 'oklch(0.42 0.02 270 / .4)', gold: 'oklch(0.72 0.14 85 / .45)' };
 const ImagesBlock = ({ items }) => (

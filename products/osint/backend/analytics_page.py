@@ -240,10 +240,11 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
          WHERE e.is_future AND COALESCE(e.effective_event_date,e.event_date) >= analytics.now_sim()::date
            AND e.event_description IS NOT NULL
          ORDER BY 1 ASC LIMIT 6""")
+    up_items = [{"date": f"{r.d.day:02d} {_MONTHS[r.d.month]}", "label": (r.l or '')[:80], "type": (r.ty or 'event')} for r in up]
+    await i18n.attach_en(db, up_items, "label")
     mods.append(_card("upcoming", "THE DETAIL", "eventcal", "What's Coming Up",
         "Upcoming dated events in your coverage", "article_events (is_future)",
-        {"foot": "Future-dated events extracted from coverage.",
-         "items": [{"date": f"{r.d.day:02d} {_MONTHS[r.d.month]}", "label": (r.l or '')[:80], "type": (r.ty or 'event')} for r in up]},
+        {"foot": "Future-dated events extracted from coverage.", "items": up_items},
         len(up), "medium", _verify("Events with a future date extracted from coverage.",
         "article_events WHERE is_future", "article_events", ["forward calendar"])))
 
@@ -275,9 +276,11 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
     cl = await _rows(db, """SELECT c.predicate pred, COALESCE(c.object_text,c.claim_text) tx, s.name src
           FROM article_claims c JOIN _univ u ON u.id=c.article_id JOIN sources s ON s.id=u.source_id
          WHERE COALESCE(c.object_text,c.claim_text) IS NOT NULL ORDER BY u.collected_at DESC LIMIT 4""")
+    cl_items = [{"pred": (r.pred or "claim"), "text": (r.tx or '')[:150], "src": r.src} for r in cl]
+    await i18n.attach_en(db, cl_items, "text")
     mods.append(_card("claims", "THE DETAIL", "claims", "What's Being Claimed",
         "Specific claims and statements in your coverage", "article_claims",
-        {"foot": "Subject–predicate–object, verbatim.", "items": [{"pred": (r.pred or "claim"), "text": (r.tx or '')[:150], "src": r.src} for r in cl]},
+        {"foot": "Subject–predicate–object, verbatim.", "items": cl_items},
         len(cl), "medium", _verify("Claims extracted from coverage.", "article_claims triples",
         "article_claims", ["no true/false verdict applied"])))
 
@@ -285,9 +288,11 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
     fg = await _rows(db, """SELECT n.value || COALESCE(' '||NULLIF(n.unit,''),'') val, n.context ctx
           FROM article_numbers n JOIN _univ u ON u.id=n.article_id
          WHERE n.value IS NOT NULL AND length(COALESCE(n.context,''))>8 ORDER BY u.collected_at DESC LIMIT 6""")
+    fg_items = [{"value": r.val, "ctx": (r.ctx or '')[:70]} for r in fg]
+    await i18n.attach_en(db, fg_items, "ctx")
     mods.append(_card("figures", "THE DETAIL", "figures", "The Numbers in the News",
         "Figures mentioned in your coverage, with context", "article_numbers",
-        {"foot": "Extracted figures with sentence context.", "items": [{"value": r.val, "ctx": (r.ctx or '')[:70]} for r in fg]},
+        {"foot": "Extracted figures with sentence context.", "items": fg_items},
         len(fg), "high", _verify("Numeric facts with context.", "article_numbers.value + unit + context",
         "article_numbers", ["verbatim"])))
 

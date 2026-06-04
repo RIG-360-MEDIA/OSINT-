@@ -29,14 +29,15 @@ function stanceFill(d) {
   return [...(p >= 0 ? lerp(C_NEU, C_SUP, t) : lerp(C_NEU, C_CRIT, t)), 218];
 }
 
-function viewForBbox(bbox, scope) {
+function viewForBbox(bbox, scope, flat) {
+  const pitch = flat ? 0 : 46, bearing = flat ? 0 : -16;
   if (!bbox) return WORLD;
   try {
     const vp = new WebMercatorViewport({ width: 1280, height: 720 }).fitBounds(
       [[bbox.minLon, bbox.minLat], [bbox.maxLon, bbox.maxLat]], { padding: scope === 'mine' ? 70 : 140 });
-    return { longitude: vp.longitude, latitude: vp.latitude, zoom: Math.min(Math.max(vp.zoom, 3), 7.4), pitch: 46, bearing: -16 };
+    return { longitude: vp.longitude, latitude: vp.latitude, zoom: Math.min(Math.max(vp.zoom, 3), 7.4), pitch, bearing };
   } catch {
-    return { longitude: bbox.centerLon, latitude: bbox.centerLat, zoom: scope === 'mine' ? 6.3 : 4.4, pitch: 46, bearing: -16 };
+    return { longitude: bbox.centerLon, latitude: bbox.centerLat, zoom: scope === 'mine' ? 6.3 : 4.4, pitch, bearing };
   }
 }
 
@@ -64,9 +65,18 @@ export default function MapPage() {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState({ loading: true, error: null });
   const [view, setView] = useState(WORLD);
+  const [flat, setFlat] = useState(false); // 2D (flat) vs 3D (pitched / extruded)
   const [hover, setHover] = useState(null);
   const [dist, setDist] = useState(null); // { id, loading, file, feed, cursor, more }
   const cache = useRef({});
+
+  function toggleFlat() {
+    setFlat((f) => {
+      const nf = !f;
+      setView((v) => ({ ...v, pitch: nf ? 0 : 46, bearing: nf ? 0 : -16, transitionDuration: 600 }));
+      return nf;
+    });
+  }
 
   async function openDistrict(b) {
     if (!b || !b.id) return;
@@ -98,7 +108,7 @@ export default function MapPage() {
         if (!d) { d = await authFetch(`/api/brief/map?scope=${scope}`); cache.current[scope] = d; }
         if (cancelled) return;
         setData(d); setStatus({ loading: false, error: null });
-        setView({ ...viewForBbox(d.bbox, scope), transitionDuration: 2400, transitionInterpolator: new FlyToInterpolator({ speed: 1.3 }) });
+        setView({ ...viewForBbox(d.bbox, scope, flat), transitionDuration: 2400, transitionInterpolator: new FlyToInterpolator({ speed: 1.3 }) });
       } catch (e) { if (!cancelled) setStatus({ loading: false, error: String(e?.message || e) }); }
     })();
     return () => { cancelled = true; };
@@ -120,36 +130,36 @@ export default function MapPage() {
     });
     if (useChoropleth) {
       return [new GeoJsonLayer({
-        id: 'choropleth', data: geo, extruded: true, filled: true, stroked: true, wireframe: false,
-        getElevation: (f) => { const d = lookup[norm(f.properties.district)]; return d ? (Math.sqrt(d.articles) / Math.sqrt(maxArt)) * 115000 : 0; },
+        id: 'choropleth', data: geo, extruded: !flat, filled: true, stroked: true, wireframe: false,
+        getElevation: (f) => { if (flat) return 0; const d = lookup[norm(f.properties.district)]; return d ? (Math.sqrt(d.articles) / Math.sqrt(maxArt)) * 115000 : 0; },
         getFillColor: (f) => stanceFill(lookup[norm(f.properties.district)]),
-        getLineColor: [222, 228, 244, 75], lineWidthMinPixels: 1, pickable: true,
+        getLineColor: [222, 228, 244, flat ? 130 : 75], lineWidthMinPixels: flat ? 1.2 : 1, pickable: true,
         autoHighlight: true, highlightColor: [245, 200, 90, 120],
         material: { ambient: 0.5, diffuse: 0.65, shininess: 40, specularColor: [50, 50, 60] },
         transitions: { getElevation: 550, getFillColor: 400 },
-        updateTriggers: { getFillColor: [lookup], getElevation: [lookup, maxArt] },
+        updateTriggers: { getFillColor: [lookup], getElevation: [lookup, maxArt, flat], getLineColor: [flat] },
         onHover: (info) => setHover(info.object ? { x: info.x, y: info.y, b: lookup[norm(info.object.properties.district)] || { name: info.object.properties.district, articles: 0, sup: 0, crit: 0, net: 0 } } : null),
         onClick: (info) => info.object && openDistrict(lookup[norm(info.object.properties.district)]),
       }), labelLayer];
     }
     return [new ColumnLayer({
-      id: 'cols', data: bubbles, diskResolution: 18, extruded: true, pickable: true,
+      id: 'cols', data: bubbles, diskResolution: 18, extruded: !flat, pickable: true,
       radius: scope === 'mine' ? 6500 : 55000, getPosition: (b) => [b.lon, b.lat],
       getFillColor: (b) => [...(TONE[b.tone] || TONE.neutral), 235], getLineColor: [255, 255, 255, 28],
-      getElevation: (b) => (Math.sqrt(b.articles || 0) / Math.sqrt(maxArt || 1)) * 95000,
+      getElevation: (b) => (flat ? 0 : (Math.sqrt(b.articles || 0) / Math.sqrt(maxArt || 1)) * 95000),
       material: { ambient: 0.55, diffuse: 0.7, shininess: 60, specularColor: [60, 60, 70] },
       autoHighlight: true, highlightColor: [245, 200, 90, 200],
-      transitions: { getElevation: 550, getFillColor: 400 }, updateTriggers: { getElevation: [maxArt, scope] },
+      transitions: { getElevation: 550, getFillColor: 400 }, updateTriggers: { getElevation: [maxArt, scope, flat] },
       onHover: (info) => setHover(info.object ? { x: info.x, y: info.y, b: info.object } : null),
       onClick: (info) => info.object && openDistrict(info.object),
     }), labelLayer];
-  }, [bubbles, maxArt, scope, geo, useChoropleth, lookup]);
+  }, [bubbles, maxArt, scope, geo, useChoropleth, lookup, flat]);
 
   const total = bubbles.reduce((s, b) => s + (b.articles || 0), 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 22, paddingBottom: 40 }}>
-      <div style={{ position: 'relative', height: '80vh', minHeight: 520, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)' }}>
+      <div style={{ position: 'relative', height: '66vh', minHeight: 480, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)' }}>
       <DeckGL viewState={view} onViewStateChange={(e) => setView(e.viewState)} controller={true} layers={layers} style={{ position: 'absolute', inset: 0 }}>
         <Map reuseMaps mapStyle={DARK_STYLE} attributionControl={false} />
       </DeckGL>
@@ -164,19 +174,30 @@ export default function MapPage() {
               : `Global rollup — ${bubbles.length} regions · ${total.toLocaleString()} stories`) : 'Loading the theatre…'}
           </div>
         </div>
-        <div style={{ pointerEvents: 'auto', display: 'flex', gap: 6, background: 'var(--void-2,#0b0a10)', border: '1px solid var(--line)', borderRadius: 10, padding: 5 }}>
-          {['mine', 'global'].map((s) => (
-            <button key={s} onClick={() => setScope(s)}
-              style={{ padding: '8px 16px', borderRadius: 7, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem', letterSpacing: '0.08em',
-                background: scope === s ? 'var(--gold)' : 'transparent', color: scope === s ? '#1a1407' : 'var(--faint)' }}>
-              {s === 'mine' ? 'MINE' : 'GLOBAL'}
-            </button>
-          ))}
+        <div style={{ pointerEvents: 'auto', display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 6, background: 'var(--void-2,#0b0a10)', border: '1px solid var(--line)', borderRadius: 10, padding: 5 }}>
+            {['mine', 'global'].map((s) => (
+              <button key={s} onClick={() => setScope(s)}
+                style={{ padding: '8px 16px', borderRadius: 7, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem', letterSpacing: '0.08em',
+                  background: scope === s ? 'var(--gold)' : 'transparent', color: scope === s ? '#1a1407' : 'var(--faint)' }}>
+                {s === 'mine' ? 'MINE' : 'GLOBAL'}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 6, background: 'var(--void-2,#0b0a10)', border: '1px solid var(--line)', borderRadius: 10, padding: 5 }}>
+            {[['3D', false], ['2D', true]].map(([lbl, val]) => (
+              <button key={lbl} onClick={() => { if (flat !== val) toggleFlat(); }}
+                style={{ padding: '8px 13px', borderRadius: 7, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem', letterSpacing: '0.08em',
+                  background: flat === val ? 'var(--gold)' : 'transparent', color: flat === val ? '#1a1407' : 'var(--faint)' }}>
+                {lbl}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <div style={{ position: 'absolute', bottom: 16, left: 16, background: 'var(--void-2,#0b0a10cc)', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 14px', fontSize: '0.72rem', color: 'var(--faint)' }}>
-        <div style={{ marginBottom: 6, letterSpacing: '0.1em' }}>{useChoropleth ? 'DISTRICT COLOUR = NET STANCE · HEIGHT = COVERAGE' : 'COLUMN HEIGHT = COVERAGE · COLOUR = STANCE'}</div>
+        <div style={{ marginBottom: 6, letterSpacing: '0.1em' }}>{useChoropleth ? (flat ? 'DISTRICT COLOUR = NET STANCE' : 'DISTRICT COLOUR = NET STANCE · HEIGHT = COVERAGE') : (flat ? 'COLOUR = STANCE' : 'COLUMN HEIGHT = COVERAGE · COLOUR = STANCE')}</div>
         <div style={{ display: 'flex', gap: 14 }}>
           {[['supportive', 'supportive'], ['neutral', 'neutral'], ['hostile', 'critical']].map(([k, lbl]) => (
             <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>

@@ -17,6 +17,7 @@ const PAGES = [Home, WarRoom, Analytics, Dossier, MapPage, Dispatch];
 
 function AppShell() {
   const [i, setI] = useState(0);
+  const [railOpen, setRailOpen] = useState(true);
   const [theme, setTheme] = useState(() => { try { return localStorage.getItem('nd-theme') || 'dark'; } catch { return 'dark'; } });
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [i]);
   useEffect(() => {
@@ -28,8 +29,11 @@ function AppShell() {
     <>
       <Atmos />
       <Spotlight />
-      <div className="shell">
-        <Sidebar i={i} setI={setI} />
+      {!railOpen && (
+        <button className="rail-toggle" title="Show menu" onClick={() => setRailOpen(true)}>☰</button>
+      )}
+      <div className={'shell' + (railOpen ? '' : ' rail-collapsed')}>
+        <Sidebar i={i} setI={setI} onCollapse={() => setRailOpen(false)} />
         <main className="main">
           <CommandBar theme={theme} onToggle={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))} />
           <Ticker />

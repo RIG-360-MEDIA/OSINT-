@@ -94,6 +94,15 @@ button { font-family: inherit; }
 /* ── shell / layout ─────────────────────────────────────────────────────── */
 .shell { display: grid; grid-template-columns: var(--rail) 1fr; min-height: 100vh; }
 @media (max-width: 980px) { .shell { grid-template-columns: 1fr; } .rail { display: none; } }
+.shell.rail-collapsed { grid-template-columns: 1fr; }
+.shell.rail-collapsed .rail { display: none; }
+.rail-toggle { position: fixed; top: 13px; left: 13px; z-index: 70; width: 38px; height: 38px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--void-2, #0b0a10); color: var(--ink); cursor: pointer;
+  display: grid; place-items: center; font-size: 1.05rem; transition: 0.18s; }
+.rail-toggle:hover { border-color: var(--gold); color: var(--gold); }
+.rail-collapse { margin-left: auto; background: transparent; border: none; color: var(--faint); cursor: pointer;
+  font-size: 1.05rem; line-height: 1; padding: 2px 4px; border-radius: 6px; transition: 0.18s; }
+.rail-collapse:hover { color: var(--gold); }
 .main { min-width: 0; }
 .page { padding: clamp(18px, 2vw, 30px) clamp(20px, 3vw, 46px) 110px; max-width: 1480px; }
 .stack > * + * { margin-top: var(--mt, 24px); }

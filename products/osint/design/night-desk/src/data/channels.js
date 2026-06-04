@@ -21,11 +21,15 @@ const GLOBAL = [
 // MINE pool, ordered so the confirmed-live channels come first (sliced to 6).
 const BY_STATE = {
   AP: [
+    // Multi-live nationals: live_stream can't disambiguate, so we pin a resolved
+    // videoId (these rotate every few hours — a backend resolver is the durable fix).
     { name: 'NDTV', id: 'UCXBD5iG5cr4ZYZ99K-fmDHg', live: 'Z39sKDk6Goc' },
-    { name: 'India Today', id: 'UCYPvAwZP8pZhSMW8qs7cVCw', live: 'S_vIHNXkiNA' },
+    { name: 'India Today', id: 'UCYPvAwZP8pZhSMW8qs7cVCw', live: '5awoJnUy3_I' },
     { name: 'Republic World', id: 'UChIuMQsOdbrc4Evj_raoDZA', live: '3xmHIN3XRmc' },
-    { name: 'TV9 Telugu', id: 'UCfaww9Q8C_-EaM0sXI8o-fA', live: 'MuLKRPmOamM' },
-    { name: 'ABN Telugu', id: 'UC_2irx_BQR7RsBKmUV9fePQ', live: 'eNCV9ooxf_Y' },
+    // AP-regional (Telugu): single-live channels — live_stream self-heals to
+    // whatever they're currently broadcasting, so no stale hardcoded id.
+    { name: 'TV9 Telugu', id: 'UCfaww9Q8C_-EaM0sXI8o-fA' },
+    { name: 'ABN Telugu', id: 'UC_2irx_BQR7RsBKmUV9fePQ' },
     { name: 'Sakshi TV', id: 'UCQ_FATLW83q-4xJ2fsi8qAw' },
     { name: 'ETV Andhra Pradesh', id: 'UCSs9H1cyB3OHdy8wkit8ZKg' },
     { name: '10TV', id: 'UCBF2w5CGS8d0YLygY0nlnXQ' },

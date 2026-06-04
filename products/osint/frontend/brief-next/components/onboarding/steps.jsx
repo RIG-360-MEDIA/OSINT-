@@ -41,16 +41,30 @@ export function StepPrimarySubject({ prefs, set }) {
 export function StepWatchlist({ prefs, set }) {
   return (
     <div className="onboarding-step-real">
+      <label className="ob-label">Track closely</label>
       <p className="onboarding-fieldhint">
-        Add allies, opposition, bureaucrats, or civil-society voices to track. These replace the
-        default <em>Naidu / Rahul / Akhilesh / Owaisi</em> entity cards in your brief once you finish.
+        Allies, opposition, bureaucrats, or civil-society voices central to you. These surface on
+        <em> any</em> mention and replace the default entity cards in your brief.
       </p>
       <EntityTypeahead
         value={prefs.watchlist}
         onChange={(v) => set('watchlist', v)}
-        placeholder="Try: Modi, Rahul Gandhi, Owaisi, Yogi…"
+        placeholder="Try: your deputy, your main rival, key bureaucrats…"
         types="person"
         maxSelections={20}
+      />
+      <label className="ob-label" style={{ marginTop: 22 }}>Context &amp; national figures</label>
+      <p className="onboarding-fieldhint">
+        National leaders or neighbouring heads (Modi, Amit Shah, a neighbouring CM…). These surface
+        <em> only when a story also touches your region or subject</em> — so national news that has
+        nothing to do with you stays out of your brief.
+      </p>
+      <EntityTypeahead
+        value={prefs.watchlistContext}
+        onChange={(v) => set('watchlistContext', v)}
+        placeholder="Try: Modi, Amit Shah, a neighbouring CM…"
+        types="person,organization"
+        maxSelections={10}
       />
     </div>
   );

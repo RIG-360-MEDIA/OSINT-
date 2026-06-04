@@ -23,7 +23,8 @@ const STEPS = [
 const INITIAL_PREFS = {
   purpose: { use_cases: [], llm_tone: 'neutral' },
   primarySubject: [],                                 // [0..1] (EntityTypeahead needs an array)
-  watchlist: [],                                      // [{id,name,party,state,type}]
+  watchlist: [],                                      // core — [{id,name,party,state,type}], surfaces on any mention
+  watchlistContext: [],                               // extended — national/neighbour; surfaces only with a region/subject hook
   geography: { states: [], countries: ['IN'], districts: [] },
   topics: { include: [], exclude: [] },
   languages: ['en'],
@@ -61,8 +62,14 @@ export default function OnboardingPage() {
           primary_subject_id: subj?.id || null,
           primary_subject_meta: subj || {},
           watchlist: {
-            entity_ids: prefs.watchlist.map((w) => w.id),
-            entity_meta: prefs.watchlist,
+            // core = "Track closely" (surfaces on any mention); extended =
+            // "Context & national" (relevance.py surfaces these only with a
+            // region/subject hook, keeping standalone national noise out).
+            entity_ids: [...prefs.watchlist, ...prefs.watchlistContext].map((w) => w.id),
+            entity_meta: [
+              ...prefs.watchlist.map((w) => ({ ...w, tier: 'core' })),
+              ...prefs.watchlistContext.map((w) => ({ ...w, tier: 'extended' })),
+            ],
             auto_adjacents: true,
           },
           regions: prefs.geography,

@@ -57,7 +57,6 @@ export default function WarRoom() {
   const STATION = w.station, LEAD = w.lead, CABLES = w.cables || [], ARSENAL = w.arsenal || {};
   const MOMENTUM = w.momentum || { items: [] }, ATTACKMAP = w.attackmap || { issues: [], rivals: [], grid: {} };
   const BLOC = w.bloc || { edges: [], solo: [] }, ROSTER = w.roster || { against: [], neutral: [], forNote: '' };
-  const COUNTERATTACK = w.counterattack || { items: [] };
   const maxVol = Math.max(1, ...MOMENTUM.items.map((m) => m.vol || 0));
 
   return (
@@ -265,19 +264,6 @@ export default function WarRoom() {
               <div className="cd-fornote">{ROSTER.forNote}</div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="cd-mods2">
-        <div className="cd-mod">
-          <div className="cd-mh">COUNTER-ATTACK <em>· entities under heat</em><Cite metric={COUNTERATTACK.metric} onClick={() => open(COUNTERATTACK.metric)} /></div>
-          {COUNTERATTACK.items.map((t, i) => (
-            <div className="cd-ca" key={i}>
-              <div className="cd-cahead"><span className="cd-caname">{t.name} <em>· {t.issue}</em></span><span className="cd-caheat">{t.heat}</span></div>
-              <p className="cd-caline">{t.line}</p>
-            </div>
-          ))}
-          {COUNTERATTACK.items.length === 0 && <div className="cd-caline">No watched entity is under notable heat.</div>}
         </div>
       </div>
 

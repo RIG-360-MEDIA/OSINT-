@@ -12,12 +12,22 @@ from db import get_db
 from home_cache import get_page
 from map_page import build_map, STATE_CODE
 import district as district_mod
+import live_channels
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
 
 
 def _allowed_states(prefs) -> set[str]:
     return {STATE_CODE.get((s or "").strip().lower()) for s in (prefs.get("regions") or {}).get("states", [])} - {None}
+
+
+def _primary_state(prefs) -> str:
+    """The persona's primary state code (order-preserving), default AP."""
+    for s in (prefs.get("regions") or {}).get("states", []):
+        code = STATE_CODE.get((s or "").strip().lower())
+        if code:
+            return code
+    return "AP"
 
 
 async def _gate_district(db, prefs, did: str) -> None:
@@ -40,6 +50,22 @@ async def situation_map(
         if not prefs:
             return {"personalized": False}
         return await get_page(db, user["id"], f"map_{scope}", lambda d: build_map(d, prefs, scope))
+
+
+@router.get("/channels")
+async def channels(
+    scope: str = Query(default="mine", pattern="^(mine|global)$"),
+    user: dict[str, str] | None = Depends(get_optional_user),
+) -> dict[str, Any]:
+    """Currently-live, embeddable news channels for the scope (cached 25 min)."""
+    state = "AP"
+    if scope == "mine" and user:
+        async with get_db() as db:
+            prefs = await load_prefs(db, user["id"])
+            if prefs:
+                state = _primary_state(prefs)
+    items = await live_channels.resolve_channels(scope, state)
+    return {"channels": items, "scope": scope, "state": state}
 
 
 @router.get("/district/{did}")

@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { channelsFor } from '../data/channels';
+import { authFetch } from '../lib/supabase';
 
 // Build the embed URL. Prefer a resolved live videoId (deterministic, reliable for
 // channels that run multiple parallel live streams); otherwise the channel
@@ -51,7 +52,20 @@ function ChannelTile({ c }) {
 // Live YouTube news channel wall, persona-scoped. GLOBAL = world wires; MINE =
 // national + regional for the persona's primary state. Up to 6 tiles, World-Monitor style.
 export default function LiveChannels({ scope, stateCode }) {
-  const items = channelsFor(scope, stateCode);
+  // The backend resolver returns only channels that are LIVE right now (live ids
+  // rotate hourly). Fall back to the static curated list if it's unavailable.
+  const [items, setItems] = useState(() => channelsFor(scope, stateCode));
+  useEffect(() => {
+    let cancelled = false;
+    setItems(channelsFor(scope, stateCode));
+    (async () => {
+      try {
+        const r = await authFetch(`/api/brief/channels?scope=${scope}`);
+        if (!cancelled && r && Array.isArray(r.channels) && r.channels.length) setItems(r.channels);
+      } catch { /* keep static fallback */ }
+    })();
+    return () => { cancelled = true; };
+  }, [scope, stateCode]);
   return (
     <section>
       <div className="eyebrow" style={{ color: 'var(--gold)' }}>LIVE CHANNELS</div>

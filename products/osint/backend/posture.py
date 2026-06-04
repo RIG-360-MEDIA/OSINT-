@@ -15,7 +15,9 @@ Scoring backbone (shared by the favourability family):
 """
 from __future__ import annotations
 
+import json
 import statistics
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import text
@@ -27,11 +29,73 @@ POL = """CASE st.stance
  WHEN 'critical' THEN -1 WHEN 'mocking' THEN -1 WHEN 'concerned' THEN -1 WHEN 'lament' THEN -1 WHEN 'skeptical' THEN -1
  ELSE 0 END"""
 
-# Articles where the principal entity is mentioned, inside the window.
-_PSAL = """article_entity_mentions m JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id
+# ─── AEM hallucination filter + Latin-abbreviation widening (2026-06-03/04) ───
+# 1. Body-presence check: every AEM-joined query requires the canonical name
+#    OR ≥1 registered alias to appear in the article's title/lead/body.
+# 2. For political entities in posture_alias_dictionary.json (~40), the alias
+#    set is widened to include curated Latin abbreviations (BJP, TMC, BRS,
+#    DMK, etc.). Lifts BJP retention 34% → ~84% post-filter.
+# 3. The underlying AEM matview still carries hallucinated mentions upstream —
+#    this filters them at the consumer.
+# ANY NEW AEM-JOINED CONSUMER MUST APPLY BOTH FILTERS or migrate to the
+# v2-fixed entities_extracted layer once it ships.
+# Reversible: comment out the `AND {_BODY_PRESENT}` clauses in _PSAL + the
+# 4 inline queries below (filter stays inert, dictionary stays loaded).
+_DICT_PATH = Path(__file__).parent / "data" / "posture_alias_dictionary.json"
+
+
+def _load_alias_values() -> str:
+    """Build a SQL VALUES literal of (entity_id, alias) pairs from the curated
+    dictionary at module load. Interpolated once into ``_BODY_PRESENT`` so each
+    per-mention check augments AEM's surface_forms with the curated alias set
+    for the ~40 covered political entities. Entities NOT in the dictionary
+    (~99%) fall back to surface_forms-only matching — identical to pre-widen.
+    Returns a single null-pair if the dictionary file is absent (graceful
+    degrade: behavior equals the unwidened canonical-only filter)."""
+    try:
+        data = json.loads(_DICT_PATH.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return "(NULL::uuid, NULL::text)"
+    pairs: list[str] = []
+    for ent in data.get("entities", []) or []:
+        eid = ent.get("entity_id")
+        if not eid:
+            continue
+        for alias in ent.get("aliases") or []:
+            if isinstance(alias, str) and alias.strip():
+                pairs.append(f"('{eid}'::uuid, '{alias.replace(chr(39), chr(39)+chr(39))}')")
+    return ",\n    ".join(pairs) if pairs else "(NULL::uuid, NULL::text)"
+
+
+_ALIAS_VALUES: str = _load_alias_values()
+
+# A mention passes iff (a) the AEM row's canonical_name OR any of its surface_forms
+# appears in the article body, OR (b) — for entities in the curated dictionary —
+# any curated Latin alias appears in the article body. The inner UNION yields the
+# full surface set per row; ILIKE substring-match against the title+lead+body concat.
+_BODY_PRESENT = f"""EXISTS (
+  SELECT 1 FROM (
+    SELECT unnest(COALESCE(m.surface_forms, ARRAY[]::text[]) || ARRAY[m.canonical_name]) AS sf
+    UNION ALL
+    SELECT alias FROM (VALUES
+    {_ALIAS_VALUES}
+    ) v(eid, alias) WHERE eid = m.entity_id
+  ) all_sf
+  WHERE all_sf.sf IS NOT NULL AND all_sf.sf <> ''
+    AND (
+      COALESCE(a.title,                '') || ' ' ||
+      COALESCE(a.lead_text_original,   '') || ' ' || COALESCE(a.lead_text_translated, '') || ' ' ||
+      COALESCE(a.full_text_scraped,    '') || ' ' || COALESCE(a.full_text_translated, '')
+    ) ILIKE '%' || all_sf.sf || '%'
+)"""
+
+# Articles where the principal entity is mentioned, inside the window — with the
+# body-presence guard baked in so every `{_PSAL}` consumer gets it for free.
+_PSAL = f"""article_entity_mentions m JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id
  WHERE m.entity_id=CAST(:pid AS uuid)
    AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
-   AND a.collected_at <= analytics.now_sim()"""
+   AND a.collected_at <= analytics.now_sim()
+   AND {_BODY_PRESENT}"""
 
 _HIGH, _MED, _LOW = 20, 8, 3  # sample-size thresholds
 
@@ -82,12 +146,13 @@ async def outlet_favourability(db, pid: str, wh: int) -> dict[str, Any]:
 async def share_of_voice(db, pid: str, opp: list[tuple[str, str]], wh: int) -> dict[str, Any]:
     ids = [pid] + [o[0] for o in opp]
     nm = {pid: "principal", **dict(opp)}
-    rows = await _q(db, """
+    rows = await _q(db, f"""
       SELECT m.entity_id::text id, count(DISTINCT a.id) n
       FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id
       WHERE m.entity_id=ANY(CAST(:ids AS uuid[]))
         AND a.collected_at>=analytics.now_sim()-make_interval(hours => :wh)
         AND a.collected_at<=analytics.now_sim()
+        AND {_BODY_PRESENT}
       GROUP BY 1""", ids=ids, wh=wh)
     tot = sum(int(r.n) for r in rows) or 1
     items = sorted(({"entity_id": r.id, "name": nm.get(r.id, "?"), "articles": int(r.n),
@@ -150,9 +215,9 @@ async def allegiance_divergence(db, pid: str, opp: list[tuple[str, str]], wh: in
     rname = dict(opp).get(rid, "rival")
     rows = await _q(db, f"""
       WITH pp AS (SELECT DISTINCT a.id, s.name src FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id
-                  WHERE m.entity_id=CAST(:pid AS uuid) AND a.collected_at>=analytics.now_sim()-make_interval(hours => :wh)),
+                  WHERE m.entity_id=CAST(:pid AS uuid) AND a.collected_at>=analytics.now_sim()-make_interval(hours => :wh) AND {_BODY_PRESENT}),
            rp AS (SELECT DISTINCT a.id, s.name src FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id
-                  WHERE m.entity_id=CAST(:rid AS uuid) AND a.collected_at>=analytics.now_sim()-make_interval(hours => :wh)),
+                  WHERE m.entity_id=CAST(:rid AS uuid) AND a.collected_at>=analytics.now_sim()-make_interval(hours => :wh) AND {_BODY_PRESENT}),
            pf AS (SELECT pp.src, round(100*avg(({POL})*st.intensity)::numeric,1) fp, count(DISTINCT pp.id) n
                   FROM pp JOIN article_stances st ON st.article_id=pp.id AND st.actor_entity_id<>CAST(:pid AS uuid) GROUP BY pp.src),
            rf AS (SELECT rp.src, round(100*avg(({POL})*st.intensity)::numeric,1) fr
@@ -188,9 +253,9 @@ async def stance_trajectory(db, pid: str, wh: int) -> dict[str, Any]:
 
 
 async def quote_selection_bias(db, pid: str, opp: list[tuple[str, str]], wh: int) -> dict[str, Any]:
-    rows = await _q(db, """
+    rows = await _q(db, f"""
       WITH p AS (SELECT DISTINCT a.id, s.name src FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id
-                 WHERE m.entity_id=CAST(:pid AS uuid) AND a.collected_at>=analytics.now_sim()-make_interval(hours => :wh))
+                 WHERE m.entity_id=CAST(:pid AS uuid) AND a.collected_at>=analytics.now_sim()-make_interval(hours => :wh) AND {_BODY_PRESENT})
       SELECT p.src,
         count(*) FILTER (WHERE q.speaker_entity_id=CAST(:pid AS uuid)) you,
         count(*) FILTER (WHERE q.speaker_entity_id=ANY(CAST(:opp AS uuid[]))) opp
@@ -263,6 +328,7 @@ async def target_heat(db, opp: list[tuple[str, str]], wh: int) -> dict[str, Any]
       JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id
       LEFT JOIN article_stances st ON st.article_id=a.id AND st.actor_entity_id<>t.id
       WHERE a.collected_at>=analytics.now_sim()-make_interval(hours => :wh)
+        AND {_BODY_PRESENT}
       GROUP BY t.id ORDER BY heat DESC NULLS LAST""", ids=[o[0] for o in opp], wh=wh)
     items = [{"name": nm.get(r.id, "?"), "coverage": int(r.vol), "negative": int(r.neg or 0),
               "heat": float(r.heat or 0)} for r in rows]

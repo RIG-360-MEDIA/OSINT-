@@ -296,17 +296,32 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
         len(fg), "high", _verify("Numeric facts with context.", "article_numbers.value + unit + context",
         "article_numbers", ["verbatim"])))
 
-    # 20 — pictures (images), real hero images
-    pic = await _rows(db, """SELECT mu.url FROM (
-            SELECT DISTINCT ON (u.id) md.url, u.collected_at
-              FROM _univ u JOIN article_media md ON md.article_id=u.id
+    # 20 — pictures (images): real hero images from articles in the user's universe.
+    # Filters: Indian sources only (kills foreign logo banners), skip obvious
+    # site-logo/share-card URLs, and link each image back to its article. Tone is
+    # derived from the article's real stance (not cycled).
+    pic = await _rows(db, f"""SELECT mu.url, mu.article_url, mu.title, mu.lean FROM (
+            SELECT DISTINCT ON (u.id) md.url, a.url article_url, a.title,
+                   (SELECT avg(({POL}) * st.intensity) FROM article_stances st WHERE st.article_id=u.id) lean,
+                   u.collected_at
+              FROM _univ u
+              JOIN articles a ON a.id = u.id
+              JOIN article_media md ON md.article_id=u.id
              WHERE md.is_hero AND md.url IS NOT NULL AND md.media_type='image'
-             ORDER BY u.id, u.collected_at DESC) mu ORDER BY mu.collected_at DESC LIMIT 8""")
-    tones = ["neutral", "supportive", "hostile", "gold", "neutral", "supportive", "neutral", "gold"]
+               AND a.source_country = 'IN'
+               AND md.url !~* '(logo|share|placeholder|default-?image|fallback)'
+             ORDER BY u.id, u.collected_at DESC) mu
+        ORDER BY mu.collected_at DESC LIMIT 8""")
+    def _tone(lean):
+        if lean is None: return "neutral"
+        if lean >= 0.1: return "supportive"
+        if lean <= -0.1: return "hostile"
+        return "neutral"
+    pic_items = [{"src": r.url, "url": r.article_url, "title": r.title, "tone": _tone(r.lean)} for r in pic]
     mods.append(_card("pictures", "THE DETAIL", "images", "The Picture Wall",
         "Images from your coverage", "article_media (is_hero)",
-        {"foot": "Hero images from your coverage.", "items": [{"src": r.url, "tone": tones[i % len(tones)]} for i, r in enumerate(pic)]},
-        len(pic), "high", _verify("Hero images attached to your coverage.", "article_media WHERE is_hero",
+        {"foot": "Hero images from your coverage — click to open the article.", "items": pic_items},
+        len(pic_items), "high", _verify("Hero images attached to your coverage.", "article_media WHERE is_hero",
         "article_media", ["one hero image per article"])))
 
     await db.execute(text("DROP TABLE IF EXISTS _univ"))

@@ -57,11 +57,21 @@ const FiguresBlock = ({ items }) => (
   <div className="figblock">{items.map((f, i) => (<div className="dfig" key={i}><div className="dfig-v">{f.value}</div><div className="dfig-c">{f.ctx}{f.ctx_en && <div className="en-gloss"><b>EN</b>{f.ctx_en}</div>}</div></div>))}</div>
 );
 const IMG_TINT = { hostile: 'oklch(0.5 0.2 25 / .5)', supportive: 'oklch(0.55 0.15 165 / .45)', neutral: 'oklch(0.42 0.02 270 / .4)', gold: 'oklch(0.72 0.14 85 / .45)' };
+const FALLBACK_BG = 'repeating-linear-gradient(125deg, oklch(0.17 0.014 270) 0 8px, oklch(0.12 0.012 270) 8px 16px)';
 const ImagesBlock = ({ items }) => (
   <div className="imgwall">{items.map((im, i) => (
-    <div className="diw" key={i} style={{ background: `radial-gradient(120% 90% at 30% 18%, ${IMG_TINT[im.tone] || IMG_TINT.neutral}, transparent 64%), repeating-linear-gradient(125deg, oklch(0.17 0.014 270) 0 8px, oklch(0.12 0.012 270) 8px 16px)` }}>
-      <span className={'diw-dot ' + im.tone} />
-    </div>
+    <a key={i} href={im.url || im.src || '#'} target="_blank" rel="noreferrer" className="diw"
+      style={{ position: 'relative', display: 'block', overflow: 'hidden', background: FALLBACK_BG, textDecoration: 'none' }}>
+      {im.src && (
+        <img src={im.src} alt="" loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+      )}
+      {/* tint overlay (stance-coloured) sits above the image */}
+      <span style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 35%, ${IMG_TINT[im.tone] || IMG_TINT.neutral})`, pointerEvents: 'none' }} />
+      <span className={'diw-dot ' + im.tone} style={{ position: 'absolute', top: 8, left: 8 }} />
+    </a>
   ))}</div>
 );
 

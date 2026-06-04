@@ -25,6 +25,8 @@ from sqlalchemy import text
 from brief_prefs import load_prefs
 from db import get_db
 from home_sections import build_home
+from war_room import build_war_room
+from analytics_page import build_analytics
 
 logger = logging.getLogger("osint-backend.home_cache")
 
@@ -81,9 +83,57 @@ async def get_home(db, uid: str, prefs: dict[str, Any], display_name: str | None
         raise
 
 
+# Generic page cache (analytics.page_cache) for the heavy pages.
+async def _store_page(db, uid: str, page: str, payload: dict[str, Any]) -> None:
+    await db.execute(text("""
+        INSERT INTO analytics.page_cache (user_id, page, payload, computed_at)
+        VALUES (CAST(:u AS uuid), :pg, CAST(:p AS jsonb), now())
+        ON CONFLICT (user_id, page)
+        DO UPDATE SET payload = EXCLUDED.payload, computed_at = now()
+    """), {"u": uid, "pg": page, "p": json.dumps(payload, default=str)})
+    await db.commit()
+
+
+async def get_page(db, uid: str, page: str, builder, *, max_age_min: float = FRESH_MIN) -> dict[str, Any]:
+    """Serve a cached page payload if fresh; else compute via builder(db) + store; else stale."""
+    row = (await db.execute(text("""
+        SELECT payload, EXTRACT(EPOCH FROM (now() - computed_at)) / 60.0 AS age_min
+          FROM analytics.page_cache WHERE user_id = CAST(:u AS uuid) AND page = :pg
+    """), {"u": uid, "pg": page})).fetchone()
+    if row and row.age_min is not None and row.age_min <= max_age_min:
+        payload = dict(row.payload)
+        payload["cache"] = {"hit": True, "age_min": round(float(row.age_min), 1)}
+        return payload
+    try:
+        await db.execute(text(f"SET statement_timeout = '{_COMPUTE_TIMEOUT_REQ}'"))
+        payload = await builder(db)
+        await _store_page(db, uid, page, payload)
+        payload["cache"] = {"hit": False, "age_min": 0.0}
+        return payload
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("page_cache: live compute failed for %s/%s (%s)", uid, page, exc)
+        try:
+            await db.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+        if row and row.payload is not None:
+            payload = dict(row.payload)
+            payload["cache"] = {"hit": True, "stale": True}
+            return payload
+        raise
+
+
+# Per-persona builders for the precompute batch: (page-key, callable(db, prefs, full_name)).
+_PAGES = (
+    ("home", lambda db, prefs, dn: build_home(db, prefs, display_name=dn)),
+    ("warroom", lambda db, prefs, dn: build_war_room(db, prefs)),
+    ("analytics", lambda db, prefs, dn: build_analytics(db, prefs)),
+)
+
+
 async def precompute_all() -> int:
-    """Recompute + store the Home payload for every onboarded persona, each on its
-    own connection so a slow/failed persona is isolated."""
+    """Recompute + store every page for every onboarded persona. Each (persona, page)
+    runs on its OWN connection so a slow/failed page can't poison the rest."""
     async with get_db() as db:
         rows = (await db.execute(text(
             "SELECT id::text AS id, full_name FROM analytics.users WHERE onboarded_at IS NOT NULL"
@@ -91,18 +141,24 @@ async def precompute_all() -> int:
 
     done = 0
     for r in rows:
-        try:
-            async with get_db() as db:
-                await db.execute(text(f"SET statement_timeout = '{_COMPUTE_TIMEOUT_BG}'"))
-                prefs = await load_prefs(db, r.id)
-                if not prefs:
-                    continue
-                payload = await build_home(db, prefs, display_name=r.full_name)
-                await _store(db, r.id, payload)
-            done += 1
-        except Exception as exc:  # noqa: BLE001 — one bad persona must not kill the batch
-            logger.warning("home_cache: precompute failed for %s (%s)", r.id, exc)
-    logger.info("home_cache: precomputed %d/%d personas", done, len(rows))
+        any_ok = False
+        for page, builder in _PAGES:
+            try:
+                async with get_db() as db:
+                    await db.execute(text(f"SET statement_timeout = '{_COMPUTE_TIMEOUT_BG}'"))
+                    prefs = await load_prefs(db, r.id)
+                    if not prefs:
+                        break
+                    payload = await builder(db, prefs, r.full_name)
+                    if page == "home":
+                        await _store(db, r.id, payload)
+                    else:
+                        await _store_page(db, r.id, page, payload)
+                any_ok = True
+            except Exception as exc:  # noqa: BLE001 — one bad page/persona must not kill the batch
+                logger.warning("cache: precompute %s failed for %s (%s)", page, r.id, exc)
+        done += int(any_ok)
+    logger.info("cache: precomputed %d/%d personas (pages: home, warroom, analytics)", done, len(rows))
     return done
 
 

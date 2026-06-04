@@ -175,7 +175,7 @@ export default function Dossier() {
           </div>
 
           {file && file.found && (
-            <div className="df-summary"><div className="df-stamp">THE READ</div><p>{file.summary}</p></div>)}
+            <div className="df-summary"><div className="df-stamp">RECENT ACTIVITY</div><p>{file.summary}</p></div>)}
           {file && !file.found && <div className="df-summary"><p>No file available for this entity.</p></div>}
 
           {file && file.found && (

@@ -241,13 +241,44 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
 
     name = ident.canonical_name
     fn = name.split()[0]
-    net = sup - crit
-    verdict = "leans friendly" if sup > crit * 1.25 else "leans hostile" if crit > sup * 1.25 else "is genuinely contested"
-    summary = (f"{name} appears in {mentions:,} articles in the corpus"
-               f"{f', quoted {n_quotes} times' if n_quotes else ''}"
-               f"{f', with {n_claims} claims on record' if n_claims else ''}. "
-               f"On the {sup + crit} stances that take a side, coverage around {fn} {verdict} "
-               f"({sup} supportive · {crit} critical, net {'+' if net >= 0 else ''}{net}).")
+    net = sup - crit  # lifetime standing net (used in the identity tiles)
+
+    # ── RECENT ACTIVITY (adaptive window: 24h, widening to 48h/3d/7d only if thin) ──
+    rec = (await db.execute(text(f"""
+        SELECT a.title, EXTRACT(EPOCH FROM (analytics.now_sim() - a.collected_at)) / 3600.0 age_h,
+               s.name src,
+               (SELECT round(avg(({POL}) * st.intensity)::numeric, 2)
+                  FROM article_stances st WHERE st.article_id = a.id) lean
+          FROM article_entity_mentions m JOIN articles a ON a.id = m.article_id
+          JOIN sources s ON s.id = a.source_id
+         WHERE m.entity_id = CAST(:eid AS uuid)
+           AND a.collected_at >= analytics.now_sim() - make_interval(hours => 168)
+           AND {_BODY_PRESENT}
+         ORDER BY a.collected_at DESC LIMIT 60
+    """), {"eid": eid})).fetchall()
+    chosen, inwin = 168, list(rec)
+    for whc in (24, 48, 72, 168):
+        sub = [r for r in rec if r.age_h is not None and r.age_h <= whc]
+        if len(sub) >= 3:
+            chosen, inwin = whc, sub
+            break
+    n_rec = len(inwin)
+    sup_r = sum(1 for r in inwin if (r.lean or 0) >= 0.10)
+    crit_r = sum(1 for r in inwin if (r.lean or 0) <= -0.10)
+    wlabel = {24: "last 24 hours", 48: "last 48 hours", 72: "last 3 days", 168: "last 7 days"}[chosen]
+    if n_rec == 0:
+        summary = f"{name} has no fresh coverage in the last 7 days — quiet on the wire."
+    else:
+        lead_h = inwin[0].title
+        if not i18n.is_english(lead_h):
+            lead_h = (await i18n.ensure_en(db, {inwin[0].title})).get(inwin[0].title) or lead_h
+        tone = "supportive" if sup_r > crit_r else "critical" if crit_r > sup_r else "mixed"
+        mix = f" — {sup_r} supportive, {crit_r} critical ({tone})" if (sup_r or crit_r) else ""
+        summary = (f"In the {wlabel}, {name} appeared in {n_rec} "
+                   f"{'story' if n_rec == 1 else 'stories'}{mix}. "
+                   f"Latest: “{lead_h}” ({inwin[0].src}).")
+        if chosen >= 72:
+            summary += " Quiet lately — widened the window to surface this."
 
     return {
         "found": True,

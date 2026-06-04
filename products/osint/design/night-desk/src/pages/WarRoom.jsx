@@ -155,90 +155,98 @@ export default function WarRoom() {
       <div className="cd-mods">
         <div className="cd-mod">
           <div className="cd-mh">MOMENTUM <em style={{ color: 'var(--faint)', fontStyle: 'normal' }}>· loudest right now</em></div>
-          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 10px', color: 'var(--faint)' }}>
-            Story count per watched figure, with the slice that's adverse highlighted in red.
+          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 12px', color: 'var(--faint)' }}>
+            Stories per figure this window — the red slice is adverse coverage.
           </div>
-          <div className="cd-rows">
+          <div>
             {MOMENTUM.items.map((m) => {
               const vol = m.vol || 0, neg = m.neg || 0;
-              const volPct = Math.round(vol / maxVol * 100);
-              const negPct = vol ? Math.round(neg / vol * 100) : 0;
               return (
-                <div className="cd-mrow" key={m.name} title={`${vol} stories · ${neg} adverse (${negPct}%)`}>
-                  <span className="cd-mn">{m.name}</span>
-                  <span className="cd-mbar"><i style={{ width: volPct + '%' }} /><i className="neg" style={{ width: Math.round(neg / maxVol * 100) + '%' }} /></span>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: '0.7rem', color: neg ? 'var(--hostile,#f05c5c)' : 'var(--faint)', whiteSpace: 'nowrap' }}>
-                    {vol}<span style={{ color: 'var(--faint)' }}>{neg ? ` · ${neg} adv` : ''}</span>
+                <div key={m.name} title={`${vol} stories · ${neg} adverse`}
+                  style={{ display: 'grid', gridTemplateColumns: '116px 1fr 52px', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--line-2,#16161f)' }}>
+                  <span style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
+                  <span style={{ position: 'relative', height: 7, borderRadius: 4, overflow: 'hidden', background: 'var(--surface-2,#1a1712)' }}>
+                    <i style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: Math.round(vol / maxVol * 100) + '%', background: 'var(--faint,#8a8577)', opacity: 0.42 }} />
+                    <i style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: Math.round(neg / maxVol * 100) + '%', background: 'var(--hostile,#f05c5c)' }} />
                   </span>
+                  <span style={{ textAlign: 'right', fontFamily: 'var(--mono)', fontSize: '0.78rem' }}>{vol.toLocaleString()}</span>
                 </div>
               );
             })}
           </div>
-          <div className="cd-mnote">{MOMENTUM.note}</div>
+          <div className="cd-mnote" style={{ marginTop: 10 }}>Bar = total coverage · red = adverse share.</div>
         </div>
 
         <div className="cd-mod">
-          <div className="cd-mh">ATTACK MAP <em style={{ color: 'var(--faint)', fontStyle: 'normal' }}>· what they're hitting you on</em></div>
-          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 10px', color: 'var(--faint)' }}>
-            Adverse stories where each rival co-appears with you, split by topic.
+          <div className="cd-mh">ATTACK MAP <em style={{ color: 'var(--faint)', fontStyle: 'normal' }}>· what they hit you on</em></div>
+          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 12px', color: 'var(--faint)' }}>
+            Adverse stories where each rival co-appears with you, coloured by topic.
           </div>
           {(() => {
-            const issuesWithData = ATTACKMAP.issues.filter((is) =>
-              ATTACKMAP.rivals.some((rv) => ((ATTACKMAP.grid[rv] || {})[is] || 0) > 0));
-            const issues = issuesWithData.length ? issuesWithData : ATTACKMAP.issues;
-            const max = Math.max(1, ...ATTACKMAP.rivals.flatMap((rv) => issues.map((is) => (ATTACKMAP.grid[rv] || {})[is] || 0)));
-            if (!ATTACKMAP.rivals.length) return <div className="cd-mnote">No co-occurring adverse coverage to map.</div>;
+            const TINT = { Politics: '#e97451', Governance: '#6f97e6', Legal: '#d2a05a', International: '#6ebfa6', Economy: '#b48cd9', Sports: '#5fb98a', Other: '#7b8499' };
+            const tint = (t) => TINT[t] || TINT.Other;
+            const rivals = ATTACKMAP.rivals || [];
+            if (!rivals.length) return <div className="cd-mnote">No co-occurring adverse coverage to map.</div>;
+            const issues = ATTACKMAP.issues || [];
+            const totals = ATTACKMAP.rival_totals || {};
+            const maxT = Math.max(1, ...rivals.map((rv) => totals[rv] || 0));
+            const used = issues.filter((is) => rivals.some((rv) => ((ATTACKMAP.grid[rv] || {})[is] || 0) > 0));
             return (
-              <div className="cd-matrix" style={{ gridTemplateColumns: `auto repeat(${issues.length}, 1fr) 48px` }}>
-                <span />
-                {issues.map((is) => <span className="cd-mxh" key={is}>{is}</span>)}
-                <span className="cd-mxh" style={{ textAlign: 'right' }}>TOTAL</span>
-                {ATTACKMAP.rivals.map((rv) => {
-                  const total = issues.reduce((acc, is) => acc + ((ATTACKMAP.grid[rv] || {})[is] || 0), 0);
-                  return (
-                    <Fragment key={rv}>
-                      <span className="cd-mxr">{rv}</span>
-                      {issues.map((is) => {
+              <>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px 12px', marginBottom: 12 }}>
+                  {used.map((is) => (
+                    <span key={is} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.62rem', color: 'var(--faint)' }}>
+                      <i style={{ width: 9, height: 9, borderRadius: 3, background: tint(is) }} />{is}
+                    </span>
+                  ))}
+                </div>
+                {rivals.map((rv) => (
+                  <div key={rv} style={{ display: 'grid', gridTemplateColumns: '116px 1fr 30px', alignItems: 'center', gap: 10, padding: '6px 0' }}>
+                    <span title={rv} style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rv}</span>
+                    <span style={{ display: 'flex', height: 9, borderRadius: 4, overflow: 'hidden', background: 'var(--surface-2,#1a1712)' }}>
+                      {used.map((is) => {
                         const n = (ATTACKMAP.grid[rv] || {})[is] || 0;
-                        const t = n / max;
-                        return (
-                          <span className="cd-mxc" key={is} title={`${n} adverse stories · ${is}`} style={{ position: 'relative' }}>
-                            <i style={{ opacity: n ? 0.25 + t * 0.7 : 0.05 }} />
-                            {n > 0 && <span style={{ position: 'relative', zIndex: 1, fontFamily: 'var(--mono)', fontSize: '0.72rem', color: n ? '#fff' : 'var(--faint)' }}>{n}</span>}
-                          </span>
-                        );
+                        if (!n) return null;
+                        return <i key={is} title={`${n} · ${is}`} style={{ width: (n / maxT * 100) + '%', background: tint(is) }} />;
                       })}
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: '0.74rem', textAlign: 'right', alignSelf: 'center', color: total ? 'var(--hostile,#f05c5c)' : 'var(--faint)' }}>{total}</span>
-                    </Fragment>
-                  );
-                })}
-              </div>
+                    </span>
+                    <span style={{ textAlign: 'right', fontFamily: 'var(--mono)', fontSize: '0.78rem', color: 'var(--hostile,#f05c5c)' }}>{totals[rv] || 0}</span>
+                  </div>
+                ))}
+              </>
             );
           })()}
-          <div className="cd-mnote">{ATTACKMAP.foot}</div>
+          <div className="cd-mnote" style={{ marginTop: 10 }}>{ATTACKMAP.foot}</div>
         </div>
 
         <div className="cd-mod">
-          <div className="cd-mh">BLOC <em style={{ color: 'var(--faint)', fontStyle: 'normal' }}>· who appears with whom</em></div>
-          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 10px', color: 'var(--faint)' }}>
-            Watched figures who keep showing up in the same stories — the implicit blocs in your coverage.
+          <div className="cd-mh">BLOC <em style={{ color: 'var(--faint)', fontStyle: 'normal' }}>· who appears together</em></div>
+          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 12px', color: 'var(--faint)' }}>
+            Figures that repeatedly share your stories — read as implicit alliances.
           </div>
-          <div className="cd-bloc">
-            {[...BLOC.edges].sort((a, b) => (b.n || 0) - (a.n || 0)).map((e, i) => (
-              <div className="cd-edge" key={i} title={`${e.a} and ${e.b} appeared together in ${e.n} stories`}>
-                <span className="cd-node">{e.a}</span>
-                <span className="cd-link"><i />
-                  <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.05 }}>
-                    <b style={{ fontFamily: 'var(--mono)', fontSize: '0.86rem' }}>{e.n}</b>
-                    <span style={{ fontSize: '0.54rem', letterSpacing: '0.1em', color: 'var(--faint)' }}>SHARED</span>
-                  </span>
-                <i /></span>
-                <span className="cd-node">{e.b}</span>
-              </div>
-            ))}
+          <div>
+            {(() => {
+              const edges = [...BLOC.edges].sort((a, b) => (b.n || 0) - (a.n || 0));
+              const maxN = Math.max(1, ...edges.map((x) => x.n || 0));
+              return edges.map((e, i) => (
+                <div key={i} title={`${e.a} + ${e.b}: ${e.n} shared stories`} style={{ padding: '9px 0', borderBottom: '1px solid var(--line-2,#16161f)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: '0.82rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{e.a}</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--faint)', flex: 'none' }}>↔</span>
+                    <span style={{ fontSize: '0.82rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, textAlign: 'right' }}>{e.b}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <span style={{ flex: 1, height: 5, borderRadius: 3, background: 'var(--surface-2,#1a1712)', overflow: 'hidden' }}>
+                      <i style={{ display: 'block', height: '100%', width: Math.round((e.n / maxN) * 100) + '%', background: 'var(--gold,#d4af37)' }} />
+                    </span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: '0.72rem', color: 'var(--gold,#d4af37)', flex: 'none' }}>{e.n} shared</span>
+                  </div>
+                </div>
+              ));
+            })()}
             {BLOC.edges.length === 0 && <div className="cd-mnote">No repeated co-coverage clusters.</div>}
           </div>
-          <div className="cd-mnote">{BLOC.foot}</div>
+          <div className="cd-mnote" style={{ marginTop: 10 }}>{BLOC.foot}</div>
         </div>
 
         <div className="cd-mod cd-mod-wide">

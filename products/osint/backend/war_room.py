@@ -133,10 +133,15 @@ async def _attackmap(db, pid: str, person_ids: list[str], wh: int) -> dict[str, 
         grid.setdefault(r.rival, {})[r.issue] = int(r.n)
         maxn = max(maxn, int(r.n))
     rivals = [k for k, _ in sorted(rivals_n.items(), key=lambda x: -x[1])][:5]
-    issues = [k for k, _ in sorted(issues_n.items(), key=lambda x: -x[1])][:5]
-    norm = {rv: {i: round(grid.get(rv, {}).get(i, 0) / maxn, 2) for i in issues} for rv in rivals}
-    return {"issues": issues, "rivals": rivals, "grid": norm,
-            "foot": "Adverse pieces where each rival co-appears with you, by issue."}
+    issues = [k for k, _ in sorted(issues_n.items(), key=lambda x: -x[1])][:4]
+    # Return RAW integer story counts (the frontend renders proportional bars +
+    # the exact number). Also hand back per-rival/per-issue totals so the UI can
+    # rank and label without recomputing.
+    raw = {rv: {i: int(grid.get(rv, {}).get(i, 0)) for i in issues} for rv in rivals}
+    return {"issues": [i.title() for i in issues], "issue_keys": issues,
+            "rivals": rivals, "grid": {rv: {i.title(): raw[rv][i] for i in issues} for rv in rivals},
+            "rival_totals": {rv: rivals_n[rv] for rv in rivals},
+            "foot": "Adverse stories where each rival co-appears with you, by topic."}
 
 
 async def _bloc(db, person_ids: list[str], wh: int) -> dict[str, Any]:

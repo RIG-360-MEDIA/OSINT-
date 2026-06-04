@@ -12,6 +12,30 @@ Scoring backbone (shared by the favourability family):
   EXCLUDING Y's own self-stance, attributed to the outlet/byline. Every score
   ships with `n` (sample size) + a `confidence` band; thin samples degrade
   gracefully rather than lying (cold-start safety).
+
+KNOWN CAVEATS — AEM alias-overreach class (alias-cleanup-v2 territory):
+The body-presence filter (`_BODY_PRESENT`) correctly strips NER hallucinations
+but cannot recover real coverage upstream-polluted by AEM's bare common-noun
+or bare given-name aliases. Mention counts for the entities below reflect
+**body-verified attributions only**; their true coverage may be higher.
+Brief-rendering layers that surface raw counts should footnote these entities
+so readers don't read "low count" as "no coverage" — it means "no body-verified
+coverage; the corpus carries the entity under an upstream-polluted alias that
+this consumer-side filter strips."
+
+  * Indian National Congress (INC): AEM's 'Congress' alias caused upstream
+    over-attribution from US-Congress + Indian "Inc." corporate news; filter
+    strips them. True INC coverage may be higher; structural fix in v2.
+  * Mir Zulfeqar Ali (AIMIM TG): AEM's bare 'Ali' alias matches anyone named
+    Ali. Same family as INC; true coverage may be higher.
+  * Regional politicians with bare-given-name aliases ('Shah', 'Singh',
+    'Kumar', 'Reddy'): same family — see `data/posture_alias_dictionary.json`
+    `rejected_unsafe` entries for the audit trail.
+
+ALIAS-CLEANUP-V2 BACKLOG: after Tier 3 entity-dict consolidation matures AEM,
+re-baseline the curated dictionary's mention-count predictions (tonight's
+post-widening deviations are explained by that timing — predictions sampled
+before Tier 3 folded dupes into canonicals).
 """
 from __future__ import annotations
 

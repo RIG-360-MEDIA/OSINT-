@@ -27,6 +27,7 @@ from db import get_db
 from home_sections import build_home
 from war_room import build_war_room
 from analytics_page import build_analytics
+from map_page import build_map
 
 logger = logging.getLogger("osint-backend.home_cache")
 
@@ -128,6 +129,8 @@ _PAGES = (
     ("home", lambda db, prefs, dn: build_home(db, prefs, display_name=dn)),
     ("warroom", lambda db, prefs, dn: build_war_room(db, prefs)),
     ("analytics", lambda db, prefs, dn: build_analytics(db, prefs)),
+    ("map_mine", lambda db, prefs, dn: build_map(db, prefs, "mine")),
+    ("map_global", lambda db, prefs, dn: build_map(db, prefs, "global")),
 )
 
 

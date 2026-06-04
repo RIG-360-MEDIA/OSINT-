@@ -13,6 +13,7 @@ from home_cache import get_page
 from map_page import build_map, STATE_CODE
 import district as district_mod
 import country as country_mod
+import global_layers
 import live_channels
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
@@ -67,6 +68,14 @@ async def channels(
                 state = _primary_state(prefs)
     items = await live_channels.resolve_channels(scope, state)
     return {"channels": items, "scope": scope, "state": state}
+
+
+@router.get("/global-layers")
+async def global_layers_ep(user: dict[str, str] | None = Depends(get_optional_user)) -> dict[str, Any]:
+    """External world layers for GLOBAL: ACLED conflict + NASA EONET natural events."""
+    if not user:
+        raise HTTPException(status_code=401, detail="Not signed in")
+    return await global_layers.get_layers()
 
 
 @router.get("/country/{iso}")

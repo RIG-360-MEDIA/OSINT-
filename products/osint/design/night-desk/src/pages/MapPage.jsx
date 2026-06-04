@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import DeckGL from '@deck.gl/react';
-import { GeoJsonLayer, ColumnLayer, TextLayer } from '@deck.gl/layers';
+import { GeoJsonLayer, ColumnLayer, TextLayer, ScatterplotLayer } from '@deck.gl/layers';
 import { FlyToInterpolator, WebMercatorViewport } from '@deck.gl/core';
 import { Map } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -16,6 +16,8 @@ const WORLD = { longitude: 35, latitude: 22, zoom: 1.35, pitch: 0, bearing: 0 };
 const GEOJSON = { AP: AP_GEO, TG: TG_GEO };
 
 const C_SUP = [60, 214, 160], C_CRIT = [240, 92, 92], C_NEU = [96, 110, 140];
+// External hazard layer colours (NASA EONET categories + ACLED conflict).
+const HAZ_COLOR = { Wildfires: [255, 120, 40], 'Severe Storms': [90, 170, 245], Volcanoes: [240, 80, 60], 'Sea and Lake Ice': [150, 200, 235], _conflict: [235, 60, 70], _default: [240, 180, 70] };
 const TONE = { supportive: C_SUP, hostile: C_CRIT, neutral: [120, 140, 175] };
 const lerp = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 const clamp01 = (t) => Math.max(0, Math.min(1, t));
@@ -86,7 +88,17 @@ export default function MapPage() {
   const [hover, setHover] = useState(null);
   const [dist, setDist] = useState(null); // district drawer { id, loading, file, feed, cursor, more }
   const [country, setCountry] = useState(null); // country drawer { iso, loading, file, feed, cursor, more }
+  const [gl, setGl] = useState(null); // external global layers { acled, natural, ships }
+  const [showHaz, setShowHaz] = useState(true); // toggle hazard/conflict overlay (global)
   const cache = useRef({});
+
+  // Fetch the external world layers (NASA fires/natural events + ACLED) once for GLOBAL.
+  useEffect(() => {
+    if (scope !== 'global' || gl) return undefined;
+    let cancelled = false;
+    authFetch('/api/brief/global-layers').then((d) => { if (!cancelled) setGl(d); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [scope, gl]);
 
   function toggleFlat() {
     setFlat((f) => {
@@ -178,7 +190,7 @@ export default function MapPage() {
       outlineWidth: 3, outlineColor: [5, 7, 12, 255], fontSettings: { sdf: true },
     });
     if (scope === 'global') {
-      return [new GeoJsonLayer({
+      const gls = [new GeoJsonLayer({
         id: 'world', data: WORLD_GEO, extruded: !flat, filled: true, stroked: true, wireframe: false,
         getElevation: (f) => { if (flat) return 0; const d = countryLookup[isoOf(f)]; return d ? (Math.sqrt(d.articles) / Math.sqrt(maxArt)) * 480000 : 0; },
         getFillColor: (f) => heatFill(countryLookup[isoOf(f)], maxArt),
@@ -190,6 +202,22 @@ export default function MapPage() {
         onHover: (info) => setHover(info.object ? { x: info.x, y: info.y, b: countryLookup[isoOf(info.object)] || { name: (info.object.properties.NAME || info.object.properties.ADMIN), articles: 0, sup: 0, crit: 0, net: 0 } } : null),
         onClick: (info) => { if (info.object) { const d = countryLookup[isoOf(info.object)]; if (d && d.articles) openCountry(d.id, d.name); } },
       }), labelLayer];
+      if (showHaz && gl) {
+        if (gl.natural && gl.natural.length) gls.push(new ScatterplotLayer({
+          id: 'eonet', data: gl.natural, getPosition: (d) => [d.lon, d.lat], radiusUnits: 'meters',
+          getRadius: 42000, radiusMinPixels: 3, radiusMaxPixels: 13,
+          getFillColor: (d) => [...(HAZ_COLOR[d.category] || HAZ_COLOR._default), 225],
+          stroked: true, getLineColor: [8, 8, 12, 200], lineWidthMinPixels: 0.4, pickable: true,
+          onHover: (i) => setHover(i.object ? { x: i.x, y: i.y, haz: { title: i.object.title, sub: i.object.category } } : null),
+        }));
+        if (gl.acled && gl.acled.length) gls.push(new ScatterplotLayer({
+          id: 'acled', data: gl.acled, getPosition: (d) => [d.lon, d.lat], radiusUnits: 'meters',
+          getRadius: (d) => 20000 + Math.sqrt(d.fatalities || 0) * 9000, radiusMinPixels: 2.5, radiusMaxPixels: 20,
+          getFillColor: [...HAZ_COLOR._conflict, 210], stroked: true, getLineColor: [8, 8, 12, 200], lineWidthMinPixels: 0.4, pickable: true,
+          onHover: (i) => setHover(i.object ? { x: i.x, y: i.y, haz: { title: i.object.type + (i.object.country ? ' · ' + i.object.country : ''), sub: (i.object.fatalities ? i.object.fatalities + ' fatalities · ' : '') + (i.object.actors || '') } } : null),
+        }));
+      }
+      return gls;
     }
     if (useChoropleth) {
       return [new GeoJsonLayer({
@@ -216,7 +244,7 @@ export default function MapPage() {
       onHover: (info) => setHover(info.object ? { x: info.x, y: info.y, b: info.object } : null),
       onClick: (info) => info.object && openDistrict(info.object),
     }), labelLayer];
-  }, [bubbles, maxArt, scope, geo, useChoropleth, lookup, countryLookup, flat]);
+  }, [bubbles, maxArt, scope, geo, useChoropleth, lookup, countryLookup, flat, gl, showHaz]);
 
   const total = bubbles.reduce((s, b) => s + (b.articles || 0), 0);
 
@@ -256,6 +284,12 @@ export default function MapPage() {
               </button>
             ))}
           </div>
+          {scope === 'global' && (
+            <button className="wm-hud" onClick={() => setShowHaz((h) => !h)}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '0 13px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: '0.66rem', letterSpacing: '0.08em', color: showHaz ? 'var(--gold)' : 'var(--faint)' }}>
+              <i style={{ width: 8, height: 8, borderRadius: 8, background: showHaz ? '#ff7828' : 'var(--faint)' }} />HAZARDS
+            </button>
+          )}
         </div>
       </div>
 
@@ -291,6 +325,12 @@ export default function MapPage() {
           <h4>{hover.b.name}</h4>
           <div className="cv">{(hover.b.articles || 0).toLocaleString()} stories{hover.b.topic ? ` · ${hover.b.topic}` : ''}</div>
           <div className="cr">+{hover.b.sup} / −{hover.b.crit} (net {hover.b.net > 0 ? '+' : ''}{hover.b.net})</div>
+        </div>
+      )}
+      {hover && hover.haz && (
+        <div className="tmap-card" style={{ position: 'absolute', left: Math.min(hover.x + 16, 900), top: hover.y + 16, pointerEvents: 'none', maxWidth: 280 }}>
+          <h4>{hover.haz.title}</h4>
+          {hover.haz.sub && <div className="cv">{hover.haz.sub}</div>}
         </div>
       )}
 

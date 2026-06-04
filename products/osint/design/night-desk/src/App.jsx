@@ -14,14 +14,37 @@ import Login from './pages/Login';
 import { useMe } from './lib/useMe';
 
 const PAGES = [Home, WarRoom, Analytics, Dossier, MapPage, Dispatch];
+// URL slug per page (Home lives at '/'). Keeps the address bar + back/forward in sync.
+const SLUGS = ['home', 'war-room', 'analytics', 'dossier', 'map', 'dispatch'];
+
+function pathToIndex(pathname) {
+  const slug = (pathname || '/').replace(/^\/+/, '').split('/')[0] || 'home';
+  const ix = SLUGS.indexOf(slug);
+  return ix >= 0 ? ix : 0;
+}
+function indexToPath(ix) {
+  return ix === 0 ? '/' : `/${SLUGS[ix]}`;
+}
 
 function AppShell() {
-  const [i, setI] = useState(0);
+  const [i, setIState] = useState(() => pathToIndex(window.location.pathname));
+  // Switch page AND update the URL so each page has its own address + back/forward works.
+  const setI = (ix) => {
+    setIState(ix);
+    if (window.location.pathname !== indexToPath(ix)) {
+      window.history.pushState({ i: ix }, '', indexToPath(ix));
+    }
+  };
   // Sidebar is collapsed by default (and remembers the user's choice). It stays
   // whatever it is across page switches since this state lives above the pages.
   const [railOpen, setRailOpen] = useState(() => { try { return localStorage.getItem('nd-rail') === 'open'; } catch { return false; } });
   const [theme, setTheme] = useState(() => { try { return localStorage.getItem('nd-theme') || 'dark'; } catch { return 'dark'; } });
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [i]);
+  useEffect(() => {
+    const onPop = () => setIState(pathToIndex(window.location.pathname));
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
   useEffect(() => { try { localStorage.setItem('nd-rail', railOpen ? 'open' : 'closed'); } catch { /* ignore */ } }, [railOpen]);
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);

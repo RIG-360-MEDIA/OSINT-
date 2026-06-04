@@ -165,6 +165,7 @@ export default function Home() {
                 </div>
               </div>
               <p className="sm">{p.summary}</p>
+              {p.latest_headline_en && <div className="en-gloss"><b>EN</b>{p.latest_headline_en}</div>}
               <div className="wl"><span className="lab">Why</span>{p.why}</div>
               <div className="wl"><span className="lab">Watch</span>{p.watch}</div>
             </Panel>

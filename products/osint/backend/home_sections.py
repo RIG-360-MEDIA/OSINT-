@@ -167,6 +167,62 @@ async def _top_outlets_for(db, ids: list[str], wh: int) -> dict[str, str]:
     return {r.id: r.nm for r in rows}
 
 
+async def _latest_co_story_for(db, ids: list[str], pid: str | None, wh: int) -> dict[str, dict[str, str]]:
+    """Latest co-appearing story (with the principal) per entity, in ONE query.
+
+    Returns {entity_id: {title, source, when}}. When pid is None or no co-story
+    exists in the window, falls back to the entity's own latest in-window story.
+    The latest headline changes as new articles ingest -> the card visibly differs
+    each refresh even when the underlying counts move slowly.
+    """
+    if not ids:
+        return {}
+    out: dict[str, dict[str, str]] = {}
+    # Reject URL-slug "titles" (some sources store the slug instead of the real
+    # headline). A real title doesn't end in .html/.htm/.aspx/.php and doesn't
+    # contain a multi-digit numeric id surrounded by underscores or hyphens.
+    title_ok = (
+        " AND a.title IS NOT NULL "
+        " AND a.title !~* '\\.(html?|aspx|php)$' "
+        " AND a.title !~* '[/\\\\]' "
+        " AND a.title !~* '(^|[ _-])[0-9]{4,}[ _-]?[a-z]{0,4}(\\.html?)?$' "
+        " AND length(a.title) BETWEEN 18 AND 220 "
+    )
+    if pid:
+        rows = (await db.execute(text(f"""
+            SELECT DISTINCT ON (m.entity_id) m.entity_id::text id, a.title, s.name src, a.collected_at
+              FROM article_entity_mentions m
+              JOIN article_entity_mentions mp ON mp.article_id=m.article_id AND mp.entity_id=CAST(:pid AS uuid)
+              JOIN articles a ON a.id=m.article_id
+              JOIN sources s ON s.id=a.source_id
+             WHERE m.entity_id = ANY(CAST(:ids AS uuid[]))
+               AND a.collected_at>=analytics.now_sim()-make_interval(hours=>:wh)
+               AND a.collected_at<=analytics.now_sim()
+               AND {_BODY_PRESENT}
+               {title_ok}
+             ORDER BY m.entity_id, a.collected_at DESC
+        """), {"ids": ids, "pid": pid, "wh": wh})).fetchall()
+        for r in rows:
+            out[r.id] = {"title": r.title, "source": r.src, "when": str(r.collected_at) if r.collected_at else ""}
+    missing = [i for i in ids if i not in out]
+    if missing:
+        rows = (await db.execute(text(f"""
+            SELECT DISTINCT ON (m.entity_id) m.entity_id::text id, a.title, s.name src, a.collected_at
+              FROM article_entity_mentions m
+              JOIN articles a ON a.id=m.article_id
+              JOIN sources s ON s.id=a.source_id
+             WHERE m.entity_id = ANY(CAST(:ids AS uuid[]))
+               AND a.collected_at>=analytics.now_sim()-make_interval(hours=>:wh)
+               AND a.collected_at<=analytics.now_sim()
+               AND {_BODY_PRESENT}
+               {title_ok}
+             ORDER BY m.entity_id, a.collected_at DESC
+        """), {"ids": missing, "wh": wh})).fetchall()
+        for r in rows:
+            out[r.id] = {"title": r.title, "source": r.src, "when": str(r.collected_at) if r.collected_at else ""}
+    return out
+
+
 def _region_label(m: dict[str, Any]) -> str:
     return m.get("state") or ("national" if m.get("type") == "person" else "")
 
@@ -220,7 +276,13 @@ async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 5) -> d
                              key=lambda x: -x["entangle"])[: max(0, limit - len(pressure_cards))]
     ordered = ([("pressure", s) for s in pressure_cards]
                + [("entangled", s) for s in entangled_cards])[:limit]
-    outlets = await _top_outlets_for(db, [s["m"]["id"] for _, s in ordered], wh)
+    chosen_ids_list = [s["m"]["id"] for _, s in ordered]
+    outlets = await _top_outlets_for(db, chosen_ids_list, wh)
+    latest_stories = await _latest_co_story_for(db, chosen_ids_list, pid, wh)
+    # Batch-translate non-English headlines so every card gets a bilingual gloss.
+    non_en_titles = {ls["title"] for ls in latest_stories.values()
+                     if ls.get("title") and not _i18n.is_english(ls["title"])}
+    en_map = await _i18n.ensure_en(db, non_en_titles) if non_en_titles else {}
 
     players = []
     for kind, s in ordered:
@@ -281,10 +343,27 @@ async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 5) -> d
                            f"Where you co-appear, the coverage reads {lean_word} ({_signed(lean_fav)} on "
                            f"{lean_n} stance signals)" + (f", led by {outlet}." if outlet else "."))
 
+        # Drop in the actual latest co-appearing headline so the card visibly
+        # changes when new stories ingest (without it the prose looks frozen).
+        ls = latest_stories.get(m["id"])
+        latest_title = (ls or {}).get("title")
+        latest_title_en = None
+        if ls and latest_title:
+            t = latest_title.strip()
+            if len(t) > 140:
+                t = t[:137].rstrip() + "…"
+            summary = f"{summary} Latest: “{t}” ({ls.get('source') or '—'})."
+            if not _i18n.is_english(latest_title):
+                latest_title_en = en_map.get(latest_title)
+
         players.append({
             "name": m["name"], "rel": rel, "kind": kind, "stance": tone, "verdict": verdict,
             "score": score, "trend": "",
             "summary": summary, "why": why, "watch": watch,
+            "latest_headline": latest_title,
+            "latest_headline_en": latest_title_en,
+            "latest_source": (ls or {}).get("source"),
+            "latest_at": (ls or {}).get("when"),
             "_meta": {"coverage": s["coverage"], "co_principal": s["co_p"], "in_region": s["in_reg"],
                       "adverse_co": s["adverse_co"], "in_region_neg": s["in_reg_neg"],
                       "lean": lean_fav, "lean_n": lean_n,

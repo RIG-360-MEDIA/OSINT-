@@ -57,6 +57,7 @@ async def _district_bubbles(db, state_code: str) -> list[dict[str, Any]]:
             JOIN article_districts ad ON ad.district_id = d.id
             JOIN articles a ON a.id = ad.article_id
            WHERE d.state_code = :sc
+             AND a.source_country = 'IN'  -- drop foreign false-positive geo-tags
              AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
         )
         SELECT did, dist, lat, lon, count(*) articles,
@@ -122,7 +123,8 @@ async def _region_feed(db, state_code: str | None) -> list[dict[str, Any]]:
                    (SELECT round(avg(({POL}) * st.intensity)::numeric, 2) FROM article_stances st WHERE st.article_id = a.id) lean
               FROM article_districts ad JOIN districts d ON d.id = ad.district_id
               JOIN articles a ON a.id = ad.article_id JOIN sources s ON s.id = a.source_id
-             WHERE d.state_code = :sc AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+             WHERE d.state_code = :sc AND a.source_country = 'IN'
+               AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
              ORDER BY a.collected_at DESC LIMIT 12
         """
         params = {"sc": state_code, "wh": FEED_WH}
@@ -153,7 +155,8 @@ def _situation(bubbles: list[dict[str, Any]], region: str, window_days: int) -> 
     sup = sum(b["sup"] for b in bubbles)
     crit = sum(b["crit"] for b in bubbles)
     top = max(bubbles, key=lambda b: b["articles"])
-    topics = Counter(b["topic"] for b in bubbles if b.get("topic"))
+    topics = Counter(b["topic"] for b in bubbles
+                     if b.get("topic") and str(b["topic"]).upper() != "OTHER")
     tone = "supportive" if sup > crit * 1.25 else "critical" if crit > sup * 1.25 else "mixed"
     parts = [f"Across {region}, {total:,} stories landed in the last {window_days} days "
              f"from {len(bubbles)} {'district' if len(bubbles) == 1 else 'districts'} "

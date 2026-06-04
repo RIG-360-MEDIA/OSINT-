@@ -5,6 +5,29 @@
   "notes": "Curated additive alias list. Each entity records rejected_unsafe with reason so the audit trail is durable. No DB writes — feeds product chat's posture.py matcher.",
   "entities": [
     {
+      "canonical_name": "Y. S. Jagan Mohan Reddy",
+      "entity_id": "8cf3663e-23f3-4bdd-af8c-c7b6b22f2804",
+      "entity_type": "PERSON",
+      "notes": "Merged from 3 fragmented dict ids (2026-06-04). Body text often uses punctuated 'Y.S.' form that the normalized surface_forms ('ys jagan mohan reddy') miss — these aliases recover body-present matches incl. the YSRCP attack lines.",
+      "aliases": [
+        "Y. S. Jagan Mohan Reddy",
+        "Y.S. Jagan Mohan Reddy",
+        "YS Jagan Mohan Reddy",
+        "Jagan Mohan Reddy",
+        "Y.S. Jagan",
+        "Y. S. Jagan",
+        "YS Jagan",
+        "Jagan Reddy",
+        "YSRCP chief"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Jagan",
+          "reason": "bare given-name overreach — matches Jagannath / Jagan Mohan (others) and unrelated tokens corpus-wide"
+        }
+      ]
+    },
+    {
       "canonical_name": "All India Trinamool Congress",
       "entity_id": "c48b58f0-d974-4241-a551-6972da662e09",
       "entity_type": "PERSON",

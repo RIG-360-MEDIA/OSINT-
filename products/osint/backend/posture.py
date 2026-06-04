@@ -386,30 +386,37 @@ async def narrative_half_life(db, pid: str, wh: int) -> dict[str, Any]:
 
 # ───────────────────────── orchestrator ─────────────────────────
 
-async def compute_posture(db, prefs: dict[str, Any], window_hours: int = 504) -> dict[str, Any]:
-    """All 15 green-lit posture metrics for a user. Generic; cold-start safe."""
+async def compute_posture(db, prefs: dict[str, Any], window_hours: int = 504,
+                          only: set[str] | None = None) -> dict[str, Any]:
+    """Green-lit posture metrics for a user. Generic; cold-start safe.
+
+    `only` (optional set of metric names) restricts computation to that subset —
+    callers that need a handful of metrics (e.g. the Home page) avoid paying for
+    all 15. `None` = compute everything (the default, unchanged behaviour).
+    Metrics share one DB connection, so they run sequentially.
+    """
     pid, pname = principal_of(prefs)
     if not pid:
         return {"personalized": False, "reason": "no primary subject set", "metrics": {}}
     opp = opposition_of(prefs)
     wh = int(window_hours)
-    return {
-        "personalized": True, "subject": pname, "window_hours": wh,
-        "metrics": {
-            "outlet_favourability": await outlet_favourability(db, pid, wh),
-            "share_of_voice": await share_of_voice(db, pid, opp, wh),
-            "stance_mix": await stance_mix(db, pid, wh),
-            "weighted_pressure": await weighted_pressure(db, pid, wh),
-            "friend_foe_fence": await friend_foe_fence(db, pid, wh),
-            "allegiance_divergence": await allegiance_divergence(db, pid, opp, wh),
-            "stance_trajectory": await stance_trajectory(db, pid, wh),
-            "quote_selection_bias": await quote_selection_bias(db, pid, opp, wh),
-            "attack_origination": await attack_origination(db, pid, wh),
-            "issue_ownership": await issue_ownership(db, pid, wh),
-            "first_to_know": await first_to_know(db, pid, wh),
-            "counter_speed": await counter_speed(db, pid, wh),
-            "target_heat": await target_heat(db, opp, wh),
-            "cross_language_gap": await cross_language_gap(db, pid, wh),
-            "narrative_half_life": await narrative_half_life(db, pid, wh),
-        },
+    builders = {
+        "outlet_favourability": lambda: outlet_favourability(db, pid, wh),
+        "share_of_voice": lambda: share_of_voice(db, pid, opp, wh),
+        "stance_mix": lambda: stance_mix(db, pid, wh),
+        "weighted_pressure": lambda: weighted_pressure(db, pid, wh),
+        "friend_foe_fence": lambda: friend_foe_fence(db, pid, wh),
+        "allegiance_divergence": lambda: allegiance_divergence(db, pid, opp, wh),
+        "stance_trajectory": lambda: stance_trajectory(db, pid, wh),
+        "quote_selection_bias": lambda: quote_selection_bias(db, pid, opp, wh),
+        "attack_origination": lambda: attack_origination(db, pid, wh),
+        "issue_ownership": lambda: issue_ownership(db, pid, wh),
+        "first_to_know": lambda: first_to_know(db, pid, wh),
+        "counter_speed": lambda: counter_speed(db, pid, wh),
+        "target_heat": lambda: target_heat(db, opp, wh),
+        "cross_language_gap": lambda: cross_language_gap(db, pid, wh),
+        "narrative_half_life": lambda: narrative_half_life(db, pid, wh),
     }
+    metrics = {name: await make() for name, make in builders.items()
+               if only is None or name in only}
+    return {"personalized": True, "subject": pname, "window_hours": wh, "metrics": metrics}

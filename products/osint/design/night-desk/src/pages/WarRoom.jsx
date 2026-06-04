@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment } from 'react';
 import { Reveal, Magnetic } from '../lib/ui';
 import Verify from '../components/Verify';
 import { authFetch } from '../lib/supabase';
+import LiveStamp from '../components/LiveStamp';
 
 function Spark({ label, v, tone }) {
   return (
@@ -32,6 +33,7 @@ export default function WarRoom() {
   const [metric, setMetric] = useState(null);
   const [w, setW] = useState(null);
   const [status, setStatus] = useState({ loading: true, error: null });
+  const [loadedAt, setLoadedAt] = useState(null);
   const open = (m) => setMetric(m);
 
   useEffect(() => {
@@ -39,12 +41,14 @@ export default function WarRoom() {
     async function load() {
       try {
         const d = await authFetch('/api/brief/warroom');
-        if (!cancelled) { setW(d); setStatus({ loading: false, error: null }); }
+        if (!cancelled) { setW(d); setStatus({ loading: false, error: null }); setLoadedAt(Date.now()); }
       } catch (e) { if (!cancelled) setStatus({ loading: false, error: String(e?.message || e) }); }
     }
     load();
     const id = setInterval(load, 30 * 60 * 1000);
-    return () => { cancelled = true; clearInterval(id); };
+    const onFocus = () => load();
+    window.addEventListener('focus', onFocus);
+    return () => { cancelled = true; clearInterval(id); window.removeEventListener('focus', onFocus); };
   }, []);
 
   if (status.loading) return <Notice>Opening the war room…</Notice>;
@@ -59,7 +63,7 @@ export default function WarRoom() {
   return (
     <div className="cabledesk">
       <div className="cd-station">
-        <div className="cd-deskname"><span className="cd-live" />WAR ROOM <i>∕∕</i> {STATION.desk}</div>
+        <div className="cd-deskname"><span className="cd-live" />WAR ROOM <i>∕∕</i> {STATION.desk}<span style={{ marginLeft: 12 }}><LiveStamp at={loadedAt} /></span></div>
         <div className="cd-stats">
           <Stat k="OPEN" v={STATION.open} />
           <Stat k="CRITICAL" v={STATION.critical} tone="neg" />

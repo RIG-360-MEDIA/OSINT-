@@ -3,6 +3,7 @@ import { Reveal } from '../lib/ui';
 import { AreaTrend, Donut, Sparkline, RankBars, LeanBars, StackBar, GroupBars } from '../lib/charts';
 import Verify from '../components/Verify';
 import { authFetch } from '../lib/supabase';
+import LiveStamp from '../components/LiveStamp';
 
 const TONE = { gold: 'var(--gold)', cool: 'var(--cool)', supportive: 'var(--supportive)', hostile: 'var(--hostile)', muted: 'var(--muted)' };
 const BANDS = ['THE BIG PICTURE', 'WHO & WHERE', 'THE DETAIL'];
@@ -105,20 +106,23 @@ export default function Analytics() {
   const [vm, setVm] = useState(null);
   const [data, setData] = useState(null);
   const [status, setStatus] = useState({ loading: true, error: null });
+  const [loadedAt, setLoadedAt] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
         const d = await authFetch('/api/brief/analytics');
-        if (!cancelled) { setData(d); setStatus({ loading: false, error: null }); }
+        if (!cancelled) { setData(d); setStatus({ loading: false, error: null }); setLoadedAt(Date.now()); }
       } catch (e) {
         if (!cancelled) setStatus({ loading: false, error: String(e?.message || e) });
       }
     }
     load();
     const id = setInterval(load, 30 * 60 * 1000);
-    return () => { cancelled = true; clearInterval(id); };
+    const onFocus = () => load();
+    window.addEventListener('focus', onFocus);
+    return () => { cancelled = true; clearInterval(id); window.removeEventListener('focus', onFocus); };
   }, []);
 
   if (status.loading) return <div className="dashboard"><div className="panel" style={{ padding: 28, color: 'var(--faint)' }}>Loading your instrument panel…</div></div>;
@@ -129,7 +133,10 @@ export default function Analytics() {
   return (
     <div className="dashboard">
       <Reveal>
-        <div className="eyebrow">THE INSTRUMENT PANEL</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div className="eyebrow">THE INSTRUMENT PANEL</div>
+          <LiveStamp at={loadedAt} />
+        </div>
         <h1 className="h-sec" style={{ marginTop: 6 }}>Analytics</h1>
         <div className="sub" style={{ maxWidth: 620 }}>Twenty reads on your coverage — pure data, no AI. Every card carries its source, and an <b style={{ color: 'var(--cool)' }}>ⓘ explain</b> that opens the definition, formula, source tables and the rows behind the number.</div>
         <div className="dash-kpis">

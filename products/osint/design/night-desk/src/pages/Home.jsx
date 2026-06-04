@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Reveal, StanceDot } from '../lib/ui';
 import Panel from '../components/Panel';
+import LiveStamp from '../components/LiveStamp';
 import { authFetch } from '../lib/supabase';
 
 const toneCls = (t) => (t === 'hostile' ? 'neg' : t === 'supportive' ? 'pos' : 'neu');
@@ -22,6 +23,7 @@ export default function Home() {
   const [home, setHome] = useState(null);
   const [stories, setStories] = useState([]);
   const [status, setStatus] = useState({ loading: true, error: null });
+  const [loadedAt, setLoadedAt] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +37,7 @@ export default function Home() {
         setHome(h);
         setStories((s && s.articles) || []);
         setStatus({ loading: false, error: null });
+        setLoadedAt(Date.now());
       } catch (e) {
         if (!cancelled) setStatus({ loading: false, error: String(e?.message || e) });
       }
@@ -62,7 +65,10 @@ export default function Home() {
     <div className="page stack" style={{ '--mt': '34px' }}>
       {/* masthead */}
       <Reveal>
-        <div className="eyebrow">SITUATION BRIEF · {M.state}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div className="eyebrow">SITUATION BRIEF · {M.state}</div>
+          <LiveStamp at={loadedAt} />
+        </div>
         <div className="masthead" style={{ marginTop: 12 }}>
           <div>
             <h1 className="subject">{M.first} <em>{M.last}</em></h1>

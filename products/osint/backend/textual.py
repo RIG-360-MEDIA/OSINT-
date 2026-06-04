@@ -20,6 +20,28 @@ EN = "/no_think Respond in English only. Use only facts present below; do not in
 
 _WIN = "a.collected_at>=analytics.now_sim()-make_interval(hours => :wh) AND a.collected_at<=analytics.now_sim()"
 
+# ─── AEM body-presence filter (launch-gate fix, 2026-06-03) ────────────────────
+# A mention is included only if the AEM row's canonical_name OR any of its
+# registered surface_forms actually appears in the article's title / lead /
+# body. Filters hallucinated NER mentions (bucket B — e.g. Andaman tagged in
+# cruise articles where the token never appears) while preserving legitimate
+# informal usage (e.g. "Trump" appearing in body without the canonical form).
+#
+# CONTRIBUTOR NOTE: any new AEM-joined consumer MUST apply this filter OR
+# migrate to the v2-fixed `entities_extracted` once it ships. AEM still carries
+# hallucinated mentions upstream — they are filtered at this consumer only.
+# Reversible: comment out each `AND {_BODY_PRESENT}` clause below.
+_BODY_PRESENT = """EXISTS (
+  SELECT 1
+    FROM unnest(COALESCE(m.surface_forms, ARRAY[]::text[]) || ARRAY[m.canonical_name]) sf
+   WHERE sf IS NOT NULL AND sf <> ''
+     AND (
+       COALESCE(a.title,                '') || ' ' ||
+       COALESCE(a.lead_text_original,   '') || ' ' || COALESCE(a.lead_text_translated, '') || ' ' ||
+       COALESCE(a.full_text_scraped,    '') || ' ' || COALESCE(a.full_text_translated, '')
+     ) ILIKE '%' || sf || '%'
+)"""
+
 
 async def _q(db, sql: str, **p) -> list:
     return (await db.execute(text(sql), p)).fetchall()
@@ -38,11 +60,13 @@ def _opp(prefs):
 async def _facts(db, pid: str, opp: list, wh: int) -> dict[str, Any]:
     oppids = [o[0] for o in opp] or [pid]
     neg = await _q(db, f"""WITH p AS (SELECT DISTINCT a.id,a.title,s.name src FROM article_entity_mentions m
-        JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id WHERE m.entity_id=CAST(:pid AS uuid) AND {_WIN})
+        JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id
+        WHERE m.entity_id=CAST(:pid AS uuid) AND {_WIN} AND {_BODY_PRESENT})
         SELECT DISTINCT p.title,p.src FROM p JOIN article_stances st ON st.article_id=p.id
         WHERE st.actor_entity_id<>CAST(:pid AS uuid) AND st.stance IN {NEG} LIMIT 8""", pid=pid, wh=wh)
     pos = await _q(db, f"""WITH p AS (SELECT DISTINCT a.id,a.title,s.name src FROM article_entity_mentions m
-        JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id WHERE m.entity_id=CAST(:pid AS uuid) AND {_WIN})
+        JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id
+        WHERE m.entity_id=CAST(:pid AS uuid) AND {_WIN} AND {_BODY_PRESENT})
         SELECT DISTINCT p.title,p.src FROM p JOIN article_stances st ON st.article_id=p.id
         WHERE st.actor_entity_id<>CAST(:pid AS uuid) AND st.stance IN {POS} LIMIT 8""", pid=pid, wh=wh)
     pq = await _q(db, f"""SELECT COALESCE(q.quote_text_en,q.quote_text) qt FROM article_quotes q JOIN articles a ON a.id=q.article_id
@@ -114,31 +138,31 @@ async def crisis_brief(db, pid, pname, f):
 async def dog_didnt_bark(db, pid, pname, opp, wh):
     oppids = [o[0] for o in opp] or [pid]
     rows = await _q(db, f"""WITH ot AS (SELECT a.topic_category topic,count(*) c FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id
-          WHERE m.entity_id=ANY(CAST(:opp AS uuid[])) AND {_WIN} AND a.topic_category IS NOT NULL GROUP BY 1),
+          WHERE m.entity_id=ANY(CAST(:opp AS uuid[])) AND {_WIN} AND a.topic_category IS NOT NULL AND {_BODY_PRESENT} GROUP BY 1),
           mine AS (SELECT a.topic_category topic,count(*) c FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id
-          WHERE m.entity_id=CAST(:pid AS uuid) AND {_WIN} AND a.topic_category IS NOT NULL GROUP BY 1)
+          WHERE m.entity_id=CAST(:pid AS uuid) AND {_WIN} AND a.topic_category IS NOT NULL AND {_BODY_PRESENT} GROUP BY 1)
           SELECT ot.topic, ot.c opp_c, COALESCE(mine.c,0) my_c FROM ot LEFT JOIN mine ON mine.topic=ot.topic
           ORDER BY (ot.c - COALESCE(mine.c,0)) DESC LIMIT 5""", opp=oppids, pid=pid, wh=wh)
     return {"items": [{"topic": r.topic, "opposition": int(r.opp_c), "principal": int(r.my_c)} for r in rows], "method": "compute"}
 
 async def since_last_looked(db, pid, pname, wh):
-    rows = await _q(db, """SELECT DISTINCT a.title, s.name src FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id
+    rows = await _q(db, f"""SELECT DISTINCT a.title, s.name src FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id
         JOIN sources s ON s.id=a.source_id WHERE m.entity_id=CAST(:pid AS uuid)
-        AND a.collected_at>=analytics.now_sim()-make_interval(hours=>72) ORDER BY 1 LIMIT 6""", pid=pid)
+        AND a.collected_at>=analytics.now_sim()-make_interval(hours=>72) AND {_BODY_PRESENT} ORDER BY 1 LIMIT 6""", pid=pid)
     return {"items": [{"title": r.title, "outlet": r.src} for r in rows], "method": "retrieval"}
 
 async def instant_oppo_dossier(db, pid, opp, wh):
     if not opp:
         return {"rival": None, "read": None, "method": "llm", "ok": False}
-    r = await _q(db, """SELECT m.entity_id::text id, count(DISTINCT a.id) n FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id
-        WHERE m.entity_id=ANY(CAST(:ids AS uuid[])) AND a.collected_at>=analytics.now_sim()-make_interval(hours=>:wh)
+    r = await _q(db, f"""SELECT m.entity_id::text id, count(DISTINCT a.id) n FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id
+        WHERE m.entity_id=ANY(CAST(:ids AS uuid[])) AND a.collected_at>=analytics.now_sim()-make_interval(hours=>:wh) AND {_BODY_PRESENT}
         GROUP BY 1 ORDER BY 2 DESC LIMIT 1""", ids=[o[0] for o in opp], wh=wh)
     if not r:
         return {"rival": None, "read": None, "method": "llm", "ok": False}
     rid = r[0].id
     rname = dict(opp).get(rid, "rival")
     rn = await _q(db, f"""SELECT DISTINCT a.title, s.name src FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id
-        JOIN sources s ON s.id=a.source_id WHERE m.entity_id=CAST(:rid AS uuid) AND {_WIN} LIMIT 8""", rid=rid, wh=wh)
+        JOIN sources s ON s.id=a.source_id WHERE m.entity_id=CAST(:rid AS uuid) AND {_WIN} AND {_BODY_PRESENT} LIMIT 8""", rid=rid, wh=wh)
     rf = "\n".join(f"- {x.title} ({x.src})" for x in rn) or "(none)"
     try:
         d = await synthesize_dossier(system=EN + f"Opposition dossier on {rname}. Format: ASSESSMENT: <3 sentences> ACTIONS:\n- <a>",
@@ -160,7 +184,8 @@ async def quote_translation(db, pid, wh):
 
 async def source_trail(db, pid, wh):
     rows = await _q(db, f"""WITH p AS (SELECT DISTINCT a.id,a.title,s.name src,a.collected_at FROM article_entity_mentions m
-        JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id WHERE m.entity_id=CAST(:pid AS uuid) AND {_WIN})
+        JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id
+        WHERE m.entity_id=CAST(:pid AS uuid) AND {_WIN} AND {_BODY_PRESENT})
         SELECT title,src,collected_at::text ts FROM p JOIN article_stances st ON st.article_id=p.id
         WHERE st.actor_entity_id<>CAST(:pid AS uuid) AND st.stance IN {NEG} ORDER BY collected_at ASC LIMIT 6""", pid=pid, wh=wh)
     return {"items": [{"ts": r.ts[:16], "outlet": r.src, "title": r.title[:80]} for r in rows], "method": "retrieval"}

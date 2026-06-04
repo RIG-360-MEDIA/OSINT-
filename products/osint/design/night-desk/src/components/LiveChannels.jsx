@@ -16,30 +16,38 @@ function embedSrc(c) {
 // keeps the map snappy and avoids 6 live HLS streams loading at once on page open.
 function ChannelTile({ c, n }) {
   const ref = useRef(null);
-  const [show, setShow] = useState(false);
+  const [play, setPlay] = useState(false);
+  const poster = c.live ? `https://i.ytimg.com/vi/${c.live}/hqdefault.jpg` : null;
+  // Show the poster instantly; mount the autoplaying stream only once the tile is
+  // visible, STAGGERED by index so 6 live HLS streams don't all load at once.
   useEffect(() => {
     const el = ref.current;
-    if (!el || show) return undefined;
+    if (!el || play) return undefined;
+    let timer;
     const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) { setShow(true); io.disconnect(); }
-    }, { rootMargin: '300px' });
+      if (entries.some((e) => e.isIntersecting)) {
+        io.disconnect();
+        timer = setTimeout(() => setPlay(true), (n - 1) * 600);
+      }
+    }, { rootMargin: '150px' });
     io.observe(el);
-    return () => io.disconnect();
-  }, [show]);
+    return () => { io.disconnect(); if (timer) clearTimeout(timer); };
+  }, [play, n]);
   return (
     <div ref={ref} className="wm-tile" style={{ borderRadius: 7, overflow: 'hidden', border: '1px solid var(--line)', background: '#06070a' }}>
       <div style={{ position: 'relative', paddingTop: '56.25%' }}>
-        {show
-          ? (
-            <iframe
-              title={c.name}
-              src={embedSrc(c)}
-              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-              allowFullScreen
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
-            />
-          )
-          : <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: 'var(--faint)', fontFamily: 'var(--mono)', fontSize: '0.66rem', letterSpacing: '0.14em' }}>◴ LOADING STREAM</div>}
+        {poster
+          ? <img src={poster} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: 'var(--faint)', fontFamily: 'var(--mono)', fontSize: '0.64rem', letterSpacing: '0.14em' }}>{c.name.toUpperCase()}</div>}
+        {play && (
+          <iframe
+            title={c.name}
+            src={embedSrc(c)}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+          />
+        )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 11px', background: '#0a0b10', borderTop: '1px solid var(--line)' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 }}>

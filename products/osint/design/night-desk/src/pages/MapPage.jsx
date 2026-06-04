@@ -159,7 +159,7 @@ export default function MapPage() {
   const total = bubbles.reduce((s, b) => s + (b.articles || 0), 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, paddingBottom: 40 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, padding: '4px clamp(18px, 2.5vw, 42px) 60px', boxSizing: 'border-box', maxWidth: '100%', overflowX: 'hidden' }}>
       <div style={{ position: 'relative', height: '66vh', minHeight: 480, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--line)' }}>
       <DeckGL viewState={view} onViewStateChange={(e) => setView(e.viewState)} controller={true} layers={layers} style={{ position: 'absolute', inset: 0 }}>
         <Map reuseMaps mapStyle={DARK_STYLE} attributionControl={false} />

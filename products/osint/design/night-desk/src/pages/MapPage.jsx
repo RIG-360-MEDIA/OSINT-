@@ -5,6 +5,7 @@ import { FlyToInterpolator, WebMercatorViewport } from '@deck.gl/core';
 import { Map } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { authFetch } from '../lib/supabase';
+import LiveChannels from '../components/LiveChannels';
 import AP_GEO from '../data/andhra-pradesh-districts.json';
 import TG_GEO from '../data/telangana-districts.json';
 
@@ -147,7 +148,8 @@ export default function MapPage() {
   const total = bubbles.reduce((s, b) => s + (b.articles || 0), 0);
 
   return (
-    <div style={{ position: 'relative', height: 'calc(100vh - 132px)', minHeight: 520, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, paddingBottom: 40 }}>
+      <div style={{ position: 'relative', height: '80vh', minHeight: 520, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--line)' }}>
       <DeckGL viewState={view} onViewStateChange={(e) => setView(e.viewState)} controller={true} layers={layers} style={{ position: 'absolute', inset: 0 }}>
         <Map reuseMaps mapStyle={DARK_STYLE} attributionControl={false} />
       </DeckGL>
@@ -241,6 +243,8 @@ export default function MapPage() {
           )}
         </div>
       )}
+      </div>
+      <LiveChannels scope={scope} stateCode={data && data.state_code} />
     </div>
   );
 }

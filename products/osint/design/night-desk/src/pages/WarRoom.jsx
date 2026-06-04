@@ -148,46 +148,93 @@ export default function WarRoom() {
       </div>
 
       <div className="cd-fhead">THE FIELD <em>· entity intelligence</em></div>
+      <div className="sub" style={{ maxWidth: 760, margin: '6px 0 16px', color: 'var(--faint)' }}>
+        Three reads on the people in your orbit: who's loudest in the news this window,
+        what they're hitting you on, and who keeps showing up together.
+      </div>
       <div className="cd-mods">
         <div className="cd-mod">
-          <div className="cd-mh">MOMENTUM</div>
+          <div className="cd-mh">MOMENTUM <em style={{ color: 'var(--faint)', fontStyle: 'normal' }}>· loudest right now</em></div>
+          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 10px', color: 'var(--faint)' }}>
+            Story count per watched figure, with the slice that's adverse highlighted in red.
+          </div>
           <div className="cd-rows">
-            {MOMENTUM.items.map((m) => (
-              <div className="cd-mrow" key={m.name}>
-                <span className="cd-mn">{m.name}</span>
-                <span className="cd-mbar"><i style={{ width: Math.round(m.vol / maxVol * 100) + '%' }} /><i className="neg" style={{ width: Math.round(m.neg / maxVol * 100) + '%' }} /></span>
-                <span className={'cd-mt ' + m.dir}>{m.trend}</span>
-              </div>
-            ))}
+            {MOMENTUM.items.map((m) => {
+              const vol = m.vol || 0, neg = m.neg || 0;
+              const volPct = Math.round(vol / maxVol * 100);
+              const negPct = vol ? Math.round(neg / vol * 100) : 0;
+              return (
+                <div className="cd-mrow" key={m.name} title={`${vol} stories · ${neg} adverse (${negPct}%)`}>
+                  <span className="cd-mn">{m.name}</span>
+                  <span className="cd-mbar"><i style={{ width: volPct + '%' }} /><i className="neg" style={{ width: Math.round(neg / maxVol * 100) + '%' }} /></span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: '0.7rem', color: neg ? 'var(--hostile,#f05c5c)' : 'var(--faint)', whiteSpace: 'nowrap' }}>
+                    {vol}<span style={{ color: 'var(--faint)' }}>{neg ? ` · ${neg} adv` : ''}</span>
+                  </span>
+                </div>
+              );
+            })}
           </div>
           <div className="cd-mnote">{MOMENTUM.note}</div>
         </div>
 
         <div className="cd-mod">
-          <div className="cd-mh">ATTACK MAP</div>
-          {ATTACKMAP.rivals.length > 0 ? (
-            <div className="cd-matrix" style={{ gridTemplateColumns: `auto repeat(${ATTACKMAP.issues.length}, 1fr)` }}>
-              <span />
-              {ATTACKMAP.issues.map((is) => <span className="cd-mxh" key={is}>{is}</span>)}
-              {ATTACKMAP.rivals.map((rv) => (
-                <Fragment key={rv}>
-                  <span className="cd-mxr">{rv}</span>
-                  {ATTACKMAP.issues.map((is) => {
-                    const n = (ATTACKMAP.grid[rv] || {})[is] || 0;
-                    return <span className="cd-mxc" key={is}><i style={{ opacity: n ? 0.2 + n * 0.6 : 0.05 }} /></span>;
-                  })}
-                </Fragment>
-              ))}
-            </div>
-          ) : <div className="cd-mnote">No co-occurring adverse coverage to map.</div>}
+          <div className="cd-mh">ATTACK MAP <em style={{ color: 'var(--faint)', fontStyle: 'normal' }}>· what they're hitting you on</em></div>
+          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 10px', color: 'var(--faint)' }}>
+            Adverse stories where each rival co-appears with you, split by topic.
+          </div>
+          {(() => {
+            const issuesWithData = ATTACKMAP.issues.filter((is) =>
+              ATTACKMAP.rivals.some((rv) => ((ATTACKMAP.grid[rv] || {})[is] || 0) > 0));
+            const issues = issuesWithData.length ? issuesWithData : ATTACKMAP.issues;
+            const max = Math.max(1, ...ATTACKMAP.rivals.flatMap((rv) => issues.map((is) => (ATTACKMAP.grid[rv] || {})[is] || 0)));
+            if (!ATTACKMAP.rivals.length) return <div className="cd-mnote">No co-occurring adverse coverage to map.</div>;
+            return (
+              <div className="cd-matrix" style={{ gridTemplateColumns: `auto repeat(${issues.length}, 1fr) 48px` }}>
+                <span />
+                {issues.map((is) => <span className="cd-mxh" key={is}>{is}</span>)}
+                <span className="cd-mxh" style={{ textAlign: 'right' }}>TOTAL</span>
+                {ATTACKMAP.rivals.map((rv) => {
+                  const total = issues.reduce((acc, is) => acc + ((ATTACKMAP.grid[rv] || {})[is] || 0), 0);
+                  return (
+                    <Fragment key={rv}>
+                      <span className="cd-mxr">{rv}</span>
+                      {issues.map((is) => {
+                        const n = (ATTACKMAP.grid[rv] || {})[is] || 0;
+                        const t = n / max;
+                        return (
+                          <span className="cd-mxc" key={is} title={`${n} adverse stories · ${is}`} style={{ position: 'relative' }}>
+                            <i style={{ opacity: n ? 0.25 + t * 0.7 : 0.05 }} />
+                            {n > 0 && <span style={{ position: 'relative', zIndex: 1, fontFamily: 'var(--mono)', fontSize: '0.72rem', color: n ? '#fff' : 'var(--faint)' }}>{n}</span>}
+                          </span>
+                        );
+                      })}
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: '0.74rem', textAlign: 'right', alignSelf: 'center', color: total ? 'var(--hostile,#f05c5c)' : 'var(--faint)' }}>{total}</span>
+                    </Fragment>
+                  );
+                })}
+              </div>
+            );
+          })()}
           <div className="cd-mnote">{ATTACKMAP.foot}</div>
         </div>
 
         <div className="cd-mod">
-          <div className="cd-mh">BLOC</div>
+          <div className="cd-mh">BLOC <em style={{ color: 'var(--faint)', fontStyle: 'normal' }}>· who appears with whom</em></div>
+          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 10px', color: 'var(--faint)' }}>
+            Watched figures who keep showing up in the same stories — the implicit blocs in your coverage.
+          </div>
           <div className="cd-bloc">
-            {BLOC.edges.map((e, i) => (
-              <div className="cd-edge" key={i}><span className="cd-node">{e.a}</span><span className="cd-link"><i />{e.n}<i /></span><span className="cd-node">{e.b}</span></div>
+            {[...BLOC.edges].sort((a, b) => (b.n || 0) - (a.n || 0)).map((e, i) => (
+              <div className="cd-edge" key={i} title={`${e.a} and ${e.b} appeared together in ${e.n} stories`}>
+                <span className="cd-node">{e.a}</span>
+                <span className="cd-link"><i />
+                  <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.05 }}>
+                    <b style={{ fontFamily: 'var(--mono)', fontSize: '0.86rem' }}>{e.n}</b>
+                    <span style={{ fontSize: '0.54rem', letterSpacing: '0.1em', color: 'var(--faint)' }}>SHARED</span>
+                  </span>
+                <i /></span>
+                <span className="cd-node">{e.b}</span>
+              </div>
             ))}
             {BLOC.edges.length === 0 && <div className="cd-mnote">No repeated co-coverage clusters.</div>}
           </div>

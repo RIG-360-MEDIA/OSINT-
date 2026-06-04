@@ -25,6 +25,7 @@ from sqlalchemy import text
 
 from auth.middleware import get_optional_user
 from brief_prefs import load_prefs
+from config import load_settings
 from db import get_db
 from llm_synth import synthesize_paragraph
 from relevance import score_relevant
@@ -33,6 +34,11 @@ router = APIRouter(prefix="/api/brief", tags=["brief"])
 
 
 TONE_BY_RANK = ["amber", "cyan", "rose", "violet", "green"]
+
+# Defining-Stories read-path kill-switch (STEP 4a). 'new' = the fresh shared
+# story layer (analytics.story_*); 'old' (default) = the legacy event_clusters
+# engine. Read once at import — flip OSINT_STORY_SOURCE + restart to revert.
+_STORY_SOURCE = load_settings().story_source
 
 
 def _impact_label(score: float) -> str:
@@ -502,6 +508,155 @@ async def _personal_stories(db, prefs: dict[str, Any], window_hours: int,
     return [_build_story(i, g, meta, stances, quotes, now_sim) for i, g in enumerate(groups)]
 
 
+async def _new_layer_stories(
+    db, limit: int, country: str | None,
+) -> list[dict[str, Any]]:
+    """Global defining-stories feed off the NEW shared story layer
+    (`analytics.story_*`) instead of the stale `event_clusters` engine.
+
+    Selection + ranking follow the live-verified surfacing contract
+    (rig-news `docs/plans/story-layer-LIVE-SCHEMA-PINNED-2026-06-03.md`):
+        status='active'
+        AND is_template_family IS FALSE                  -- hide topic-blobs
+        AND (independent_source_count >= 3                -- real multi-source...
+             OR rescued_from_story_id IS NOT NULL)        -- ...or rescued buried story
+        ORDER BY importance_score DESC NULLS LAST, independent_source_count DESC
+
+    Two pinned gotchas are deliberately honoured:
+    * `is_template_family IS FALSE` — NOT `IS NOT TRUE`. `IS NOT TRUE` keeps
+      NULLs, so a NULL-flagged blob would leak into the feed; `IS FALSE`
+      excludes NULL and is blob-safe. (0 NULLs live today, so this is latent —
+      but the column is nullable, so the safe form is wired in from day one.)
+    * NO `provisional` filter — every live keeper row is provisional=true (the
+      cutover never flipped it); filtering `provisional=false` returns 0 rows.
+
+    Card bodies are assembled from each story's member articles via the same
+    `_enrich_batch` + `_build_story` path the personal feed uses, so the
+    response shape is identical. The precomputed enrichment tables
+    (story_facts / story_sources / story_stance / story_timeline) are an
+    additive follow-up — they can be layered in without changing this contract.
+    """
+    country_clause = "AND c.subject_country = :country" if country else ""
+    params: dict[str, Any] = {"lim": int(limit)}
+    if country:
+        params["country"] = country
+    story_rows = (await db.execute(text(f"""
+        SELECT c.story_id::text AS story_id,
+               c.representative_title,
+               c.importance_score,
+               c.independent_source_count AS indep,
+               c.article_count,
+               c.topic
+          FROM analytics.story_clusters c
+         WHERE c.status = 'active'
+           AND c.is_template_family IS FALSE
+           AND (c.independent_source_count >= 3 OR c.rescued_from_story_id IS NOT NULL)
+           {country_clause}
+         ORDER BY c.importance_score DESC NULLS LAST,
+                  c.independent_source_count DESC
+         LIMIT :lim
+    """), params)).fetchall()
+    if not story_rows:
+        return []
+
+    story_ids = [r.story_id for r in story_rows]
+    # Member articles per story, representative first. Capped per story so a
+    # large story (hundreds of members) doesn't blow up the per-article enrich;
+    # the cap is generous enough for accurate coverage/outlets/momentum on a card.
+    MAX_MEMBERS = 120
+    members_by_story: dict[str, list[dict[str, Any]]] = {}
+    for r in (await db.execute(text("""
+        SELECT m.story_id::text AS sid, a.id::text AS id, a.title,
+               a.summary_executive AS summary, s.name AS source
+          FROM analytics.story_cluster_members m
+          JOIN articles a ON a.id = m.article_id
+          LEFT JOIN sources s ON s.id = a.source_id
+         WHERE m.story_id = ANY(CAST(:sids AS uuid[]))
+         ORDER BY m.is_representative DESC, a.collected_at DESC
+    """), {"sids": story_ids})).fetchall():
+        bucket = members_by_story.setdefault(r.sid, [])
+        if len(bucket) >= MAX_MEMBERS:
+            continue
+        bucket.append({
+            "id": r.id, "title": r.title, "summary": r.summary or "",
+            "source": r.source, "matched": None,
+        })
+
+    groups: list[tuple[list[dict[str, Any]], Any]] = []
+    for sr in story_rows:
+        members = members_by_story.get(sr.story_id)
+        if not members:
+            continue
+        # Carry the story-level ranking signal onto each member so the shared
+        # _build_story (reads lead["score"]/["topic"]) ranks consistently.
+        for m in members:
+            m["score"] = float(sr.importance_score or 0)
+            m["topic"] = sr.topic
+        # Prefer the story's representative title as the lead headline.
+        if sr.representative_title:
+            members[0] = {**members[0], "title": sr.representative_title}
+        groups.append((members, sr))
+
+    all_ids = [m["id"] for g, _ in groups for m in g]
+    if not all_ids:
+        return []
+    meta, stances, quotes, now_sim = await _enrich_batch(db, all_ids)
+    cards: list[dict[str, Any]] = []
+    for i, (members, sr) in enumerate(groups):
+        card = _build_story(i, members, meta, stances, quotes, now_sim)
+        # Headline metrics come from the AUTHORITATIVE story row, not the capped
+        # member sample: a large story is truncated to MAX_MEMBERS for display,
+        # so counting outlets/articles off the sample would undercount (show
+        # ~120 outlets for a 233-outlet story). independent_source_count is the
+        # wire-deduped outlet count; article_count is the full member size.
+        card["metrics"]["articles"] = int(sr.article_count or card["metrics"]["articles"])
+        card["metrics"]["outlets"] = int(sr.indep or card["metrics"]["outlets"])
+        cards.append(card)
+    return cards
+
+
+async def _global_fallback_stories(
+    db, limit: int, since_hours: int, country: str | None,
+) -> list[dict[str, Any]]:
+    """Legacy global feed off public.event_clusters (the pre-story-layer engine).
+    Retained behind OSINT_STORY_SOURCE='old' as the rollback path while the new
+    analytics.story_* layer is proven in shadow. Ranks importance_score *
+    EXP(-hours_since_activity / 12h) so a 2-hour breaking story can outrank a
+    5-day-old high-salience cluster."""
+    HALF_LIFE_H = 12.0
+    rows = (await db.execute(text(f"""
+        WITH active AS (
+            SELECT ec.id::text AS cluster_id, ec.canonical_description,
+                   ec.canonical_event_type, ec.source_count, ec.article_count,
+                   ec.importance_score,
+                   MAX(a.collected_at) AS last_activity
+              FROM event_clusters ec
+              JOIN article_events ae ON ae.event_cluster_id = ec.id
+              JOIN articles a ON a.id = ae.article_id
+             WHERE ec.is_active
+               AND ec.source_count >= 2
+               AND ec.importance_score IS NOT NULL
+               AND a.collected_at >= analytics.now_sim() - INTERVAL '7 days'
+               AND a.collected_at <= analytics.now_sim()
+             GROUP BY ec.id, ec.canonical_description, ec.canonical_event_type,
+                      ec.source_count, ec.article_count, ec.importance_score
+        )
+        SELECT cluster_id, canonical_description, canonical_event_type,
+               source_count, article_count, importance_score,
+               importance_score * EXP(
+                   - EXTRACT(EPOCH FROM (analytics.now_sim() - last_activity))
+                   / 3600.0 / {HALF_LIFE_H}
+               ) AS effective_rank
+          FROM active
+         ORDER BY effective_rank DESC NULLS LAST
+         LIMIT :lim
+    """), {"lim": int(limit)})).fetchall()
+    return [
+        await _one_cluster(db, r, i, since_hours, country)
+        for i, r in enumerate(rows)
+    ]
+
+
 @router.get("/stories")
 async def get_stories(
     limit: int = Query(default=5, ge=1, le=20),
@@ -518,16 +673,15 @@ async def get_stories(
     Delhi user sees Delhi. This deliberately does NOT use the story_threads
     clustering engine (a WIP prototype: unrun v1→v2 cutover, single-source
     runaway threads, no live threading). Signed-out / no-prefs requests fall
-    back to the global event_clusters importance ranking.
+    back to the global feed, whose source — the fresh analytics.story_* layer
+    or the legacy event_clusters engine — is chosen by the OSINT_STORY_SOURCE
+    kill-switch (default 'old'; see _new_layer_stories / _global_fallback_stories).
 
     Filter params (default to the boss template when omitted):
       since_hours — width of the "today" window in the response metrics.
       window_hours — look-back for the personal relevance scan.
       country — ISO 3166-1 alpha-2 (e.g., IN); only applied to the global fallback.
     """
-    # Global fallback ranks importance_score * EXP(-hours_since_activity / 12h)
-    # so a 2-hour breaking story can outrank a 5-day-old high-salience cluster.
-    HALF_LIFE_H = 12.0
     personalized = False
     async with get_db() as db:
         prefs = await load_prefs(db, user["id"]) if user else None
@@ -536,40 +690,16 @@ async def get_stories(
             stories = await _personal_stories(db, prefs, window_hours, limit)
             personalized = bool(stories)
 
+        # Global feed (signed-out, no prefs, or no personal matches). Source is
+        # chosen by the OSINT_STORY_SOURCE kill-switch: 'new' = the fresh shared
+        # story layer (analytics.story_*), 'old' = the legacy event_clusters
+        # engine (the rollback path). One flag flips the whole product back.
         if not stories:
-            # Global fallback (signed-out, no prefs, or no personal matches) —
-            # the event_clusters importance ranking, enriched per cluster.
-            rows = (await db.execute(text(f"""
-                WITH active AS (
-                    SELECT ec.id::text AS cluster_id, ec.canonical_description,
-                           ec.canonical_event_type, ec.source_count, ec.article_count,
-                           ec.importance_score,
-                           MAX(a.collected_at) AS last_activity
-                      FROM event_clusters ec
-                      JOIN article_events ae ON ae.event_cluster_id = ec.id
-                      JOIN articles a ON a.id = ae.article_id
-                     WHERE ec.is_active
-                       AND ec.source_count >= 2
-                       AND ec.importance_score IS NOT NULL
-                       AND a.collected_at >= analytics.now_sim() - INTERVAL '7 days'
-                       AND a.collected_at <= analytics.now_sim()
-                     GROUP BY ec.id, ec.canonical_description, ec.canonical_event_type,
-                              ec.source_count, ec.article_count, ec.importance_score
-                )
-                SELECT cluster_id, canonical_description, canonical_event_type,
-                       source_count, article_count, importance_score,
-                       importance_score * EXP(
-                           - EXTRACT(EPOCH FROM (analytics.now_sim() - last_activity))
-                           / 3600.0 / {HALF_LIFE_H}
-                       ) AS effective_rank
-                  FROM active
-                 ORDER BY effective_rank DESC NULLS LAST
-                 LIMIT :lim
-            """), {"lim": int(limit)})).fetchall()
-            stories = [
-                await _one_cluster(db, r, i, since_hours, country)
-                for i, r in enumerate(rows)
-            ]
+            stories = (
+                await _new_layer_stories(db, limit, country)
+                if _STORY_SOURCE == "new"
+                else await _global_fallback_stories(db, limit, since_hours, country)
+            )
 
     # LLM synthesis pass — OUTSIDE the DB context so no connection is held during
     # the model calls. Concurrent across the shown stories; falls back per-story

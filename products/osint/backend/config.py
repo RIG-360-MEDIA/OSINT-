@@ -26,6 +26,19 @@ class Settings:
     host: str
     port: int
     log_level: str
+    story_source: str
+
+
+def _story_source() -> str:
+    """Kill-switch for the Defining-Stories read path (STEP 4a).
+
+    'new' → read the fresh shared story layer (analytics.story_*).
+    'old' → read the legacy public.event_clusters engine (the rollback path).
+    Defaults to 'old' so the switch ships dark; one env flip + restart reverts
+    the whole product. Any unrecognised value falls back to 'old' (fail-safe).
+    """
+    v = (os.environ.get("OSINT_STORY_SOURCE", "old") or "old").strip().lower()
+    return v if v in ("new", "old") else "old"
 
 
 def load_settings() -> Settings:
@@ -39,4 +52,5 @@ def load_settings() -> Settings:
         host=os.environ.get("OSINT_HOST", "0.0.0.0"),
         port=int(os.environ.get("OSINT_PORT", "8000")),
         log_level=os.environ.get("OSINT_LOG_LEVEL", "INFO"),
+        story_source=_story_source(),
     )

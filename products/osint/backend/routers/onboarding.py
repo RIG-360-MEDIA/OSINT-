@@ -58,6 +58,11 @@ async def search_entities(
             SELECT id::text AS id, canonical_name, entity_type, party, state, country, aliases
               FROM entity_dictionary
              WHERE LOWER(entity_type) IN ({placeholders})
+               AND redirected_to IS NULL   -- exclude consolidated/redirected rows
+                                           -- so users can't pick a now-dead dupe
+                                           -- (titled-prefix variants are still
+                                           -- discoverable via the canonical row's
+                                           -- aliases[] — migration 095 appended them)
                AND (
                  LOWER(canonical_name) LIKE :n
                  OR EXISTS (

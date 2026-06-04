@@ -267,18 +267,49 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
     crit_r = sum(1 for r in inwin if (r.lean or 0) <= -0.10)
     wlabel = {24: "last 24 hours", 48: "last 48 hours", 72: "last 3 days", 168: "last 7 days"}[chosen]
     if n_rec == 0:
-        summary = f"{name} has no fresh coverage in the last 7 days — quiet on the wire."
+        summary = f"{name} has had no fresh coverage in the last 7 days — quiet on the wire, nothing to brief."
     else:
-        lead_h = inwin[0].title
-        if not i18n.is_english(lead_h):
-            lead_h = (await i18n.ensure_en(db, {inwin[0].title})).get(inwin[0].title) or lead_h
-        tone = "supportive" if sup_r > crit_r else "critical" if crit_r > sup_r else "mixed"
-        mix = f" — {sup_r} supportive, {crit_r} critical ({tone})" if (sup_r or crit_r) else ""
-        summary = (f"In the {wlabel}, {name} appeared in {n_rec} "
-                   f"{'story' if n_rec == 1 else 'stories'}{mix}. "
-                   f"Latest: “{lead_h}” ({inwin[0].src}).")
-        if chosen >= 72:
-            summary += " Quiet lately — widened the window to surface this."
+        pos = next((r for r in inwin if (r.lean or 0) >= 0.10), None)
+        neg = next((r for r in inwin if (r.lean or 0) <= -0.10), None)
+        qrow = (await db.execute(text("""
+            SELECT q.quote_text q, NULLIF(q.quote_text_en, '') qen
+              FROM article_quotes q JOIN articles a ON a.id = q.article_id
+             WHERE q.speaker_entity_id = CAST(:eid AS uuid)
+               AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+               AND length(COALESCE(q.quote_text_en, q.quote_text)) BETWEEN 16 AND 300
+             ORDER BY a.collected_at DESC LIMIT 1
+        """), {"eid": eid, "wh": chosen})).fetchone()
+        crow = (await db.execute(text("""
+            SELECT COALESCE(c.object_text, c.claim_text) tx, c.predicate pred
+              FROM article_claims c JOIN articles a ON a.id = c.article_id
+             WHERE c.subject_entity_id = CAST(:eid AS uuid)
+               AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+               AND COALESCE(c.object_text, c.claim_text) IS NOT NULL
+             ORDER BY a.collected_at DESC LIMIT 1
+        """), {"eid": eid, "wh": chosen})).fetchone()
+
+        qtext = (qrow.qen or qrow.q) if qrow else None
+        ctext = crow.tx if crow else None
+        to_tr = {t for t in [pos.title if pos else None, neg.title if neg else None, qtext, ctext]
+                 if t and not i18n.is_english(t)}
+        enm = await i18n.ensure_en(db, to_tr) if to_tr else {}
+        en = lambda t: (enm.get(t, t) if t else t)
+
+        tone = "supportive" if sup_r > crit_r else "critical" if crit_r > sup_r else "evenly split"
+        parts = [f"In the {wlabel}, {name} drew {n_rec} {'story' if n_rec == 1 else 'stories'} — "
+                 f"{sup_r} supportive, {crit_r} critical, reading {tone} overall"
+                 + (" (window widened — coverage was light)." if chosen >= 72 else ".")]
+        if pos:
+            parts.append(f"The favourable coverage centres on “{en(pos.title)}” ({pos.src}).")
+        if neg:
+            parts.append(f"The critical line is “{en(neg.title)}” ({neg.src}).")
+        if not pos and not neg:
+            parts.append("Coverage is largely neutral — reporting rather than taking sides.")
+        if qtext:
+            parts.append(f"In their own words: “{en(qtext)[:220]}”.")
+        if ctext:
+            parts.append(f"On the record about them — {(crow.pred + ': ') if crow.pred else ''}“{en(ctext)[:180]}”.")
+        summary = " ".join(parts)
 
     return {
         "found": True,

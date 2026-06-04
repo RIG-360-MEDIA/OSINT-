@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import DeckGL from '@deck.gl/react';
-import { ScatterplotLayer, TextLayer } from '@deck.gl/layers';
+import { ColumnLayer, TextLayer } from '@deck.gl/layers';
 import { FlyToInterpolator, WebMercatorViewport } from '@deck.gl/core';
 import { Map } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -53,24 +53,27 @@ export default function MapPage() {
   const maxArt = useMemo(() => Math.max(1, ...bubbles.map((b) => b.articles || 0)), [bubbles]);
 
   const layers = useMemo(() => {
-    const radius = (b) => 14000 + Math.sqrt((b.articles || 0) / maxArt) * 130000 * (scope === 'mine' ? 0.42 : 1);
+    const labelData = [...bubbles].sort((a, b) => (b.articles || 0) - (a.articles || 0)).slice(0, scope === 'mine' ? 9 : 6);
     return [
-      new ScatterplotLayer({
-        id: 'bubbles', data: bubbles, pickable: true, stroked: true, filled: true,
-        radiusUnits: 'meters', getPosition: (b) => [b.lon, b.lat],
-        getRadius: radius, radiusMinPixels: 5, radiusMaxPixels: 64,
-        getFillColor: (b) => [...(TONE[b.tone] || TONE.neutral), 165],
-        getLineColor: (b) => [...(TONE[b.tone] || TONE.neutral), 255], lineWidthMinPixels: 1.2,
+      // 3D columns: height = coverage volume, colour = stance (premium extruded look)
+      new ColumnLayer({
+        id: 'cols', data: bubbles, diskResolution: 18, extruded: true, pickable: true,
+        radius: scope === 'mine' ? 6500 : 55000, elevationScale: 1,
+        getPosition: (b) => [b.lon, b.lat],
+        getFillColor: (b) => [...(TONE[b.tone] || TONE.neutral), 235],
+        getLineColor: [255, 255, 255, 28], getElevation: (b) => (Math.sqrt(b.articles || 0) / Math.sqrt(maxArt || 1)) * 95000,
+        material: { ambient: 0.55, diffuse: 0.7, shininess: 60, specularColor: [60, 60, 70] },
+        autoHighlight: true, highlightColor: [245, 200, 90, 200],
+        transitions: { getElevation: 550, getFillColor: 400 },
+        updateTriggers: { getElevation: [maxArt, scope], getFillColor: [scope] },
         onHover: (info) => setHover(info.object ? { x: info.x, y: info.y, b: info.object } : null),
-        updateTriggers: { getRadius: [scope, maxArt] },
-        transitions: { getRadius: 500, getFillColor: 400 },
       }),
       new TextLayer({
-        id: 'labels', data: scope === 'mine' ? bubbles : bubbles.filter((b) => b.articles > maxArt * 0.15),
+        id: 'labels', data: labelData,
         getPosition: (b) => [b.lon, b.lat], getText: (b) => b.name,
-        getSize: 11, getColor: [233, 238, 248, 220], getPixelOffset: [0, -14],
+        getSize: 11, getColor: [235, 240, 250, 240], getPixelOffset: [0, -12],
         fontFamily: 'ui-monospace, monospace', getTextAnchor: 'middle', getAlignmentBaseline: 'bottom',
-        outlineWidth: 2, outlineColor: [10, 12, 18, 255], fontSettings: { sdf: true },
+        outlineWidth: 2.5, outlineColor: [6, 8, 14, 255], fontSettings: { sdf: true },
       }),
     ];
   }, [bubbles, maxArt, scope]);
@@ -107,7 +110,7 @@ export default function MapPage() {
 
       {/* legend */}
       <div style={{ position: 'absolute', bottom: 16, left: 16, background: 'var(--void-2,#0b0a10cc)', border: '1px solid var(--line)', borderRadius: 10, padding: '10px 14px', fontSize: '0.72rem', color: 'var(--faint)' }}>
-        <div style={{ marginBottom: 6, letterSpacing: '0.1em' }}>BUBBLE = COVERAGE · COLOUR = STANCE</div>
+        <div style={{ marginBottom: 6, letterSpacing: '0.1em' }}>COLUMN HEIGHT = COVERAGE · COLOUR = STANCE</div>
         <div style={{ display: 'flex', gap: 14 }}>
           {[['supportive', 'supportive'], ['neutral', 'neutral'], ['hostile', 'critical']].map(([k, lbl]) => (
             <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>

@@ -9,6 +9,7 @@ import LiveChannels from '../components/LiveChannels';
 import MapSections from '../components/MapSections';
 import AP_GEO from '../data/andhra-pradesh-districts.json';
 import TG_GEO from '../data/telangana-districts.json';
+import WORLD_GEO from '../data/world-countries.json';
 
 const DARK_STYLE = import.meta.env.VITE_BASEMAP_URL || 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 const WORLD = { longitude: 35, latitude: 22, zoom: 1.35, pitch: 0, bearing: 0 };
@@ -22,6 +23,8 @@ const clamp01 = (t) => Math.max(0, Math.min(1, t));
 // geojson district name -> our backend district key (handles the 2022-rename diffs)
 const ALIAS = { ANANTAPURAMU: 'ANANTAPUR', YSR: 'YSR KADAPA', 'ALLURI SITHARAMA RAJU': 'ALLURI SITARAMA RAJU' };
 const norm = (s) => { const u = (s || '').toUpperCase().replace(/\s+/g, ' ').trim(); return ALIAS[u] || u; };
+// World choropleth join: ISO_A2_EH fixes Natural Earth's -99 codes (France, Norway, …).
+const isoOf = (f) => { const p = f.properties || {}; const eh = p.ISO_A2_EH; return (eh && eh !== '-99') ? eh : p.ISO_A2; };
 
 function stanceFill(d) {
   if (!d || (d.sup + d.crit) === 0) return [60, 68, 92, 200];
@@ -118,6 +121,7 @@ export default function MapPage() {
   const bubbles = (data && data.bubbles) || [];
   const maxArt = useMemo(() => Math.max(1, ...bubbles.map((b) => b.articles || 0)), [bubbles]);
   const lookup = useMemo(() => { const m = {}; bubbles.forEach((b) => { m[norm(b.name)] = b; }); return m; }, [bubbles]);
+  const countryLookup = useMemo(() => { const m = {}; bubbles.forEach((b) => { if (b.id) m[b.id] = b; }); return m; }, [bubbles]);
   const geo = data && data.state_code ? GEOJSON[data.state_code] : null;
   const useChoropleth = scope === 'mine' && !!geo;
 
@@ -129,6 +133,19 @@ export default function MapPage() {
       fontFamily: 'ui-monospace, monospace', getTextAnchor: 'middle', getAlignmentBaseline: 'center',
       outlineWidth: 3, outlineColor: [5, 7, 12, 255], fontSettings: { sdf: true },
     });
+    if (scope === 'global') {
+      return [new GeoJsonLayer({
+        id: 'world', data: WORLD_GEO, extruded: !flat, filled: true, stroked: true, wireframe: false,
+        getElevation: (f) => { if (flat) return 0; const d = countryLookup[isoOf(f)]; return d ? (Math.sqrt(d.articles) / Math.sqrt(maxArt)) * 480000 : 0; },
+        getFillColor: (f) => stanceFill(countryLookup[isoOf(f)]),
+        getLineColor: [222, 228, 244, flat ? 95 : 60], lineWidthMinPixels: 0.6, pickable: true,
+        autoHighlight: true, highlightColor: [245, 200, 90, 120],
+        material: { ambient: 0.5, diffuse: 0.65, shininess: 40, specularColor: [50, 50, 60] },
+        transitions: { getElevation: 550, getFillColor: 400 },
+        updateTriggers: { getFillColor: [countryLookup], getElevation: [countryLookup, maxArt, flat], getLineColor: [flat] },
+        onHover: (info) => setHover(info.object ? { x: info.x, y: info.y, b: countryLookup[isoOf(info.object)] || { name: (info.object.properties.NAME || info.object.properties.ADMIN), articles: 0, sup: 0, crit: 0, net: 0 } } : null),
+      }), labelLayer];
+    }
     if (useChoropleth) {
       return [new GeoJsonLayer({
         id: 'choropleth', data: geo, extruded: !flat, filled: true, stroked: true, wireframe: false,
@@ -154,7 +171,7 @@ export default function MapPage() {
       onHover: (info) => setHover(info.object ? { x: info.x, y: info.y, b: info.object } : null),
       onClick: (info) => info.object && openDistrict(info.object),
     }), labelLayer];
-  }, [bubbles, maxArt, scope, geo, useChoropleth, lookup, flat]);
+  }, [bubbles, maxArt, scope, geo, useChoropleth, lookup, countryLookup, flat]);
 
   const total = bubbles.reduce((s, b) => s + (b.articles || 0), 0);
 
@@ -172,7 +189,7 @@ export default function MapPage() {
           <div className="sub" style={{ maxWidth: 460 }}>
             {data ? (scope === 'mine'
               ? `${data.region} — ${bubbles.length} districts · ${total.toLocaleString()} stories · ${data.window_days}d`
-              : `Global rollup — ${bubbles.length} regions · ${total.toLocaleString()} stories`) : 'Loading the theatre…'}
+              : `${data.region} — ${bubbles.length} countries · ${total.toLocaleString()} stories`) : 'Loading the theatre…'}
           </div>
         </div>
         <div style={{ pointerEvents: 'auto', display: 'flex', gap: 8 }}>
@@ -198,7 +215,7 @@ export default function MapPage() {
       </div>
 
       <div className="wm-hud" style={{ position: 'absolute', bottom: 16, left: 16, padding: '10px 14px', fontSize: '0.72rem', color: 'var(--faint)' }}>
-        <div className="wm-label" style={{ marginBottom: 6 }}>{useChoropleth ? (flat ? 'DISTRICT COLOUR = NET STANCE' : 'DISTRICT COLOUR = NET STANCE · HEIGHT = COVERAGE') : (flat ? 'COLOUR = STANCE' : 'COLUMN HEIGHT = COVERAGE · COLOUR = STANCE')}</div>
+        <div className="wm-label" style={{ marginBottom: 6 }}>{(useChoropleth || scope === 'global') ? (flat ? 'AREA COLOUR = NET STANCE' : 'AREA COLOUR = NET STANCE · HEIGHT = COVERAGE') : (flat ? 'COLOUR = STANCE' : 'COLUMN HEIGHT = COVERAGE · COLOUR = STANCE')}</div>
         <div style={{ display: 'flex', gap: 14 }}>
           {[['supportive', 'supportive'], ['neutral', 'neutral'], ['hostile', 'critical']].map(([k, lbl]) => (
             <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>

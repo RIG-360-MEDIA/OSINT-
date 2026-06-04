@@ -48,7 +48,20 @@ def _align(sup: int, crit: int) -> str:
 
 # ───────────────────────── ROSTER ─────────────────────────
 async def build_roster(db, prefs: dict[str, Any]) -> dict[str, Any]:
-    meta = prefs["watchlist"]["entity_meta"]
+    meta = list(prefs["watchlist"]["entity_meta"])
+    pid = prefs.get("primary_subject_id")
+    # The principal is the primary_subject, NOT a watchlist entry — ensure they
+    # always have a file in their own registry (pinned first below).
+    if pid and not any(m.get("id") == pid for m in meta):
+        prow = (await db.execute(text("""
+            SELECT canonical_name, entity_type, party, state FROM entity_dictionary WHERE id = CAST(:p AS uuid)
+        """), {"p": pid})).fetchone()
+        pname = ((prefs.get("primary_subject_meta") or {}).get("name")
+                 or (prow.canonical_name if prow else "Principal"))
+        meta.insert(0, {"id": pid, "name": pname,
+                        "type": (prow.entity_type if prow else "person"),
+                        "party": (prow.party if prow else ""),
+                        "state": (prow.state if prow else ""), "principal": True})
     ids = [m["id"] for m in meta]
     if not ids:
         return {"roster": [], "window_days": round(STATS_WH / 24)}
@@ -83,11 +96,12 @@ async def build_roster(db, prefs: dict[str, Any]) -> dict[str, Any]:
         role = " · ".join([x for x in [(m.get("party") or "").strip(), (m.get("state") or "").strip()] if x])
         roster.append({
             "id": m["id"], "name": m["name"], "type": _ui_type(m.get("type")),
-            "role": role or m.get("type") or "watched",
+            "role": ("★ your principal" if m.get("principal") else (role or m.get("type") or "watched")),
             "align": _align(sup, crit), "mentions": counts.get(m["id"], 0),
-            "img": imgs.get(m["id"]),
+            "img": imgs.get(m["id"]), "principal": bool(m.get("principal")),
         })
-    roster.sort(key=lambda x: -x["mentions"])
+    # principal pinned first, then by mention volume
+    roster.sort(key=lambda x: (not x.get("principal"), -x["mentions"]))
     return {"roster": roster, "window_days": round(STATS_WH / 24)}
 
 

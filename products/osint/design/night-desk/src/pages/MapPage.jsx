@@ -122,7 +122,7 @@ export default function MapPage() {
   const useChoropleth = scope === 'mine' && !!geo;
 
   const layers = useMemo(() => {
-    const labelData = [...bubbles].sort((a, b) => (b.articles || 0) - (a.articles || 0)).slice(0, scope === 'mine' ? 12 : 6);
+    const labelData = [...bubbles].sort((a, b) => (b.articles || 0) - (a.articles || 0)).slice(0, scope === 'mine' ? 12 : 18);
     const labelLayer = new TextLayer({
       id: 'labels', data: labelData, getPosition: (b) => [b.lon, b.lat], getText: (b) => b.name,
       getSize: 11, getColor: [236, 241, 250, 240], getPixelOffset: [0, -4],
@@ -145,7 +145,7 @@ export default function MapPage() {
     }
     return [new ColumnLayer({
       id: 'cols', data: bubbles, diskResolution: 18, extruded: !flat, pickable: true,
-      radius: scope === 'mine' ? 6500 : 55000, getPosition: (b) => [b.lon, b.lat],
+      radius: scope === 'mine' ? 6500 : 135000, getPosition: (b) => [b.lon, b.lat],
       getFillColor: (b) => [...(TONE[b.tone] || TONE.neutral), 235], getLineColor: [255, 255, 255, 28],
       getElevation: (b) => (flat ? 0 : (Math.sqrt(b.articles || 0) / Math.sqrt(maxArt || 1)) * 95000),
       material: { ambient: 0.55, diffuse: 0.7, shininess: 60, specularColor: [60, 60, 70] },

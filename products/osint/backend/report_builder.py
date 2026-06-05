@@ -47,6 +47,28 @@ STATE_NAMES = {"AP": "Andhra Pradesh", "TG": "Telangana", "KA": "Karnataka", "TN
 STATE_LANG = {"AP": ["te"], "TG": ["te"], "KA": ["kn"], "TN": ["ta"], "KL": ["ml"],
               "MH": ["mr"], "WB": ["bn"], "GJ": ["gu"], "DL": ["hi"], "UP": ["hi"],
               "RJ": ["hi"], "MP": ["hi"], "BR": ["hi"], "OD": ["or"], "PB": ["pa"]}
+# Per-state geo_primary markers (lowercased). The universe excludes articles whose
+# geo_primary belongs to a state OTHER than the persona's — that's the article-level
+# filter that drops cross-state stories an in-state outlet happens to run.
+STATE_MARKERS = {
+    "AP": {"andhra pradesh", "amaravati", "vijayawada", "visakhapatnam", "vizag", "tirupati", "tirumala",
+           "guntur", "nellore", "kurnool", "kadapa", "anantapur", "anantapuram", "rajahmundry", "kakinada",
+           "chittoor", "ongole", "eluru", "machilipatnam", "srikakulam", "vizianagaram", "renigunta"},
+    "TG": {"telangana", "hyderabad", "secunderabad", "warangal", "nizamabad", "karimnagar", "khammam",
+           "mahbubnagar", "mahabubnagar", "nalgonda", "mahabubabad", "peddapalli", "siddipet", "adilabad"},
+    "KA": {"karnataka", "bengaluru", "bangalore", "mysuru", "mysore", "hubli", "mangaluru", "belagavi"},
+    "KL": {"kerala", "thiruvananthapuram", "kochi", "kozhikode", "thrissur", "kollam", "kannur"},
+    "TN": {"tamil nadu", "chennai", "coimbatore", "madurai", "tiruchirappalli", "salem"},
+    "MH": {"maharashtra", "mumbai", "pune", "nagpur", "nashik", "thane"},
+    "DL": {"delhi", "new delhi"}, "GJ": {"gujarat", "ahmedabad", "surat", "vadodara", "gandhinagar", "rajkot"},
+    "WB": {"west bengal", "kolkata"}, "RJ": {"rajasthan", "jaipur", "jodhpur", "udaipur"},
+    "UP": {"uttar pradesh", "lucknow", "kanpur", "noida", "varanasi", "prayagraj"},
+    "MP": {"madhya pradesh", "bhopal", "indore", "gwalior"}, "BR": {"bihar", "patna"},
+    "PB": {"punjab", "chandigarh", "ludhiana", "amritsar"}, "HR": {"haryana", "gurugram", "gurgaon", "faridabad"},
+    "OD": {"odisha", "bhubaneswar", "cuttack"},
+}
+FOREIGN_GEO = {"uk", "usa", "us", "china", "pakistan", "bangladesh", "sri lanka", "nepal",
+               "dubai", "london", "washington", "moscow", "russia", "ukraine"}
 
 
 # Strip URL-slug junk that some sources store as the title: trailing numeric ids,
@@ -90,6 +112,8 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
     state_name = STATE_NAMES.get(sc, sc)
     _, principal = principal_of(prefs)
     N = "analytics.now_sim()"
+    # Block geo_primary markers of every state EXCEPT the persona's, plus foreign.
+    block = sorted({m for s, ms in STATE_MARKERS.items() if s != sc for m in ms} | FOREIGN_GEO)
 
     # Universe = district-tagged to the state AND from an outlet that actually covers
     # the state (sources.geo_states contains the state name). The geo_states filter is
@@ -107,8 +131,9 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
           JOIN sources src ON src.id = a.source_id
          WHERE d.state_code = :sc AND a.source_country = 'IN'
            AND src.geo_states @> ARRAY[:state_full]::text[]
+           AND (a.geo_primary IS NULL OR lower(trim(a.geo_primary)) <> ALL(:block))
            AND a.collected_at >= {N} - interval '48 hours'
-    """), {"sc": sc, "state_full": state_name})
+    """), {"sc": sc, "state_full": state_name, "block": block})
     await db.execute(text("CREATE INDEX ON _rep (ca)"))
 
     n24 = int(await _scalar(db, f"SELECT count(*) FROM _rep WHERE ca >= {N} - interval '24 hours'") or 0)
@@ -319,12 +344,19 @@ def _facts_blob(s: dict[str, Any]) -> str:
 
 
 _SYS = (
-    "You are a senior state-intelligence analyst writing a confidential daily brief for a "
-    "political principal's desk. Write in crisp, authoritative, knowledge-rich prose — the voice "
-    "of a Stratfor/BBC-Monitoring analyst. Be specific and interpretive: say what happened, why it "
-    "matters to the state, and what the second-order risk or opportunity is. Do NOT add citations, "
-    "source names in brackets, or hedging boilerplate. Never invent specific numbers beyond those "
-    "provided, but you MAY interpret and connect them freely.\n\n"
+    "You are a senior intelligence analyst writing a confidential daily brief for the desk named at "
+    "the top of the FACTS. Write in crisp, authoritative, knowledge-rich prose (Stratfor / BBC-"
+    "Monitoring voice). Be specific and interpretive: what happened, why it matters to the state, and "
+    "the second-order risk or opportunity.\n"
+    "HARD RULES (failure to follow makes the brief unusable):\n"
+    "1. ONLY write about the state named in the FACTS. If a fact is about another state (e.g. Telangana, "
+    "Karnataka, Kerala) or a national/foreign matter, IGNORE it — never build a development or summary "
+    "around it.\n"
+    "2. NEVER state a number, percentage, count, rank, share or amount that is not explicitly present in "
+    "the FACTS. Do not estimate, extrapolate, or invent statistics (e.g. never write 'X% of stories').\n"
+    "3. Do NOT merge unrelated stories into one theme or invent a connecting thesis. If a theme's items "
+    "are different unrelated events, write about the single most significant one and omit the rest.\n"
+    "4. No citations, no source names in brackets, no hedging boilerplate.\n\n"
     "Return ONLY valid JSON with this exact shape:\n"
     "{\n"
     '  "exec_summary": [ "<6-7 punchy bullets, each one rich sentence, on what changed in 24h and why it matters>" ],\n'

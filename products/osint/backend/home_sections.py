@@ -622,7 +622,7 @@ def _caveats(prefs: dict[str, Any], players: list[dict[str, Any]]) -> list[str]:
 
 
 async def build_home(db, prefs: dict[str, Any], *, display_name: str | None = None,
-                     posture_wh: int = 504, relevance_wh: int = 168) -> dict[str, Any]:
+                     posture_wh: int = 72, relevance_wh: int = 48) -> dict[str, Any]:
     """Assemble the full Night Desk Home payload for the authenticated persona.
 
     Computes the posture bundle + relevance ONCE and reshapes into the three

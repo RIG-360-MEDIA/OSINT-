@@ -30,7 +30,9 @@ def send_report_email(to_addr: str, subject: str, pdf_bytes: bytes, filename: st
     msg.add_attachment(pdf_bytes, maintype="application", subtype="pdf", filename=filename)
 
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as smtp:
+        # Port 587 + STARTTLS — Hetzner blocks outbound SMTPS (465); 587 works.
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=25) as smtp:
+            smtp.starttls()
             smtp.login(sender, pw)
             smtp.send_message(msg)
         logger.info("report_email: sent to %s (%d bytes)", to_addr, len(pdf_bytes))

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 from sqlalchemy import text
@@ -46,6 +47,18 @@ STATE_NAMES = {"AP": "Andhra Pradesh", "TG": "Telangana", "KA": "Karnataka", "TN
 STATE_LANG = {"AP": ["te"], "TG": ["te"], "KA": ["kn"], "TN": ["ta"], "KL": ["ml"],
               "MH": ["mr"], "WB": ["bn"], "GJ": ["gu"], "DL": ["hi"], "UP": ["hi"],
               "RJ": ["hi"], "MP": ["hi"], "BR": ["hi"], "OD": ["or"], "PB": ["pa"]}
+
+
+# Strip URL-slug junk that some sources store as the title: trailing numeric ids,
+# ?utm=… query strings, .html suffixes (e.g. "…hydel deal 1961422?utm source=home").
+_TITLE_JUNK = re.compile(r"\s*(\d{6,}.*|\?\S.*|\.html?)\s*$", re.I)
+
+
+def _clean_title(t: str | None) -> str:
+    if not t:
+        return ""
+    c = _TITLE_JUNK.sub("", t.strip()).strip()
+    return c or t.strip()
 
 
 def _primary_state(prefs: dict[str, Any]) -> str:
@@ -168,7 +181,7 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
          WHERE r.ca >= {N} - interval '24 hours'
          ORDER BY COALESCE(sc.breadth, 1) DESC, (r.thumb IS NOT NULL) DESC, r.ca DESC LIMIT 6
     """))).fetchall()
-    top = [{"title": r.title, "lang": r.lang, "source": r.src, "tier": r.tier, "thumb": r.thumb,
+    top = [{"title": _clean_title(r.title), "lang": r.lang, "source": r.src, "tier": r.tier, "thumb": r.thumb,
             "url": r.url, "summary": (r.sp or "").strip(), "geo": r.geo, "breadth": int(r.breadth),
             "tone": "supportive" if (r.lean or 0) >= 0.1 else "hostile" if (r.lean or 0) <= -0.1 else "neutral"}
            for r in ts]
@@ -283,7 +296,7 @@ async def _themes(db, sc: str, N: str) -> list[dict[str, Any]]:
              ORDER BY r.ca DESC LIMIT 4
         """))).fetchall()
         if len(rows) >= 2:
-            items = [{"title": r.title, "src": r.src, "summary": (r.sp or "").strip(), "geo": r.geo} for r in rows]
+            items = [{"title": _clean_title(r.title), "src": r.src, "summary": (r.sp or "").strip(), "geo": r.geo} for r in rows]
             await i18n.attach_en(db, items, "title")
             out.append({"theme": label, "count": len(rows), "items": items})
     return out[:4]

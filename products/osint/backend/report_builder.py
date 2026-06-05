@@ -40,6 +40,12 @@ STAKEHOLDER_TOPICS = {
     "Citizens / legal": ["LEGAL", "SECURITY"],
 }
 STATE_NAMES = {"AP": "Andhra Pradesh", "TG": "Telangana", "KA": "Karnataka", "TN": "Tamil Nadu"}
+# A state brief is in the state's own language + English. This drops cross-state
+# regional-language stories that the district tagger mis-attributes (e.g. a Tamil
+# or Kannada article wrongly tagged to an AP district is NOT Andhra Pradesh news).
+STATE_LANG = {"AP": ["te"], "TG": ["te"], "KA": ["kn"], "TN": ["ta"], "KL": ["ml"],
+              "MH": ["mr"], "WB": ["bn"], "GJ": ["gu"], "DL": ["hi"], "UP": ["hi"],
+              "RJ": ["hi"], "MP": ["hi"], "BR": ["hi"], "OD": ["or"], "PB": ["pa"]}
 
 
 def _primary_state(prefs: dict[str, Any]) -> str:
@@ -72,6 +78,11 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
     _, principal = principal_of(prefs)
     N = "analytics.now_sim()"
 
+    # Universe = district-tagged to the state AND from an outlet that actually covers
+    # the state (sources.geo_states contains the state name). The geo_states filter is
+    # what separates Andhra Pradesh from Telangana — both publish in Telugu, so language
+    # can't, but Telangana-only outlets (Namasthe/Mana Telangana) lack the state in
+    # geo_states. This removes the cross-state stories the district tagger mis-attributes.
     await db.execute(text("DROP TABLE IF EXISTS _rep"))
     await db.execute(text(f"""
         CREATE TEMP TABLE _rep AS
@@ -80,9 +91,11 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
                (SELECT avg(({POL}) * st.intensity) FROM article_stances st WHERE st.article_id = a.id) lean
           FROM article_districts ad JOIN districts d ON d.id = ad.district_id
           JOIN articles a ON a.id = ad.article_id
+          JOIN sources src ON src.id = a.source_id
          WHERE d.state_code = :sc AND a.source_country = 'IN'
+           AND src.geo_states @> ARRAY[:state_full]::text[]
            AND a.collected_at >= {N} - interval '48 hours'
-    """), {"sc": sc})
+    """), {"sc": sc, "state_full": state_name})
     await db.execute(text("CREATE INDEX ON _rep (ca)"))
 
     n24 = int(await _scalar(db, f"SELECT count(*) FROM _rep WHERE ca >= {N} - interval '24 hours'") or 0)
@@ -135,15 +148,28 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
                   "delta_pct": round(100 * (int(r.n24) - int(r.nprev)) / int(r.nprev)) if r.nprev else 0}
                  for r in dd]
 
-    # ── top stories (bilingual, with thumbnail) ──
+    # ── top stories: ranked by IMPORTANCE (how many distinct outlets ran the same
+    # story, via its lead entity) — not just recency. Thumbnail + recency break ties. ──
     ts = (await db.execute(text(f"""
-        SELECT r.title, r.lang, s.name src, s.source_tier tier, r.thumb, r.url, r.sp, r.geo, r.lean, r.ca
+        WITH ent AS (
+          SELECT m.entity_id, count(DISTINCT a.source_id) outlets
+            FROM article_entity_mentions m JOIN _rep a ON a.id = m.article_id
+           WHERE a.ca >= {N} - interval '24 hours' GROUP BY 1
+        ), scored AS (
+          SELECT m.article_id aid, max(e.outlets) breadth
+            FROM article_entity_mentions m JOIN ent e ON e.entity_id = m.entity_id
+            JOIN _rep r ON r.id = m.article_id AND r.ca >= {N} - interval '24 hours'
+           GROUP BY 1
+        )
+        SELECT r.title, r.lang, s.name src, s.source_tier tier, r.thumb, r.url, r.sp, r.geo, r.lean, r.ca,
+               COALESCE(sc.breadth, 1) breadth
           FROM _rep r JOIN sources s ON s.id = r.source_id
+          LEFT JOIN scored sc ON sc.aid = r.id
          WHERE r.ca >= {N} - interval '24 hours'
-         ORDER BY (r.thumb IS NOT NULL) DESC, r.ca DESC LIMIT 6
+         ORDER BY COALESCE(sc.breadth, 1) DESC, (r.thumb IS NOT NULL) DESC, r.ca DESC LIMIT 6
     """))).fetchall()
     top = [{"title": r.title, "lang": r.lang, "source": r.src, "tier": r.tier, "thumb": r.thumb,
-            "url": r.url, "summary": (r.sp or "").strip(), "geo": r.geo,
+            "url": r.url, "summary": (r.sp or "").strip(), "geo": r.geo, "breadth": int(r.breadth),
             "tone": "supportive" if (r.lean or 0) >= 0.1 else "hostile" if (r.lean or 0) <= -0.1 else "neutral"}
            for r in ts]
     await i18n.attach_en(db, top, "title")
@@ -178,6 +204,18 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
           FROM _rep r JOIN sources s ON s.id = r.source_id WHERE r.ca >= {N} - interval '24 hours'
          GROUP BY 1,2,3 ORDER BY 4 DESC LIMIT 6
     """))).fetchall()]
+
+    # ── cross-verification: a "story" (lead entity) covered by >=3 distinct outlets
+    # is corroborated; covered by exactly 1 is single-source (treat with caution). ──
+    xv = (await db.execute(text(f"""
+        WITH ent AS (
+          SELECT m.entity_id, count(DISTINCT a.source_id) outlets
+            FROM article_entity_mentions m JOIN _rep a ON a.id = m.article_id
+           WHERE a.ca >= {N} - interval '24 hours' GROUP BY 1)
+        SELECT count(*) FILTER (WHERE outlets >= 3) corroborated,
+               count(*) FILTER (WHERE outlets = 1) single FROM ent
+    """))).fetchone()
+    cross = {"corroborated": int(xv.corroborated or 0), "single_source": int(xv.single or 0)}
 
     # ── entities / drivers (for stakeholders) ──
     drivers = [{"name": r.nm, "type": r.et, "n": int(r.n)} for r in (await db.execute(text(f"""
@@ -217,7 +255,7 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
                  "districts_active": len(districts), "adverse_pct": round(100 * neg / scored)},
         "domains": domains, "sentiment": {"pos": pos, "neu": neu, "neg": neg, "net_pct": net_pct},
         "districts": districts, "top_stories": top, "quotes": quotes, "figures": figures,
-        "source_intel": {"tiers": tiers, "top_outlets": top_outlets},
+        "source_intel": {"tiers": tiers, "top_outlets": top_outlets, "cross": cross},
         "stakeholders": {"affected": affected, "drivers": drivers},
         "early_warning": early, "themes": themes,
         "confidence": "HIGH" if n24 >= 120 else "MODERATE" if n24 >= 40 else "LOW",

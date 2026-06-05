@@ -178,7 +178,9 @@ def render_html(r: dict[str, Any]) -> str:
         out.append(f"<div class='story'><div class='img' style=\"{img}\"></div><div class='bd'>"
                    f"<div class='ti'>{_e(st['title'])}</div>{en}"
                    f"<div class='mt'><span class='dot' style='background:{_TONE_COLOR.get(st['tone'])}'></span>"
-                   f"{_e(st['source'])} · Tier {_e(st['tier'])}{(' · '+_e(st['geo'])) if st.get('geo') else ''}</div></div></div>")
+                   f"{_e(st['source'])} · Tier {_e(st['tier'])}"
+                   f"{(' · '+str(st['breadth'])+' outlets') if st.get('breadth',1) > 1 else ''}"
+                   f"{(' · '+_e(st['geo'])) if st.get('geo') else ''}</div></div></div>")
     out.append("</div>")
 
     # quotes + figures
@@ -199,6 +201,10 @@ def render_html(r: dict[str, Any]) -> str:
         out.append(f"<tr><td><b>{_e(tlabel.get(t['tier'], 'Tier '+str(t['tier'])))}</b></td><td>{t['stories']}</td><td>{t['outlets']}</td></tr>")
     out.append("</table><div class='sub' style='margin-top:7px'><b>Top outlets:</b> "
                + ", ".join(f"{_e(o['name'])} (T{o['tier']}, health {o['health']})" for o in r["source_intel"]["top_outlets"][:5]) + ".</div>")
+    xv = r["source_intel"].get("cross")
+    if xv:
+        out.append(f"<div class='sub' style='margin-top:5px'><b>Cross-verification:</b> {xv['corroborated']} storylines corroborated "
+                   f"across 3+ outlets; {xv['single_source']} single-source (treat with caution).</div>")
 
     out.append(f"<div class='footer'><span>RIG OSINT · generated {_e(r['generated_at'])[:16]} IST · auto-refreshed daily · narrative:{n.get('_source','?')}</span>"
                f"<span>{_e(r['state'])} desk</span></div>")

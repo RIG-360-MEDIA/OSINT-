@@ -29,6 +29,16 @@ from posture import POL, _BODY_PRESENT, compute_posture, principal_of
 from relevance import score_relevant
 import i18n as _i18n
 
+# Strip URL-slug junk some sources store as the title (trailing ids, ?utm=, .html).
+_TITLE_JUNK = re.compile(r"\s*(\d{6,}.*|\?\S.*|\.html?)\s*$", re.I)
+
+
+def _clean_title(t):
+    if not t:
+        return t
+    c = _TITLE_JUNK.sub("", str(t).strip()).strip()
+    return c or t
+
 _MIN = "−"  # unicode minus, matches the design's typography
 
 # Parties/fronts are frequently mistyped as `person` in the entity dictionary.
@@ -522,7 +532,7 @@ async def _what_happened(db, ranked: list[dict[str, Any]], k: int = 4) -> list[d
     for r in ranked[:k]:
         m = meta.get(r["id"])
         out.append({"id": r["id"], "date": _fmt_day(m.d if m else None),
-                    "text": r["title"], "src": r.get("source") or "", "lang": (m.lang if m else None)})
+                    "text": _clean_title(r["title"]), "src": r.get("source") or "", "lang": (m.lang if m else None)})
     await _i18n.attach_en(db, out, "text")
     return out
 
@@ -535,7 +545,7 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
     traj = M.get("stance_trajectory", {})
     direction = traj.get("direction")
     ao = M.get("attack_origination", {}).get("origin") or {}
-    ao_title = ao_en or ao.get("title")  # English where the headline was non-English
+    ao_title = _clean_title(ao_en or ao.get("title"))  # English where the headline was non-English
     qsb = M.get("quote_selection_bias", {}).get("items", [])
     you_q = sum(i["quotes_principal"] for i in qsb)
     opp_q = sum(i["quotes_opposition"] for i in qsb)
@@ -545,7 +555,7 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
 
     stance_word = ("favourable" if (overall or 0) >= 10 else
                    "mixed" if (overall or 0) > -10 else "adverse")
-    top_story = (ranked[0].get("title_en") or ranked[0]["title"]) if ranked else "—"
+    top_story = _clean_title(ranked[0].get("title_en") or ranked[0]["title"]) if ranked else "—"
 
     bottom_line = [
         {"k": "Where You Stand",

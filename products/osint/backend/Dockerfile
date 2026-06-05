@@ -4,6 +4,9 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       curl \
+      libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libgdk-pixbuf-2.0-0 \
+      libffi8 libjpeg62-turbo libcairo2 shared-mime-info \
+      fonts-dejavu-core fonts-indic fonts-noto-core \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./

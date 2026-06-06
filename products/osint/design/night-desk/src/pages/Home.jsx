@@ -133,7 +133,9 @@ export default function Home() {
                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleExplain(); }}>
                 <span className="snum">{typeof S.now === 'number' ? (S.now > 0 ? '+' : '') + S.now : '—'}</span>
                 <span className="slab">{S.label || '—'}</span>
-                <span className="senti-why">{explainOpen ? '▾ why' : '▸ why'}</span>
+                <button type="button" className="senti-why" onClick={(e) => { e.stopPropagation(); toggleExplain(); }}>
+                  {explainOpen ? 'Hide why ▾' : 'Why? ▸'}
+                </button>
               </div>
             </div>
             <Wave data={sPoints.map((p) => Math.max(-1, Math.min(1, (p.v || 0) / 100)))} />
@@ -148,7 +150,10 @@ export default function Home() {
                   <div className="se-head pos">▲ Lifting it up</div>
                   {!explain && <div className="se-row muted">Loading…</div>}
                   {explain && (explain.top_positive || []).map((x) => (
-                    <div className="se-row" key={'p' + x.article_id}>{x.why}</div>
+                    <div className="se-row" key={'p' + x.article_id}>
+                      {x.why}
+                      {x.lang && x.lang !== 'en' && x.headline_en && <div className="se-en">{x.headline_en}</div>}
+                    </div>
                   ))}
                   {explain && !(explain.top_positive || []).length && (
                     <div className="se-row muted">No clear positive drivers.</div>
@@ -158,7 +163,10 @@ export default function Home() {
                   <div className="se-head neg">▼ Pulling it down</div>
                   {!explain && <div className="se-row muted">Loading…</div>}
                   {explain && (explain.top_negative || []).map((x) => (
-                    <div className="se-row" key={'n' + x.article_id}>{x.why}</div>
+                    <div className="se-row" key={'n' + x.article_id}>
+                      {x.why}
+                      {x.lang && x.lang !== 'en' && x.headline_en && <div className="se-en">{x.headline_en}</div>}
+                    </div>
                   ))}
                   {explain && !(explain.top_negative || []).length && (
                     <div className="se-row muted">No clear negative drivers.</div>

@@ -139,12 +139,12 @@ async def _process_paper(
         entity_rows = (
             await db.execute(
                 text(
-                    "SELECT DISTINCT e.name FROM user_watched_entities uwe "
+                    "SELECT DISTINCT e.canonical FROM user_watched_entities uwe "
                     "JOIN entity_dictionary e ON e.id = uwe.entity_id LIMIT 300"
                 )
             )
         ).fetchall()
-        user_entities = [r.name for r in entity_rows]
+        user_entities = [r.canonical for r in entity_rows]
         # Build geo scope from watched entities' state field + AP/Telangana baseline.
         # This captures e.g. Delhi-based watched entities without hardcoding.
         geo_rows = (

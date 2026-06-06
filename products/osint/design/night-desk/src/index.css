@@ -1278,7 +1278,11 @@ button { font-family: inherit; }
 .se-head { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 7px; }
 .se-head.pos { color: var(--supportive); }
 .se-head.neg { color: var(--hostile); }
-.se-row { font-size: 0.82rem; line-height: 1.45; padding: 5px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
+.se-row { display: block; font-size: 0.82rem; line-height: 1.45; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--ink); text-decoration: none; transition: color 0.12s ease; }
+a.se-row { cursor: pointer; }
+a.se-row:hover { color: #fff; }
+a.se-row:hover .se-en { color: var(--ink); }
 .se-row.muted { color: var(--faint); }
 .se-en { font-size: 0.74rem; line-height: 1.4; color: var(--faint); margin-top: 3px; font-style: italic; }
 @media (max-width: 640px) { .senti-explain { grid-template-columns: 1fr; } }

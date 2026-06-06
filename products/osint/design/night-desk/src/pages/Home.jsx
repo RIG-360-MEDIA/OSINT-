@@ -161,10 +161,11 @@ export default function Home() {
                   <div className="se-head pos">▲ Lifting it up</div>
                   {!explain && <div className="se-row muted">Loading…</div>}
                   {explain && (explain.top_positive || []).map((x) => (
-                    <div className="se-row" key={'p' + x.article_id}>
+                    <a className="se-row" key={'p' + x.article_id} href={x.url || undefined}
+                       target="_blank" rel="noopener noreferrer">
                       {x.why}
                       {enText(x.headline_en) && <div className="se-en">{enText(x.headline_en)}</div>}
-                    </div>
+                    </a>
                   ))}
                   {explain && !(explain.top_positive || []).length && (
                     <div className="se-row muted">No clear positive drivers.</div>
@@ -174,10 +175,11 @@ export default function Home() {
                   <div className="se-head neg">▼ Pulling it down</div>
                   {!explain && <div className="se-row muted">Loading…</div>}
                   {explain && (explain.top_negative || []).map((x) => (
-                    <div className="se-row" key={'n' + x.article_id}>
+                    <a className="se-row" key={'n' + x.article_id} href={x.url || undefined}
+                       target="_blank" rel="noopener noreferrer">
                       {x.why}
                       {enText(x.headline_en) && <div className="se-en">{enText(x.headline_en)}</div>}
-                    </div>
+                    </a>
                   ))}
                   {explain && !(explain.top_negative || []).length && (
                     <div className="se-row muted">No clear negative drivers.</div>

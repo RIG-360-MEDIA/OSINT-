@@ -1,10 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Reveal, StanceDot } from '../lib/ui';
+import { Wave } from '../lib/charts';
 import Panel from '../components/Panel';
 import LiveStamp from '../components/LiveStamp';
 import { authFetch } from '../lib/supabase';
 
 const toneCls = (t) => (t === 'hostile' ? 'neg' : t === 'supportive' ? 'pos' : 'neu');
+const sentiCls = (v) => (typeof v !== 'number' ? 'neu' : v >= 10 ? 'pos' : v <= -10 ? 'neg' : 'neu');
+// Colour-classify the briefing callout cells by their meaning, not position
+// (the cell order varies — "The Attack" only appears when there's an adverse line).
+const blTone = (k = '') => {
+  const s = String(k).toLowerCase();
+  if (s.includes('stand')) return 'stand';
+  if (s.includes('attack')) return 'attack';
+  if (s.includes('move')) return 'move';
+  return 'know';
+};
 const TOVL = {
   hostile: 'linear-gradient(180deg, oklch(0.5 0.2 25 / .42), oklch(0.05 0.01 270 / .82))',
   supportive: 'linear-gradient(180deg, oklch(0.55 0.15 165 / .38), oklch(0.05 0.01 270 / .82))',
@@ -24,32 +35,53 @@ export default function Home() {
   const [stories, setStories] = useState([]);
   const [status, setStatus] = useState({ loading: true, error: null });
   const [loadedAt, setLoadedAt] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  // Sentiment drill-down: top +/- stories driving the number, fetched on first open.
+  const [explain, setExplain] = useState(null);
+  const [explainOpen, setExplainOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
+  // Silent swap: on a refetch we keep the current screen up (no loading flash) and
+  // only surface an error on the very first load — a failed refresh keeps stale data.
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (silent) setRefreshing(true);
+    try {
+      const [h, s] = await Promise.all([
+        authFetch('/api/brief/home'),
+        authFetch('/api/brief/top-articles?limit=6').catch(() => null),
+      ]);
+      setHome(h);
+      setStories((s && s.articles) || []);
+      setStatus({ loading: false, error: null });
+      setLoadedAt(Date.now());
+    } catch (e) {
+      setStatus((st) => (st.loading ? { loading: false, error: String(e?.message || e) } : st));
+    } finally {
+      if (silent) setRefreshing(false);
+    }
+  }, []);
+
+  // Click the sentiment number → reveal the stories driving it (lazy-fetched once).
+  const toggleExplain = useCallback(async () => {
+    if (explainOpen) { setExplainOpen(false); return; }
+    setExplainOpen(true);
+    if (!explain) {
       try {
-        const [h, s] = await Promise.all([
-          authFetch('/api/brief/home'),
-          authFetch('/api/brief/top-articles?limit=6').catch(() => null),
-        ]);
-        if (cancelled) return;
-        setHome(h);
-        setStories((s && s.articles) || []);
-        setStatus({ loading: false, error: null });
-        setLoadedAt(Date.now());
-      } catch (e) {
-        if (!cancelled) setStatus({ loading: false, error: String(e?.message || e) });
+        const d = await authFetch('/api/brief/home/sentiment-explain');
+        setExplain(d || { top_positive: [], top_negative: [] });
+      } catch {
+        setExplain({ top_positive: [], top_negative: [] });
       }
     }
+  }, [explainOpen, explain]);
+
+  useEffect(() => {
     load();
-    // Auto-refresh every 30 min (matches the matview refresh cadence) — no reload.
-    // Silent swap: load() doesn't reset to the loading screen on refetch.
-    const id = setInterval(load, 30 * 60 * 1000);
-    const onFocus = () => load();
+    // Auto-refresh every 30 min (matches the matview refresh cadence).
+    const id = setInterval(() => load({ silent: true }), 30 * 60 * 1000);
+    const onFocus = () => load({ silent: true });
     window.addEventListener('focus', onFocus);
-    return () => { cancelled = true; clearInterval(id); window.removeEventListener('focus', onFocus); };
-  }, []);
+    return () => { clearInterval(id); window.removeEventListener('focus', onFocus); };
+  }, [load]);
 
   if (status.loading) return <Notice>Assembling your situation brief…</Notice>;
   if (status.error) return <Notice>Couldn’t load your brief — {status.error}</Notice>;
@@ -57,6 +89,8 @@ export default function Home() {
 
   const M = home.masthead || {};
   const B = home.briefing || {};
+  const S = home.sentiment || {};
+  const sPoints = S.points || [];
   const players = home.players || [];
   const six = home.six || [];
   const caveat = (home.caveats || [])[0];
@@ -66,13 +100,17 @@ export default function Home() {
       {/* masthead */}
       <Reveal>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <div className="eyebrow">SITUATION BRIEF · {M.state}</div>
+          <div className="eyebrow">SITUATION BRIEF</div>
           <LiveStamp at={loadedAt} />
         </div>
         <div className="masthead" style={{ marginTop: 12 }}>
           <div>
-            <h1 className="subject">{M.first} <em>{M.last}</em></h1>
+            {/* Headline is the theatre (state/entity), not the individual; the
+                principal drops to the subline. Falls back to the principal if
+                the persona has no state. */}
+            <h1 className="subject">{M.state || M.principal}</h1>
             <div className="subline">
+              {M.state && M.principal && <><span>{M.principal}</span><span className="sep" /></>}
               {M.displayName && <><span>{M.displayName}</span><span className="sep" /></>}
               <span className="mono" style={{ color: 'var(--ink)' }}>{M.window}</span><span className="sep" />
               <span>confidence <span className="pill">{M.confidence}</span></span>
@@ -83,6 +121,55 @@ export default function Home() {
         <div className="rule-orn">◆</div>
       </Reveal>
 
+      {/* ⓪ COVERAGE SENTIMENT — persona-scoped waveform (jade above / coral below) */}
+      {sPoints.length >= 2 && (
+        <Reveal>
+          <div className="panel senti">
+            <div className="senti-head">
+              <div className="label gold">Coverage Sentiment · {M.window}</div>
+              <div className={'senti-now ' + sentiCls(S.now)} onClick={toggleExplain}
+                   role="button" tabIndex={0} style={{ cursor: 'pointer' }}
+                   title="Why this number? See the stories driving it"
+                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleExplain(); }}>
+                <span className="snum">{typeof S.now === 'number' ? (S.now > 0 ? '+' : '') + S.now : '—'}</span>
+                <span className="slab">{S.label || '—'}</span>
+                <span className="senti-why">{explainOpen ? '▾ why' : '▸ why'}</span>
+              </div>
+            </div>
+            <Wave data={sPoints.map((p) => Math.max(-1, Math.min(1, (p.v || 0) / 100)))} />
+            <div className="senti-foot">
+              <span className="pos">▲ Favourable</span>
+              <span className="muted">{S.n || 0} stance signals · {M.principal}'s coverage</span>
+              <span className="neg">Adverse ▼</span>
+            </div>
+            {explainOpen && (
+              <div className="senti-explain">
+                <div className="se-col">
+                  <div className="se-head pos">▲ Lifting it up</div>
+                  {!explain && <div className="se-row muted">Loading…</div>}
+                  {explain && (explain.top_positive || []).map((x) => (
+                    <div className="se-row" key={'p' + x.article_id}>{x.why}</div>
+                  ))}
+                  {explain && !(explain.top_positive || []).length && (
+                    <div className="se-row muted">No clear positive drivers.</div>
+                  )}
+                </div>
+                <div className="se-col">
+                  <div className="se-head neg">▼ Pulling it down</div>
+                  {!explain && <div className="se-row muted">Loading…</div>}
+                  {explain && (explain.top_negative || []).map((x) => (
+                    <div className="se-row" key={'n' + x.article_id}>{x.why}</div>
+                  ))}
+                  {explain && !(explain.top_negative || []).length && (
+                    <div className="se-row muted">No clear negative drivers.</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </Reveal>
+      )}
+
       {/* ① THE BRIEFING */}
       <Reveal>
         <div className="panel hero briefing">
@@ -90,7 +177,7 @@ export default function Home() {
 
           <div className="bl-band">
             {(B.bottomLine || []).map((b, i) => (
-              <div key={i} className={'bl-cell' + (b.action ? ' move' : '')}>
+              <div key={i} className={'bl-cell bl-' + blTone(b.k) + (b.action ? ' move' : '')}>
                 <div className="k">{b.k}</div>
                 <div className="v">{b.v}</div>
                 {b.action && <div className="approve">approve →</div>}
@@ -105,7 +192,12 @@ export default function Home() {
               <div className="sblk dissent"><div className="kicker">The Other Side</div><p>{B.otherSide}</p></div>
             </div>
             <div className="col">
-              <div className="sblk"><div className="kicker">What Happened</div>
+              <div className="sblk"><div className="kicker kicker-row"><span>What Happened</span>
+                  <button type="button" className="refresh-btn" onClick={() => load({ silent: true })}
+                          disabled={refreshing} title="Refresh the timeline">
+                    <span className={'rfx' + (refreshing ? ' spin' : '')}>↻</span>{refreshing ? 'Refreshing' : 'Refresh'}
+                  </button>
+                </div>
                 <div className="record">
                   {(B.whatHappened || []).map((w, i) => (
                     <div className="r" key={i}><span className="d">{w.date}</span><span className="t">{w.text}<span className="src">{w.src}</span>{w.text_en && <span className="en-gloss"><b>EN</b>{w.text_en}</span>}</span></div>

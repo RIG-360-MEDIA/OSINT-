@@ -385,8 +385,8 @@ _BBOX_PROMPT = (
     "TV schedules, stock tickers, page headers/footers, edition info.\n\n"
     "For each article output:\n"
     "{\n"
-    '  "section": "<Front Page/Business/Politics/National/International/'
-    'City/Sports/Entertainment/Opinion/Other>",\n'
+    '  "section": "<Politics/Business/Crime/Education/Health/'
+    'National/International/City/Sports/Entertainment/Opinion/Other>",\n'
     '  "headline": "<exact headline text>",\n'
     '  "body": "<full article body — every paragraph>",\n'
     '  "language": "<2-letter ISO: en/hi/te/ta/ml/kn/gu/bn/or/pa/ur/mr>",\n'

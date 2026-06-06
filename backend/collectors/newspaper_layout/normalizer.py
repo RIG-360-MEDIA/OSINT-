@@ -68,10 +68,13 @@ async def _normalize_batch(
     groq_manager: Any,
     language: str,
 ) -> list[dict]:
+    # Send up to 2000 chars of body for language/section context.
+    # The original full body is preserved below — LLM output only overwrites
+    # headline (cleaned) + detected_language + section. Body stays canonical.
     payload = [
         {
             "headline": a.get("headline", ""),
-            "body": (a.get("text") or "")[:600],
+            "body": (a.get("text") or "")[:2000],
         }
         for a in batch
     ]
@@ -113,8 +116,10 @@ async def _normalize_batch(
             result: list[dict] = []
             for orig, n in zip(batch, normed):
                 merged = {**orig}
+                # Headline: use LLM cleaned version if non-empty
                 merged["headline"] = (n.get("headline") or "").strip() or orig.get("headline", "")
-                merged["text"] = (n.get("body") or "").strip() or orig.get("text", "")
+                # Body: always keep the original full text — LLM only saw [:2000]
+                merged["text"] = orig.get("text", "")
                 merged["detected_language"] = (n.get("language") or language).strip()
                 merged["section"] = (n.get("section") or orig.get("section") or "").strip()
                 result.append(merged)

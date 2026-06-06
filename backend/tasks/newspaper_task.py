@@ -145,7 +145,22 @@ async def _process_paper(
             )
         ).fetchall()
         user_entities = [r.name for r in entity_rows]
-        user_geos = ["andhra pradesh", "telangana"]
+        # Build geo scope from watched entities' state field + AP/Telangana baseline.
+        # This captures e.g. Delhi-based watched entities without hardcoding.
+        geo_rows = (
+            await db.execute(
+                text(
+                    "SELECT DISTINCT lower(e.state) AS state "
+                    "FROM user_watched_entities uwe "
+                    "JOIN entity_dictionary e ON e.id = uwe.entity_id "
+                    "WHERE e.state IS NOT NULL AND e.state <> ''"
+                )
+            )
+        ).fetchall()
+        user_geos: list[str] = [r.state for r in geo_rows if r.state]
+        for _baseline in ("andhra pradesh", "telangana"):
+            if _baseline not in user_geos:
+                user_geos.append(_baseline)
 
         inserted = skipped = 0
         for art in articles:

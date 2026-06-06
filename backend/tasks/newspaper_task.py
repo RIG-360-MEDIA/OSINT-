@@ -139,7 +139,7 @@ async def _process_paper(
         entity_rows = (
             await db.execute(
                 text(
-                    "SELECT DISTINCT e.canonical FROM user_watched_entities uwe "
+                    "SELECT DISTINCT e.canonical_name FROM user_watched_entities uwe "
                     "JOIN entity_dictionary e ON e.id = uwe.entity_id LIMIT 300"
                 )
             )

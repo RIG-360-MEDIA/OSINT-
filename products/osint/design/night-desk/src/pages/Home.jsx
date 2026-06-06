@@ -30,6 +30,17 @@ function Notice({ children }) {
   );
 }
 
+// Show the translation line only when it's ACTUALLY English (the backend's
+// lead_text_translated is unreliable — sometimes still in the source language).
+// Heuristic: >60% ASCII letters = English. Truncate at a word boundary, no mid-word cuts.
+function enText(t) {
+  if (!t) return '';
+  const s = String(t).trim();
+  const ascii = (s.match(/[\x00-\x7F]/g) || []).length;
+  if (!s.length || ascii / s.length < 0.6) return '';
+  return s.length > 150 ? s.slice(0, 150).replace(/\s+\S*$/, '') + '…' : s;
+}
+
 export default function Home() {
   const [home, setHome] = useState(null);
   const [stories, setStories] = useState([]);
@@ -152,7 +163,7 @@ export default function Home() {
                   {explain && (explain.top_positive || []).map((x) => (
                     <div className="se-row" key={'p' + x.article_id}>
                       {x.why}
-                      {x.lang && x.lang !== 'en' && x.headline_en && <div className="se-en">{x.headline_en}</div>}
+                      {enText(x.headline_en) && <div className="se-en">{enText(x.headline_en)}</div>}
                     </div>
                   ))}
                   {explain && !(explain.top_positive || []).length && (
@@ -165,7 +176,7 @@ export default function Home() {
                   {explain && (explain.top_negative || []).map((x) => (
                     <div className="se-row" key={'n' + x.article_id}>
                       {x.why}
-                      {x.lang && x.lang !== 'en' && x.headline_en && <div className="se-en">{x.headline_en}</div>}
+                      {enText(x.headline_en) && <div className="se-en">{enText(x.headline_en)}</div>}
                     </div>
                   ))}
                   {explain && !(explain.top_negative || []).length && (

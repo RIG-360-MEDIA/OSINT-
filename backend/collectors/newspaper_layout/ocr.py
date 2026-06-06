@@ -56,25 +56,32 @@ class OCRRegion:
 _ENGINES: dict[str, object] = {}
 
 
+# PP-Structure layout detection model ships weights only for 'en' and 'ch'.
+# For other languages (te, hi, etc.) we use 'en' for layout (visual, language-agnostic)
+# while still passing the requested lang to the OCR component.
+_LAYOUT_SUPPORTED = ("en", "ch")
+
+
 def _get_engine(lang: str):
-    if lang not in _ENGINES:
+    layout_lang = lang if lang in _LAYOUT_SUPPORTED else "en"
+    if layout_lang not in _ENGINES:
         try:
             from paddleocr import PPStructure  # type: ignore[import]
         except ImportError:
             raise ImportError(
                 "paddleocr is not installed. Add paddlepaddle>=2.6.0 and "
-                "paddleocr>=2.8.0 to requirements.txt and rebuild the container."
+                "paddleocr>=2.8.0,<3.0 to requirements.txt and rebuild."
             )
-        _ENGINES[lang] = PPStructure(
+        _ENGINES[layout_lang] = PPStructure(
             show_log=False,
-            lang=lang,
+            lang=layout_lang,
             layout=True,
             ocr=True,
-            table=False,       # newspaper PDFs rarely have real tables
-            recovery=False,    # layout recovery creates extra overhead
+            table=False,
+            recovery=False,
         )
-        logger.info("PP-Structure engine initialised (lang=%s)", lang)
-    return _ENGINES[lang]
+        logger.info("PP-Structure engine ready (layout_lang=%s, requested=%s)", layout_lang, lang)
+    return _ENGINES[layout_lang]
 
 
 def extract_regions(

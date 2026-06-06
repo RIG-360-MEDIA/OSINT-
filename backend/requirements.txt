@@ -81,7 +81,7 @@ pysocks==1.7.1
 # and OCRs each region in one pass — handles both English and Indic scripts.
 PyMuPDF==1.24.10
 paddlepaddle>=2.6.0
-paddleocr>=2.8.0
+paddleocr>=2.8.0,<3.0
 # opendataloader-pdf removed — replaced by PaddleOCR PP-Structure pipeline
 importlib_resources==6.4.5
 
@@ -100,6 +100,6 @@ python-jose[cryptography]==3.4.0  # security: PYSEC-2024-232, PYSEC-2024-233
 # Transitive-dep security pins — these come from fastapi (starlette),
 # reportlab/playwright (pillow), and crawl4ai (litellm). Pinning here
 # forces their installed version up regardless of parent constraints.
-starlette>=0.47.2  # security: CVE-2024-47874, CVE-2025-54121
+# starlette pin removed — conflicts with fastapi==0.115.0; version controlled by fastapi
 pillow>=12.2.0  # security: CVE-2026-25990, CVE-2026-40192, CVE-2026-42308, CVE-2026-42310, CVE-2026-42311
 litellm>=1.83.10  # security: CVE-2026-40217, CVE-2026-42203, CVE-2026-42208, CVE-2026-42271

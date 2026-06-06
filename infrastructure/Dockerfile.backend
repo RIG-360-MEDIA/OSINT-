@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     libpq-dev \
     curl \
-    default-jre-headless \
+    # Playwright/Chromium deps
     libnss3 \
     libatk-bridge2.0-0 \
     libdrm2 \
@@ -26,6 +26,13 @@ RUN apt-get update && apt-get install -y \
     libpango-1.0-0 \
     libatk1.0-0 \
     libcups2 \
+    # PaddlePaddle / OpenCV system deps (PP-Structure newspaper OCR pipeline)
+    libgomp1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy and install Python dependencies first
@@ -34,11 +41,12 @@ COPY backend/requirements.txt .
 COPY backend/requirements-dev.txt .
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 
-# P15 — government document PDF pipeline.
-# OpenDataLoader (Apache 2.0) is the primary extractor; PyMuPDF is the
-# fallback for simple digital PDFs. Installed in a dedicated layer so the
-# heavier requirements.txt install above stays cached.
-RUN pip install --no-cache-dir opendataloader-pdf pymupdf
+# P16 — Pre-bake PaddleOCR PP-Structure models into the image.
+# First instantiation downloads layout + OCR weights (~600 MB from PaddlePaddle CDN).
+# Baking them here means containers start without internet access at runtime.
+# Build time: ~5-8 min on first run; subsequent builds use the layer cache.
+RUN python -c "from paddleocr import PPStructure; PPStructure(show_log=False, lang='en')" \
+ && python -c "from paddleocr import PPStructure; PPStructure(show_log=False, lang='te')"
 
 # Install Crawl4AI browser + JS snippets.
 # crawl4ai-setup installs Playwright Chromium and populates

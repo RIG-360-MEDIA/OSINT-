@@ -75,10 +75,14 @@ webvtt-py==0.5.1
 pysocks==1.7.1
 
 # Newspaper clipping pipeline (P16 Cutting Room)
-# PyMuPDF renders the cropped article image; opendataloader-pdf
-# does layout-aware article extraction (requires Java at runtime).
+# PyMuPDF renders pages to images for PP-Structure + clips articles to JPEG.
+# PaddlePaddle (CPU) + PaddleOCR provide PP-Structure layout detection and OCR.
+# PP-Structure classifies newspaper page regions (title/text/figure/table)
+# and OCRs each region in one pass — handles both English and Indic scripts.
 PyMuPDF==1.24.10
-opendataloader-pdf==0.0.16
+paddlepaddle>=2.6.0
+paddleocr>=2.8.0
+# opendataloader-pdf removed — replaced by PaddleOCR PP-Structure pipeline
 importlib_resources==6.4.5
 
 # Sentiment analysis (P17 Signal Room)

@@ -58,10 +58,7 @@ def _pats(names: list[str | None]) -> list[str]:
     return sorted(out) or ["__nomatch__"]
 
 
-# Map a user's region state-name -> district-table state_code, so geo-hit can
-# also fire off the district tagger (article_districts), which catches ~2x more
-# in-state articles than geo_primary alone. Only Telugu states are tagged today.
-_STATE_CODE: dict[str, str] = {
+_STATE_CODE = {
     "andhra pradesh": "AP", "telangana": "TG", "tamil nadu": "TN",
     "karnataka": "KA", "kerala": "KL", "maharashtra": "MH",
     "uttar pradesh": "UP", "west bengal": "WB", "gujarat": "GJ",

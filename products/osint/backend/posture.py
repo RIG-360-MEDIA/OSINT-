@@ -159,7 +159,7 @@ async def outlet_favourability(db, pid: str, wh: int) -> dict[str, Any]:
       WITH p AS (SELECT DISTINCT a.id, a.source_id FROM {_PSAL})
       SELECT s.name src, count(DISTINCT p.id) n,
              round(100*avg(({POL})*st.intensity)::numeric,1) fav
-      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id<>CAST(:pid AS uuid)
+      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id=CAST(:pid AS uuid)
       JOIN sources s ON s.id=p.source_id
       GROUP BY s.name HAVING count(DISTINCT p.id)>=3 ORDER BY fav ASC""", pid=pid, wh=wh)
     items = [{"outlet": r.src, "n": int(r.n), "favourability": float(r.fav)} for r in rows]
@@ -193,7 +193,7 @@ async def stance_mix(db, pid: str, wh: int) -> dict[str, Any]:
         count(*) FILTER (WHERE ({POL})<0) critical,
         count(*) FILTER (WHERE ({POL})=0) neutral,
         count(*) FILTER (WHERE ({POL})>0) supportive
-      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id<>CAST(:pid AS uuid)
+      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id=CAST(:pid AS uuid)
       GROUP BY p.wk ORDER BY p.wk""", pid=pid, wh=wh)
     items = [{"week": r.wk, "critical": int(r.critical), "neutral": int(r.neutral),
               "supportive": int(r.supportive)} for r in rows]
@@ -205,7 +205,7 @@ async def weighted_pressure(db, pid: str, wh: int) -> dict[str, Any]:
       WITH p AS (SELECT DISTINCT a.id, COALESCE(s.source_tier,3) tier FROM {_PSAL})
       SELECT round(sum(CASE WHEN ({POL})<0 THEN st.intensity*(4-LEAST(p.tier,3)) ELSE 0 END)::numeric,1) pressure,
              count(*) FILTER (WHERE ({POL})<0) neg_n
-      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id<>CAST(:pid AS uuid)
+      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id=CAST(:pid AS uuid)
     """, pid=pid, wh=wh))[0]
     neg = int(r.neg_n or 0)
     return {"pressure": float(r.pressure or 0), "negative_signals": neg, "n": neg, "confidence": confidence(neg)}
@@ -215,7 +215,7 @@ async def friend_foe_fence(db, pid: str, wh: int) -> dict[str, Any]:
     rows = await _q(db, f"""
       WITH p AS (SELECT DISTINCT a.id, s.name src FROM {_PSAL})
       SELECT p.src, count(DISTINCT p.id) n, round(100*avg(({POL})*st.intensity)::numeric,1) fav
-      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id<>CAST(:pid AS uuid)
+      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id=CAST(:pid AS uuid)
       GROUP BY p.src HAVING count(DISTINCT p.id)>=3""", pid=pid, wh=wh)
     ally = [{"outlet": r.src, "favourability": float(r.fav), "n": int(r.n)} for r in rows if r.fav >= 15]
     foe = [{"outlet": r.src, "favourability": float(r.fav), "n": int(r.n)} for r in rows if r.fav <= -15]
@@ -243,7 +243,7 @@ async def allegiance_divergence(db, pid: str, opp: list[tuple[str, str]], wh: in
            rp AS (SELECT DISTINCT a.id, s.name src FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id JOIN sources s ON s.id=a.source_id
                   WHERE m.entity_id=CAST(:rid AS uuid) AND a.collected_at>=analytics.now_sim()-make_interval(hours => :wh) AND {_BODY_PRESENT}),
            pf AS (SELECT pp.src, round(100*avg(({POL})*st.intensity)::numeric,1) fp, count(DISTINCT pp.id) n
-                  FROM pp JOIN article_stances st ON st.article_id=pp.id AND st.actor_entity_id<>CAST(:pid AS uuid) GROUP BY pp.src),
+                  FROM pp JOIN article_stances st ON st.article_id=pp.id AND st.actor_entity_id=CAST(:pid AS uuid) GROUP BY pp.src),
            rf AS (SELECT rp.src, round(100*avg(({POL})*st.intensity)::numeric,1) fr
                   FROM rp JOIN article_stances st ON st.article_id=rp.id AND st.actor_entity_id<>CAST(:rid AS uuid) GROUP BY rp.src)
       SELECT pf.src, pf.n, pf.fp, rf.fr, (pf.fp-rf.fr) divergence
@@ -257,7 +257,7 @@ async def stance_trajectory(db, pid: str, wh: int) -> dict[str, Any]:
     rows = await _q(db, f"""
       WITH p AS (SELECT DISTINCT a.id, EXTRACT(EPOCH FROM (a.collected_at-(analytics.now_sim()-make_interval(hours => :wh))))/86400.0 dnum FROM {_PSAL})
       SELECT p.dnum, ({POL})*st.intensity v
-      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id<>CAST(:pid AS uuid)""", pid=pid, wh=wh)
+      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id=CAST(:pid AS uuid)""", pid=pid, wh=wh)
     xs = [float(r.dnum) for r in rows]
     ys = [float(r.v) for r in rows]
     if len(xs) < 4:
@@ -295,7 +295,7 @@ async def attack_origination(db, pid: str, wh: int) -> dict[str, Any]:
     rows = await _q(db, f"""
       WITH p AS (SELECT a.id, s.name src, a.collected_at, a.title FROM {_PSAL})
       SELECT p.src, p.collected_at::text ts, left(p.title,90) title
-      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id<>CAST(:pid AS uuid)
+      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id=CAST(:pid AS uuid)
       WHERE ({POL})<0 ORDER BY p.collected_at ASC LIMIT 8""", pid=pid, wh=wh)
     if not rows:
         return {"origin": None, "amplifiers": [], "n": 0, "confidence": "insufficient"}
@@ -308,7 +308,7 @@ async def issue_ownership(db, pid: str, wh: int) -> dict[str, Any]:
     rows = await _q(db, f"""
       WITH p AS (SELECT DISTINCT a.id, a.topic_category t FROM {_PSAL})
       SELECT p.t topic, count(DISTINCT p.id) n, round(100*avg(({POL})*st.intensity)::numeric,1) fav
-      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id<>CAST(:pid AS uuid)
+      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id=CAST(:pid AS uuid)
       WHERE p.t IS NOT NULL GROUP BY p.t HAVING count(DISTINCT p.id)>=4 ORDER BY n DESC LIMIT 10""", pid=pid, wh=wh)
     items = [{"topic": r.topic, "n": int(r.n), "favourability": float(r.fav),
               "verdict": "owns" if r.fav > 10 else ("cedes" if r.fav < -10 else "contested")} for r in rows]
@@ -330,7 +330,7 @@ async def counter_speed(db, pid: str, wh: int) -> dict[str, Any]:
     r = (await _q(db, f"""
       WITH p AS (SELECT DISTINCT a.id, a.collected_at FROM {_PSAL}),
            ev AS (SELECT p.collected_at ts, (CASE WHEN ({POL})<0 THEN 'neg' WHEN ({POL})>0 THEN 'pos' ELSE 'neu' END) k
-                  FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id<>CAST(:pid AS uuid)),
+                  FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id=CAST(:pid AS uuid)),
            neg AS (SELECT ts FROM ev WHERE k='neg'), pos AS (SELECT ts FROM ev WHERE k='pos')
       SELECT round(avg(EXTRACT(EPOCH FROM (nextpos-ts))/3600)::numeric,1) hrs, count(*) n FROM (
         SELECT neg.ts, (SELECT min(pos.ts) FROM pos WHERE pos.ts>neg.ts) nextpos FROM neg) x WHERE nextpos IS NOT NULL
@@ -363,7 +363,7 @@ async def cross_language_gap(db, pid: str, wh: int) -> dict[str, Any]:
     rows = await _q(db, f"""
       WITH p AS (SELECT DISTINCT a.id, a.language_iso lang FROM {_PSAL})
       SELECT COALESCE(p.lang,'?') lang, count(DISTINCT p.id) n, round(100*avg(({POL})*st.intensity)::numeric,1) fav
-      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id<>CAST(:pid AS uuid)
+      FROM p JOIN article_stances st ON st.article_id=p.id AND st.actor_entity_id=CAST(:pid AS uuid)
       GROUP BY p.lang HAVING count(DISTINCT p.id)>=3 ORDER BY fav""", pid=pid, wh=wh)
     items = [{"language": r.lang, "n": int(r.n), "favourability": float(r.fav)} for r in rows]
     gap = round(items[-1]["favourability"] - items[0]["favourability"], 1) if len(items) >= 2 else None

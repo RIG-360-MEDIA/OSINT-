@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import re
+import unicodedata
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,9 @@ logger = logging.getLogger(__name__)
 # Loaded once at worker startup via load_entity_dictionary(); O(1) lookup per span.
 
 _ENTITY_DICT: dict[str, dict] = {}
+# Type-3 fuzzy fallback: normalized-surface -> entry. Only keys that resolve to a
+# SINGLE canonical are kept (ambiguous/homonym keys are dropped at load time).
+_ENTITY_NORM: dict[str, dict] = {}
 _DICT_LOADED: bool = False
 _LOADED_VERSION: int = 0
 _LAST_VERSION_CHECK: float = 0.0
@@ -44,6 +48,18 @@ def _strip_title(key: str) -> str:
     return bare if bare and bare != key and len(bare) > 2 else key
 
 
+def _normalize_key(s: str) -> str:
+    """Punctuation/diacritic/spacing-insensitive form for the Type-3 fuzzy fallback.
+    Merges surface variants like 'K. Annamalai'/'K Annamalai' and 'Y.S.'/'YS' without
+    touching the exact-match path. Deterministic — it only collapses surface noise
+    (accents, dots, apostrophes, punctuation, repeated spaces), never name tokens."""
+    s = unicodedata.normalize("NFKD", (s or "").lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    s = s.replace(".", "").replace("’", "").replace("'", "")
+    s = re.sub(r"[^\w\s]", " ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+
 _COMMON_WORDS: frozenset[str] = frozenset({
     "india", "indian", "new", "united",
     "national", "state", "party", "press",
@@ -62,7 +78,7 @@ async def load_entity_dictionary(db_conn) -> int:
     Returns number of lookup keys registered.
     db_conn is a SQLAlchemy AsyncSession.
     """
-    global _ENTITY_DICT, _DICT_LOADED
+    global _ENTITY_DICT, _ENTITY_NORM, _DICT_LOADED
     if _DICT_LOADED:
         return len(_ENTITY_DICT)
 
@@ -95,12 +111,32 @@ async def load_entity_dictionary(db_conn) -> int:
                 if stripped:
                     new_dict[stripped.lower()] = entry
 
+    # Type-3 normalized fallback index. One pass over UNIQUE entries; a normalized
+    # surface shared by >1 distinct canonical is ambiguous (homonyms) and dropped,
+    # so the fallback never mis-resolves "two people, same normalized name".
+    norm_map: dict[str, dict] = {}
+    norm_ambig: set[str] = set()
+    for entry in {id(e): e for e in new_dict.values()}.values():
+        for surface in entry["surfaces"]:
+            nk = _normalize_key(surface)
+            if not nk or len(nk) < 4 or nk in _COMMON_WORDS:
+                continue
+            existing = norm_map.get(nk)
+            if existing is None:
+                norm_map[nk] = entry
+            elif existing["canonical_name"] != entry["canonical_name"]:
+                norm_ambig.add(nk)
+    for nk in norm_ambig:
+        norm_map.pop(nk, None)
+
     _ENTITY_DICT = new_dict
+    _ENTITY_NORM = norm_map
     _DICT_LOADED = True
     logger.info(
-        "Entity dictionary loaded: %d entities, %d lookup keys",
+        "Entity dictionary loaded: %d entities, %d lookup keys, %d normalized fallback keys",
         len(rows),
         len(_ENTITY_DICT),
+        len(_ENTITY_NORM),
     )
 
     # Capture current version so the reload task can detect future changes
@@ -246,15 +282,18 @@ def extract_entities(
         # "US"/"IT"/"UN" span resolving to a short-alias entity (e.g. US -> United Spirits).
         if not key or key == "none" or len(key) < 3 or key in _COMMON_WORDS:
             continue
-        if key not in _ENTITY_DICT:
+        entry = _ENTITY_DICT.get(key)
+        if entry is None:
             # Tier 4 fallback: strip leading title/honorific/article and re-try ONCE. Catches
             # NEW articles whose titled span isn't yet aliased in dict ("Chief Minister Smith"
             # -> "smith") so we don't keep creating dupes downstream.
             bare = _strip_title(key)
-            if bare == key or bare not in _ENTITY_DICT:
+            entry = _ENTITY_DICT.get(bare) if bare != key else None
+            if entry is None:
+                # Tier 5 (Type-3): punctuation/diacritic/spacing-normalized fallback.
+                entry = _ENTITY_NORM.get(_normalize_key(span_text))
+            if entry is None:
                 continue
-            key = bare
-        entry = _ENTITY_DICT[key]
         canonical = entry["canonical_name"]
         if canonical in seen_canonical:
             continue
@@ -282,13 +321,17 @@ def extract_entities(
     for key in cands:
         if len(key) < 3 or key in _COMMON_WORDS:
             continue
-        if key not in _ENTITY_DICT:
+        entry = _ENTITY_DICT.get(key)
+        if entry is None:
             # Tier 4 fallback (mirrors the SpaCy-resolution branch above)
             bare = _strip_title(key)
-            if bare == key or bare not in _ENTITY_DICT or bare in _COMMON_WORDS:
+            entry = _ENTITY_DICT.get(bare) if (bare != key and bare not in _COMMON_WORDS) else None
+            if entry is None:
+                # Tier 5 (Type-3): normalized fallback (ambiguous keys excluded at load).
+                nk = _normalize_key(key)
+                entry = _ENTITY_NORM.get(nk) if nk not in _COMMON_WORDS else None
+            if entry is None:
                 continue
-            key = bare
-        entry = _ENTITY_DICT[key]
         canonical = entry["canonical_name"]
         if canonical in seen_canonical:
             continue

@@ -108,6 +108,89 @@ def _overall_fav(posture: dict[str, Any]) -> tuple[float | None, int]:
     return (round(num / den, 1), den) if den else (None, 0)
 
 
+async def _sentiment_series(db, pid: str, wh: int, overall: float | None,
+                            bucket_s: int = 21600) -> dict[str, Any]:
+    """Coverage-sentiment waveform for the principal.
+
+    Mean stance polarity (POL × intensity, ×100, range −100…+100) per
+    `bucket_s`-second bucket, over body-present articles that mention the
+    principal — the same anti-hallucination idiom posture.py uses. The
+    headline number reuses the masthead favourability (`overall`) so the
+    figure shown on the landing page matches the masthead exactly; the
+    buckets carry the trajectory shape.
+    """
+    rows = (await db.execute(text(f"""
+        SELECT to_timestamp(floor(extract(epoch FROM a.collected_at) / :bs) * :bs) AS b,
+               round(100 * avg(({POL}) * st.intensity)::numeric, 1) AS v,
+               count(DISTINCT a.id) AS n
+          FROM article_entity_mentions m
+          JOIN articles a ON a.id = m.article_id
+          JOIN article_stances st ON st.article_id = a.id
+         WHERE m.entity_id = CAST(:pid AS uuid)
+           -- DIRECTIONAL: article_stances.actor IS THE TARGET (the entity the
+           -- posture is ABOUT), not the speaker. Restrict to stances ABOUT the
+           -- principal so the curve = "how is the principal portrayed", not the
+           -- average mood toward everyone co-mentioned in their articles.
+           AND st.actor_entity_id = CAST(:pid AS uuid)
+           AND st.intensity IS NOT NULL
+           AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+           AND a.collected_at <= analytics.now_sim()
+           AND {_BODY_PRESENT}
+         GROUP BY 1
+         ORDER BY 1
+    """), {"pid": pid, "wh": wh, "bs": bucket_s})).fetchall()
+
+    points = [{"t": r.b.strftime("%Y-%m-%dT%H:%M:%SZ"),
+               "v": float(r.v) if r.v is not None else 0.0,
+               "n": int(r.n)} for r in rows]
+    label = ("Favourable" if (overall or 0) >= 10 else
+             "Adverse" if (overall or 0) <= -10 else "Mixed")
+    return {"now": overall, "label": label, "points": points,
+            "n": sum(p["n"] for p in points)}
+
+
+async def sentiment_explain(db, pid: str, wh: int, limit: int = 5) -> dict[str, Any]:
+    """Explainability for the coverage-sentiment number: the top `limit` stories
+    pulling it UP and the top pulling it DOWN, each with a plain one-line reason.
+
+    Same population as the score itself (stances ABOUT the principal, body-present),
+    ordered by contribution = POL x intensity — so the panel can never disagree with
+    the headline; it IS the number, itemised.
+    """
+    rows = (await db.execute(text(f"""
+        SELECT a.id::text AS id, src.name AS source, st.stance,
+               round((({POL}) * st.intensity)::numeric, 2) AS contrib,
+               COALESCE(NULLIF(a.title, ''), a.lead_text_translated, '') AS headline
+          FROM article_entity_mentions m
+          JOIN articles a ON a.id = m.article_id
+          JOIN sources src ON src.id = a.source_id
+          JOIN article_stances st ON st.article_id = a.id
+         WHERE m.entity_id = CAST(:pid AS uuid)
+           AND st.actor_entity_id = CAST(:pid AS uuid)
+           AND st.intensity IS NOT NULL
+           AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+           AND a.collected_at <= analytics.now_sim()
+           AND {_BODY_PRESENT}
+    """), {"pid": pid, "wh": wh})).fetchall()
+
+    def _item(r) -> dict[str, Any]:
+        positive = float(r.contrib) > 0
+        verb = "praised" if positive else "criticised"
+        head = (r.headline or "").strip()
+        return {
+            "article_id": r.id, "source": r.source, "stance": r.stance,
+            "contribution": float(r.contrib), "headline": head[:140],
+            "why": f"{r.source} {verb} you — {head[:90]}",
+        }
+
+    items = [_item(r) for r in rows]
+    pos = sorted((i for i in items if i["contribution"] > 0),
+                 key=lambda x: -x["contribution"])[:limit]
+    neg = sorted((i for i in items if i["contribution"] < 0),
+                 key=lambda x: x["contribution"])[:limit]
+    return {"top_positive": pos, "top_negative": neg}
+
+
 # ───────────────────────── PEOPLE TO WATCH ─────────────────────────
 async def _people_signals(db, pid: str, ids: list[str], states: list[str], wh: int):
     """Per-watchlist-person signals, body-present:
@@ -654,6 +737,7 @@ async def build_home(db, prefs: dict[str, Any], *, display_name: str | None = No
 
     now = (await db.execute(text("SELECT analytics.now_sim() AS n"))).scalar()
     overall, ov_n = _overall_fav(posture)
+    sentiment = await _sentiment_series(db, pid, posture_wh, overall)
     # Confidence from the favourability signal count (share_of_voice dropped from
     # the Home metric set for speed).
     conf = ("high" if ov_n >= 20 else "medium" if ov_n >= 8
@@ -677,6 +761,7 @@ async def build_home(db, prefs: dict[str, Any], *, display_name: str | None = No
         "personalized": True,
         "as_of": str(now),
         "masthead": masthead,
+        "sentiment": sentiment,
         **briefing,        # -> "briefing"
         **players_out,     # -> "players" (+ optional "caveats")
         **six,             # -> "six"

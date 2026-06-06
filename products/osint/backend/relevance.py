@@ -58,6 +58,18 @@ def _pats(names: list[str | None]) -> list[str]:
     return sorted(out) or ["__nomatch__"]
 
 
+# Map a user's region state-name -> district-table state_code, so geo-hit can
+# also fire off the district tagger (article_districts), which catches ~2x more
+# in-state articles than geo_primary alone. Only Telugu states are tagged today.
+_STATE_CODE: dict[str, str] = {
+    "andhra pradesh": "AP", "telangana": "TG", "tamil nadu": "TN",
+    "karnataka": "KA", "kerala": "KL", "maharashtra": "MH",
+    "uttar pradesh": "UP", "west bengal": "WB", "gujarat": "GJ",
+    "rajasthan": "RJ", "madhya pradesh": "MP", "bihar": "BR",
+    "odisha": "OD", "punjab": "PB", "delhi": "DL", "assam": "AS",
+}
+
+
 async def build_terms(db, prefs: dict[str, Any]) -> dict[str, Any]:
     """Turn a user's prefs into match-term arrays (alias-expanded, tiered)."""
     wl = prefs.get("watchlist") or {}
@@ -97,6 +109,8 @@ async def build_terms(db, prefs: dict[str, Any]) -> dict[str, Any]:
 
     regions = prefs.get("regions") or {}
     geo = _pats((regions.get("states") or []) + (regions.get("districts") or []))
+    state_codes = sorted({_STATE_CODE.get((s or "").strip().lower())
+                          for s in (regions.get("states") or [])} - {None})
     kw = _pats(wl.get("keywords") or [])
     topics = prefs.get("topics") or {}
 
@@ -105,6 +119,7 @@ async def build_terms(db, prefs: dict[str, Any]) -> dict[str, Any]:
         "wlc": sorted(set(core)) or ["__nomatch__"],
         "wle": sorted(set(ext)) or ["__nomatch__"],
         "geo": geo,
+        "state_codes": state_codes or ["__none__"],
         "kw": kw,
         "noise": NOISE,
         "inc": topics.get("include") or [],
@@ -116,7 +131,16 @@ async def build_terms(db, prefs: dict[str, Any]) -> dict[str, Any]:
 # re-ranking happens in Python below — do NOT fold it into this WHERE.
 _SQL = """
 WITH win AS (
-  SELECT a.id, a.title, a.summary_executive, a.topic_category, a.geo_primary,
+  SELECT a.id, a.title,
+         -- Card summary: prefer the LLM exec summary, but it only covers ~60-70%
+         -- of articles. Fall back to the (translated) article lead so a card is
+         -- never blank — lead text is present on ~98% of the gap. HTML stripped.
+         COALESCE(
+           NULLIF(a.summary_executive, ''),
+           NULLIF(left(regexp_replace(a.lead_text_translated, '<[^>]+>', ' ', 'g'), 400), ''),
+           NULLIF(left(regexp_replace(a.lead_text_original,   '<[^>]+>', ' ', 'g'), 400), '')
+         ) AS summary_executive,
+         a.topic_category, a.geo_primary,
          a.collected_at, s.name AS src, a.entities_extracted, lower(a.title) AS lt
     FROM public.articles a
     JOIN public.sources s ON s.id = a.source_id
@@ -143,7 +167,12 @@ sc AS (
   SELECT w.id, w.title, w.summary_executive, w.topic_category, w.geo_primary, w.src, w.collected_at,
     COALESCE(em.ent_tier, 0) AS ent_tier, em.matched,
     (CASE WHEN w.lt LIKE ANY(CAST(:subj AS text[])) OR w.lt LIKE ANY(CAST(:wlc AS text[])) THEN 1 ELSE 0 END) AS tc,
-    (CASE WHEN w.geo_primary ILIKE ANY(CAST(:geo AS text[])) THEN 1 ELSE 0 END) AS geo_hit,
+    (CASE WHEN w.geo_primary ILIKE ANY(CAST(:geo AS text[]))
+            OR EXISTS (SELECT 1 FROM public.article_districts ad
+                         JOIN public.districts dm ON dm.id = ad.district_id
+                        WHERE ad.article_id = w.id
+                          AND dm.state_code = ANY(CAST(:state_codes AS text[])))
+          THEN 1 ELSE 0 END) AS geo_hit,
     (CASE WHEN w.lt LIKE ANY(CAST(:kw AS text[])) THEN 1 ELSE 0 END) AS kw_hit,
     (CASE WHEN w.lt LIKE ANY(CAST(:noise AS text[])) THEN 1 ELSE 0 END) AS noise
   FROM win w LEFT JOIN em ON em.id = w.id
@@ -170,9 +199,10 @@ LIMIT :lim
 """
 
 
-async def score_relevant(db, prefs: dict[str, Any], window_hours: int = 48, limit: int = 60) -> list[dict[str, Any]]:
+async def score_relevant(db, prefs: dict[str, Any], window_hours: int = 48, limit: int = 60,
+                         half_life_h: float = HALF_LIFE_H) -> list[dict[str, Any]]:
     terms = await build_terms(db, prefs)
-    sql = _SQL.format(wh=int(window_hours), hl=HALF_LIFE_H)
+    sql = _SQL.format(wh=int(window_hours), hl=float(half_life_h))
     rows = (await db.execute(text(sql), {**terms, "lim": int(limit)})).fetchall()
 
     out: list[dict[str, Any]] = []

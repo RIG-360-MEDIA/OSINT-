@@ -524,6 +524,30 @@ button { font-family: inherit; }
 .record .t { color: var(--ink-2); line-height: 1.45; font-size: 0.86rem; }
 .record .t .src { display: block; font-family: var(--mono); font-size: 0.58rem; color: var(--faint); margin-top: 3px; letter-spacing: 0.03em; }
 
+/* clickable timeline rows */
+.record a.r { text-decoration: none; cursor: pointer; }
+.record a.r .t { transition: color 0.15s; }
+.record a.r:hover .t { color: var(--ink); }
+
+/* bl-cell colour variants */
+a.bl-cell { text-decoration: none; color: inherit; cursor: pointer; }
+a.bl-cell:hover { background: oklch(0.82 0.14 85 / 0.07); }
+.bl-cell.bl-support { background: oklch(0.78 0.15 165 / 0.04); }
+.bl-cell.bl-support .k { color: var(--supportive); }
+.bl-cell.bl-attack { background: oklch(0.645 0.215 25 / 0.05); }
+.bl-cell.bl-attack .k { color: var(--hostile); }
+.bl-cell.bl-pressure .k { color: oklch(0.75 0.12 45); }
+
+/* inline sources disclosure per brief section */
+.sblk-src { margin-top: 12px; }
+.sblk-src-btn { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); background: none; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 5px; transition: color 0.15s; }
+.sblk-src-btn:hover { color: var(--gold); }
+.sblk-src-list { display: grid; gap: 5px; margin-top: 8px; }
+.sblk-src-item { display: flex; gap: 8px; align-items: baseline; font-size: 0.78rem; color: var(--ink-2); text-decoration: none; padding: 6px 10px; border-radius: 7px; background: var(--raised); border: 1px solid var(--line-2); transition: border-color 0.15s; overflow: hidden; }
+.sblk-src-item:hover { border-color: var(--gold-d); }
+.src-outlet { font-family: var(--mono); font-size: 0.58rem; color: var(--gold); flex-shrink: 0; white-space: nowrap; }
+.src-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+
 /* ── HOME: top stories ──────────────────────────────────────────────────── */
 .tstories { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 18px; }
 .tstory .thumb { height: 170px; border-radius: 10px; margin-bottom: 13px; position: relative; overflow: hidden; border: 1px solid var(--line); }

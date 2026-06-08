@@ -563,93 +563,238 @@ async def _what_happened(db, ranked: list[dict[str, Any]], k: int = 4) -> list[d
     if not ids:
         return []
     meta = {r.id: r for r in (await db.execute(text("""
-        SELECT id::text id, collected_at d, language_iso lang FROM articles WHERE id = ANY(CAST(:ids AS uuid[]))
+        SELECT id::text id, collected_at d, language_iso lang, url FROM articles WHERE id = ANY(CAST(:ids AS uuid[]))
     """), {"ids": ids})).fetchall()}
     out = []
     for r in ranked[:k]:
         m = meta.get(r["id"])
         out.append({"id": r["id"], "date": _fmt_day(m.d if m else None),
-                    "text": _clean_title(r["title"]), "src": r.get("source") or "", "lang": (m.lang if m else None)})
+                    "text": _clean_title(r["title"]), "src": r.get("source") or "",
+                    "lang": (m.lang if m else None), "url": (m.url if m else None) or ""})
     await _i18n.attach_en(db, out, "text")
     return out
 
 
+
+async def _fetch_article_urls(db, ids: list[str]) -> dict[str, str]:
+    """Fetch published URLs for a list of article IDs. Returns {id: url}."""
+    if not ids:
+        return {}
+    rows = (await db.execute(text("""
+        SELECT id::text, url FROM articles WHERE id = ANY(CAST(:ids AS uuid[]))
+    """), {"ids": ids})).fetchall()
+    return {r.id: (r.url or "") for r in rows}
+
 def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
                    ranked: list[dict[str, Any]], what_happened: list[dict[str, Any]],
-                   wh: int, ao_en: str | None = None) -> dict[str, Any]:
+                   wh: int, ao_en: str | None = None, ao_url: str = "") -> dict[str, Any]:
     M = posture.get("metrics", {})
     overall, ov_n = _overall_fav(posture)
     traj = M.get("stance_trajectory", {})
     direction = traj.get("direction")
     ao = M.get("attack_origination", {}).get("origin") or {}
-    ao_title = _clean_title(ao_en or ao.get("title"))  # English where the headline was non-English
+    ao_title = _clean_title(ao_en or ao.get("title"))
     qsb = M.get("quote_selection_bias", {}).get("items", [])
     you_q = sum(i["quotes_principal"] for i in qsb)
     opp_q = sum(i["quotes_opposition"] for i in qsb)
     iss_meta = M.get("issue_ownership", {})
     iss = iss_meta.get("items", []) if iss_meta.get("confidence") in ("high", "medium") else []
     contested = [i for i in iss if i.get("verdict") == "contested"]
+    owns = [i for i in iss if i.get("verdict") == "owns"]
+    fff = M.get("friend_foe_fence", {})
+    neg_signals = M.get("weighted_pressure", {}).get("negative_signals", 0)
+    amps = M.get("attack_origination", {}).get("amplifiers", [])
+    amp_count = len({a.get("outlet") for a in amps if a.get("outlet")})
 
     stance_word = ("favourable" if (overall or 0) >= 10 else
                    "mixed" if (overall or 0) > -10 else "adverse")
-    top_story = _clean_title(ranked[0].get("title_en") or ranked[0]["title"]) if ranked else "—"
+    top_r = ranked[0] if ranked else None
+    top_title = _clean_title((top_r or {}).get("title_en") or (top_r or {}).get("title", "—"))
+
+    # ── BOTTOM-LINE CARDS ─────────────────────────────────────────────────────
+    ally_all = fff.get("ally", [])
+    ally = [a for a in ally_all if a.get("n", 0) >= 2]
+    if ally:
+        a0 = ally[0]
+        support_v = f"{a0['outlet']} is running with you ({_signed(a0['favourability'])} lean, {a0['n']} signals)."
+        support_id, support_url = None, ""
+    elif top_r and (overall or 0) >= 0:
+        support_v = f"“{top_title}” is your strongest story this window."
+        support_id, support_url = top_r.get("id"), top_r.get("url", "")
+    else:
+        support_v = "No strong positive signal detected in coverage this window."
+        support_id, support_url = None, ""
+
+    if ao.get("title"):
+        attack_v = f"“{ao_title}” — {ao.get('outlet', '')}."  # noqa
+        attack_id, attack_url = ao.get("article_id"), ao_url
+    else:
+        attack_v = "No concentrated attack line in the current window."
+        attack_id, attack_url = None, ""
+
+    steam_r = ranked[1] if len(ranked) > 1 else top_r
+    if steam_r:
+        steam_title = _clean_title(steam_r.get("title_en") or steam_r.get("title", ""))
+        steam_v = f"“{steam_title}” is gathering traction — track it before it frames the narrative."
+        steam_id, steam_url = steam_r.get("id"), steam_r.get("url", "")
+    else:
+        steam_v = "Not enough coverage to identify a gaining story."
+        steam_id, steam_url = None, ""
+
+    if contested:
+        pressure_v = (f"You are contested on {contested[0]['topic'].title()} "
+                      f"({_signed(contested[0]['favourability'])}). "
+                      f"Resolve it before it becomes the week's dominant frame.")
+        pressure_id, pressure_url = None, ""
+    elif ao.get("title"):
+        pressure_v = (f"The adverse thread from {ao.get('outlet', 'a hostile outlet')} is your live "
+                      f"pressure point — one more outlet picking it up changes the week.")
+        pressure_id, pressure_url = attack_id, attack_url
+    else:
+        pressure_v = "No live pressure point detected — stay on the front foot."
+        pressure_id, pressure_url = None, ""
 
     bottom_line = [
-        {"k": "Where You Stand",
-         "v": f"Coverage runs {stance_word} ({_signed(overall) if overall is not None else 'thin'}), "
-              f"{'cooling pressure' if direction=='cooling' else direction or 'steady'}."},
-        {"k": "Know This", "v": top_story},
+        {"k": "Supporting You", "v": support_v, "article_id": support_id, "url": support_url},
+        {"k": "Attacking You",  "v": attack_v,  "article_id": attack_id,  "url": attack_url},
+        {"k": "Gaining Steam",  "v": steam_v,   "article_id": steam_id,   "url": steam_url},
+        {"k": "Pressure Point", "v": pressure_v, "article_id": pressure_id, "url": pressure_url},
     ]
-    if ao.get("title"):
-        bottom_line.append({"k": "The Attack",
-                            "v": f"“{ao_title}” — {ao.get('outlet','')}."})
-    bottom_line.append({"k": "Your Move",
-                        "v": (f"Get ahead of the {contested[0]['topic'].lower()} front before it sets."
-                              if contested else "Push your warmest win into your warmest outlet today."),
-                        "action": True})
 
-    what_it_means = (
-        f"The week reads {stance_word}. " +
-        (f"Your dominant story is “{top_story}”. " if ranked else "") +
-        (f"The one adverse thread is “{ao_title}” ({ao.get('outlet','')}), still contained. "
-         if ao.get("title") else "No single adverse thread is dominating. ") +
-        (f"You are quoted {you_q} to {opp_q} — your voice, not the opposition's, is carrying the coverage."
-         if you_q else "")
-    )
-    why_it_matters = (
-        (f"You are contested on {contested[0]['topic'].title()} ({_signed(contested[0]['favourability'])}); "
-         f"that's the front that decides whether a good week holds. "
-         if contested else "With no contested front open, the job this week is to protect the lead, not chase. ")
-        + "Silence on the one adverse line is what would turn it from noise into a story."
-    )
+    src_pool = ranked[:6]
+
+    def _src(r: dict[str, Any]) -> dict[str, Any]:
+        return {"id": r["id"], "title": _clean_title(r.get("title_en") or r["title"]),
+                "source": r.get("source", ""), "url": r.get("url", "")}
+
+    # ── HIGHLIGHTS OF THE DAY ───────────────────────────────────────────────
+    h: list[str] = [
+        f"Your coverage over the {_window_label(wh)} reads {stance_word} — "
+        f"a net lean of {_signed(overall) if overall is not None else 'thin'} "
+        f"across {ov_n} measured signals.",
+    ]
+    if top_title and top_title != "—":
+        h.append(f"The story drawing the most attention in your window is “{top_title}” — "
+                 f"it is setting the tone for how your work is being read.")
+    if you_q or opp_q:
+        if you_q >= max(1, opp_q):
+            h.append(f"You are being quoted more than the opposition ({you_q} to {opp_q}), "
+                     f"which means your voice is carrying the coverage — "
+                     f"not someone else speaking for you.")
+        else:
+            h.append(f"The opposition is getting more quote space than you ({opp_q} to {you_q}) — "
+                     f"the outlets are letting them shape the narrative.")
+    if ao.get("title"):
+        spread_note = (f"spread to {amp_count} outlets" if amp_count > 1
+                       else "not yet spread beyond its origin")
+        h.append(f"There is one adverse thread to watch: “{ao_title}” from "
+                 f"{ao.get('outlet', 'an outlet')} — "
+                 f"it carries {neg_signals} negative signals and has {spread_note}.")
+    if owns:
+        h.append(f"You have a clear ownership advantage on {owns[0]['topic'].title()} "
+                 f"({_signed(owns[0]['favourability'])}), which is a genuine asset to "
+                 f"protect and amplify this week.")
+    if contested:
+        h.append(f"The front that needs your attention is {contested[0]['topic'].title()} — "
+                 f"it is genuinely contested ({_signed(contested[0]['favourability'])}), "
+                 f"and silence there will cost you ground.")
+    elif direction:
+        dir_note = ("that is the signal to press harder" if direction == "rising"
+                    else "monitor it through the week")
+        h.append(f"The trajectory of your coverage is currently {direction} — {dir_note}.")
+    highlights = " ".join(h[:6])
+
+    # ── WHY IT MATTERS ──────────────────────────────────────────────────────────
+    wim: list[str] = []
+    if contested:
+        wim.append(f"The {contested[0]['topic'].title()} front is the one that will define whether "
+                   f"this week holds or slips — it is contested territory, not firmly yours, "
+                   f"and contested narratives move fast once they settle.")
+    else:
+        wim.append("With no open contested front, your position this week is about protecting "
+                   "ground already held, not recovering lost territory.")
+    if ao.get("title"):
+        wim.append(f"The adverse thread from {ao.get('outlet', 'the hostile outlet')} matters less "
+                   f"right now for its volume and more for its potential to spread — a single "
+                   f"second-tier pickup changes the calculus entirely.")
+    if direction in ("rising", "cooling"):
+        dir_msg = ("momentum is building on your side" if direction == "rising"
+                   else "the window's energy is softening — manage it before it "
+                        "becomes a story in itself")
+        wim.append(f"The trajectory signal says {dir_msg}.")
+    if overall is not None and overall >= 10:
+        wim.append("A favourable overall lean is not a reason to stop pushing — "
+                   "it is the best time to land a win, when the press is already running with you.")
+    elif overall is not None and overall <= -10:
+        wim.append("An adverse lean means you are playing defence, but defence has a game plan: "
+                   "dominate the quotes, control the contested front, and make the hostile outlet "
+                   "the story rather than letting it write yours.")
+    why_it_matters = " ".join(wim[:4])
+
+    # ── THE OTHER SIDE ───────────────────────────────────────────────────────────
+    concentration = ("concentrated around one outlet" if ao.get("outlet")
+                     else "scattered across sources")
+    os_: list[str] = [
+        f"The case for not over-reading this: there are only {neg_signals} negative signals "
+        f"in the window, and they are {concentration} rather than a coordinated press movement.",
+    ]
+    if ao.get("outlet"):
+        os_.append(f"Strip {ao.get('outlet')} out of the calculation and the week's picture "
+                   f"looks significantly cleaner — "
+                   f"one hostile outlet does not make a hostile press.")
+    os_.append("What would actually flip the call from manageable to serious: a second independent "
+               "outlet picking up the adverse line and running with it as its own story — "
+               "that has not happened yet.")
+    if ov_n < 8:
+        os_.append(f"The signal pool is thin at {ov_n} data points, which means this read could "
+                   f"shift materially with even one new piece of coverage — "
+                   f"treat it as directional, not final.")
+    else:
+        os_.append("The signal pool is broad enough to trust the direction, "
+                   "even if the exact numbers will move.")
+    other_side = " ".join(os_[:4])
+
+    # ── WHAT'S NEXT ─────────────────────────────────────────────────────────────
+    conf = traj.get("confidence", "low")
+    wn: list[str] = []
+    if ao.get("title"):
+        wn.append(f"The most important thing to watch is whether “{ao_title}” gets "
+                  f"picked up by a second major outlet — that is the single event that moves "
+                  f"it from a contained thread to a story requiring a public response.")
+    else:
+        wn.append("With no dominant adverse line in play, the watch this window is for any new "
+                  "story that gets outsized amplification — the first outlet to run a new "
+                  "frame often sets it.")
+    if contested:
+        wn.append(f"On the {contested[0]['topic'].title()} front, expect the contest to continue "
+                  f"— the next development there will pull the overall lean one way or the other.")
+    conf_note = ("enough signals are moving consistently to trust the direction"
+                 if conf in ("high", "medium")
+                 else "thin signal, so check it again at the next refresh before acting on it")
+    wn.append(f"The trajectory is currently {direction or 'flat'}, with {conf} confidence "
+              f"— {conf_note}.")
+    if direction == "cooling":
+        wn.append("A cooling trajectory typically stabilises before it reverses; "
+                  "the key is to not chase it with reactive statements that extend the news cycle.")
+    elif direction == "rising":
+        wn.append("A rising trajectory is the time to go long — pitch stories, push the "
+                  "owned fronts, and move the conversation while the press is receptive.")
     whats_next = {
-        "text": (f"Watch whether “{ao_title}” jumps outlets — the day a second tier-1 outlet "
-                 f"carries it, it stops being contained. " if ao.get("title")
-                 else "No adverse line is near a tipping point; the trajectory is the thing to watch. ")
-                + f"Trajectory is currently {direction or 'flat'}.",
-        "confidence": M.get("stance_trajectory", {}).get("confidence", "low"),
+        "text": " ".join(wn[:4]),
+        "confidence": conf,
+        "sources": [_src(r) for r in src_pool[:3]],
     }
-    how_to_play = (
-        "Lead with your strongest delivery story in your warmest outlet. "
-        + (f"Contest {contested[0]['topic'].lower()} directly. " if contested else "")
-        + ("Don't argue the adverse line on its own terms — bury it under your own news."
-           if ao.get("title") else "Hold the line; there's nothing to chase.")
-    )
-    other_side = (
-        f"The case you're over-reading this: the adverse signal is thin "
-        f"({M.get('weighted_pressure', {}).get('negative_signals', 0)} negative signals) and concentrated. "
-        + ("Strip the one origin outlet and the week is clean. " if ao.get("outlet") else "")
-        + "What would flip the call: a second independent outlet picking up the adverse line. It hasn't, yet."
-    )
 
     return {"briefing": {
         "bottomLine": bottom_line,
         "whatHappened": what_happened,
-        "whatItMeans": what_it_means,
+        "highlights": highlights,
+        "highlightsSources": [_src(r) for r in src_pool],
         "whyItMatters": why_it_matters,
-        "whatsNext": whats_next,
-        "howToPlay": how_to_play,
+        "whyItMattersSources": [_src(r) for r in src_pool[:4]],
         "otherSide": other_side,
+        "otherSideSources": [_src(r) for r in src_pool[:4]],
+        "whatsNext": whats_next,
     }}
 
 
@@ -680,12 +825,19 @@ async def build_home(db, prefs: dict[str, Any], *, display_name: str | None = No
     posture = await compute_posture(db, prefs, window_hours=posture_wh, only=_HOME_METRICS)
     ranked = await score_relevant(db, prefs, window_hours=relevance_wh, limit=40)
 
-    wh_events = await _what_happened(db, ranked, k=4)
-    await _i18n.attach_en(db, ranked[:5], "title")  # English for titles the briefing prose embeds
+    # Patch article URLs into ranked list and resolve the attack-origin URL.
     ao_o = posture.get("metrics", {}).get("attack_origination", {}).get("origin") or {}
+    ao_id = ao_o.get("article_id")
+    url_ids = [r["id"] for r in ranked[:10]] + ([ao_id] if ao_id else [])
+    url_map = await _fetch_article_urls(db, list(dict.fromkeys(url_ids)))
+    ranked = [{**r, "url": url_map.get(r["id"], "")} for r in ranked]
+    ao_url = url_map.get(ao_id or "", "")
+
+    wh_events = await _what_happened(db, ranked, k=4)
+    await _i18n.attach_en(db, ranked[:5], "title")
     ao_t = ao_o.get("title")
     ao_en = (await _i18n.ensure_en(db, {ao_t})).get(ao_t) if (ao_t and not _i18n.is_english(ao_t)) else None
-    briefing = build_briefing(prefs, posture, ranked, wh_events, relevance_wh, ao_en=ao_en)
+    briefing = build_briefing(prefs, posture, ranked, wh_events, relevance_wh, ao_en=ao_en, ao_url=ao_url)
     players_out = await build_players(db, prefs, posture_wh)
     six = build_six(prefs, posture, posture_wh)
 

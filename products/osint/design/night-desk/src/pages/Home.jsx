@@ -11,8 +11,11 @@ const sentiCls = (v) => (typeof v !== 'number' ? 'neu' : v >= 10 ? 'pos' : v <= 
 // (the cell order varies — "The Attack" only appears when there's an adverse line).
 const blTone = (k = '') => {
   const s = String(k).toLowerCase();
-  if (s.includes('stand')) return 'stand';
+  if (s.includes('support')) return 'support';
   if (s.includes('attack')) return 'attack';
+  if (s.includes('steam') || s.includes('gaining')) return 'steam';
+  if (s.includes('pressure')) return 'pressure';
+  if (s.includes('stand')) return 'stand';
   if (s.includes('move')) return 'move';
   return 'know';
 };
@@ -26,6 +29,36 @@ function Notice({ children }) {
   return (
     <div className="page" style={{ '--mt': '34px' }}>
       <div className="panel" style={{ padding: 28, color: 'var(--faint)' }}>{children}</div>
+    </div>
+  );
+}
+
+function SourcesToggle({ sources }) {
+  const [open, setOpen] = useState(false);
+  const list = (sources || []).filter((s) => s && s.title);
+  if (!list.length) return null;
+  return (
+    <div className="sblk-src">
+      <button type="button" className="sblk-src-btn" onClick={() => setOpen((o) => !o)}>
+        <span>{open ? '▾' : '▸'}</span> Sources ({list.length})
+      </button>
+      {open && (
+        <div className="sblk-src-list">
+          {list.map((s, i) =>
+            s.url ? (
+              <a key={i} className="sblk-src-item" href={s.url} target="_blank" rel="noopener noreferrer">
+                <span className="src-outlet">{s.source || '—'}</span>
+                <span className="src-title">{s.title}</span>
+              </a>
+            ) : (
+              <div key={i} className="sblk-src-item">
+                <span className="src-outlet">{s.source || '—'}</span>
+                <span className="src-title">{s.title}</span>
+              </div>
+            )
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -123,7 +156,7 @@ export default function Home() {
             <div className="subline">
               {M.state && M.principal && <><span>{M.principal}</span><span className="sep" /></>}
               {M.displayName && <><span>{M.displayName}</span><span className="sep" /></>}
-              <span className="mono" style={{ color: 'var(--ink)' }}>{M.window}</span><span className="sep" />
+              <span className="mono" style={{ color: 'var(--ink)' }}>last 50 days</span><span className="sep" />
               <span>confidence <span className="pill">{M.confidence}</span></span>
             </div>
           </div>
@@ -194,41 +227,64 @@ export default function Home() {
       {/* ① THE BRIEFING */}
       <Reveal>
         <div className="panel hero briefing">
-          <div className="label gold">The Briefing · {M.window}</div>
+          <div className="label gold">The Briefing · last 50 days</div>
 
           <div className="bl-band">
-            {(B.bottomLine || []).map((b, i) => (
-              <div key={i} className={'bl-cell bl-' + blTone(b.k) + (b.action ? ' move' : '')}>
-                <div className="k">{b.k}</div>
-                <div className="v">{b.v}</div>
-                {b.action && <div className="approve">approve →</div>}
-              </div>
-            ))}
+            {(B.bottomLine || []).map((b, i) => {
+              const cls = 'bl-cell bl-' + blTone(b.k);
+              const inner = <><div className="k">{b.k}</div><div className="v">{b.v}</div></>;
+              return b.url
+                ? <a key={i} className={cls} href={b.url} target="_blank" rel="noopener noreferrer">{inner}</a>
+                : <div key={i} className={cls}>{inner}</div>;
+            })}
           </div>
 
           <div className="brief-grid">
             <div className="col">
-              <div className="sblk lead"><div className="kicker">What It Means</div><p>{B.whatItMeans}</p></div>
-              <div className="sblk"><div className="kicker">Why It Matters</div><p>{B.whyItMatters}</p></div>
-              <div className="sblk dissent"><div className="kicker">The Other Side</div><p>{B.otherSide}</p></div>
+              <div className="sblk lead">
+                <div className="kicker">Highlights of the Day</div>
+                <p>{B.highlights}</p>
+                <SourcesToggle sources={B.highlightsSources} />
+              </div>
+              <div className="sblk">
+                <div className="kicker">Why It Matters</div>
+                <p>{B.whyItMatters}</p>
+                <SourcesToggle sources={B.whyItMattersSources} />
+              </div>
+              <div className="sblk dissent">
+                <div className="kicker">The Other Side</div>
+                <p>{B.otherSide}</p>
+                <SourcesToggle sources={B.otherSideSources} />
+              </div>
             </div>
             <div className="col">
-              <div className="sblk"><div className="kicker kicker-row"><span>What Happened</span>
+              <div className="sblk"><div className="kicker kicker-row"><span>Timeline</span>
                   <button type="button" className="refresh-btn" onClick={() => load({ silent: true })}
                           disabled={refreshing} title="Refresh the timeline">
                     <span className={'rfx' + (refreshing ? ' spin' : '')}>↻</span>{refreshing ? 'Refreshing' : 'Refresh'}
                   </button>
                 </div>
                 <div className="record">
-                  {(B.whatHappened || []).map((w, i) => (
-                    <div className="r" key={i}><span className="d">{w.date}</span><span className="t">{w.text}<span className="src">{w.src}</span>{w.text_en && <span className="en-gloss"><b>EN</b>{w.text_en}</span>}</span></div>
-                  ))}
+                  {(B.whatHappened || []).map((w, i) =>
+                    w.url ? (
+                      <a className="r" key={i} href={w.url} target="_blank" rel="noopener noreferrer">
+                        <span className="d">{w.date}</span>
+                        <span className="t">{w.text}<span className="src">{w.src}</span>{w.text_en && <span className="en-gloss"><b>EN</b>{w.text_en}</span>}</span>
+                      </a>
+                    ) : (
+                      <div className="r" key={i}>
+                        <span className="d">{w.date}</span>
+                        <span className="t">{w.text}<span className="src">{w.src}</span>{w.text_en && <span className="en-gloss"><b>EN</b>{w.text_en}</span>}</span>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
-              <div className="sblk"><div className="kicker">What's Next</div>
+              <div className="sblk">
+                <div className="kicker">What's Next</div>
                 <p>{B.whatsNext?.text} <span className={'conf ' + (B.whatsNext?.confidence || '')} style={{ whiteSpace: 'nowrap' }}>confidence {B.whatsNext?.confidence}</span></p>
+                <SourcesToggle sources={B.whatsNext?.sources} />
               </div>
-              <div className="sblk"><div className="kicker">How to Play It</div><p>{B.howToPlay}</p></div>
             </div>
           </div>
         </div>

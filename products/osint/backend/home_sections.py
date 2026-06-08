@@ -616,7 +616,9 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
     ally = [a for a in ally_all if a.get("n", 0) >= 2]
     if ally:
         a0 = ally[0]
-        support_v = f"{a0['outlet']} is running with you ({_signed(a0['favourability'])} lean, {a0['n']} signals)."
+        fav = a0['favourability']
+        warmth = "strongly" if fav >= 20 else "consistently"
+        support_v = f"{a0['outlet']} is running {warmth} positive for you — the clean place to land a win this week."
         support_id, support_url = None, ""
     elif top_r and (overall or 0) >= 0:
         support_v = f"“{top_title}” is your strongest story this window."
@@ -643,7 +645,7 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
 
     if contested:
         pressure_v = (f"You are contested on {contested[0]['topic'].title()} "
-                      f"({_signed(contested[0]['favourability'])}). "
+                      f"and the coverage there is not firmly yours. "
                       f"Resolve it before it becomes the week's dominant frame.")
         pressure_id, pressure_url = None, ""
     elif ao.get("title"):
@@ -668,36 +670,37 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
                 "source": r.get("source", ""), "url": r.get("url", "")}
 
     # ── HIGHLIGHTS OF THE DAY ───────────────────────────────────────────────
+    coverage_strength = ("clearly" if abs(overall or 0) >= 15 else
+                         "broadly" if abs(overall or 0) >= 5 else "marginally")
     h: list[str] = [
-        f"Your coverage over the {_window_label(wh)} reads {stance_word} — "
-        f"a net lean of {_signed(overall) if overall is not None else 'thin'} "
-        f"across {ov_n} measured signals.",
+        f"Your coverage over the {_window_label(wh)} reads {coverage_strength} {stance_word}.",
     ]
     if top_title and top_title != "—":
         h.append(f"The story drawing the most attention in your window is “{top_title}” — "
                  f"it is setting the tone for how your work is being read.")
     if you_q or opp_q:
         if you_q >= max(1, opp_q):
-            h.append(f"You are being quoted more than the opposition ({you_q} to {opp_q}), "
-                     f"which means your voice is carrying the coverage — "
-                     f"not someone else speaking for you.")
+            h.append("You are being quoted more than the opposition, "
+                     "which means your voice is carrying the coverage — "
+                     "not someone else speaking for you.")
         else:
-            h.append(f"The opposition is getting more quote space than you ({opp_q} to {you_q}) — "
-                     f"the outlets are letting them shape the narrative.")
+            h.append("The opposition is getting more quote space than you — "
+                     "the outlets are letting them shape the narrative.")
     if ao.get("title"):
         spread_note = (f"spread to {amp_count} outlets" if amp_count > 1
                        else "not yet spread beyond its origin")
+        spread_desc = ("and has already spread to multiple outlets" if amp_count > 1
+                       else "but has not yet spread beyond its origin")
         h.append(f"There is one adverse thread to watch: “{ao_title}” from "
-                 f"{ao.get('outlet', 'an outlet')} — "
-                 f"it carries {neg_signals} negative signals and has {spread_note}.")
+                 f"{ao.get('outlet', 'an outlet')} — it is the live hostile line, "
+                 f"{spread_desc}.")
     if owns:
-        h.append(f"You have a clear ownership advantage on {owns[0]['topic'].title()} "
-                 f"({_signed(owns[0]['favourability'])}), which is a genuine asset to "
-                 f"protect and amplify this week.")
+        h.append(f"You have a clear ownership advantage on {owns[0]['topic'].title()}, "
+                 f"which is a genuine asset to protect and amplify this week.")
     if contested:
         h.append(f"The front that needs your attention is {contested[0]['topic'].title()} — "
-                 f"it is genuinely contested ({_signed(contested[0]['favourability'])}), "
-                 f"and silence there will cost you ground.")
+                 f"the coverage there is genuinely split, "
+                 f"and silence will cost you ground.")
     elif direction:
         dir_note = ("that is the signal to press harder" if direction == "rising"
                     else "monitor it through the week")
@@ -734,9 +737,10 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
     # ── THE OTHER SIDE ───────────────────────────────────────────────────────────
     concentration = ("concentrated around one outlet" if ao.get("outlet")
                      else "scattered across sources")
+    volume_word = "heavy" if neg_signals >= 10 else "moderate" if neg_signals >= 4 else "limited"
     os_: list[str] = [
-        f"The case for not over-reading this: there are only {neg_signals} negative signals "
-        f"in the window, and they are {concentration} rather than a coordinated press movement.",
+        f"The case for not over-reading this: the adverse signal volume is {volume_word}, "
+        f"and it is {concentration} rather than a coordinated press movement.",
     ]
     if ao.get("outlet"):
         os_.append(f"Strip {ao.get('outlet')} out of the calculation and the week's picture "
@@ -746,9 +750,9 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
                "outlet picking up the adverse line and running with it as its own story — "
                "that has not happened yet.")
     if ov_n < 8:
-        os_.append(f"The signal pool is thin at {ov_n} data points, which means this read could "
-                   f"shift materially with even one new piece of coverage — "
-                   f"treat it as directional, not final.")
+        os_.append("The signal pool is still thin, which means this read could "
+                   "shift materially with even one new piece of coverage — "
+                   "treat it as directional, not final.")
     else:
         os_.append("The signal pool is broad enough to trust the direction, "
                    "even if the exact numbers will move.")

@@ -160,29 +160,8 @@ def render_html(r: dict[str, Any]) -> str:
         f"<td class='kpi'><div class='l'>{l}</div><div class='v'>{v}</div><div class='d'>{d}</div></td>"
         for l, v, d in kpis) + "</tr></table>")
 
-    # A. exec
-    out.append("<h2><span class='ix'>A</span>Executive Summary</h2><div class='sub'>What changed in the last 24 hours, and why it matters.</div><ul class='exec'>")
-    out += [f"<li>{_e(b)}</li>" for b in n.get("exec_summary", [])]
-    out.append("</ul>")
-
-    # B. heatmap
-    out.append("<h2><span class='ix'>B</span>Risk Heatmap</h2><div class='sub'>Severity = volume &times; adverse share &times; 24h velocity, by domain.</div>"
-               "<table class='heat'><tr><th>Domain</th><th>Severity</th><th>Read</th><th style='text-align:right'>24h &middot; adverse</th></tr>")
-    for d in r["domains"]:
-        cls, lbl = _SEV[d["severity"]]
-        out.append(f"<tr><td><b>{_e(d['domain'])}</b></td><td><span class='sev {cls}'>{lbl}</span></td>"
-                   f"<td class='lede'>{d['adverse_pct']}% adverse &middot; {d['delta_pct']:+d}% vs prior</td>"
-                   f"<td style='text-align:right;font-family:var(--mono)'>{d['n24']} &middot; {d['neg']}</td></tr>")
-    out.append("</table>")
-
-    # C. developments
-    out.append("<h2><span class='ix'>C</span>Key Developments</h2><div class='sub'>Clustered by theme, rewritten and contextualised.</div>")
-    for dv in n.get("developments", []):
-        out.append(f"<div class='dev'><div class='theme'>{_e(dv.get('theme',''))}</div>"
-                   f"<h3>{_e(dv.get('headline',''))}</h3><div class='lede'>{_e(dv.get('body',''))}</div></div>")
-
-    # D. geographic
-    out.append("<h2><span class='ix'>D</span>Geographic Intelligence</h2><div class='sub'>District-level coverage and movers.</div><table class='bars'>")
+    # 1. Geographic Intelligence
+    out.append("<h2><span class='ix'>1</span>Geography Intelligence</h2><div class='sub'>District-level coverage and movers.</div><table class='bars'>")
     maxd = max((d["n24"] for d in r["districts"]), default=1) or 1
     for d in r["districts"][:8]:
         out.append(f"<tr><td class='nm'>{_e(d['name'])}</td><td><div class='track'><i style='width:{round(100*d['n24']/maxd)}%'></i></div></td>"
@@ -191,9 +170,23 @@ def render_html(r: dict[str, Any]) -> str:
     if n.get("hotspot_read"):
         out.append(f"<div class='sub' style='margin-top:8px'><b>Hotspot read:</b> {_e(n['hotspot_read'])}</div>")
 
-    # E. sentiment
+    # 2. Top Stories
+    out.append("<h2><span class='ix'>2</span>Top Stories</h2><div class='sub'>Ranked by coverage breadth &mdash; the day's most-covered stories.</div>")
+    out.append(_grid([_story_card(st) for st in r["top_stories"][:4]]))
+
+    # 3. Heat Risk
+    out.append("<h2><span class='ix'>3</span>Heat Risk</h2><div class='sub'>Severity = volume &times; adverse share &times; 24h velocity, by domain.</div>"
+               "<table class='heat'><tr><th>Domain</th><th>Severity</th><th>Read</th><th style='text-align:right'>24h &middot; adverse</th></tr>")
+    for d in r["domains"]:
+        cls, lbl = _SEV[d["severity"]]
+        out.append(f"<tr><td><b>{_e(d['domain'])}</b></td><td><span class='sev {cls}'>{lbl}</span></td>"
+                   f"<td class='lede'>{d['adverse_pct']}% adverse &middot; {d['delta_pct']:+d}% vs prior</td>"
+                   f"<td style='text-align:right;font-family:var(--mono)'>{d['n24']} &middot; {d['neg']}</td></tr>")
+    out.append("</table>")
+
+    # 4. Sentiment Analysis
     s3 = r["sentiment"]; tot = (s3["pos"] + s3["neu"] + s3["neg"]) or 1
-    out.append("<h2><span class='ix'>E</span>Sentiment &amp; Narrative</h2>"
+    out.append("<h2><span class='ix'>4</span>Sentiment Analysis</h2>"
                "<table class='senti'><tr>"
                f"<td style='width:{100*s3['pos']//tot}%;background:var(--pos)'></td>"
                f"<td style='width:{100*s3['neu']//tot}%;background:var(--neu)'></td>"
@@ -202,59 +195,11 @@ def render_html(r: dict[str, Any]) -> str:
     if n.get("sentiment_narrative"):
         out.append(f"<div class='lede' style='margin-top:6px'>{_e(n['sentiment_narrative'])}</div>")
 
-    # F. early warning
-    if r["early_warning"]:
-        out.append("<h2><span class='ix'>F</span>Early-Warning Signals</h2><div class='sub'>Small now, accelerating &mdash; watch before they escalate.</div>"
-                   "<table class='heat'><tr><th>Signal</th><th>Now &larr; prior</th><th>Growth</th></tr>")
-        for e in r["early_warning"]:
-            out.append(f"<tr><td><b>{_e(e['label'])}</b><span class='chip'>{_e(e['kind'])}</span></td>"
-                       f"<td style='font-family:var(--mono)'>{e['now']} &larr; {e['prior']}</td>"
-                       f"<td class='up' style='font-family:var(--mono)'>+{e['growth']}%</td></tr>")
-        out.append("</table>")
-
-    # G. stakeholders
-    aff = "".join(f"<li>{_e(a['group'])}<span class='chip'>{a['n']} stories</span></li>" for a in r["stakeholders"]["affected"][:5]) or "<li class='lede'>&mdash;</li>"
-    drv = "".join(f"<li>{_e(d['name'])}<span class='chip'>{_e(d['type'])} &middot; {d['n']}</span></li>" for d in r["stakeholders"]["drivers"][:5])
-    out.append("<h2><span class='ix'>G</span>Stakeholder Impact</h2>"
-               "<table class='cols'><tr><td>"
-               f"<div class='eyebrow' style='color:var(--muted)'>WHO IS AFFECTED</div><ul class='exec'>{aff}</ul>"
-               "</td><td>"
-               f"<div class='eyebrow' style='color:var(--muted)'>WHO IS DRIVING IT</div><ul class='exec'>{drv}</ul>"
-               "</td></tr></table>")
-
-    # H. actions
-    out.append("<h2><span class='ix'>H</span>Recommended Actions</h2><div class='sub'>Practical moves the day's signals support, prioritised.</div><ol class='act'>")
-    out += [f"<li>{_e(a)}</li>" for a in n.get("actions", [])]
-    out.append("</ol>")
-
-    # top stories
-    out.append("<h2><span class='ix'>+</span>Top Stories</h2><div class='sub'>Ranked by coverage breadth &mdash; the day's most-covered Andhra Pradesh stories.</div>")
-    out.append(_grid([_story_card(st) for st in r["top_stories"][:4]]))
-
-    # quotes + figures
-    qcol = "".join(
-        f"<div class='quote'><p>&ldquo;{_e(q['q'])}&rdquo;</p>"
-        + (f"<div class='en'>EN &middot; {_e(q['q_en'])}</div>" if q.get("q_en") else "")
-        + f"<div class='who'>&mdash; {_e(q['who'])} &middot; {_e(q['src'])}</div></div>"
-        for q in r["quotes"][:3])
-    fcol = "".join(f"<div class='fig'><div class='v'>{_e(f['value'])}</div><div class='c'>{_e(f['context'])}</div></div>" for f in r["figures"][:4])
-    out.append("<table class='cols'><tr><td>"
-               "<h2 style='margin-top:6px'><span class='ix'>+</span>In Their Words</h2>" + (qcol or "<div class='lede'>&mdash;</div>")
-               + "</td><td><h2 style='margin-top:6px'><span class='ix'>+</span>Figures Watch</h2>" + (fcol or "<div class='lede'>&mdash;</div>")
-               + "</td></tr></table>")
-
-    # I. source intel
-    out.append("<h2><span class='ix'>I</span>Source Intelligence</h2><div class='sub'>Reliability, spread and lean behind today's picture.</div>"
-               "<table class='heat'><tr><th>Tier</th><th>Stories</th><th>Outlets</th></tr>")
-    tlabel = {1: "Tier 1 &middot; established", 2: "Tier 2 &middot; regional", 3: "Tier 3 &middot; long-tail"}
-    for t in r["source_intel"]["tiers"]:
-        out.append(f"<tr><td><b>{tlabel.get(t['tier'], 'Tier '+str(t['tier']))}</b></td><td>{t['stories']}</td><td>{t['outlets']}</td></tr>")
-    out.append("</table><div class='sub' style='margin-top:8px'><b>Top outlets:</b> "
-               + ", ".join(f"{_e(o['name'])} (T{o['tier']}, health {o['health']})" for o in r["source_intel"]["top_outlets"][:5]) + ".</div>")
-    xv = r["source_intel"].get("cross")
-    if xv:
-        out.append(f"<div class='sub' style='margin-top:5px'><b>Cross-verification:</b> {xv['corroborated']} storylines corroborated "
-                   f"across 3+ outlets; {xv['single_source']} single-source (treat with caution).</div>")
+    # 5. Key Developments
+    out.append("<h2><span class='ix'>5</span>Key Developments</h2><div class='sub'>Clustered by theme, rewritten and contextualised.</div>")
+    for dv in n.get("developments", []):
+        out.append(f"<div class='dev'><div class='theme'>{_e(dv.get('theme',''))}</div>"
+                   f"<h3>{_e(dv.get('headline',''))}</h3><div class='lede'>{_e(dv.get('body',''))}</div></div>")
 
     out.append("<table class='footer'><tr><td>RIG OSINT &middot; generated " + _e(r['generated_at'])[:16]
                + " IST &middot; auto-refreshed daily &middot; narrative:" + str(n.get('_source', '?'))

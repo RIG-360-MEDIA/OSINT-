@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Reveal, StanceDot } from '../lib/ui';
 import { Wave } from '../lib/charts';
 import Panel from '../components/Panel';
@@ -24,6 +24,20 @@ const TOVL = {
   supportive: 'linear-gradient(180deg, oklch(0.55 0.15 165 / .38), oklch(0.05 0.01 270 / .82))',
   neutral: 'linear-gradient(180deg, oklch(0.32 0.02 270 / .35), oklch(0.05 0.01 270 / .82))',
 };
+
+const initials = (n) => (n || '?').split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+
+function PlayerPortrait({ name, img, stance }) {
+  const [ok, setOk] = useState(!!img);
+  const cls = 'player-portrait player-portrait-' + (stance === 'hostile' ? 'neg' : stance === 'supportive' ? 'pos' : 'neu');
+  return (
+    <div className={cls}>
+      {ok && img
+        ? <img src={img} alt="" onError={() => setOk(false)} />
+        : <span>{initials(name)}</span>}
+    </div>
+  );
+}
 
 function Notice({ children }) {
   return (
@@ -63,6 +77,13 @@ function SourcesToggle({ sources }) {
   );
 }
 
+// Strip URL-slug junk from titles that slipped through backend cleaning,
+// e.g. "headline vvnp 1530822.html" → "headline"
+function cleanTitle(t) {
+  if (!t) return t;
+  return String(t).replace(/\s+(?:[a-z]{2,8}\s+)?\d{5,}\S*$/i, '').trim() || t;
+}
+
 // Show the translation line only when it's ACTUALLY English (the backend's
 // lead_text_translated is unreliable — sometimes still in the source language).
 // Heuristic: >60% ASCII letters = English. Truncate at a word boundary, no mid-word cuts.
@@ -80,9 +101,15 @@ export default function Home() {
   const [status, setStatus] = useState({ loading: true, error: null });
   const [loadedAt, setLoadedAt] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  // Sentiment drill-down: top +/- stories driving the number, fetched on first open.
+  // Sentiment drill-down
   const [explain, setExplain] = useState(null);
   const [explainOpen, setExplainOpen] = useState(false);
+  // Add-entity modal
+  const [addOpen, setAddOpen] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef(null);
 
   // Silent swap: on a refetch we keep the current screen up (no loading flash) and
   // only surface an error on the very first load — a failed refresh keeps stale data.
@@ -117,6 +144,47 @@ export default function Home() {
       }
     }
   }, [explainOpen, explain]);
+
+  // Debounced entity search
+  useEffect(() => {
+    if (!addOpen) return;
+    clearTimeout(searchTimer.current);
+    if (!searchQ.trim()) { setSearchResults([]); return; }
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const d = await authFetch(`/api/onboarding/search_entities?q=${encodeURIComponent(searchQ)}&limit=10&types=person`);
+        setSearchResults(d?.results || []);
+      } catch { setSearchResults([]); }
+      finally { setSearching(false); }
+    }, 280);
+    return () => clearTimeout(searchTimer.current);
+  }, [searchQ, addOpen]);
+
+  const addEntity = useCallback(async (ent) => {
+    try {
+      await authFetch('/api/brief/watchlist/add', { method: 'POST', body: JSON.stringify({ entity_id: ent.id }), headers: { 'Content-Type': 'application/json' } });
+      setAddOpen(false);
+      setSearchQ('');
+      setSearchResults([]);
+      load({ silent: true });
+    } catch (e) { alert('Could not add: ' + e.message); }
+  }, [load]);
+
+  const removeEntity = useCallback(async (entityId) => {
+    // Optimistic: drop the card immediately so the click feels instant — the
+    // full /home recompute (incl. the LLM briefing) can take many seconds.
+    setHome((h) => (h && h.players
+      ? { ...h, players: h.players.filter((p) => p.id !== entityId) }
+      : h));
+    try {
+      await authFetch(`/api/brief/watchlist/${entityId}`, { method: 'DELETE' });
+      load({ silent: true });
+    } catch (e) {
+      alert('Could not remove: ' + e.message);
+      load({ silent: true }); // re-sync if the delete actually failed
+    }
+  }, [load]);
 
   useEffect(() => {
     load();
@@ -295,19 +363,29 @@ export default function Home() {
         <Reveal>
           <div className="eyebrow">TOP STORIES FOR YOU</div>
           <div className="sub" style={{ marginBottom: 18 }}>The stories that matter to you — and why.</div>
-          <div className="tstories">
+          <div className="panel tstories">
             {stories.map((s, i) => (
-              <Panel key={i} className="tstory flat">
-                <div className="thumb">
-                  <img src={s.thumbnail || `https://picsum.photos/seed/${i}-osint/720/440`} alt="" loading="lazy" />
-                  <div className="tovl" style={{ background: TOVL[s.tone] || TOVL.neutral }} />
-                  <span>{s.source}</span>
+              <div key={i} className="tstory-strip">
+                <div className="ts-left">
+                  <div className="ts-thumb">
+                    <img src={s.thumbnail || `https://picsum.photos/seed/${i}-osint/720/440`} alt="" loading="lazy" />
+                    <div className="tovl" style={{ background: TOVL[s.tone] || TOVL.neutral }} />
+                    <span className="ts-src-badge">{s.source}</span>
+                  </div>
+                  <div className="ts-hd">
+                    <StanceDot t={s.tone} />
+                    <span>{cleanTitle(s.headline)}</span>
+                  </div>
+                  {s.headline_en && enText(s.headline_en) && (
+                    <div className="en-gloss"><b>EN</b>{enText(s.headline_en)}</div>
+                  )}
+                  <div className="ts-meta">{s.source} · {s.age}</div>
                 </div>
-                <div className="hd"><StanceDot t={s.tone} /><span>{s.headline}</span></div>
-                {s.headline_en && <div className="en-gloss"><b>EN</b>{s.headline_en}</div>}
-                <div className="meta">{s.source} · {s.age}</div>
-                <div className="fy"><b>For you</b>{s.summary || (s.matched ? `Matched on ${s.matched}.` : 'In your coverage this window.')}</div>
-              </Panel>
+                <div className="ts-right">
+                  <b className="ts-fy-label">For you</b>
+                  <p className="ts-fy-body">{s.summary || (s.matched ? `Matched on ${s.matched}.` : 'In your coverage this window.')}</p>
+                </div>
+              </div>
             ))}
           </div>
         </Reveal>
@@ -323,7 +401,8 @@ export default function Home() {
           {players.map((p, i) => (
             <Panel key={i} className="player">
               <div className="ph">
-                <div>
+                <PlayerPortrait name={p.name} img={p.img} stance={p.stance} />
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="nm">{p.name}</div>
                   <div className="rl">{p.rel}{p.kind ? <span className="pill" style={{ marginLeft: 8 }}>{p.kind}</span> : null}</div>
                 </div>
@@ -331,6 +410,7 @@ export default function Home() {
                   <div className={'vv num ' + toneCls(p.stance)}>{p.verdict}</div>
                   <div className={'sc num ' + toneCls(p.stance)}>{p.score}</div>
                   {p.trend ? <div className="tr">{p.trend}</div> : null}
+                  {p.id && <button className="player-remove" onClick={() => removeEntity(p.id)} title="Remove from watch list">×</button>}
                 </div>
               </div>
               <p className="sm">{p.summary}</p>
@@ -339,23 +419,72 @@ export default function Home() {
               <div className="wl"><span className="lab">Watch</span>{p.watch}</div>
             </Panel>
           ))}
+          <button className="player-add-tile" onClick={() => { setAddOpen(true); setSearchQ(''); setSearchResults([]); }}>
+            <span className="player-add-icon">+</span>
+            <span>Add to watch list</span>
+          </button>
         </div>
       </Reveal>
 
-      {/* THE SIX */}
-      <Reveal>
-        <div className="eyebrow">THE SIX</div>
-        <div className="sub" style={{ marginBottom: 16 }}>The quieter tells — the truth, the noise filter, the drafts.</div>
-        <div className="sixgrid">
-          {six.map((s, i) => (
-            <Panel key={i} className={'six' + (s.kicker === 'The Hard Truth' ? ' hardtruth' : '')}>
-              <div className="kk">{s.kicker}</div>
-              <div className="tt">{s.title}</div>
-              {s.body && <p>{s.body}</p>}
-              {s.items && s.items.map((it, j) => (
-                <div className="it" key={j}><span className={'vchip ' + it.vtone}>{it.verdict}</span><span className="tx">{it.text}</span></div>
+      {/* Add entity modal */}
+      {addOpen && (
+        <div className="add-modal-scrim" onClick={() => setAddOpen(false)}>
+          <div className="add-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="add-modal-head">
+              <span>Add to Watch List</span>
+              <button className="add-modal-close" onClick={() => setAddOpen(false)}>×</button>
+            </div>
+            <input
+              className="add-modal-search"
+              placeholder="Search 11,000+ entities…"
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+              autoFocus
+            />
+            <div className="add-modal-results">
+              {searching && <div className="add-modal-hint">Searching…</div>}
+              {!searching && searchQ && searchQ.trim().length < 2 && <div className="add-modal-hint">Type at least 2 characters…</div>}
+              {!searching && searchQ && searchQ.trim().length >= 2 && !searchResults.length && <div className="add-modal-hint">No results</div>}
+              {!searching && !searchQ && <div className="add-modal-hint">Search by name, party, or alias</div>}
+              {searchResults.map((r) => (
+                <button key={r.id} className="add-modal-result" onClick={() => addEntity(r)}>
+                  <span className="amr-name">{r.name}</span>
+                  <span className="amr-meta">{[r.party, r.state].filter(Boolean).join(' · ')}</span>
+                </button>
               ))}
-              {s.print && <div className="pr">{s.print}</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* THE SIX — live evidence feeds */}
+      <Reveal>
+        <div className="eyebrow">THE LATEST</div>
+        <div className="sub" style={{ marginBottom: 16 }}>Everything new about you right now — quotes, coverage, and who you're tied to.</div>
+        <div className="sixgrid">
+          {six.map((s) => (
+            <Panel key={s.key} className={'six feed feed-' + s.key}>
+              <div className="tt">{s.title}</div>
+              <div className="feed-blurb">{s.blurb}</div>
+              {(!s.items || !s.items.length) && <div className="feed-empty">{s.empty}</div>}
+              {s.items && s.items.map((it, j) => (
+                it.kind === 'tag' ? (
+                  <div className="feed-tag" key={j}>
+                    <span className="feed-tag-name">{it.text}</span>
+                    <span className="feed-tag-sub">{it.sub}</span>
+                  </div>
+                ) : (
+                  <a className="feed-row" key={j} href={it.url || undefined}
+                     target="_blank" rel="noopener noreferrer">
+                    <span className={'feed-dot ' + (it.tone || 'neu')} />
+                    <span className="feed-body">
+                      <span className={'feed-text' + (it.kind === 'quote' ? ' feed-quote' : '')}>{it.text}</span>
+                      {it.en && <span className="feed-en">{it.en}</span>}
+                      <span className="feed-meta">{it.sub}{it.when ? ' · ' + it.when : ''}</span>
+                    </span>
+                  </a>
+                )
+              ))}
             </Panel>
           ))}
         </div>

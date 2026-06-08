@@ -81,9 +81,8 @@ export default function ReportDispatch() {
       </div>
 
       <div className="sub" style={{ marginTop: 14, fontSize: '0.82rem' }}>
-        Contains: executive summary · risk heatmap (6 domains) · key developments · district map ·
-        sentiment &amp; narrative · early-warning · stakeholder impact · recommended actions · top stories ·
-        quotes · figures · source intelligence. Generated fresh each day; emailed automatically.
+        Contains: geography intelligence · top stories · heat risk · sentiment analysis ·
+        key developments. Generated fresh each day; emailed automatically.
       </div>
       {msg && <div style={{ marginTop: 10, fontSize: '0.82rem', color: msg.ok ? 'var(--supportive,#3cd6a0)' : 'var(--neg,#fb7185)' }}>{msg.t}</div>}
     </Panel>

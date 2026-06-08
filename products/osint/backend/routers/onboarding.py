@@ -55,29 +55,39 @@ async def search_entities(
 
     async with get_db() as db:
         rows = (await db.execute(text(f"""
-            SELECT id::text AS id, canonical_name, entity_type, party, state, country, aliases
-              FROM entity_dictionary
-             WHERE LOWER(entity_type) IN ({placeholders})
-               AND redirected_to IS NULL   -- exclude consolidated/redirected rows
-                                           -- so users can't pick a now-dead dupe
-                                           -- (titled-prefix variants are still
-                                           -- discoverable via the canonical row's
-                                           -- aliases[] — migration 095 appended them)
+            SELECT ed.id::text AS id, ed.canonical_name, ed.entity_type, ed.party,
+                   ed.state, ed.country, ed.aliases,
+                   COALESCE(cov.n, 0) AS coverage
+              FROM entity_dictionary ed
+              LEFT JOIN LATERAL (
+                  SELECT count(*) AS n
+                    FROM article_entity_mentions aem
+                   WHERE aem.entity_id = ed.id
+              ) cov ON true
+             WHERE LOWER(ed.entity_type) IN ({placeholders})
+               AND ed.redirected_to IS NULL   -- exclude consolidated/redirected rows
+               -- exclude party/org-shaped names mistyped as person (no real individual)
+               AND ed.canonical_name !~* '(\\mparty\\M|congress|samithi|samiti|\\mjanata\\M|\\msena\\M|morcha|majlis|\\msangh\\M|\\mfront\\M|ministry|\\mcommission\\M|federation|association|\\munion\\M|\\mboard\\M|\\mcouncil\\M)'
+               -- exclude junk: pure short all-caps codes (LAB, LNP), date- or number-led names
+               AND ed.canonical_name ~ '[a-z]'        -- must contain a lowercase letter
+               AND ed.canonical_name !~ '^[0-9]'      -- not number-led
+               AND length(ed.canonical_name) >= 4
                AND (
-                 LOWER(canonical_name) LIKE :n
+                 LOWER(ed.canonical_name) LIKE :n
                  OR EXISTS (
-                   SELECT 1 FROM unnest(aliases) a
+                   SELECT 1 FROM unnest(ed.aliases) a
                     WHERE LOWER(a) LIKE :n
                  )
                )
              ORDER BY
-               -- 1. exact name match wins (e.g., 'Modi' search → 'Modi' before 'Modi Govt Initiative')
-               CASE WHEN LOWER(canonical_name) = LEFT(:n, GREATEST(LENGTH(:n)-1, 1)) THEN 0 ELSE 1 END,
-               -- 2. national politicians (party set, no state) rank above regional
-               CASE WHEN party IS NOT NULL AND party != '' AND state IS NULL THEN 0 ELSE 1 END,
-               -- 3. politicians with party (regional) above unaffiliated persons
-               CASE WHEN party IS NOT NULL AND party != '' THEN 0 ELSE 1 END,
-               LENGTH(canonical_name)
+               -- 1. exact name match wins
+               CASE WHEN LOWER(ed.canonical_name) = LEFT(:n, GREATEST(LENGTH(:n)-1, 1)) THEN 0 ELSE 1 END,
+               -- 2. entities with real article coverage surface above never-covered junk
+               CASE WHEN COALESCE(cov.n, 0) > 0 THEN 0 ELSE 1 END,
+               cov.n DESC NULLS LAST,
+               -- 3. national politicians (party set, no state) rank above regional
+               CASE WHEN ed.party IS NOT NULL AND ed.party != '' AND ed.state IS NULL THEN 0 ELSE 1 END,
+               length(ed.canonical_name)
              LIMIT :limit
         """), params)).fetchall()
 

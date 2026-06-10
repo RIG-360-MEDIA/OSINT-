@@ -12,10 +12,18 @@ from datetime import timedelta
 from celery import Celery
 from celery.schedules import crontab
 
-DATABASE_URL_SYNC: str = os.environ.get(
-    "DATABASE_URL_SYNC",
-    "postgresql://rig:rigpassword@rig-postgres:5432/rig",
-)
+def _resolve_sync_url() -> str:
+    explicit = os.environ.get("DATABASE_URL_SYNC", "")
+    if explicit:
+        return explicit
+    # Derive from DATABASE_URL so the password is never lost when
+    # DATABASE_URL_SYNC is missing from .env (e.g. recreate without --env-file).
+    async_url = os.environ.get("DATABASE_URL", "")
+    if async_url:
+        return async_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    return "postgresql://rig:rigpassword@rig-postgres:5432/rig"
+
+DATABASE_URL_SYNC: str = _resolve_sync_url()
 
 _broker_url = DATABASE_URL_SYNC.replace("postgresql", "sqla+postgresql", 1)
 _result_url = DATABASE_URL_SYNC.replace("postgresql", "db+postgresql", 1)
@@ -26,8 +34,6 @@ app = Celery(
         "backend.tasks",
         "backend.tasks.collector_tasks",
         "backend.tasks.nlp_processor",
-        # 0a embed-at-ingest lane — dedicated fast embedding, decoupled from NLP
-        "backend.tasks.embed_task",
         "backend.tasks.dict_reload_task",
         # SearXNG-fallback thumbnail finder (fix for post-deploy og:image gap)
         "backend.tasks.thumbnail_task",
@@ -60,12 +66,9 @@ app = Celery(
         "backend.tasks.entity_mention_task",
         # Nightly v2→v3 upgrade pass (translation + register fields)
         "backend.tasks.v3_upgrade_task",
-        # D13: 30-min reset of orphaned substrate 'processing' claims so a
-        # killed/crashed drain can never leave articles permanently stuck.
-        "backend.tasks.substrate.reset_stale_processing_task",
-        # D13 part-2: 10-min auto-trigger of v3 substrate extraction so new
-        # articles reach v3 without manual drains (replaces the v2 repass).
-        "backend.tasks.substrate.drain_tick_task",
+        # Newspaper clippings: daily collection fan-out + substrate enrichment
+        "backend.tasks.newspaper_task",
+        "backend.tasks.clipping_enrich",
     ],
 )
 
@@ -90,12 +93,6 @@ app.config_from_object(
             "tasks.quality.v3_upgrade": {"queue": "nlp"},
             "tasks.fetch_og_images_batch": {"queue": "collectors"},
             "tasks.process_nlp_batch": {"queue": "nlp"},
-            # 0a embed-at-ingest lane — dedicated `embedding` queue
-            "tasks.embed.embed_pending_batch": {"queue": "embedding"},
-            # D13: orphaned-claim reset (runs on nlp queue, pure SQL)
-            "tasks.substrate.reset_stale_processing": {"queue": "nlp"},
-            # D13 part-2: 10-min auto-drain of pending articles → v3
-            "tasks.substrate.drain_tick": {"queue": "nlp"},
             # Byline / tweet substrate backfill — pure HTTP fetching, light
             # parsing, no LLM. Shares the collectors queue with HTML scraping.
             "tasks.backfill_bylines_periodic": {"queue": "collectors"},
@@ -113,6 +110,16 @@ app.config_from_object(
             "tasks.collectors.tgspdcl_power":   {"queue": "collectors"},
             "tasks.collectors.welfare_coverage":{"queue": "collectors"},
             "tasks.collectors.acled_sink":      {"queue": "collectors"},
+            # Brief generation — dedicated brief queue (worker-relevance)
+            "tasks.generate_all_briefs":        {"queue": "brief"},
+            "tasks.generate_brief_for_user":    {"queue": "brief"},
+            # Newspaper clippings — collection + substrate enrichment both on
+            # the documents queue (design §6.2: NEVER nlp — that's article NLP).
+            "tasks.collect_newspapers":          {"queue": "documents"},
+            "tasks.collect_newspapers_fallback": {"queue": "documents"},
+            "tasks.collect_one_newspaper":       {"queue": "documents"},
+            "tasks.enrich_clipping":             {"queue": "documents"},
+            "tasks.drain_pending_clippings":     {"queue": "documents"},
         },
         "beat_schedule": {
             "collect-rss-every-15-min": {
@@ -160,13 +167,6 @@ app.config_from_object(
                 "schedule": timedelta(seconds=30),
                 "options": {"queue": "nlp"},
             },
-            # 0a embed-at-ingest — fast vector lane, decoupled from the NLP batch.
-            # Deployed only after the A/B recipe lock (see docs/plans/0a-embed-at-ingest-2026-05-31.md).
-            "embed-pending-every-15-seconds": {
-                "task": "tasks.embed.embed_pending_batch",
-                "schedule": timedelta(seconds=15),
-                "options": {"queue": "embedding"},
-            },
             "enrich-journalist-every-5-minutes": {
                 "task": "tasks.enrich_journalist_batch",
                 "schedule": timedelta(minutes=5),
@@ -190,6 +190,28 @@ app.config_from_object(
                 "task": "tasks.reset_groq_keys",
                 "schedule": crontab(hour=0, minute=5),
                 "options": {"queue": "default"},
+            },
+            # Newspaper clippings — two idempotent passes (design §3).
+            # PRIMARY 02:00 UTC = 07:30 IST: fan out every active paper.
+            "collect-newspapers-primary": {
+                "task": "tasks.collect_newspapers",
+                "schedule": crontab(hour=2, minute=0),
+                "options": {"queue": "documents"},
+            },
+            # FALLBACK 03:00 UTC = 08:30 IST: only papers with NO clipping
+            # row for today (covers late CareersWave uploads + failures).
+            "collect-newspapers-fallback": {
+                "task": "tasks.collect_newspapers_fallback",
+                "schedule": crontab(hour=3, minute=0),
+                "options": {"queue": "documents"},
+            },
+            # Catch-up drain for any clipping left in substrate_status=pending
+            # (e.g. enrich enqueue lost on a restart). Cheap no-op when empty.
+            "drain-pending-clippings-every-10-min": {
+                "task": "tasks.drain_pending_clippings",
+                "schedule": timedelta(minutes=10),
+                "kwargs": {"limit": 50},
+                "options": {"queue": "documents"},
             },
             "check-entity-dict-every-5-min": {
                 "task": "tasks.check_entity_dict_version",
@@ -252,14 +274,6 @@ app.config_from_object(
                 "schedule": timedelta(minutes=30),
                 "options": {"queue": "nlp"},
             },
-            # D13: reset orphaned substrate 'processing' claims every 30 min.
-            # Self-heals drains that were killed/crashed mid-batch (1-hour
-            # grace window means it never touches live work).
-            "reset-stale-substrate-processing-every-30-min": {
-                "task": "tasks.substrate.reset_stale_processing",
-                "schedule": timedelta(minutes=30),
-                "options": {"queue": "nlp"},
-            },
             # Entity-mention aggregator every 60 min
             "entity-mentions-every-60-min": {
                 "task": "tasks.quality.entity_mentions",
@@ -278,19 +292,19 @@ app.config_from_object(
             #     "schedule": crontab(hour=22, minute=30),
             #     "options": {"queue": "nlp"},
             # },
-            # D13 part-2: auto-fire v3 substrate extraction every 10 min so
-            # new articles reach v3 within minutes — no manual drains, no lag.
-            # limit=300 + 9-min soft limit guarantees ticks never overlap.
-            "drain-substrate-v3-every-10-min": {
-                "task": "tasks.substrate.drain_tick",
-                "schedule": timedelta(minutes=10),
-                "options": {"queue": "nlp"},
-            },
             # Daily contradiction detection — 23:00 UTC = 04:30 IST
             "contradictions-daily": {
                 "task": "tasks.refresh_contradictions",
                 "schedule": crontab(hour=23, minute=0),
                 "options": {"queue": "nlp"},
+            },
+            # Daily brief generation fan-out — 00:30 UTC = 06:00 IST
+            # Iterates every user with brief page access and enqueues a
+            # per-user generate_brief_for_user task on the brief queue.
+            "generate-briefs-daily": {
+                "task": "tasks.generate_all_briefs",
+                "schedule": crontab(hour=0, minute=30),
+                "options": {"queue": "brief"},
             },
         },
     }
@@ -353,7 +367,7 @@ def _collector_catch_up(sender=None, **_kw) -> None:  # noqa: D401, ANN001
     # Tables to inspect → task to fire if stale.
     targets = [
         ("govt_documents", "tasks.collect_govt_documents"),
-        ("newspaper_clippings", "tasks.collect_newspapers"),
+        ("clippings", "tasks.collect_newspapers"),
     ]
     threshold = datetime.now(tz=timezone.utc) - _td(hours=24)
 

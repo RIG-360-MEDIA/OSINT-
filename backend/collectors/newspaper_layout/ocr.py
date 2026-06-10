@@ -18,9 +18,32 @@ into the image so containers start without internet access at runtime.
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
+
+# tessdata_best holds the float LSTM models — markedly more accurate on complex
+# scripts (Devanagari/Telugu conjuncts) than the apt "fast" integer models. When
+# a best model is present for the language we use it with --oem 1 (LSTM only),
+# else fall back to whatever the default tessdata dir has. Path is overridable.
+_TESSDATA_BEST_DIR = os.environ.get(
+    "TESSDATA_BEST_DIR", "/usr/share/tesseract-ocr/5/tessdata_best"
+)
+
+# Languages that use the FAST model even when a best model is present. Latin
+# (English) is already clean on the fast model, and best-on-a-large-render is the
+# slowest step in the pipeline — so English skips best for a big speed win at no
+# measurable quality cost. Complex Indic scripts still require best.
+_FAST_PREFERRED = {"eng"}
+
+
+def _best_tessdata_dir(tess_lang: str) -> str | None:
+    """Return the best-models dir if it holds this language, else None."""
+    if tess_lang in _FAST_PREFERRED:
+        return None
+    path = os.path.join(_TESSDATA_BEST_DIR, f"{tess_lang}.traineddata")
+    return _TESSDATA_BEST_DIR if os.path.isfile(path) else None
 
 # Render resolution. 150 DPI gives ~1240×1754 px for an A4 page — enough for
 # clean OCR while keeping per-page memory under 8 MB.
@@ -82,6 +105,192 @@ def _get_engine(lang: str):
         )
         logger.info("PP-Structure engine ready (layout_lang=%s, requested=%s)", layout_lang, lang)
     return _ENGINES[layout_lang]
+
+
+# Tesseract language-code mapping (PaddleOCR code → Tesseract lang code).
+# Scripts where Tesseract 5 outperforms PaddleOCR on newsprint type. English is
+# included: on dense newspaper body type PaddleOCR garbles words ("KIAINDIAIS",
+# "atory framewo") while Tesseract `eng` transcribes cleanly — measured on the
+# Financial Express front page. Quality of the stored body text is paramount, so
+# we prefer Tesseract for the body OCR and keep PaddleOCR only as a fallback.
+_TESS_LANG_MAP: dict[str, str] = {
+    "en": "eng",
+    "te": "tel",
+    "hi": "hin",
+    "mr": "mar",
+    "ta": "tam",
+    "kn": "kan",
+    "ml": "mal",
+    "bn": "ben",
+    "gu": "guj",
+    "pa": "pan",
+}
+
+# Per-process line-OCR engine cache: lang → PaddleOCR instance.
+_LINE_ENGINES: dict[str, object] = {}
+
+
+def _get_line_engine(lang: str):
+    """Plain PaddleOCR det+rec engine for line-level text in the page's script.
+
+    PP-Structure's *layout* model ships weights for 'en'/'ch' only, which forced
+    Indic pages (te/hi/ta/…) through the English recogniser — producing Latin
+    garbage that could not be matched to vision headlines, so no clip box ever
+    anchored. The hybrid pipeline only needs per-line text + boxes (not layout
+    regions), and PaddleOCR's *recogniser* does support those scripts. Using it
+    here sidesteps the en/ch layout limitation entirely.
+    """
+    if lang not in _LINE_ENGINES:
+        try:
+            from paddleocr import PaddleOCR  # type: ignore[import]
+        except ImportError:
+            raise ImportError(
+                "paddleocr is not installed. Add paddlepaddle>=2.6.0 and "
+                "paddleocr>=2.8.0,<3.0 to requirements.txt and rebuild."
+            )
+        _LINE_ENGINES[lang] = PaddleOCR(
+            show_log=False, lang=lang, use_angle_cls=False
+        )
+        logger.info("PaddleOCR line engine ready (lang=%s)", lang)
+    return _LINE_ENGINES[lang]
+
+
+def ocr_lines(
+    img, lang: str = "en"
+) -> list[tuple[str, float, float, float, float, float]]:
+    """Return per-line OCR for a page image in its own script.
+
+    Each tuple is (text, confidence, x0, y0, x1, y1) in image pixels. Returns an
+    empty list on any failure so callers can fall back gracefully.
+    """
+    try:
+        engine = _get_line_engine(lang)
+        res = engine.ocr(img, cls=False)
+    except Exception as exc:
+        logger.warning("ocr_lines failed (lang=%s): %s", lang, exc)
+        return []
+
+    page0 = res[0] if res else []
+    out: list[tuple[str, float, float, float, float, float]] = []
+    for r in page0 or []:
+        try:
+            box, (text, conf) = r[0], r[1]
+        except (TypeError, ValueError, IndexError):
+            continue
+        text = str(text or "").strip()
+        if not text or not box:
+            continue
+        xs = [float(p[0]) for p in box]
+        ys = [float(p[1]) for p in box]
+        out.append(
+            (text, float(conf or 0.0), min(xs), min(ys), max(xs), max(ys))
+        )
+    return out
+
+
+def ocr_lines_tesseract(
+    img,
+    tess_lang: str = "tel",
+) -> list[tuple[str, float, float, float, float, float]]:
+    """Tesseract 5 word→line OCR for Indic newsprint.
+
+    Groups pytesseract word-level output into logical lines by (block, par, line)
+    key. Returns the same tuple format as ocr_lines() so callers are engine-agnostic.
+    Tesseract trained on native Telugu newsprint is markedly more accurate than
+    PaddleOCR for Telugu newspaper headlines, raising text-anchor recall for the
+    hybrid pipeline.
+    """
+    try:
+        import pytesseract  # type: ignore[import]
+        from PIL import Image  # type: ignore[import]
+        import numpy as np
+    except ImportError as exc:
+        logger.warning("ocr_lines_tesseract: missing dep %s", exc)
+        return []
+
+    try:
+        if isinstance(img, np.ndarray):
+            pil_img = Image.fromarray(img.astype("uint8"), "RGB")
+        else:
+            pil_img = img
+        best = _best_tessdata_dir(tess_lang)
+        if best:
+            # Best models are float LSTM → require --oem 1 (legacy is absent).
+            config = f"--psm 3 --oem 1 -l {tess_lang} --tessdata-dir {best}"
+        else:
+            config = f"--psm 3 --oem 3 -l {tess_lang}"
+        data = pytesseract.image_to_data(
+            pil_img, config=config, output_type=pytesseract.Output.DICT
+        )
+    except Exception as exc:
+        logger.warning("ocr_lines_tesseract failed (lang=%s): %s", tess_lang, exc)
+        return []
+
+    line_map: dict[tuple, dict] = {}
+    for i in range(len(data.get("text", []))):
+        word = str(data["text"][i] or "").strip()
+        conf_raw = data["conf"][i]
+        if not word or conf_raw == -1:
+            continue
+        key = (
+            int(data["block_num"][i]),
+            int(data["par_num"][i]),
+            int(data["line_num"][i]),
+        )
+        if key not in line_map:
+            line_map[key] = {
+                "words": [], "confs": [],
+                "x0": float("inf"), "y0": float("inf"),
+                "x1": float("-inf"), "y1": float("-inf"),
+            }
+        entry = line_map[key]
+        entry["words"].append(word)
+        entry["confs"].append(float(conf_raw) / 100.0)
+        x = float(data["left"][i])
+        y = float(data["top"][i])
+        w = float(data["width"][i])
+        h = float(data["height"][i])
+        entry["x0"] = min(entry["x0"], x)
+        entry["y0"] = min(entry["y0"], y)
+        entry["x1"] = max(entry["x1"], x + w)
+        entry["y1"] = max(entry["y1"], y + h)
+
+    out: list[tuple[str, float, float, float, float, float]] = []
+    for entry in line_map.values():
+        if not entry["words"]:
+            continue
+        text = " ".join(entry["words"])
+        conf = sum(entry["confs"]) / len(entry["confs"])
+        if entry["x1"] > entry["x0"] and entry["y1"] > entry["y0"]:
+            out.append(
+                (text, conf, entry["x0"], entry["y0"], entry["x1"], entry["y1"])
+            )
+    return out
+
+
+def ocr_lines_best(
+    img,
+    lang: str = "en",
+) -> list[tuple[str, float, float, float, float, float]]:
+    """Return the best line OCR for the given script.
+
+    For Indic scripts, prefer Tesseract 5 (trained on native newsprint) over
+    PaddleOCR. Falls back to PaddleOCR if Tesseract fails or its lang pack is
+    absent so the pipeline degrades gracefully on containers without the pack.
+    """
+    if lang in _TESS_LANG_MAP:
+        tess_lang = _TESS_LANG_MAP[lang]
+        lines = ocr_lines_tesseract(img, tess_lang=tess_lang)
+        if lines:
+            logger.debug(
+                "ocr_lines_best: tesseract/%s → %d lines", tess_lang, len(lines)
+            )
+            return lines
+        logger.info(
+            "ocr_lines_best: tesseract/%s empty/failed, falling back to PaddleOCR",
+            tess_lang,
+        )
+    return ocr_lines(img, lang=lang)
 
 
 def extract_regions(

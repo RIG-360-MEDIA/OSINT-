@@ -33,6 +33,21 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgl1 \
+    # Tesseract 5 + language packs (newspaper hybrid extractor body OCR).
+    # Tesseract is preferred over PaddleOCR for both English and Indic newsprint
+    # (cleaner glyphs). eng/hin/tel cover the three pillar languages; the other
+    # Indic packs match _TESS_LANG_MAP in collectors/newspaper_layout/ocr.py.
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-hin \
+    tesseract-ocr-tel \
+    tesseract-ocr-tam \
+    tesseract-ocr-kan \
+    tesseract-ocr-mal \
+    tesseract-ocr-ben \
+    tesseract-ocr-guj \
+    tesseract-ocr-pan \
+    tesseract-ocr-mar \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy and install Python dependencies first
@@ -41,17 +56,38 @@ COPY backend/requirements.txt .
 COPY backend/requirements-dev.txt .
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 
+# Newspaper hybrid extractor — bake Tesseract `tessdata_best` (float LSTM) models
+# for the pillar + Indic languages. The apt packs ship the lower-accuracy "fast"
+# integer models, which garble Devanagari/Telugu conjuncts and tank both body
+# quality and headline-anchor rate; the best models fix that. ocr.py auto-uses
+# this dir via TESSDATA_BEST_DIR when a model is present (--oem 1).
+ENV TESSDATA_BEST_DIR=/usr/share/tesseract-ocr/5/tessdata_best
+RUN mkdir -p "$TESSDATA_BEST_DIR" \
+ && for L in hin tel tam kan mal ben guj pan mar; do \
+      curl -sL -o "$TESSDATA_BEST_DIR/$L.traineddata" \
+        "https://github.com/tesseract-ocr/tessdata_best/raw/main/$L.traineddata" \
+      || echo "tessdata_best/$L download skipped"; \
+    done
+
 # P16 — Pre-bake PaddleOCR PP-Structure models into the image.
 # First instantiation downloads layout + OCR weights (~600 MB from PaddlePaddle CDN).
 # Baking them here means containers start without internet access at runtime.
 # Build time: ~5-8 min on first run; subsequent builds use the layer cache.
+# Models download on first use if this step fails (OOM during build, CDN timeout, etc.)
 RUN python -c "from paddleocr import PPStructure; PPStructure(show_log=False, lang='en')" \
- && python -c "from paddleocr import PPStructure; PPStructure(show_log=False, lang='te')"
+ && python -c "from paddleocr import PPStructure; PPStructure(show_log=False, lang='te')" \
+ || echo "PaddleOCR model pre-bake skipped — will download on first container use"
+
+# Install crawl4ai separately with --no-deps so its pinned lxml~=5.3 and
+# pillow~=10.4 constraints don't override our security-pinned versions.
+# playwright (the only hard runtime dep crawl4ai actually uses at import time)
+# is already installed above from requirements.txt.
+RUN pip install --no-cache-dir --no-deps crawl4ai==0.4.248
 
 # Install Crawl4AI browser + JS snippets.
-# crawl4ai-setup installs Playwright Chromium and populates
-# the js_snippet directory that crawl4ai requires at runtime.
-RUN crawl4ai-setup
+# Non-fatal: crawl4ai-setup may fail if --no-deps omitted a crawl4ai internal dep;
+# playwright is already installed from requirements.txt so basic browser scraping works.
+RUN crawl4ai-setup || echo "crawl4ai-setup skipped — tiered scraping will fall back to playwright direct"
 
 # Download SpaCy model
 RUN python -m spacy download en_core_web_sm

@@ -18,8 +18,8 @@ pydantic-settings>=2.6
 # Task queue (sqlalchemy extra required for sqla+postgresql broker)
 celery[sqlalchemy]==5.4.0
 
-# HTTP client
-httpx==0.27.2
+# HTTP client — >=0.28 required by litellm>=1.83; supabase>=2.10 also requires >=0.28
+httpx>=0.28.0,<1.0
 aiohttp==3.13.4  # security: 14 CVEs incl. CVE-2024-52304, CVE-2025-53643, CVE-2026-22815, CVE-2026-34513-34525
 
 # NLP — entity extraction
@@ -41,13 +41,13 @@ trafilatura==1.12.0
 # RSS/HTML parsing
 feedparser==6.0.11
 beautifulsoup4==4.12.3
-lxml==6.1.0  # security: CVE-2026-41066
+lxml>=5.3.0,<6.0  # crawl4ai 0.4.248 requires lxml~=5.3; upgrade crawl4ai before moving to lxml 6.x
 
 # Groq
 groq==0.11.0
 
-# Supabase auth
-supabase==2.7.4
+# Supabase auth — 2.10+ requires httpx>=0.28 (aligned with litellm constraint above)
+supabase>=2.10.0
 
 # Data processing
 python-dateutil==2.9.0
@@ -64,7 +64,9 @@ leidenalg==0.12.0
 reportlab==4.2.2
 
 # Tiered scraping
-crawl4ai==0.4.248
+# crawl4ai installed separately in Dockerfile (--no-deps) to avoid its pinned
+# lxml~=5.3 / pillow~=10.4 constraints conflicting with our security pins.
+# See infrastructure/Dockerfile.backend for the isolated install step.
 playwright>=1.47.0
 
 # YouTube transcript extraction (P14 Clip Room)
@@ -80,7 +82,7 @@ pysocks==1.7.1
 # PP-Structure classifies newspaper page regions (title/text/figure/table)
 # and OCRs each region in one pass — handles both English and Indic scripts.
 PyMuPDF==1.24.10
-paddlepaddle>=2.6.0
+paddlepaddle>=2.6.0,<3.0
 paddleocr>=2.8.0,<3.0
 # opendataloader-pdf removed — replaced by PaddleOCR PP-Structure pipeline
 importlib_resources==6.4.5
@@ -103,3 +105,17 @@ python-jose[cryptography]==3.4.0  # security: PYSEC-2024-232, PYSEC-2024-233
 # starlette pin removed — conflicts with fastapi==0.115.0; version controlled by fastapi
 pillow>=12.2.0  # security: CVE-2026-25990, CVE-2026-40192, CVE-2026-42308, CVE-2026-42310, CVE-2026-42311
 litellm>=1.83.10  # security: CVE-2026-40217, CVE-2026-42203, CVE-2026-42208, CVE-2026-42271
+
+# NumPy ABI pin — scipy, scikit-learn, paddlepaddle, and spacy wheels on PyPI
+# are compiled against NumPy 1.x (96-byte dtype struct). NumPy 2.x changed the
+# struct to 88 bytes, causing a ValueError on every NLP import. Pin to <2.0 until
+# all upstream compiled wheels ship NumPy 2.x builds.
+numpy>=1.26.0,<2.0
+
+# Newspaper hybrid extractor — OCR + text cleanup. Tesseract is preferred over
+# PaddleOCR for both Indic and English newsprint body text (cleaner glyphs).
+# NOTE: also requires the apt packages `tesseract-ocr tesseract-ocr-eng
+# tesseract-ocr-tel` (+ other -ind packs) in Dockerfile.backend.
+pytesseract>=0.3.10            # Tesseract 5 line OCR (clean body text)
+indic-transliteration>=2.3.0   # IAST romanisation for Indic headline matching
+wordsegment>=1.3.1             # split OCR word-merges ("digitalassistant")

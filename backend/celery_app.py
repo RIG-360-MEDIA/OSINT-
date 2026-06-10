@@ -69,6 +69,8 @@ app = Celery(
         # Newspaper clippings: daily collection fan-out + substrate enrichment
         "backend.tasks.newspaper_task",
         "backend.tasks.clipping_enrich",
+        # YouTube clips: substrate enrichment drain (extraction runs in collectors)
+        "backend.tasks.youtube_clip_enrich",
     ],
 )
 
@@ -120,6 +122,10 @@ app.config_from_object(
             "tasks.collect_one_newspaper":       {"queue": "documents"},
             "tasks.enrich_clipping":             {"queue": "documents"},
             "tasks.drain_pending_clippings":     {"queue": "documents"},
+            # YouTube clip substrate enrichment — own queue (bounded concurrency,
+            # never competes with article NLP or newspaper/govt on documents).
+            "tasks.enrich_clip":                 {"queue": "youtube"},
+            "tasks.drain_pending_clips":         {"queue": "youtube"},
         },
         "beat_schedule": {
             "collect-rss-every-15-min": {
@@ -212,6 +218,15 @@ app.config_from_object(
                 "schedule": timedelta(minutes=10),
                 "kwargs": {"limit": 50},
                 "options": {"queue": "documents"},
+            },
+            # YouTube clip substrate drain — catch-up for any clip left pending
+            # after extraction (e.g. worker restart during batch). Bounded at 20
+            # per tick so the youtube worker (concurrency=1) isn't overwhelmed.
+            "drain-pending-clips-every-10-min": {
+                "task": "tasks.drain_pending_clips",
+                "schedule": timedelta(minutes=10),
+                "kwargs": {"limit": 20},
+                "options": {"queue": "youtube"},
             },
             "check-entity-dict-every-5-min": {
                 "task": "tasks.check_entity_dict_version",

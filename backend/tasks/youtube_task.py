@@ -50,9 +50,9 @@ async def _discover() -> dict:
         channels = (
             await db.execute(
                 text(
-                    "SELECT channel_id, channel_name, last_discovered_at "
-                    "FROM youtube_channels WHERE active = TRUE "
-                    "ORDER BY COALESCE(last_discovered_at, '1970-01-01') ASC"
+                    "SELECT channel_id, channel_name, last_checked_at "
+                    "FROM youtube_channels WHERE is_active = TRUE "
+                    "ORDER BY COALESCE(last_checked_at, '1970-01-01') ASC"
                 )
             )
         ).fetchall()
@@ -66,7 +66,7 @@ async def _discover() -> dict:
         try:
             videos = await discover_channel_videos(
                 ch.channel_id,
-                since=ch.last_discovered_at,
+                since=ch.last_checked_at,
                 max_results=15,
             )
         except DiscoveryError as exc:
@@ -99,7 +99,7 @@ async def _discover() -> dict:
             await db.execute(
                 text(
                     "UPDATE youtube_channels "
-                    "SET last_discovered_at = NOW() "
+                    "SET last_checked_at = NOW() "
                     "WHERE channel_id = :cid"
                 ),
                 {"cid": ch.channel_id},

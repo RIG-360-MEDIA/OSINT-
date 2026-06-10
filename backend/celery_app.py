@@ -124,11 +124,12 @@ app.config_from_object(
             "tasks.enrich_clipping":             {"queue": "documents"},
             "tasks.drain_pending_clippings":     {"queue": "documents"},
             # YouTube: discovery on collectors (RSS safe from Hetzner),
-            # extraction + enrichment drain on youtube (own bounded worker).
-            "tasks.discover_youtube_channels":   {"queue": "collectors"},
-            "tasks.run_youtube_extraction":      {"queue": "youtube"},
-            "tasks.enrich_clip":                 {"queue": "youtube"},
-            "tasks.drain_pending_clips":         {"queue": "youtube"},
+            # transcript fetch via relay + extraction + enrichment on youtube.
+            "tasks.discover_youtube_channels":    {"queue": "collectors"},
+            "tasks.fetch_youtube_transcripts":    {"queue": "youtube"},
+            "tasks.run_youtube_extraction":       {"queue": "youtube"},
+            "tasks.enrich_clip":                  {"queue": "youtube"},
+            "tasks.drain_pending_clips":          {"queue": "youtube"},
         },
         "beat_schedule": {
             "collect-rss-every-15-min": {
@@ -223,15 +224,22 @@ app.config_from_object(
                 "options": {"queue": "documents"},
             },
             # YouTube discovery — RSS Atom feed per active channel, every 30 min.
-            # Safe from Hetzner (RSS not IP-blocked). Updates last_discovered_at
-            # per channel so each run only fetches videos published since last run.
+            # Safe from Hetzner (RSS not IP-blocked).
             "discover-youtube-channels-every-30-min": {
                 "task": "tasks.discover_youtube_channels",
                 "schedule": timedelta(minutes=30),
                 "options": {"queue": "collectors"},
             },
+            # YouTube transcript fetch via relay — Hetzner calls the Tailscale
+            # relay on the laptop, relay fetches from YouTube on residential IP.
+            # Limit 3 keeps us well under the relay's 15/min rate cap.
+            "fetch-youtube-transcripts-every-3-min": {
+                "task": "tasks.fetch_youtube_transcripts",
+                "schedule": timedelta(minutes=3),
+                "kwargs": {"limit": 3},
+                "options": {"queue": "youtube"},
+            },
             # YouTube extraction — drain transcribed rows into clips, every 5 min.
-            # Residential worker marks rows 'transcribed'; this picks them up fast.
             "run-youtube-extraction-every-5-min": {
                 "task": "tasks.run_youtube_extraction",
                 "schedule": timedelta(minutes=5),

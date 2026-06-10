@@ -1,25 +1,25 @@
 """
-Celery tasks: YouTube channel discovery + clip extraction.
+Celery tasks: YouTube channel discovery + transcript fetch + clip extraction.
 
-Two tasks on the youtube queue (plus discovery on collectors — RSS is safe
-from Hetzner datacenter IPs, transcript fetch is not):
+Pipeline (all driven from Hetzner Beat — no manual laptop steps needed):
 
-  discover_youtube_channels()
-    Reads active rows from youtube_channels, runs RSS discovery for each,
-    upserts new video IDs into pending_youtube_videos. Runs every 30 min on
-    the collectors queue (RSS from Hetzner is confirmed not IP-blocked).
+  discover_youtube_channels()  [collectors queue, every 30 min]
+    RSS discovery for active channels → upserts into pending_youtube_videos.
+    RSS is not IP-blocked from Hetzner datacenter IPs.
 
-  run_youtube_extraction(limit)
-    Drains 'transcribed' rows from pending_youtube_videos — rows the
-    residential worker already fetched captions for — runs the Groq extraction
-    pipeline, and writes clips to youtube_clips_v2 (substrate_status='pending'
-    so the enrich drain picks them up within 10 min). Runs every 5 min on the
-    youtube queue.
+  fetch_youtube_transcripts(limit)  [youtube queue, every 3 min]
+    Claims pending rows, calls fetch_transcript() which routes through
+    YT_RELAY_URL (Tailscale relay on laptop) so the actual YouTube request
+    comes from a residential IP. Writes transcript_json, marks 'transcribed'.
+    Rate: limit=3 every 3 min ≤ 1 req/min average, well under relay 15/min cap.
 
-RESIDENTIAL WORKER (not a Celery task — runs on the laptop):
-  python -m backend.collectors.youtube_v2.worker
-  Needs YOUTUBE_WORKER_DB_URL (SSH tunnel to Hetzner postgres).
-  See scripts/run_yt_worker.bat.
+  run_youtube_extraction(limit)  [youtube queue, every 5 min]
+    Drains 'transcribed' rows → Groq extraction → writes youtube_clips_v2
+    with substrate_status='pending' for the enrich drain.
+
+The laptop relay (backend/collectors/youtube_v2/transcript_relay.py) must be
+running for transcript fetching to work. As long as the relay is up, no other
+manual step is required — the full pipeline is Beat-driven.
 """
 from __future__ import annotations
 
@@ -126,6 +126,130 @@ async def _discover() -> dict:
         len(channels), total_new,
     )
     return {"channels": len(channels), "new_videos": total_new}
+
+
+# ── Transcript fetch (via relay on laptop — residential IP hop) ───────────────
+
+@app.task(name="tasks.fetch_youtube_transcripts", queue="youtube")
+def fetch_youtube_transcripts(limit: int = 5) -> dict:
+    """Drain pending videos → fetch transcripts via Tailscale relay → transcribed.
+
+    The relay (backend/collectors/youtube_v2/transcript_relay.py) runs on the
+    laptop at YT_RELAY_URL. Hetzner calls it over Tailscale so the actual
+    YouTube request comes from a residential IP. No separate laptop worker needed
+    as long as the relay is running.
+    """
+    return asyncio.run(_fetch_transcripts(limit))
+
+
+async def _fetch_transcripts(limit: int) -> dict:
+    import asyncio as _asyncio
+    from sqlalchemy import text
+    from backend.database import get_db
+    from backend.collectors.youtube_v2.transcript import fetch_transcript
+    from backend.collectors.youtube_v2.models import Transcript, TranscriptFailure
+    import json
+
+    _MAX_ATTEMPTS = 4
+
+    fetched = transcribed = failed = 0
+    for _ in range(max(1, limit)):
+        # Claim one row atomically — same skip-locked pattern as drain_pending_clips.
+        async with get_db() as db:
+            row = (
+                await db.execute(
+                    text(
+                        """
+                        UPDATE pending_youtube_videos
+                           SET status = 'fetching', updated_at = NOW()
+                         WHERE id = (
+                            SELECT id FROM pending_youtube_videos
+                             WHERE status = 'pending'
+                             ORDER BY discovered_at
+                             FOR UPDATE SKIP LOCKED
+                             LIMIT 1
+                         )
+                        RETURNING id, video_id, attempts
+                        """
+                    )
+                )
+            ).fetchone()
+            await db.commit()
+        if not row:
+            break
+        fetched += 1
+
+        result = await _asyncio.to_thread(fetch_transcript, row.video_id)
+        async with get_db() as db:
+            if isinstance(result, Transcript):
+                transcript_json = json.dumps({
+                    "language": result.language,
+                    "source":   result.source.value,
+                    "segments": [
+                        {"start": s.start, "duration": s.duration, "text": s.text}
+                        for s in result.segments
+                    ],
+                })
+                await db.execute(
+                    text(
+                        """
+                        UPDATE pending_youtube_videos
+                        SET status='transcribed',
+                            transcript_json=CAST(:tj AS JSONB),
+                            transcript_language=:lang,
+                            transcript_source=:src,
+                            transcribed_at=NOW(), updated_at=NOW(),
+                            last_error=NULL
+                        WHERE id=:id
+                        """
+                    ),
+                    {
+                        "tj":   transcript_json,
+                        "lang": result.language,
+                        "src":  result.source.value,
+                        "id":   row.id,
+                    },
+                )
+                transcribed += 1
+                logger.info("transcript ok video=%s lang=%s segs=%d",
+                            row.video_id, result.language, len(result.segments))
+            else:
+                failure: TranscriptFailure = result
+                if failure.reason == "no_transcript":
+                    await db.execute(
+                        text(
+                            "UPDATE pending_youtube_videos "
+                            "SET status='no_transcript', updated_at=NOW(), last_error=:err "
+                            "WHERE id=:id"
+                        ),
+                        {"err": failure.detail, "id": row.id},
+                    )
+                else:
+                    new_attempts = row.attempts + 1
+                    new_status = "failed" if new_attempts >= _MAX_ATTEMPTS else "pending"
+                    await db.execute(
+                        text(
+                            "UPDATE pending_youtube_videos "
+                            "SET attempts=:a, status=:s, last_error=:err, updated_at=NOW() "
+                            "WHERE id=:id"
+                        ),
+                        {
+                            "a":   new_attempts,
+                            "s":   new_status,
+                            "err": f"{failure.reason}: {failure.detail}",
+                            "id":  row.id,
+                        },
+                    )
+                failed += 1
+                logger.warning("transcript %s video=%s: %s",
+                               failure.reason, row.video_id, failure.detail)
+            await db.commit()
+
+    logger.info(
+        "fetch_youtube_transcripts: fetched=%d transcribed=%d failed=%d",
+        fetched, transcribed, failed,
+    )
+    return {"fetched": fetched, "transcribed": transcribed, "failed": failed}
 
 
 # ── Extraction ────────────────────────────────────────────────────────────────

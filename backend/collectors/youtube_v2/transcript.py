@@ -63,6 +63,59 @@ _NO_TRANSCRIPT_MARKERS = ("NoTranscriptFound", "TranscriptsDisabled")
 _UNPLAYABLE_MARKERS = ("VideoUnplayable", "VideoUnavailable")
 
 
+def _fetch_via_relay(video_id: str, relay_url: str) -> Transcript | TranscriptFailure:
+    """Call the transcript relay service instead of hitting YouTube directly.
+
+    The relay runs on a residential machine and handles all rate limiting,
+    retries, and circuit breaking. Set YT_RELAY_URL to its base URL.
+    """
+    import requests as _req  # noqa: PLC0415
+
+    url = f"{relay_url.rstrip('/')}/fetch/{video_id}"
+    try:
+        r    = _req.get(url, timeout=120)
+        data = r.json()
+    except Exception as exc:
+        logger.warning("youtube_v2 relay video=%s error=%s", video_id, exc)
+        return TranscriptFailure(video_id, "error", f"relay_unreachable: {exc}")
+
+    if not data.get("ok"):
+        reason = (data.get("reason") or "unknown").lower()
+        if "circuit_open" in reason:
+            retry = data.get("retry_after", 0)
+            logger.warning("youtube_v2 relay video=%s circuit_open retry_after=%ds", video_id, retry)
+            return TranscriptFailure(video_id, "ip_blocked", f"relay circuit open ({retry}s)")
+        if any(m in reason for m in ("no_transcript", "empty_transcript", "notranscriptfound", "transcriptsdisabled")):
+            return TranscriptFailure(video_id, "no_transcript", reason)
+        if any(m in reason for m in ("videounplayable", "videounavailable")):
+            return TranscriptFailure(video_id, "unplayable", reason)
+        return TranscriptFailure(video_id, "ip_blocked", reason)
+
+    segments = tuple(
+        TranscriptSegment(
+            start=float(s["start"]),
+            duration=float(s.get("duration", 0.0)),
+            text=str(s["text"]),
+        )
+        for s in data.get("segments", [])
+        if s.get("text")
+    )
+    if not segments:
+        return TranscriptFailure(video_id, "no_transcript", "relay returned empty segments")
+
+    cached_label = " (cached)" if data.get("cached") else ""
+    logger.info(
+        "youtube_v2 relay video=%s lang=%s segments=%d%s",
+        video_id, data.get("language", "?"), len(segments), cached_label,
+    )
+    return Transcript(
+        video_id=video_id,
+        language=data.get("language", "unknown"),
+        source=TranscriptSource.AUTO_CAPTIONS,
+        segments=segments,
+    )
+
+
 def fetch_transcript(
     video_id: str,
     *,
@@ -70,10 +123,16 @@ def fetch_transcript(
 ) -> Transcript | TranscriptFailure:
     """Fetch the best available transcript for a video.
 
-    Selection: the first of ``preferred_langs`` that exists; otherwise the
-    first track YouTube lists. Manual captions are preferred over auto when a
-    choice exists for the same language.
+    If YT_RELAY_URL is set, delegates to the transcript relay service running
+    on a residential machine (bypasses Hetzner datacenter IP block).
+
+    Otherwise fetches directly via youtube-transcript-api (residential IP or
+    proxy required).
     """
+    relay_url = os.getenv("YT_RELAY_URL", "").strip()
+    if relay_url:
+        return _fetch_via_relay(video_id, relay_url)
+
     try:
         api = _make_api()
     except ImportError as exc:  # pragma: no cover - env guard

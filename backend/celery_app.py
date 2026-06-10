@@ -69,7 +69,8 @@ app = Celery(
         # Newspaper clippings: daily collection fan-out + substrate enrichment
         "backend.tasks.newspaper_task",
         "backend.tasks.clipping_enrich",
-        # YouTube clips: substrate enrichment drain (extraction runs in collectors)
+        # YouTube clips: discovery + extraction + substrate enrichment drain
+        "backend.tasks.youtube_task",
         "backend.tasks.youtube_clip_enrich",
     ],
 )
@@ -122,8 +123,10 @@ app.config_from_object(
             "tasks.collect_one_newspaper":       {"queue": "documents"},
             "tasks.enrich_clipping":             {"queue": "documents"},
             "tasks.drain_pending_clippings":     {"queue": "documents"},
-            # YouTube clip substrate enrichment — own queue (bounded concurrency,
-            # never competes with article NLP or newspaper/govt on documents).
+            # YouTube: discovery on collectors (RSS safe from Hetzner),
+            # extraction + enrichment drain on youtube (own bounded worker).
+            "tasks.discover_youtube_channels":   {"queue": "collectors"},
+            "tasks.run_youtube_extraction":      {"queue": "youtube"},
             "tasks.enrich_clip":                 {"queue": "youtube"},
             "tasks.drain_pending_clips":         {"queue": "youtube"},
         },
@@ -218,6 +221,22 @@ app.config_from_object(
                 "schedule": timedelta(minutes=10),
                 "kwargs": {"limit": 50},
                 "options": {"queue": "documents"},
+            },
+            # YouTube discovery — RSS Atom feed per active channel, every 30 min.
+            # Safe from Hetzner (RSS not IP-blocked). Updates last_discovered_at
+            # per channel so each run only fetches videos published since last run.
+            "discover-youtube-channels-every-30-min": {
+                "task": "tasks.discover_youtube_channels",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "collectors"},
+            },
+            # YouTube extraction — drain transcribed rows into clips, every 5 min.
+            # Residential worker marks rows 'transcribed'; this picks them up fast.
+            "run-youtube-extraction-every-5-min": {
+                "task": "tasks.run_youtube_extraction",
+                "schedule": timedelta(minutes=5),
+                "kwargs": {"limit": 10},
+                "options": {"queue": "youtube"},
             },
             # YouTube clip substrate drain — catch-up for any clip left pending
             # after extraction (e.g. worker restart during batch). Bounded at 20

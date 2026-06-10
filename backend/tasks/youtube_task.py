@@ -76,6 +76,15 @@ async def _discover() -> dict:
         inserted = 0
         async with get_db() as db:
             for v in videos:
+                from datetime import datetime
+                pub_dt = None
+                if v.published_at:
+                    try:
+                        pub_dt = datetime.fromisoformat(
+                            v.published_at.replace("Z", "+00:00")
+                        )
+                    except (ValueError, AttributeError):
+                        pub_dt = None
                 result = await db.execute(
                     text(
                         """
@@ -91,7 +100,7 @@ async def _discover() -> dict:
                         "title": v.title[:500],
                         "cid":   v.channel_id,
                         "cname": v.channel_name[:200],
-                        "pub":   v.published_at or None,
+                        "pub":   pub_dt,
                     },
                 )
                 if result.rowcount:

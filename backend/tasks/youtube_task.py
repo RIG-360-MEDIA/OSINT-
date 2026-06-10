@@ -121,6 +121,10 @@ async def _discover() -> dict:
 
 # ── Extraction ────────────────────────────────────────────────────────────────
 
+# Compat alias — Hetzner __init__.py (fix/brief-prod-readiness branch) imports this name
+collect_youtube = discover_youtube_channels
+
+
 @app.task(name="tasks.run_youtube_extraction", queue="youtube")
 def run_youtube_extraction(limit: int = 10) -> dict:
     """Drain transcribed rows → run Groq extraction → write clips."""

@@ -116,7 +116,7 @@ async def segment_page(b64_jpeg: str, groq_manager) -> list[dict]:
             content = (resp.choices[0].message.content or "").strip()
         except RateLimitError:  # type: ignore
             try:
-                groq_manager.mark_exhausted(key_index)
+                await groq_manager.mark_exhausted(key_index)
             except Exception:  # noqa: BLE001
                 pass
             continue

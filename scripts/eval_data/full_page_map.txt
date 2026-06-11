@@ -1,0 +1,436 @@
+segment_page: APIStatusError Error code: 400 - {'error': {'message': "Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': '{\n"articles": [\n    {\n      "headline": "Banking stocks rally on RBI forex swap facility",\n      "subheadline": "Banks to be able to access lower-cost foreign currency funding without assuming risks",\n      "byline": "Kushan Shah, Mumbai, June 9",\n      "body": "Banking stocks rallied on Tuesday a day after the Reserve Bank of India (RBI) unveiled operational details of its forex swap facility aimed at attracting overseas capital and lowering funding costs for lenders.\\n\\nThe Nifty PSU Bank index rose 3.6% while the Nifty Private Bank index rose 2.1%.\\n\\nAmong public sector lenders, shares of Bank of Baroda, Bank of India, Punjab & Sind Bank, Canara Bank and Union Bank of India posted strong gains.\\n\\nThe measures could help banks\' liability profiles, ICICI Securities said.",\n      "section": "Business",\n      "language": "en"\n    },\n    {\n      "headline": "Banks expect $40–50 bn via FCNR (B) deposits",\n      "subheadline": "Foreign currency inflows to get a boost",\n      "byline": "",\n      "body": "Banks with larger deposits are better positioned to benefit owing to their stronger access to NRI customer base.\\n\\nForward cover hedging costs have been the biggest deterrent for banks raising foreign currency liabilities.\\n\\nBy removing this burden, the RBI has created an opportunity for banks to pass on the savings to their customers, which could see FCNR(B) rates, particularly for deposits with maturities exceeding 1 year, inch up.\\n\\nOn Monday, the RBI announced that FCNR(B) deposits available exclusively to Authorised Dealer Category-I banks for funding from three to five years will be free to determine interest rates with effect from June 1.",\n      "section": "Business",\n      "language": "en"\n    },\n    {\n      "headline": "Bonds log best close in 7 weeks as oil prices ease",\n      "subheadline": "",\n      "byline": "",\n      "body": "The 6.68% 2035 bond yield fell 4.5 basis points to 6.9082%, its lowest level since May 27.\\n\\nThe government\'s bond buying spree and a decline in crude oil prices enhanced sentiment across the banking space and led to broad-based buying in both public and private sector bonds.\\n\\nThe 10-year benchmark 6.54% 2026 bond yield declined by 1.5 basis points to 6.85%.\\n\\nHDFC Bank hikes lending rates by up to 10 bps",\n      "section": "Business",\n      "language": "en"\n    },\n    {\n      "headline": "Sensex, rupee volatile amid outflows, high oil prices",\n      "subheadline": "",\n      "byline": "",\n      "body": "The Sensex has remained under pressure this month, slipping on June 2 to close at 73,918.76.\\n\\nThe rupee has witnessed volatility, with the USD/INR exchange rate fluctuating between 94.96 and 95.79.\\n\\nBoth assets have come under selling pressure on foreign fund outflows.",\n      "section": "Business",\n      "language": "en"\n    },\n    {\n      "headline": "Defamation suit: HC rejects Lilavati trust\'s plea to restrain HDFC Bank",\n      "subheadline": "",\n      "byline": "Press Trust of India, Mumbai, June 9",\n      "body": "The Bombay High Court on Tuesday dismissed an interim plea filed by the medical trust that runs Lilavati Hospital here, seeking to restrain HDFC Bank\'s Managing Director, Keki Mistry, and financial advisors, alleging defamation and harm to the reputation of the trust.",\n      "section": "National",\n      "language": "en"\n    },\n    {\n      "headline": "More bond buys via OMOs unlikely this fiscal: Experts",\n      "subheadline": "",\n      "byline": "Christina Titus, Mumbai, June 9",\n      "body": "The measures taken by the government and the Reserve Bank of India (RBI) to reduce the possibility of more bond purchases through open market operations (OMOs) are likely to continue to tighten liquidity, which could also coin-",\n      "section": "Business",\n      "language": "en"\n    },\n    {\n      "headline": "CCI okays Sanlam proposal to buy Shriram Life stake",\n      "subheadline": "",\n      "byline": "",\n      "body": "The CCI on Tuesday approved South Africa-based Sanlam Group\'s proposal to acquire a 2.8% stake in Shriram Life Insurance Company.\\n\\nThe deal proposed by Sanlam Life Insurance Company, one of the biggest overseas investors in an Indian company.",\n      "section": "Business",\n      "language": "en"\n    },\n    {\n      "headline": "HDFC Mutual Fund launches Naari Nivesh Yatra",\n      "subheadline": ",\\n      "byline": "",\\n      "body": "HDFC MUTUAL FUND on Tuesday launched the Naari Nivesh Yatra, an investor education and awareness initiative to encourage women to take charge of their financial futures through informed investing and long-term financial planning.",\n      "section": "Business",\n      "language": "en"\n    },\n    {\n      "headline": "NPCI enables real-time India-Nepal remittances",\n      "subheadline": "",\n      "byline": "",\n      "body": "The linkage allows person-to-person fund transfers enabling Indian and Nepali users to send money to India while in Nepal, and vice versa.\\n\\nThe service, which has initially gone live through select banks, will expand to more financial institutions over time.",\n      "section": "Business",\n      "language": "en"\n    },\n    {\n      "headline": "SBI likely to commit $1 bn to Sun Pharma foreign acquisition",\n      "subheadline": "",\n      "byline": "Saikat Das, June 9",\n      "body": "State Bank of India plans to join a group of global lenders in funding Sun Pharmaceutical Industries\' $12-billion overseas acquisition of Ranbaxy Laboratories, according to sources.",\n      "section": "Business",\n      "language": "en"\n    },\n    {\n      "headline": "SFB transition on track: Fino",\n      "subheadline": "",\n      "byline": "FE Bureau, Mumbai, June 9",\n      "body": "Fino Payments Bank on Tuesday said its transition to a small finance bank (SFB) remains on track as it continues to strengthen lending capabilities, technology infrastructure and deposit franchise.",\n      "section": "Business",\n      "language": "en"\n    },\n    {\n      "headline": "Life insurers\' new business premium weakest growth in over 8 months",\n      "subheadline": "",\n      "byline": "FE Bureau, Chennai, June 9",\n      "body": "Life insurers reported 9.2% year-on-year growth in new business premium (NBP) in May, the slowest monthly expansion in more than eight months, as the impact of the GST rate reduction on premium collections faded after supporting double-digit growth in April.",\n      "section": "Business",\n      "language": "en"\n    }\n  ]\n}'}}
+segment_page: APIStatusError Error code: 400 - {'error': {'message': "Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid document'}}
+================================================================================
+Financial_Express  (en)  —  30 pages
+
+  PAGE  1  (10 articles)  Business×4, Economy×2, Auto Zone×2, National×1, International×1
+      [Economy      ] Fertiliser subsidy to double; fisc in control: Govt sources
+      [Economy      ] Zepto emerges as challenger to Blinkit
+      [National     ] Asia's longest tunnel takes shape
+      [Business     ] Adani Energy to buy IntelliSmart for ₹3,050 cr
+      [International] Siri jumps on AI bandwagon in more 'personal' avatar
+      [Business     ] AI agents may equal TCS' human workforce in 3 yrs
+      [Business     ] Trai mulls network slicing regulations
+      [Auto Zone    ] Kia sharpens SUV strategy
+      [Business     ] New Mehli missive deepens Tata row
+      [Auto Zone    ] BYD bets on plug-in hybrids
+
+  PAGE  2  (11 articles)  Economy×11
+      [Economy      ] Fitch lowers India growth forecast for FY27 to 6.4%
+      [Economy      ] WEAK MONSOON HITS FOOD SUPPLIES, STOKES INFLATION
+      [Economy      ] Rules to set up coal exchanges get green signal
+      [Economy      ] India's FTAs have been more beneficial for partners: GTRI
+      [Economy      ] Hormuz closure opens up $100-bn LNG opportunity
+      [Economy      ] OPEC+ output hike fails to plug global oil supply gap
+      [Economy      ] ATF price up 10% as oil firms roll out fixed pricing
+      [Economy      ] Congestion at ports jacks up export costs
+      [Economy      ] Duty relief on petchems may be extended
+      [Economy      ] West Asia war hit tea exports, says Tea Board
+      [Economy      ] NCL India OFS oversubscribed on Day 1
+
+  PAGE  3  (3 articles)  Economy×3
+      [Economy      ] Epic, Sekura emerge as highest bidders for NHAI ToT assets
+      [Economy      ] Only deepfakes to face action, says Vaishnaw
+      [Economy      ] 'New AI-alleged law needed'
+
+  PAGE  4  (8 articles)  Business×8
+      [Business     ] Adani Energy to buy IntelliSmart for ₹3,050 crore
+      [Business     ] Zepto doubles revenue before IPO
+      [Business     ] JSW Infra wins key port project
+      [Business     ] Infosys pushes back hiring exams
+      [Business     ] BYD bets big on plug-in hybrids to boost India plans
+      [Business     ] Kia sharpens India SUV strategy with new EV and hybrid launc
+      [Business     ] Maruti to invest ₹925 crore in green energy projects by FY31
+      [Business     ] Retail growth set to cool ahead
+
+  PAGE  5  (6 articles)  Business×6
+      [Business     ] EV, fintech jobs set to deliver biggest hikes
+      [Business     ] Hiring outlook cools as firms turn cautious
+      [Business     ] Godrej sells properties worth ₹2,000 cr in Bengaluru
+      [Business     ] IRB Infra toll collections rise 25% to ₹843 cr
+      [Business     ] SpiceJet delays pilot salaries amid funding crunch
+      [Business     ] Backed by NEXT Investors, Transient.AI Brings Production-Rea
+
+  PAGE  6  —  (no articles — likely full-page ad / jump)
+
+  PAGE  7  (8 articles)  International×8
+      [International] BYD, Baidu, Alibaba aiding China's military, says US
+      [International] US trade deficit in April narrows to $55.9 billion
+      [International] OpenAI files for US IPO
+      [International] Israel launches strikes on Lebanon, again testing truce
+      [International] Siri jumps on AI bandwagon in more powerful upgrade
+      [International] Zepto emerges as challenger to Blinkit
+      [International] Fertiliser subsidy bill may double
+      [International] Airbus implores staff to get back on track after weak quarte
+
+  PAGE  8  (1 articles)  Opinion×1
+      [Opinion      ] Closing the gaps
+
+  PAGE  9  (10 articles)  National×6, Business×3, Other×1
+      [Other        ] 'A planner would be the first person to thank AI'
+      [Business     ] For the right balance
+      [Business     ] A game of one-upmanship
+      [National     ] What India's plug-and-play industrial ecosystem promises
+      [Business     ] The biggest advantage of first party data
+      [National     ] What is the Bhaya scheme?
+      [National     ] Why is a plug-and-play model needed?
+      [National     ] How will the projects be selected?
+      [National     ] Onus on states to promote industrialisation
+      [National     ] Driving jobs and economic growth
+
+  PAGE 10  (1 articles)  Business×1
+      [Business     ] CMR GREEN TECHNOLOGIES LIMITED (TO BE LISTED ON MAINBOARD OF
+
+  PAGE 11  (2 articles)  Business×2
+      [Business     ] ANCHOR INVESTOR BIDDING DATE OPENED AND CLOSED ON TUESDAY, J
+      [Business     ] AKFINTECH
+
+  PAGE 12  (6 articles)  Business×6
+      [Business     ] Rado Tyres Limited
+      [Business     ] Cian Healthcare Limited
+      [Business     ] Moschip Technologies Limited
+      [Business     ] Reliance Industries Limited
+      [Business     ] VST Tillers Tractors Ltd.
+      [Business     ] Go Digit General Insurance Limited
+
+  PAGE 13  —  (no articles — likely full-page ad / jump)
+
+  PAGE 14  —  (no articles — likely full-page ad / jump)
+
+  PAGE 15  (7 articles)  Business×7
+      [Business     ] CORONA REMEDIES LIMITED
+      [Business     ] NOTICE OF THE 22ND ANNUAL GENERAL MEETING
+      [Business     ] WIPRO LIMITED
+      [Business     ] NOTICE TO ELIGIBLE SHAREHOLDERS - BUY-BACK OF EQUITY SHARES
+      [Business     ] GILLANDERS ARBUTHNOT AND COMPANY LIMITED
+      [Business     ] OXFORD INDUSTRIES LIMITED
+      [Business     ] GE VERONNA T & INDIA LIMITED
+
+  PAGE 16  (10 articles)  Business×10
+      [Business     ] CALIBER MINING AND LOGISTICS LIMITED (FORMERLY KNOWN AS CALI
+      [Business     ] CORRIGENDUM TO THE DRAFT RED HERRING PROSPECTUS DATED DECEMB
+      [Business     ] SUMEDIA FISCAL SERVICES LIMITED
+      [Business     ] KILBURN ENGINEERING LTD.
+      [Business     ] CREDITACCESS GRAMEEN LIMITED
+      [Business     ] PI INDUSTRIES LIMITED
+      [Business     ] TAMILANADU PETROPRODUCTS LIMITED
+      [Business     ] AK FINTECH
+      [Business     ] CREDITACCESS GRAMEEN LIMITED
+      [Business     ] TAMILANADU PETROPRODUCTS LIMITED
+
+  PAGE 17  (1 articles)  Business×1
+      [Business     ] NOVARTIS INDIA LIMITED
+
+  PAGE 18  (4 articles)  Business×4
+      [Business     ] NMDC Limited
+      [Business     ] Automotive Axles Limited
+      [Business     ] GANESH INFRAWORLD LIMITED
+      [Business     ] GENXAI ANALYTICS LIMITED
+
+  PAGE 19  (5 articles)  Economy×4, Opinion×1
+      [Economy      ] FM to review schemes with PSBs in Bengal
+      [Opinion      ] Modi's been the enabler that India desperately needs
+      [Economy      ] Al agents may equal TCS' human workforce...
+      [Economy      ] New Mehlanissive...
+      [Economy      ] Trai considers network slicing regulations
+
+  PAGE 20  (3 articles)  Business×3
+      [Business     ] A N P TECHNOLOGIES LIMITED
+      [Business     ] AU SMALL FINANCE BANK LIMITED (A SCHEDULED COMMERCIAL BANK)
+      [Business     ] SHIVALIK SMALL FINANCE BANK LTD
+
+  PAGE 21  (1 articles)  Business×1
+      [Business     ] ZEPTO LIMITED
+
+  PAGE 22  (7 articles)  Business×6, Other×1
+      [Business     ] Hinduja Housing Finance Ltd
+      [Other        ] SCHOOL
+      [Business     ] NOTICE
+      [Business     ] MID CORPORATE BRANCH CENTRAL DELHI
+      [Business     ] Canara Bank
+      [Business     ] Canara Bank
+      [Business     ] Punjab National Bank
+
+  PAGE 23  (3 articles)  Business×3
+      [Business     ] DEBTS RECOVERY TRIBUNAL-I, DELHI
+      [Business     ] NOTICE FOR AUCTION OF GOLD
+      [Business     ] DEMAND NOTICE UNDER SEC.13 (2)
+
+  PAGE 24  (3 articles)  International×1, Sports×1, National×1
+      [International] US visa interview in 10 days for extra payment of $750
+      [Sports       ] Messi's last shot at World Cup glory
+      [National     ] Three foreign varsities to set up India campuses
+
+  PAGE 25  (7 articles)  Business×7
+      [Business     ] POSSESSION NOTICE APPENDIX IV (RULE 8(2) FOR IMMOVABLE PROPE
+      [Business     ] ESAIF SMALL FINANCE BANK GOLD AUCTION NOTICE
+      [Business     ] INDIA SHELTER FINANCE CORPORATION LTD. SALE NOTICE FOR SALE 
+      [Business     ] PARAKAYOT INVESTMENTS (PRIVATE) LIMITED PUBLIC NOTICE
+      [Business     ] Aditya Birla Housing Finance Limited POSSESSION NOTICE (for 
+      [Business     ] U GRO Capital Limited
+      [Business     ] Home First Finance Company India Limited POSSESSION NOTICE
+
+  PAGE 26  (1 articles)  Business×1
+      [Business     ] SYMBOLIC POSSESSION NOTICE
+
+  PAGE 27  (4 articles)  Business×4
+      [Business     ] RBL Bank
+      [Business     ] TATA CAPITAL HOUSING FINANCE LIMITED
+      [Business     ] UGRO Capital Limited
+      [Business     ] SMFG India Home Finance Co. Ltd.
+
+  PAGE 28  —  (no articles — likely full-page ad / jump)
+
+  PAGE 29  (2 articles)  Business×2
+      [Business     ] SALE INTIMATION AND PUBLIC NOTICE FOR SALE OF SECURITIES PLE
+      [Business     ] LOCKER BREAK OPEN NOTICE | DATE: 10.06.2026
+
+  PAGE 30  —  (no articles — likely full-page ad / jump)
+
+  TOTAL: 124 articles across 30 pages
+segment_page: APIStatusError Error code: 400 - {'error': {'message': "Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': '{\n"articles": [\n    {\n      "headline": "एसटीपीआई में जहरीली गैस : दम घुटने से ममेरे भाइयों की मौत, ठेकेदार पर मामला दर्ज",\n      "subheadline": "चक्कर आते ही बाहर खींचा गया तीसरा कर्मचारी, बच गई जान",\n      "byline": "",\n      "body": "जिले के गांव नगला-2 में स्थित एक एसटीपी में दो ममेरे भाइयों की जहरीली गैस से मौत हो गई। घटना के बाद मौके पर पहुंची पुलिस ने ठेकेदार के खिलाफ मामला दर्ज कर लिया है।\\n\\nघटना के अनुसार, नगला-2 निवासी राजेश कुमार पुत्र रामलाल और उनके ममेरे भाई मुकेश पुत्र रामप्रसाद की एसटीपी में काम करते समय जहरीली गैस से मौत हो गई। वहीं तीसरा कर्मचारी राजकुमार पुत्र रामप्रसाद को चक्कर आने पर बाहर खींच लिया गया, जिससे उसकी जान बच गई।\\n\\nपुलिस ने बताया कि एसटीपी का काम कर रहे ठेकेदार ने मशीनें खराब होने, सुरक्षा किट और गैस डिटेक्टर तक नहीं कराए थे।",\n      "section": "Local",\n      "language": "hi"\n    },\n    {\n      "headline": "स्थायी लोक अदालत का अहम फैसला",\n      "subheadline": "आरटीआई के तहत दाखिला न देने पर डीपीएस-19 पर 50 हजार का जुर्माना और स्कूलों पर भी केस",\n      "byline": "",\n      "body": "स्थायी लोक अदालत ने आरटीआई के तहत दाखिला न देने पर डीपीएस-19 पर 50 हजार का जुर्माना लगाया है। इसके साथ ही स्कूलों पर भी केस दर्ज किया है।\\n\\nयह मामला डीपीएस-19 स्कूल से जुड़ा है, जहां आरटीआई के तहत दाखिला न देने की शिकायत की गई थी। स्थायी लोक अदालत ने इस मामले में डीपीएस-19 पर 50 हजार का जुर्माना लगाया है।\\n\\nइसके अलावा, स्कूलों पर भी केस दर्ज किया है, जो आरटीआई के तहत दाखिला न देने के मामले में शामिल थे।",\n      "section": "National",\n      "language": "hi"\n    },\n    {\n      "headline": "सामान्य से 5% बढ़ा रात का पारा, छिन रही चैन की नींद",\n      "subheadline": "",\n      "byline": "",\n      "body": "रात का पारा सामान्य से 5% बढ़ गया है, जिससे लोगों को चैन की नींद नहीं आ रही है।\\n\\nइस बढ़ोतरी के कारण लोगों को गर्मी का सामना करना पड़ रहा है।",\n      "section": "National",\n      "language": "hi"\n    },\n    {\n      "headline": "महिला आयोग अध्यक्ष रenu भाटिया के खिलाफ नर्सों की पेन डाउन हड़ताल",\n      "subheadline": "",\n      "byline": "",\n      "body": "महिला आयोग अध्यक्ष रenu भाटिया के खिलाफ नर्सों ने पेन डाउन हड़ताल की है।\\n\\nइस हड़ताल के कारण मरीजों को परेशानी हो रही है।",\n      "section": "National",\n      "language": "hi"\n    },\n    {\n      "headline": "ईएसआईसी मेडिकल कॉलेज: \'विजयारिया\' विवज में 27 राज्यों के 300 छात्र आए",\n      "subheadline": ",\\n      "byline": "",\\n      "body": "ईएसआईसी मेडिकल कॉलेज में \'विजयारिया\' विवज में 27 राज्यों के 300 छात्र आए हैं।\\n\\nइन छात्रों ने अपनी प्रतिभा का प्रदर्शन किया।",\\n      "section": "National",\\n      "language": "hi"\\n    },\\n    {\\n      "headline": "परेशानी : सर्विस रोड बनी \'पार्किंग जोन\', गुरुग्राम-सोहना हाईवे पर रोज जाम का संकट",\\n      "subheadline": "सुभाष चौक से बादशाहपुर तक 5 किलोमीटर क्षेत्र में अतिक्रमण, पीक आवर्स में रेंगता है ट्रैफिक",\\n      "byline": "",\\n      "body": "गुरुग्राम-सोहना हाईवे पर रोज जाम का संकट हो गया है। सुभाष चौक से बादशाहपुर तक 5 किलोमीटर क्षेत्र में अतिक्रमण हो गया है, जिससे ट्रैफिक की समस्या बढ़ गई है।\\n\\nइस समस्या के कारण लोगों को परेशानी हो रही है।",\\n      "section": "Local",\\n      "language": "hi"\\n    },\\n    {\\n      "headline": "मानसेर निगम ने पीवीआर समेत दो प्रतिष्ठानों पर कार्रवाई की",\\n      "subheadline": "",\\n      "byline": "",\\n      "body": "मानसेर निगम ने पीवीआर समेत दो प्रतिष्ठानों पर कार्रवाई की है।\\n\\nइन प्रतिष्ठानों पर कार्रवाई की गई है।",\\n      "section": "Local",\\n      "language": "hi"\\n    },\\n    {\\n      "headline": "बिना मान्यता के एडमिशन के नाम पर स्टूडेंट्स से पैसा वसूल, केस दर्ज",\\n      "subheadline": "",\\n      "byline": "",\\n      "body": "बिना मान्यता के एडमिशन के नाम पर स्टूडेंट्स से पैसा वसूलने का मामला सामने आया है। इस मामले में केस दर्ज किया गया है।\\n\\nइस मामले में आगे की जांच की जा रही है।",\\n      "section": "National",\\n      "language": "hi"\\n    },\\n    {\\n      "headline": "अलर्ट: वर्षा जल संचयन व्यवस्था पर सरकार की सख्ती, निर्देश जारी",\\n      "subheadline": "",\\n      "byline": "",\\n      "body": "सरकार ने वर्षा जल संचयन व्यवस्था पर सख्ती की है और निर्देश जारी किए हैं।\\n\\nइन निर्देशों का पालन करना अनिवार्य है।",\\n      "section": "National",\\n      "language": "hi"\\n    },\\n    {\\n      "headline": "गो-तस्कर से पुलिस की मुठभेड़, पैर में गोली लगने के बाद दबोचा",\\n      "subheadline": "",\\n      "byline": "",\\n      "body": "गो-तस्कर से पुलिस की मुठभेड़ हुई है। पैर में गोली लगने के बाद गो-तस्कर को दबोच लिया गया है।\\n\\nइस मामले में आगे की जांच की जा रही है।",\\n      "section": "Local",\\n      "language": "hi"\\n    }\\n  ]\\n}'}}
+================================================================================
+Dainik_Bhaskar  (hi)  —  16 pages
+
+  PAGE  1  (5 articles)  National×3, Politics×1, Opinion×1
+      [National     ] 9,013 दिन से सत्ता के शिखर पर रहने वाले एकमात्र नेता बने मोद
+      [National     ] मानसून की रफ्तार तेज, लेकिन देशभर में अब भी सामान्य से 22% क
+      [Politics     ] शपथपत्र में जानकारी छिपाने का आरोप; तीनों सीटें भाजपा को
+      [National     ] पूर्व डीजीएचएस वत्सला और एचओओ विजय रंगा निलंबित, बाजार भाव स
+      [Opinion      ] सबकुछ पाकर भी खालीपन है... आत्मिक संतुष्टि का बहिखाता जांचिए
+
+  PAGE  2  —  (no articles — likely full-page ad / jump)
+
+  PAGE  3  (5 articles)  National×5
+      [National     ] 68 महीने में जोजिला टनल तैयार
+      [National     ] जोजिला सुरंग; श्रीनगर-लेह सालभर जा सकेंगे
+      [National     ] मालवीय नगर हादसा
+      [National     ] जयपुर: अवैध पटाखा फैक्ट्री में आग
+      [National     ] हरियाणा में बोलियों को धरोहर के रूप में सहेजने के लिए पहली ब
+
+  PAGE  4  (7 articles)  Local×6, National×1
+      [Local        ] ओ-जोन की 91 कॉलोनियों को राहत, पुराने मकानों पर नहीं चलेगा ब
+      [National     ] सरकारी कॉलेजों में 12 साल बाद शुरू होगी शिक्षक भर्ती
+      [Local        ] बिल्डिंग घोटाले में फिर नपे इंजीनियर, तबादला रद्द होने के बा
+      [Local        ] परिवहन मंत्री ने की डीटीसी के अधिकारियों के साथ समीक्षा बैठक
+      [Local        ] एमसीडी 596 करोड़ की परियोजना मंजूर पांच नए प्लांट लगेंगे, हर
+      [Local        ] डीयू का छात्र 20 लाख रुपये के गांजे के साथ गिरफ्तार
+      [Local        ] हीट वेव एक्शन प्लान: वेंडरों, मजदूरों और बेघरों को लू से बचा
+
+  PAGE  5  (8 articles)  National×5, Business×2, Local×1
+      [National     ] नल है, लेकिन जल नहीं
+      [Business     ] सूरत एयरपोर्ट
+      [Local        ] पुणे: अतिक्रमण हटाने गई टीम
+      [Business     ] राहत
+      [National     ] अदाजन में व्यापारी के घर से 40 तोला सोना और एक किलो चांदी की
+      [National     ] कोटा से झालावाड़ जा रही बस में 70 में से 68 यात्री बेल्टकट म
+      [National     ] अहमदाबाद प्लेन हादसे
+      [National     ] तालाला-उना हाईवे पर 6 शेरों की
+
+  PAGE  6  —  (no articles — likely full-page ad / jump)
+
+  PAGE  7  —  (no articles — likely full-page ad / jump)
+
+  PAGE  8  (4 articles)  Local×2, National×2
+      [Local        ] 1.69 अरब की जमीन किसकी? आईडीएई का दावा, नगर निगम की कुर्की औ
+      [Local        ] भाजपा नेता के डंपर से युवक की मौत का मामला
+      [National     ] हड़ी राहत
+      [National     ] बच्चों की पढ़ाई सुधारने, ड्रॉपआउट रोकने पर होनी थी रिसर्च
+
+  PAGE  9  —  (no articles — likely full-page ad / jump)
+
+  PAGE 10  (6 articles)  Opinion×5, Business×1
+      [Opinion      ] विकसित भारत एक नारा नहीं संकल्प है
+      [Opinion      ] क्षमा की दाल और धैर्य की रोटी हाजमा नहीं बिगाड़ती है
+      [Opinion      ] पूरबसियों का अपना रणनीतिक साझेदार समझना भूल होगी
+      [Opinion      ] कार्ड में पाई के असुरक्षित इस्तेमाल से मुश्किल बढ़ेंगी
+      [Opinion      ] आज दुनिया को सबसे अधिक आवश्यकता क्लाइमेट सत्याग्रह की है
+      [Business     ] देश में आय के अनुपात में बहुत महंगा है पेट्रोल
+
+  PAGE 11  (4 articles)  Local×2, Other×2
+      [Local        ] गांवों के विकास के लिए 1,056 करोड़ जारी, इनमें 477 करोड़ पिछ
+      [Local        ] बिजली बोर्ड में नियमितीकरण और पदोन्नति में देरी से कर्मचारिय
+      [Other        ] भूषण गर्मी में पशुओं का ख्याल रख इन 51 लाख प्रतिभागियों ने ज
+      [Other        ] बिहार विधान सभा सचिवालय
+
+  PAGE 12  (8 articles)  National×3, Local×3, International×1, Other×1
+      [National     ] कैंब्रिज से ठगी का बड़ा खेल, 36 हजार भारतीय सिम सक्रिय
+      [International] ग्लोबल पीस इंडेक्स 2026: 163 देशों में भारत 127वें, पाकिस्ता
+      [National     ] तेलंगाना : पूर्व विधायक रेड्डी की जांच सरकारी इंजीनियर के ठि
+      [Local        ] कोप्सदेस : पांच झुग्गियों में लगी आग, एक वैन व तीन बाइक जली
+      [National     ] जोधपुर: व्यापारी की जेब में बम की तरह फटा चाइनीज मोबाइल
+      [Local        ] गांधी नगर : झगड़े में बीच बचाव कराने के दौरान युवक पर कैंची 
+      [Local        ] जंगपुरा अंडरपास के पास मिली अधजली लाश, हत्या कर जलाया शव
+      [Other        ] पूर्व जस्टिस काटजू ने बनाई ‘इंक्रेडिबल’
+
+  PAGE 13  (9 articles)  Business×9
+      [Business     ] ऑटो: 6 बड़ी कार कंपनियां दे रहीं 3.5 लाख तक डिस्काउंट, ईवी प
+      [Business     ] क्विक-कॉमर्स: 6 कंपनियों के बीच ₹95 हजार करोड़ के बाजार में 
+      [Business     ] भरसू
+      [Business     ] बिजनेस बीफ
+      [Business     ] चीन में जापानी सुशी खाने के लिए 14 घंटे की कतारें, सिर्फ 6 म
+      [Business     ] अडाणी एनर्जी ने अब 3,050 करोड़ में खरीदी दिल्ली डिस्कॉम
+      [Business     ] फिर से उछाल
+      [Business     ] मेगा प्रोजेक्ट
+      [Business     ] 18-35 आयु वर्ग के 90% लोग इंश्योरेंस कवर से बाहर
+
+  PAGE 14  (6 articles)  Sports×6
+      [Sports       ] अमेरिका ने वर्ल्ड कप को बनाया 'एंटरटेनमेंट पैकेज'
+      [Sports       ] 10 दिग्गजों का हो सकता है आखिरी फीफा वर्ल्ड कप
+      [Sports       ] 7 रन में 4 विकेट लेकर जीती इंडिया-ए
+      [Sports       ] अफगान के खिलाफ खेलने के लिए हार्दिक और रोहित अब फिट
+      [Sports       ] पहली बार टी20 वर्ल्ड कप खेल रहीं 5 गेम चेंजर खिलाड़ी
+      [Sports       ] स्पोर्ट्स बीफ
+
+  PAGE 15  (6 articles)  International×3, National×2, Other×1
+      [International] पीओके में हालात बेकाबू... 30 मौतें, कर्फ्यू-नेट बंदी, फिर भी
+      [International] ईरान डील 2-3 दिनों में हो जाएगी: ट्रम्प
+      [International] इंदिरा गांधी को हत्या का नाट्य प्रदर्शन, कार्रवाई करे कनाडा
+      [Other        ] भास्कर खास
+      [National     ] मनिपुर : नगा संगठनों की पहली से 26 दिन से बंधक रहे 14 कुकी र
+      [National     ] मणिपुर: नगा संगठनों की पहली से 26 दिन से बंधक रहे 14 कुकी रि
+
+  PAGE 16  —  (no articles — likely full-page ad / jump)
+
+  TOTAL: 68 articles across 16 pages
+segment_page: APIStatusError Error code: 400 - {'error': {'message': "Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid document'}}
+================================================================================
+Sakshi  (te)  —  19 pages
+
+  PAGE  1  (5 articles)  International×1, Business×1, Other×1, Politics×1, Local×1
+      [International] ఎబోలా విజయ ఆందోళన
+      [Business     ] న్యూసిరిల్ ఖబర్నామా బాబు ప్రత్యేక విమానాల భారం
+      [Other        ] మాటల్లోనే మద్దతు ధర
+      [Politics     ] తొత్తాపురికి ఊరి!
+      [Local        ] రెండు వాహనాల టీక..
+
+  PAGE  2  (8 articles)  Politics×5, National×1, Business×1, Local×1
+      [Politics     ] చంద్రబాబు వెన్నుపోటుపై నిరసనాగ్రహం
+      [Politics     ] థోతాపురికి ఉరి!
+      [Politics     ] భజననాపై బాబు ప్రత్యేక మనోఫల భారం
+      [Politics     ] మాటల్లోనే మద్దతు ధర
+      [Politics     ] సీఎం సోంత జిల్లా.. అయినా కల బెడు
+      [National     ] రైతులు బాగుపడే పరిస్థితి లేదు
+      [Business     ] ప్రభుత్వ ఆర్థిక వృద్ధిలో కోనసుగులు చేయాలి
+      [Local        ] మామిడి బోదురు ఏర్పాటు చేయాలి
+
+  PAGE  3  —  (no articles — likely full-page ad / jump)
+
+  PAGE  4  (6 articles)  International×2, Opinion×2, Other×1, National×1
+      [Other        ] ఇది సర్కారీ నిర్లక్ష్యం!
+      [International] నవ భారతంలో నరేంద్ర శకం
+      [National     ] ఫిర్యాదీలకు రాచమర్యాదలు
+      [Opinion      ] నిష్మళంగ గాంధేయవాది
+      [International] ఇండియాను మించిపోయిన ‘కెన్యా'
+      [Opinion      ] దేవుని చేతిలో పనిముట్లు
+
+  PAGE  5  (4 articles)  Local×2, Business×1, National×1
+      [Local        ] ఆస్తి యాజమాన్య హక్కులను గ్రామ పంచాయతీలు తేల్చలేవు
+      [Local        ] మాల్ కాజేసేందుకు టీడీపీ ఎమ్మెల్యే ప్రత్తిపాటి కుట్ర
+      [Business     ] అక్వా ఫీడ్ ధరల పెంపుపై కుదరని ఏకాభిప్రాయం
+      [National     ] ఉద్యోగులకు 40 శాతం డీఏలోపు
+
+  PAGE  6  (7 articles)  అంతర్జాతీయం×4, జాతీయం×3
+      [అంతర్జాతీయం  ] లక్ష డాలర్ల హెచ్1బీ ఫీజు రద్దు!
+      [జాతీయం       ] ముంబై హైకోర్టు మాజీ జడ్జికి బెదిరింపులు
+      [జాతీయం       ] మమత నివాసంలో సీఐడీ సోదా
+      [అంతర్జాతీయం  ] రగులుతున్న పోక్స్ ఆక్రమిత కశ్మీర్
+      [అంతర్జాతీయం  ] ఎబోలా విలయ తాండవం
+      [అంతర్జాతీయం  ] హారూన్‌జ్ వద్ద కూలిన హెలికాప్టర్
+      [జాతీయం       ] హామీలు తప్ప అమలేదే?
+
+  PAGE  7  (10 articles)  Local×6, Other×2, National×2
+      [Local        ] గంజాయ్‌కి గేట్‌వే!
+      [Local        ] ఓపీకెంటే వైద్యం!
+      [Other        ] జీవనశైలిలో యోగా భాగం కావాలి
+      [Local        ] యాప్స్తో ఎరుపులు
+      [Local        ] విద్యార్థుల లక్ష్యంగా..
+      [Local        ] పాఠశాలలో అభివృద్ధి పనుల పరిశీలన
+      [National     ] జ్ఞాన్, పెట్రో ధరలను తక్షణమే రద్దు చేయాలి
+      [Other        ] వేద పాఠశాలలో ప్రవేశానికి దరఖాస్తులు
+      [National     ] ఉపాధ్యాయులకు మెరిట్ ఆధారంగా నియామకం
+      [Local        ] పట్టించుకోవడం లేదు..
+
+  PAGE  8  (2 articles)  Local×2
+      [Local        ] తల్లికి వందనానికి నిబంధనలు
+      [Local        ] నేడు స్టాఫ్‌నర్స్ ఉద్యోగాలకు కౌన్సెలింగ్
+
+  PAGE  9  (9 articles)  Local×8, Other×1
+      [Local        ] కేసులు.. దాడులకు భయపడం
+      [Other        ] ఉపాధ్యాయులు నిత్య విద్యార్థులు
+      [Local        ] ప్రమాదకరంగా చెట్లు
+      [Local        ] టౌన్ ప్లానింగ్ అధికారులపై దౌర్జన్యం
+      [Local        ] భక్తులకు హౌలిక సదుపాయాలు కల్పించాలి
+      [Local        ] వర్యావరణ పరిరక్షణకు ప్రత్యేక చర్యలు
+      [Local        ] నెరు ద్వారక తేనీ ప్రాంగణాలు
+      [Local        ] క్రియాశీలత నిర్మూలనపై అపగాహన
+      [Local        ] మలేరియా రహిత సమాజానికి కృషి
+
+  PAGE 10  (8 articles)  National×6, Other×1, Politics×1
+      [Other        ] ఎవరైనా చనిపోయారా?
+      [National     ] ఎటుచూసినా విషాదం
+      [National     ] స్టీల్‌ప్లాంట్‌లో ప్రమాదం వెనుక కుట్ర కోణం
+      [National     ] ఆధారం కోల్పోయిన కుటుంబ
+      [Politics     ] లోకేష్ తీరు దారుణం: కురసాల కన్నబాబు
+      [National     ] బాధిత కుటుంబాలకు చెక్కుల పంపిణీ
+      [National     ] ఏటుచూసినా విషాదం
+      [National     ] ఆధారం కోల్పోయిన కుటుంబం
+
+  PAGE 11  (7 articles)  Other×7
+      [Other        ] డైనమిక్ డయాన్ @ 79
+      [Other        ] న్యూసెన్స్ కేసు పెట్టచ్‌య్!
+      [Other        ] ధైర్యాన్ని ఎంచుకున్నాడు
+      [Other        ] తేనెటీడు కొడుకల అసబంధం
+      [Other        ] చిరనవ్వుల చదువిద్దాం
+      [Other        ] సెట్స్‌లోనే నో చెప్పండి
+      [Other        ] అందుకు మన అత్తగారు ఓ ఉదాహరణ
+
+  PAGE 12  (2 articles)  Other×2
+      [Other        ] ఐఐటీ కలలకు జోసా దారి
+      [Other        ] అన్ని బ్రాంచ్‌లకు అవకాశాలు
+
+  PAGE 13  (9 articles)  Sports×5, Business×4
+      [Business     ] వృద్ధి అంచనా 6.4 శాతానికి కట్
+      [Business     ] పసిడి రీబౌండ్
+      [Business     ] విదేశీ పెట్టుబడులకు సంస్కరణల కార్పెట్!
+      [Business     ] మెటాతో షిప్‌కార్డ్ భాగస్వామ్యం
+      [Sports       ] 21 ఏళ్ల తర్వాత.. వన్డే మ్యాచ్‌లో ఆస్ట్రేలియాపై బంగ్లాదేశ్‌ వ
+      [Sports       ] ఓటమి అంచుల నుంచి.. భారత్ 'ఆ' అద్భుత విజయం
+      [Sports       ] సిరాజ్‌కు విశ్రాంతి, ప్రసిధ్‌కు ఛాన్స్
+      [Sports       ] యువ జోరు...
+      [Sports       ] ప్రకాష్‌ ఫైనల్లో హరిహరన్-అర్జున్ జోడీ
+
+  PAGE 14  (3 articles)  Local×1, Business×1, National×1
+      [Local        ] కాపురాలు కూలిపోతున్నాయి
+      [Business     ] ఎలక్ట్రిక్ కారు ఇక రేపటి ఎంపిక కాదు. నేటి సరెన ఎంపిక
+      [National     ] ఐదు వర్కింగ్ గ్రూపులుగా స్పెషల్ పోలీస్!
+
+  PAGE 15  (7 articles)  Local×2, National×2, Other×1, Politics×1, Business×1
+      [Local        ] ఎన్టీటీపీఎస్‌లో క్వార్టర్స్ రగడ
+      [National     ] ఫిష్‌మీల్, ఫిష్ ఆయిల్ ఎసమతుల్యతపై అంక్షలు వద్దు
+      [National     ] ఉపాధ్యాయులకు టెట్ మినహాయింపు ఇవ్వండి
+      [Other        ] తాండ్ర సింగారం గిడ్డింగిలో మధురాహారం
+      [Local        ] గండి పేట భూముల వ్యవహారంలో బొల్లా సోదరుల బాధితులు
+      [Politics     ] అధికార మదంతో మంత్రి లోకేష్ వివృత వ్యాఖ్యలు
+      [Business     ] వర్జీనియా పాగాకు మార్కెట్‌కు స్థిరత్వం
+
+  PAGE 16  (1 articles)  Other×1
+      [Other        ] అల్యూమినియం ఫ్యాక్టరీలో...
+
+  PAGE 17  (5 articles)  Business×5
+      [Business     ] డార్క్ ప్యాటర్న్‌తో ఏటా రూ.28,000 కోట్ల నష్టం
+      [Business     ] ఓపెన్ మార్కెట్లో వాటాల విక్రయం-ఏఎంసీ తర్వాత ఇన్సూరెన్స్ ఐపీవ
+      [Business     ] ఈ పడాదే స్టీల్ యాస్ ఎన్ఐఎస్ యూనీ
+      [Business     ] సెబీకి జెప్టో ఐపీవో అప్‌డేట్స్
+      [Business     ] రూ.10,000 కోట్లకు 5 ఐపీవోలు సిద్ధం
+
+  PAGE 18  (2 articles)  Other×2
+      [Other        ] సమగ్ర పురపాలక సంస్థల చట్టం ఎప్పుడు చేశారు?
+      [Other        ] భాగస్వామ్య వ్యాపారం అంటే ఏమిటి?
+
+  PAGE 19  (2 articles)  Other×2
+      [Other        ] బాకారో ఉక్కు కర్మాగారాన్ని ఏ దేశ సహాయంతో నిర్మించారు?
+      [Other        ] The smallest memory size is?
+
+  TOTAL: 97 articles across 19 pages
+ALL_DONE

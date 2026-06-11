@@ -1,0 +1,106 @@
+=== 1. articles tagged AP by geo_primary (all-time + last 7d + last 24h) ===
+ all_time | last_7d | last_24h 
+----------+---------+----------
+     1778 |     381 |       73
+(1 row)
+
+=== 2. AP-related entities by AEM mention volume (top 20) ===
+                   canonical_name                   | entity_type  | mentions 
+----------------------------------------------------+--------------+----------
+ Andhra Pradesh                                     | location     |      669
+ K. Pawan Kalyan                                    | person       |      639
+ Nara Chandrababu Naidu ( TDP )                     | person       |      462
+ Visakhapatnam                                      | location     |      351
+ Vijayawada                                         | location     |      247
+ Chandrababu Naidu                                  | person       |      238
+ Konidela Pawan Kalyan                              | person       |      222
+ Andhra Pradesh Telangana                           | organization |      181
+ Nara Lokesh                                        | person       |      163
+ YS Jagan Mohan Reddy                               | person       |       90
+ Tirumala Tirupati Devasthanams                     | organization |       88
+ Puri Jagannadh                                     | person       |       66
+ Jana Sena Party                                    | organization |       52
+ Y. S. Jagan Mohan Reddy                            | person       |       28
+ Andhra Pradesh High Court                          | organization |       23
+ Y.S. Sharmila                                      | person       |       13
+ Visakhapatnam , Andhra Pradesh                     | organization |       13
+ Janasena Party                                     | person       |       10
+ Jagan Mohan Reddy                                  | person       |        5
+ Andhra Pradesh State Disaster Management Authority | organization |        5
+(20 rows)
+
+=== 3. story clusters dominated by AP entities (top 12 by article_count) ===
+                          rt                          | n  | isc | core | sc |            top_ent             | last_seen  
+------------------------------------------------------+----+-----+------+----+--------------------------------+------------
+ Dedicated platform soon to strengthen public grievan | 88 |  18 | 0.46 | IN | nara chandrababu naidu ( tdp ) | 2026-05-31
+ Rajnath Singh, Chandrababu Naidu offer prayers at Pu | 46 |  24 | 0.52 | IN | rajnath singh                  | 2026-05-31
+ Kerala HSCAP Plus One Admission Begins: Check Last D | 35 |  13 | 0.51 | IN | kerala                         | 2026-05-31
+ South Coast Railway zone in Visakhapatnam goes opera | 35 |  12 | 0.74 | IN | visakhapatnam                  | 2026-06-01
+ CPI(M) activists protest in Vijayawada over ED raids | 25 |  17 | 0.76 | IN | pinarayi vijayan               | 2026-05-31
+ Top Sri Lankan Buddhist monk arrested over alleged s | 23 |  16 | 0.52 | IN | srikanth kidambi               | 2026-05-31
+ DRDO completes final trials of ULPGM-V3 precision mi | 19 |  14 | 0.58 | IN | kurnool                        | 2026-05-27
+ After Abhishek, Trinamool MP Kalyan Banerjee mobbed, | 18 |  14 | 0.56 | IN | kalyan banerjee                | 2026-06-01
+ Ravi Mohan becomes a part of the LCU with ‘Benz’ aft |  6 |   6 | 0.83 | IN | nara lokesh                    | 2026-05-31
+ Kakani seeks suspension of SI for alleged assault on |  5 |   3 | 0.80 | IN | nellore                        | 2026-05-25
+ SLBC conducts ECLGS 5.0 outreach programme for MSMEs |  3 |   3 | 0.67 | IN | assam                          | 2026-05-31
+ పెన‌గ‌డ‌ప‌లో వడదెబ్బతో వడ్రంగి మృతి                              |  3 |   2 | 0.33 | IN | odisha                         | 2026-05-29
+(12 rows)
+
+=== 4. AP language coverage (Telugu specifically) ===
+ language_detected |   n   | last_7d 
+-------------------+-------+---------
+ te                | 18477 |    4988
+ en                |   906 |     147
+                   |    15 |       0
+ bn                |    12 |       0
+ hi                |     6 |       3
+ id                |     6 |       0
+(6 rows)
+
+=== 5. sources actively covering AP (top 12 by AP-tagged article volume) ===
+            name            | country | language | ap_articles | last_7d 
+----------------------------+---------+----------+-------------+---------
+ The Hindu — Andhra Pradesh | IN      | en       |         327 |      84
+ Andhra Jyothy              | IN      | en       |         292 |      84
+ TV9 Telugu                 | IN      | en       |         207 |      14
+ The Hindu — Security       | IN      | en       |         145 |       4
+ NTV Telugu                 | IN      | en       |         141 |      38
+ HMTV                       | IN      | en       |         137 |      34
+ The Hindu — Sport          | IN      | en       |          73 |      13
+ Telangana Today            | IN      | en       |          61 |      15
+ Namasthe Telangana         | IN      | te       |          47 |      19
+ Telugu 360                 | IN      | en       |          44 |      17
+ V6 Velugu                  | IN      | te       |          36 |      13
+ Vaartha                    | IN      | te       |          34 |      34
+(12 rows)
+
+=== 6. AP topical breakdown (top categories among AP-tagged articles) ===
+ topic_category |  n  
+----------------+-----
+ OTHER          | 675
+ POLITICS       | 233
+ INFRASTRUCTURE | 112
+ LEGAL          |  87
+ GOVERNANCE     |  80
+ HEALTH         |  69
+ SECURITY       |  65
+ ENVIRONMENT    |  61
+(8 rows)
+
+=== 7. recent (24h) AP headline sample — what is the corpus saying right now ===
+                                      title                                       | lang |   topic    
+----------------------------------------------------------------------------------+------+------------
+ నేడు ఎన్డీయే కీలక భేటీ.. రాజ్యసభ అభ్యర్థుల ఉత్కంఠకు తెర?                                      | te   | POLITICS
+ major corruption in teacher recruitment chandrababu denies allegations           | bn   | POLITICS
+ andhra pradesh revenue department issues memo allowing promotions despite pendin | te   | GOVERNANCE
+ kesineni nani appeals to cm chandrababu over alleged harassment of friend ram ba | te   | OTHER
+ kondapalli srinivas calls people to join ap revival says coalition govt deliveri | te   | POLITICS
+ chandrababu naidu on telangana row calls for development criticizes regional pol | te   | POLITICS
+ ap cm chandrababu naidu pays tribute to sp balasubrahmanyam on his birth anniver | te   | POLITICS
+ scuba divers perform underwater cycling at rishikonda beach on world bicycle day | te   | SPORTS
+ ஆந்திராவில் அவலம்:  உடல்நலம் பாதித்த கிராம மக்கள்; சூனியக்காரன் என கூறி வாலிபர்             | ta   | OTHER
+ ஆந்திரா: ஊர் மக்களுக்கு பில்லிசூனியம் வைத்ததால் வாலிபர் அடித்துக்கொலை                       | ta   | OTHER
+ AP Cabinet Meeting: నేడు ఏపీ కేబినెట్ భేటీ.. అమరావతి అభివృద్ధి, కీలక సంక్షేమ నిర                  | te   | GOVERNANCE
+ ఆంధ్ర అభివృద్ధిని అడ్డుకుంటున్నదెవరు?                                                    | te   | OTHER
+(12 rows)
+

@@ -1,0 +1,129 @@
+Output format is aligned.
+Border style is 1.
+
+==== 5 BEST CLUSTERS (multi-source, recent, multi-article) ====
+
+ sz | srcs |     etype     |     d      |                 canonical                  |        source        |                                           title                                            
+----+------+---------------+------------+--------------------------------------------+----------------------+--------------------------------------------------------------------------------------------
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | The Hindu — Sport    | IPL 2026 | We see ourselves as favourites against KKR: MI batter Naman Dhir
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | The Hindu — Sport    | IPL 2026: Everything to play for KKR as it meets MI at Eden
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | The Hindu — Sport    | IPL 2026: Mumbai Indians’ de Kock, Raj Bawa ruled out of remainder of season
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | Sportstar            | KKR vs MI, IPL 2026: Head-to-head record, most runs, wickets ahead of Kolkata Knight Rider
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | V6 Velugu            | ముంబైతో కేకేఆర్ చావో రేవో పోరు.. రహానే సేన ప్లేఆఫ్స్ గండం గట్టెక్కేనా?
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | Sportstar            | KKR vs MI, IPL 2026: Will rain affect tonight’s match between Kolkata Knight Riders and Mu
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | Sportstar            | KKR vs MI, IPL 2026: Hardik returns as Mumbai Indians captain
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | Sunday Guardian      | KKR vs MI: ‘Really Washed?’ Fans Brutally Troll Suryakumar Yadav After Another Failure For
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | Sportstar            | KKR vs MI, IPL 2026: Angkrish Raghuvanshi to be replaced by a concussion sub
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | Sportstar            | KKR vs MI, IPL 2026: Pandey, Powell partnership helps Kolkata Knight Riders stay in hunt f
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | Sportstar            | KKR vs MI Player Ratings, IPL 2026: Bosch impresses in defeat; check full rankings
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | Sunday Guardian      | IPL 2026 Points Table: KKR Jump Past CSK And DC After Beating Mumbai Indians At Eden Garde
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | The Hindu — Sport    | IPL 2026 KKR vs MI: Bowlers rise to the occasion as Kolkata lives to fight another day
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | Prabhat Khabar       | KKR की जीत से बढ़ा रोमांच, 1 पायदान के लिए 5 टीमों में जंग, समझें प्लेऑफ का पूरा गणित
+ 15 |    5 | sports_result | 2026-05-20 | MI vs KKR IPL match at Eden Gardens        | The Hindu — Sport    | Mumbai Indians coach Paras Mhambrey reflects on missed opportunities against KKR
+  8 |    4 | sports_result | 2026-05-19 | Rajasthan vs Lucknow IPL match in Jaipur   | Namasthe Telangana   | RR vs LSG | టాస్ గెలిచిన రాజస్థాన్.. ప్లే ఆఫ్స్ ఆశలు నిలిచేనా..!
+  8 |    4 | sports_result | 2026-05-19 | Rajasthan vs Lucknow IPL match in Jaipur   | V6 Velugu            | వైభవ్ సూర్యవంశీ సిక్సర్ల తుఫాన్.. లక్నోపై 7 వికెట్ల తేడాతో రాజస్థాన్ గ్రాండ్ విక్టరీ
+  8 |    4 | sports_result | 2026-05-19 | Rajasthan vs Lucknow IPL match in Jaipur   | Namasthe Telangana   | RR vs LSG | వైభవ్ ఊచకోతకు బలైన లక్నో.. పంజాబ్‌ను కిందకు నెట్టేసిన రాజస్థాన్..!
+  8 |    4 | sports_result | 2026-05-19 | Rajasthan vs Lucknow IPL match in Jaipur   | Prabhat Khabar       | वैभव सूर्यवंशी के तूफान में उड़ी लखनऊ सुपर जायंट्स, राजस्थान रॉयल्स की टॉप-4 में एंट्री
+  8 |    4 | sports_result | 2026-05-19 | Rajasthan vs Lucknow IPL match in Jaipur   | Prabhat Khabar       | वैभव सूर्यवंशी के तूफान में उड़ी लखनऊ सुपर जायंट्स, राजस्थान रॉयल्स की टॉप-4 में एंट्री
+  8 |    4 | sports_result | 2026-05-19 | Rajasthan vs Lucknow IPL match in Jaipur   | Sunday Guardian      | IPL 2026 Points Table: Rajasthan Royals Get Playoff Boost, Lucknow Super Giants Hit Bottom
+  8 |    4 | sports_result | 2026-05-19 | Rajasthan vs Lucknow IPL match in Jaipur   | Sunday Guardian      | WATCH: Rishabh Pant Goes Uncensored on Live TV — ‘We Are A F**king Good Team’ After RR vs 
+  8 |    4 | sports_result | 2026-05-19 | Rajasthan vs Lucknow IPL match in Jaipur   | Sunday Guardian      | IPL 2026 Orange Cap Standings After RR vs LSG: 15-Year-Old Vaibhav Sooryavanshi Overtakes 
+  8 |    4 | sports_result | 2026-05-19 | Rajasthan vs Lucknow IPL match in Jaipur   | Sunday Guardian      | RR IPL 2026 Playoff Scenario: How Can Rajasthan Royals Qualify After 7-Wicket Win Over Luc
+  8 |    4 | sports_result | 2026-05-21 | CSK vs Gujarat Titans (must-win)           | The Hindu — Sport    | IPL 2026: Big transition for Ruturaj the captain; will take time, says coach Fleming
+  8 |    4 | sports_result | 2026-05-21 | CSK vs Gujarat Titans (must-win)           | TV9 Telugu           | MS Dhoni: ధోనీ ‘సైలెంట్ రిటైర్మెంట్’..? ఫ్యాన్స్‌కు షాకిస్తోన్న మిస్టర్ కూల్ తాజా నిర్ణయం.
+  8 |    4 | sports_result | 2026-05-21 | CSK vs Gujarat Titans (must-win)           | Sportstar            | Hussey: Dhoni will join CSK squad if it makes IPL playoffs
+  8 |    4 | sports_result | 2026-05-21 | CSK vs Gujarat Titans (must-win)           | Sportstar            | GT vs CSK, IPL 2026: Home advantage gives Gujarat Titans edge vs Chennai Super Kings
+  8 |    4 | sports_result | 2026-05-21 | CSK vs Gujarat Titans (must-win)           | Sunday Guardian      | IPL 2026: MS Dhoni Leaves CSK Camp Amid Rift Rumours? Fresh Injury Update On Chennai Super
+  8 |    4 | sports_result | 2026-05-21 | CSK vs Gujarat Titans (must-win)           | The Hindu — Sport    | IPL 2026: Gujarat Titans face Chennai Super Kings, hopes to strengthen top-two chances
+  8 |    4 | sports_result | 2026-05-21 | CSK vs Gujarat Titans (must-win)           | The Hindu — Sport    | IPL 2026: Dhoni has a sore thumb, he is not with the team: Hussey
+  8 |    4 | sports_result | 2026-05-21 | CSK vs Gujarat Titans (must-win)           | Sunday Guardian      | MS Dhoni Injury Update: CSK Legend Ruled Out Of Today’s IPL Match vs GT—When Will He Retur
+  8 |    5 | sports_result | 2026-05-19 | Rajasthan Royals chase 221 runs vs Lucknow | TV9 Telugu           | IPL 2026 : ఐపీఎల్‌లో రాజస్థాన్ రాయల్స్ నయా హిస్టరీ.. పంజాబ్, సన్‌రైజర్స్ రికార్డులు బ్రేక్
+  8 |    5 | sports_result | 2026-05-19 | Rajasthan Royals chase 221 runs vs Lucknow | The Hindu — Sport    | IPL 2026: Rajasthan Royals skipper Riyan Parag urges commentators to talk about cricket
+  8 |    5 | sports_result | 2026-05-19 | Rajasthan Royals chase 221 runs vs Lucknow | Namasthe Telangana   | Vaibhav Sooryavanshi: ఆ సంకేతానికి అర్థం లేదు.. సూర్యవంశీ వెరైటీ సెల‌బ్రేష‌న్‌.. వీడియో
+  8 |    5 | sports_result | 2026-05-19 | Rajasthan Royals chase 221 runs vs Lucknow | Sportstar            | It is just a start and I know people will talk about me: Sooryavanshi
+  8 |    5 | sports_result | 2026-05-19 | Rajasthan Royals chase 221 runs vs Lucknow | V6 Velugu            | Yuvraj Singh: ఈ పిల్లాడిని విడిచి పెట్టొద్దు.. వైభవ్⁬పై యువరాజ్ సింగ్ ప్రశంసలు..
+  8 |    5 | sports_result | 2026-05-19 | Rajasthan Royals chase 221 runs vs Lucknow | V6 Velugu            | Riyan Parag: నా పర్సనల్ విషయాలు మీకెందుకు.. కామెంటేటర్లపై రియాన్ పరాగ్ ఫైర్
+  8 |    5 | sports_result | 2026-05-19 | Rajasthan Royals chase 221 runs vs Lucknow | Sportstar            | À la Sachin Tendulkar: Vaibav Sooryavanshi continues to bewilder opposition bowlers
+  8 |    5 | sports_result | 2026-05-19 | Rajasthan Royals chase 221 runs vs Lucknow | TV9 Telugu           | Video: దటీజ్ వైభవ్ సూర్యవంశీ.. దిగ్గజాన్నే ‘ఫ్యాన్ బాయ్’గా మార్చేసిన 15 ఏళ్ల బుడ్డోడు..!
+  8 |    5 | accident      | 2026-05-12 | Twisha Sharma reported dead                | The CSR Journal      | SIT and Local Teams Mobilised to Apprehend Suspects in Twisha Sharma Case: Madhya Pradesh 
+  8 |    5 | accident      | 2026-05-12 | Twisha Sharma reported dead                | TV9 Telugu           | 20లక్షల కోసం.. హీరోయిన్‌ను చంపేసిన భర్త?
+  8 |    5 | accident      | 2026-05-12 | Twisha Sharma reported dead                | TV9 Telugu           | 20లక్షల కోసం.. హీరోయిన్‌ను చంపేసిన భర్త?
+  8 |    5 | accident      | 2026-05-12 | Twisha Sharma reported dead                | V6 Velugu            | మీ కూతురి డెడ్ బాడీ కుళ్లిపోతుంది.. తీసుకెళ్లండి: ట్విషా శర్మ ఫ్యామిలీకి పోలీసుల లేఖ
+  8 |    5 | accident      | 2026-05-12 | Twisha Sharma reported dead                | YourStory — Tech     | Startup news and updates: daily roundup (May 20, 2026)
+  8 |    5 | accident      | 2026-05-12 | Twisha Sharma reported dead                | V6 Velugu            | నటి ట్విషా శర్మ మృతదేహానికి రీ పోస్ట్‎మార్టం అవసరం లేదు: భోపాల్ కోర్టు కీలక తీర్పు
+  8 |    5 | accident      | 2026-05-12 | Twisha Sharma reported dead                | V6 Velugu            | చనిపోయి 8 రోజులైంది.. ఇంకా పోస్ట్‎మార్టం రూమ్‎లోనే నటి ట్విషా డెడ్ బాడీ.. అసలేమైందంటే..?
+  8 |    5 | accident      | 2026-05-12 | Twisha Sharma reported dead                | The Hindu — Security | Will seek CBI probe into Twisha Sharma death: Madhya Pradesh CM
+  8 |    5 | accident      | 2026-05-12 | Twisha Sharma reported dead                | The Hindu — Security | Twisha Sharma death case: Absconding husband applies for bail in Jabalpur High Court
+(49 rows)
+
+
+==== 5 WORST/SUSPICIOUS CLUSTERS ====
+(heuristic: old canonical_date but recent articles = historical reference leak,
+OR single-source with size >= 5 = potential same-style collision)
+
+ sz | srcs |     etype     |     d      |     reason     |               canonical                |         source          |                                           title                                            
+----+------+---------------+------------+----------------+----------------------------------------+-------------------------+--------------------------------------------------------------------------------------------
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | Dawn — Defence          | Putin to visit China on May 19-20 to further strengthen 'comprehensive partnership'
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Putin arrives in Beijing for two-day visit
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Putin arrives in Beijing for two-day visit
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | Mint — Foreign Policy   | Vladimir Putin, Xi Jinping likely to be in New Delhi for BRICS summit in September
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Putin, Xi attend TASS-Xinhua photo exhibit on Russia-China relations’ development
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Russia, China discuss with each other their relations with US — Kremlin aide
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Russia, China discuss with each other their relations with US — Kremlin aide
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Development of Russia-China partnership: key Putin’s statements
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Russia, China working for peace and general prosperity, says Putin
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Russia, China working for peace and general prosperity, says Putin
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Russia, China to cooperate in fight against doping abuse in sports — statement
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Russia, China to cooperate in fight against doping abuse in sports — statement
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | China backs Russia's efforts to ensure national security and stability — statement
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | China backs Russia's efforts to ensure national security and stability — statement
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Visa-free travel, porcelain set, oil and gas: highlights of Putin's visit to China
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Visa-free travel, porcelain set, oil and gas: highlights of Putin's visit to China
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Putin-Xi meeting highlights failure of attempts to isolate Russia — US expert
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Putin’s visit to China shows growing understanding among SCO, BRICS members — US expert
+ 13 |    3 | meeting       | 2024-05-19 | HISTORICAL_REF | Putin's visit to China begins          | TASS — Defence          | Putin’s visit to China to boost trade, tech exchange — former US congressman
+ 11 |    6 | election      | 2024-05-21 | HISTORICAL_REF | Kentucky 4th district primary election | Hindustan Times — World | Kentucky 4th district: Thomas Massie hits back at Trump as primary polls heat up; Candace 
+ 11 |    6 | election      | 2024-05-21 | HISTORICAL_REF | Kentucky 4th district primary election | Hindustan Times — World | Thomas Massie loses to Ed Gallrein: Ex Cynthia West's surprising first reaction; Trump's W
+ 11 |    6 | election      | 2024-05-21 | HISTORICAL_REF | Kentucky 4th district primary election | The Independent UK      | Defiant Massie tells supporters after loss to Trump-backed challenger: ‘We didn’t bend the
+ 11 |    6 | election      | 2024-05-21 | HISTORICAL_REF | Kentucky 4th district primary election | BBC World News          | Trump tightens grip on Republican Party with Massie defeat
+ 11 |    6 | election      | 2024-05-21 | HISTORICAL_REF | Kentucky 4th district primary election | The Guardian — World    | Trump tightens grip on GOP after Massie’s defeat in Kentucky primary – US politics live
+ 11 |    6 | election      | 2024-05-21 | HISTORICAL_REF | Kentucky 4th district primary election | The Guardian — World    | Trump’s allies in danger of scraping false hope from Maga victory in Kentucky primary
+ 11 |    6 | election      | 2024-05-21 | HISTORICAL_REF | Kentucky 4th district primary election | Al Jazeera — Asia       | Trump critic Massie defeated: Takeaways from US primary election results
+ 11 |    6 | election      | 2024-05-21 | HISTORICAL_REF | Kentucky 4th district primary election | The Independent UK      | Trump goes on manic early morning posting spree with a dozen posts in minutes to brag abou
+ 11 |    6 | election      | 2024-05-21 | HISTORICAL_REF | Kentucky 4th district primary election | RT — IOR Coverage       | Trump-backed challenger defeats Thomas Massie in Kentucky
+ 11 |    6 | election      | 2024-05-21 | HISTORICAL_REF | Kentucky 4th district primary election | Hindustan Times — World | Charlie Kirk's old Thomas Massie remark is a reminder to Trump: ‘Terrific man’ or ‘disloya
+ 11 |    6 | election      | 2024-05-21 | HISTORICAL_REF | Kentucky 4th district primary election | The Independent UK      | Trump delivers veiled threat to another independent Republican — through his TV reporter f
+  9 |    4 | medical_event | 2021-01-01 | HISTORICAL_REF | Kylie Minogue's cancer returned        | The Age (Australia)     | ‘A shell of a person’: Kylie Minogue drops a bombshell in her Netflix documentary
+  9 |    4 | medical_event | 2021-01-01 | HISTORICAL_REF | Kylie Minogue's cancer returned        | The Age (Australia)     | When Kylie’s cancer returned, she kept the news to herself. This is why
+  9 |    4 | medical_event | 2021-01-01 | HISTORICAL_REF | Kylie Minogue's cancer returned        | Sydney Morning Herald   | ‘A shell of a person’: Kylie Minogue drops a revelation in her Netflix documentary
+  9 |    4 | medical_event | 2021-01-01 | HISTORICAL_REF | Kylie Minogue's cancer returned        | Sydney Morning Herald   | When Kylie’s cancer returned, she kept the news to herself. This is why
+  9 |    4 | medical_event | 2021-01-01 | HISTORICAL_REF | Kylie Minogue's cancer returned        | Sydney Morning Herald   | When Kylie’s cancer returned, she kept the news to herself. This is why
+  9 |    4 | medical_event | 2021-01-01 | HISTORICAL_REF | Kylie Minogue's cancer returned        | Sydney Morning Herald   | ‘Beyond the limit of detection’: Why breast cancer comes back
+  9 |    4 | medical_event | 2021-01-01 | HISTORICAL_REF | Kylie Minogue's cancer returned        | The Age (Australia)     | ‘Beyond the limit of detection’: Why breast cancer comes back
+  9 |    4 | medical_event | 2021-01-01 | HISTORICAL_REF | Kylie Minogue's cancer returned        | Deccan Chronicle        | kylie minogue reveals she privately battled cancer for second time in 2021 1957942?utm sou
+  9 |    4 | medical_event | 2021-01-01 | HISTORICAL_REF | Kylie Minogue's cancer returned        | Sunday Guardian         | Kylie Minogue, Australian Pop Star Reveals Second Cancer Diagnosis in Netflix Documentary;
+  9 |    4 | medical_event | 2021-01-01 | HISTORICAL_REF | Kylie Minogue's cancer returned        | Sunday Guardian         | Kylie Minogue Netflix Documentary Review: From Cancer Revelation to Michael Hutchence Era;
+(40 rows)
+
+
+==== Plus 2 single-source megas ====
+
+ sz | srcs |  etype  |     d      |                              canonical                              |        source         |                                       title                                        
+----+------+---------+------------+---------------------------------------------------------------------+-----------------------+------------------------------------------------------------------------------------
+  8 |    1 | protest | 2024-05-19 | Farmers protest delays in maize unloading at Thorrur PACS warehouse | Namasthe Telangana    | అవే బారులు.. అదే రోదన
+  8 |    1 | protest | 2024-05-19 | Farmers protest delays in maize unloading at Thorrur PACS warehouse | Namasthe Telangana    | అన్నదాత అరిగోస
+  8 |    1 | protest | 2024-05-19 | Farmers protest delays in maize unloading at Thorrur PACS warehouse | Namasthe Telangana    | సమీక్ష లేదు… పరిష్కారం లేదు!
+  8 |    1 | protest | 2024-05-19 | Farmers protest delays in maize unloading at Thorrur PACS warehouse | Namasthe Telangana    | మంత్రివర్యా.. ధాన్యం తరలించలేరా!
+  8 |    1 | protest | 2024-05-19 | Farmers protest delays in maize unloading at Thorrur PACS warehouse | Namasthe Telangana    | గన్నీ సంచులు.. లారీలు ఎక్కడ?
+  8 |    1 | protest | 2024-05-19 | Farmers protest delays in maize unloading at Thorrur PACS warehouse | Namasthe Telangana    | లారీల కొరత.. ముందుకు సాగని కొనుగోళ్లు
+  8 |    1 | protest | 2024-05-19 | Farmers protest delays in maize unloading at Thorrur PACS warehouse | Namasthe Telangana    | కడుపు రగిలి.. గుండె పగిలి
+  8 |    1 | protest | 2024-05-19 | Farmers protest delays in maize unloading at Thorrur PACS warehouse | Namasthe Telangana    | నా కాళ్లు మొక్కితే ఏం లాభం.. వెళ్లి కలెక్టర్ కాళ్లు మొక్కండి.. రైతులతో రెవెన్యూ ఇన్‌స్పెక్
+  7 |    1 | notice  | 2026-03-13 | Notice for adjudication issued                                      | TaxGuru — Legal & Tax | ROC Orders Penalty for Failure to File Mandatory Annual Return Under Companies Act
+  7 |    1 | notice  | 2026-03-13 | Notice for adjudication issued                                      | TaxGuru — Legal & Tax | Failure to File Annual Return Leads to ₹1.86 Lakh Penalty Under Companies Act
+  7 |    1 | notice  | 2026-03-13 | Notice for adjudication issued                                      | TaxGuru — Legal & Tax | Company Fined ₹63,500 for Failure to File Annual Return
+  7 |    1 | notice  | 2026-03-13 | Notice for adjudication issued                                      | TaxGuru — Legal & Tax | Company ＆ Managing Director Penalised for Non-Filing of Annual Return
+  7 |    1 | notice  | 2026-03-13 | Notice for adjudication issued                                      | TaxGuru — Legal & Tax | Company and Director Penalized for Failure to File Balance Sheet with ROC
+  7 |    1 | notice  | 2026-03-13 | Notice for adjudication issued                                      | TaxGuru — Legal & Tax | ROC Imposes Penalty Because Balance Sheet for FY 2020-21 Was Not Filed
+  7 |    1 | notice  | 2026-03-13 | Notice for adjudication issued                                      | TaxGuru — Legal & Tax | ROC Patna Imposes Penalty as Company Failed to File Balance Sheet for FY 2023-24
+(15 rows)
+

@@ -1,0 +1,70 @@
+=== source_tier distribution among articles in surfaced clusters ===
+ source_tier | count 
+-------------+-------
+           1 |  9973
+           2 | 17911
+           3 |   486
+(3 rows)
+
+
+=== US-Iran (b6f91d2b): current rep + 5 best-candidate members (on-core "iran", source_tier ASC, recency DESC) ===
+      representative_article_id       |                               cur_rep                                
+--------------------------------------+----------------------------------------------------------------------
+ 05efd692-229d-4d59-8527-cdbafce83a28 | Has the US-Iran ceasefire reset the clock on War Powers Act deadline
+(1 row)
+
+ st |          source           |    pub     |                                  title                                   
+----+---------------------------+------------+--------------------------------------------------------------------------
+  1 | Daily Post                | 2026-06-01 | Again, US launches new strikes on Iran
+  1 | The Hindu — International | 2026-06-01 | Trump says Iran really wants to make a deal with the U.S.
+  1 | Republica                 | 2026-06-01 | US bombs Iranian military sites and Kuwait is hit by drone and missile f
+  1 | Republica                 | 2026-06-01 | US bombs Iranian military sites and Kuwait is hit by drone and missile f
+  1 | Prothom Alo English       | 2026-06-01 | US says it struck Iranian military sites, Tehran responds with air base 
+  1 | The Rising Nepal          | 2026-06-01 | Iran says does not trust US as Trump toughens terms
+(6 rows)
+
+
+=== Cruise (bd04c18c): current rep + 5 best-candidate members on top_ent "mv hondius" ===
+      representative_article_id       |                               cur_rep                                
+--------------------------------------+----------------------------------------------------------------------
+ 89a5eebd-012c-4785-a539-537ea3e70a74 | Two dead after respiratory illness outbreak on cruise ship in atlant
+(1 row)
+
+ st |          source           |    pub     |                                  title                                   
+----+---------------------------+------------+--------------------------------------------------------------------------
+  1 | Dawn (Pakistan)           | 2026-05-15 | Hantavirus outbreak tests post-Covid health communications playbook
+  1 | The Hindu — International | 2026-05-13 | French hantavirus patient is critically ill, on artificial lung as total
+  1 | Dawn (Pakistan)           | 2026-05-12 | French minister says uncertain if hantavirus strain from cruise ship has
+  1 | Al Jazeera English        | 2026-05-12 | Why the hantavirus outbreak is different from COVID-19
+  1 | Al Jazeera English        | 2026-05-12 | Spain reports new hantavirus case in passenger evacuated from cruise shi
+  1 | BBC News — UK             | 2026-05-12 | Hantavirus testing of UK passengers well under way, health officials say
+(6 rows)
+
+
+=== Musk/OpenAI: locate current title + members ===
+               story_id               |  n  |                            representative_title                             
+--------------------------------------+-----+-----------------------------------------------------------------------------
+ e4687ac3-bfb8-4e71-a966-71de03ecc62a | 192 | Former OpenAI board member says Elon Musk offered her sperm donations
+ 34121d85-376d-4602-ab61-b8a43a65beca |  38 | Bound for Mars, Elon Musk's SpaceX unveils filing for blockbuster IPO
+ 47aafdb2-41b3-45f9-a4ca-ca110078ea1a |  35 | SpaceX, OpenAI windfall fuels bets on next-wave Asian AI winners
+ df6a4432-9e1c-4d2f-8b8d-a56de6278630 |  30 | Elon Musk and Tim Cook among CEOs expected to accompany Trump on China trip
+ 2c1eeddc-e82d-4b8b-b3cf-303a47f04c15 |   3 | Investors want out of Musk’s SpaceX gamble. They may not have a choice
+(5 rows)
+
+
+=== overall: how many surfaced clusters fail new criterion? (top_ent NOT in current rep title or subject) ===
+ surfaced_with_ent | cur_title_has_ent | cur_title_lacks_ent | repickable 
+-------------------+-------------------+---------------------+------------
+               690 |               266 |                 424 |        167
+(1 row)
+
+
+=== rep-article source_tier distribution among surfaced ===
+ source_tier | count 
+-------------+-------
+           1 |   260
+           2 |   433
+           3 |    13
+             |     2
+(4 rows)
+

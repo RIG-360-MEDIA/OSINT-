@@ -1,0 +1,66 @@
+=== R1.0 BJP entity_id + AEM total / Latin-body-presence rate ===
+                bjp_id                | aem_total | latin_hit 
+--------------------------------------+-----------+-----------
+ cf29b7d4-f2c5-49b6-a96e-32dcea57c972 |      3289 |      2775
+(1 row)
+
+
+=== R1.1 sample 30 BJP-attributed articles that FAIL Latin body-presence: check ALL major Indic scripts ===
+ lang | deva | telu | beng | taml | urdu | guja | pnjb | knda | mlym |                        title                         
+------+------+------+------+------+------+------+------+------+------+------------------------------------------------------
+ ne   | f    | f    | f    | f    | f    | f    | f    | f    | f    | ଅମାନତ ହରାଇବ TMC? ମ୍ୟାଜିକ ନମ୍ବର ପାର କଲା ଭାଜପା
+ te   | f    | t    | f    | f    | f    | f    | f    | f    | f    | మమతకు భారీ షాక్?.. చీలిక దిశగా తృణమూల్ కాంగ్రెస్!
+ te   | f    | t    | f    | f    | f    | f    | f    | f    | f    | మోటార్లకు మీటర్లు పెడితే ఎన్నికల్లో  పోటీ చెయ్యం.. బ
+ hi   | f    | f    | f    | f    | f    | f    | f    | f    | f    | ममता बनर्जी क्‍या अकेली होती जा रही हैं?
+ te   | f    | t    | f    | f    | f    | f    | f    | f    | f    | వడ్లు కొన్నందుకు  రాష్ట్రానికి కమీషన్
+ ml   | f    | f    | f    | f    | f    | f    | f    | f    | t    | പെരിയ ഇരട്ടക്കൊല കേസ്; പരോൾ വ്യവസ്ഥ ലംഘിച്ച് പ്രതിയു
+ kn   | f    | f    | f    | f    | f    | f    | f    | t    | f    | ಮಮತಾಗೆ ಬಿಗ್ ಶಾಕ್; TMC ವಿಭಜನೆ? ತೃಣಮೂಲ ಕಾಂಗ್ರೆಸ್ ನ 50 
+ kn   | f    | f    | f    | f    | f    | f    | f    | t    | f    | ದೇವೇಗೌಡ ಹೆಸರು ಮುಂಚೂಣಿಗೆ
+ te   | f    | t    | f    | f    | f    | f    | f    | f    | f    | jana sena in ap bjps bhajana sena in telangana sama 
+ bn   | f    | f    | t    | f    | f    | f    | f    | f    | f    | barrackpore industrial area happy to have five time 
+ ml   | f    | f    | f    | f    | f    | f    | f    | f    | f    | ഏക സിവിൽകോഡ്                                         +
+      |      |      |      |      |      |      |      |      |      | നടപ്പാക്കാനൊരുങ്ങി മധ്യപ്രദേശ്
+ ne   | f    | f    | f    | f    | f    | f    | f    | f    | f    | ୩ରେ ରାଜ୍ୟ କ୍ୟାବିନେଟ: ଆସିବ ୯ଟି ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ ପ୍ରସ୍ତା
+ hi   | t    | f    | f    | f    | f    | f    | f    | f    | f    | पाकुड़ के पूर्व भाजपा विधायक बेनी प्रसाद गुप्ता का द
+ te   | f    | t    | f    | f    | f    | f    | f    | f    | f    | కాషాయ శ్రేణుల్లో మోదీ జోష్‌
+ ne   | f    | f    | f    | f    | f    | f    | f    | f    | f    | ପଶ୍ଚିମବଙ୍ଗ-ଆସାମ ସମେତ ୪ ରାଜ୍ୟରେ କଂଗ୍ରେସ ପାଲଟିଲା ‘ଜିରୋ
+ ta   | f    | f    | f    | f    | f    | f    | f    | f    | f    | பிரதமர் மோடியின் முடிவுக்காக காத்திருக்கும் அண்ணாமலை
+ ml   | f    | f    | f    | f    | f    | f    | f    | f    | t    | സിപിഎം മുൻ ഏരിയ സെക്രട്ടറി ബിജെപിയിൽ ചേർന്നു; പാർട്ട
+ te   | f    | t    | f    | f    | f    | f    | f    | f    | f    | Kalita Majhi | గతంలో ఇంటి పనిమనిషి.. నేడు బెంగాల్‌ మ
+ ml   | f    | f    | f    | f    | f    | f    | f    | f    | f    | ക്ഷേത്രഭണ്ഡാരം കുത്തിത്തുറന്ന് മോഷണം: ബി.ജെ.പി സ്ഥാന
+ te   | f    | t    | f    | f    | f    | f    | f    | f    | f    | సౌరవ్ గంగూలీకి బిగ్ షాక్.. సెక్యూరిటీ తగ్గించిన బెంగ
+ ml   | f    | f    | f    | f    | f    | f    | f    | f    | f    | ‘എന്തിനാ ഇയാൾ അവിടെ പോയത്​? പോകാതെ ഒഴിവാക്കാമായിരുന്
+ ml   | f    | f    | f    | f    | f    | f    | f    | f    | t    | ഷാനിമോൾ ഉസ്മാൻ ഡെപ്യൂട്ടി സ്പീക്കർ, 99 വോട്ടുകൾ ലഭിച
+ hi   | f    | f    | f    | f    | f    | f    | f    | f    | f    | अन्नामलाई का बीजेपी से मोहभंग, तमिलनाडु में क्या बदल
+ ne   | f    | f    | f    | f    | f    | f    | f    | f    | f    | କିଏ ସେହି ମାଖନଲାଲ ସରକାର ଯାହାଙ୍କ ପାଦ ଛୁଇଁଲେ ମୋଦି, ଦେଲେ
+ ne   | f    | f    | f    | f    | f    | f    | f    | f    | f    | ପୂର୍ବତନ IAS ସୁବ୍ରତ ଗୁପ୍ତା ବଙ୍ଗ ମୁଖ୍ୟମନ୍ତ୍ରୀଙ୍କ ପରାମର
+ kn   | f    | f    | f    | f    | f    | f    | f    | t    | f    | ಮಹಾರಾಷ್ಟ್ರದಲ್ಲಿ ಶಿವಸೇನೆಯಂತೆ ವಿಭಜನೆಯತ್ತ ಸಾಗುತ್ತಿದೆ TM
+ te   | f    | t    | f    | f    | f    | f    | f    | f    | f    | Abhishek Banerjee:అభిషేక్ దాడి వెనుక బీజేపీనా? టీఎంస
+ te   | f    | f    | f    | f    | f    | f    | f    | f    | f    | 12న భారాస ముఖ్యనేతలతో కేసీఆర్‌ సమావేశం
+ bn   | f    | f    | t    | f    | f    | f    | f    | f    | f    | mla files complaint at police station after being ro
+ kn   | f    | f    | f    | f    | f    | f    | f    | t    | f    | ಪಂಜಾಬ್ ಸ್ಥಳೀಯ ಸಂಸ್ಥೆ ಚುನಾವಣೆ: ಮತದಾರರಿಂದ 'ED ಪಕ್ಷ' ನಿ
+(30 rows)
+
+
+=== R1.2 across the FULL 2160 miss set: hit-rate per script ===
+ total_miss | devanagari | telugu | bengali | tamil | gujarati | kannada | malayalam | punjabi 
+------------+------------+--------+---------+-------+----------+---------+-----------+---------
+        514 |         52 |    118 |      15 |     2 |        1 |      58 |        32 |       0
+(1 row)
+
+
+=== R1.3 language distribution of the miss set (where does the miss come from?) ===
+ lang |  n  
+------+-----
+ te   | 150
+ ne   |  75
+ hi   |  65
+ kn   |  60
+ ml   |  58
+ mr   |  46
+ ta   |  43
+ bn   |  15
+ gu   |   1
+ en   |   1
+(10 rows)
+

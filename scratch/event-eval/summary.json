@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-05-20T20:21:00.805309Z",
+  "since_days": 5,
+  "events_total": 5587,
+  "events_assigned": 584,
+  "events_spawned": 5003,
+  "events_skipped": 0,
+  "duration_sec": 213.2,
+  "clusters_total": 200,
+  "multi_article_clusters": 200,
+  "singletons": 0,
+  "size_buckets": {
+    "11-50": 2,
+    "4-10": 29,
+    "2-3": 169
+  },
+  "source_diversity": {
+    "4+ sources": 10,
+    "2-3 sources": 47,
+    "1 source": 143
+  }
+}

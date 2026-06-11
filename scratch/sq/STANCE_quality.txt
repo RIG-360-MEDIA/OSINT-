@@ -1,0 +1,149 @@
+=== 1. article_stances schema + total volume ===
+   column_name   |        data_type         
+-----------------+--------------------------
+ id              | uuid
+ article_id      | uuid
+ actor           | text
+ stance          | text
+ intensity       | numeric
+ actor_entity_id | uuid
+ created_at      | timestamp with time zone
+(7 rows)
+
+ total_rows | articles_with_stance | avg_per_article 
+------------+----------------------+-----------------
+      71369 |                71369 |            2.56
+(1 row)
+
+
+=== 2. stance + intensity distribution ===
+      stance       |   n   
+-------------------+-------
+ supportive        | 70511
+ neutral           | 68529
+ critical          | 39839
+ sympathetic       |  3856
+ promotional       |   136
+ mocking           |    28
+ defensive         |    26
+ admiration        |    20
+ concerned         |     6
+ analytical        |     5
+ admiring          |     4
+ lament            |     3
+ concerned/neutral |     1
+ honored           |     1
+ optimistic        |     1
+ approval          |     1
+ skeptical         |     1
+ grateful          |     1
+ emotional         |     1
+(19 rows)
+
+                         intensity                         |   n   
+-----------------------------------------------------------+-------
+ 0.1000000000000000055511151231257827021181583404541015625 |    12
+  0.200000000000000011102230246251565404236316680908203125 |     5
+  0.299999999999999988897769753748434595763683319091796875 |  5004
+   0.40000000000000002220446049250313080847263336181640625 | 12235
+  0.409999999999999975575093458246556110680103302001953125 |     1
+                                                       0.5 | 80758
+   0.58999999999999996891375531049561686813831329345703125 |     1
+   0.59999999999999997779553950749686919152736663818359375 | 26058
+   0.65000000000000002220446049250313080847263336181640625 |    16
+    0.6999999999999999555910790149937383830547332763671875 | 36877
+                                                      0.75 |   214
+    0.8000000000000000444089209850062616169452667236328125 | 19135
+   0.84999999999999997779553950749686919152736663818359375 |     9
+   0.90000000000000002220446049250313080847263336181640625 |  2586
+                                                         1 |    59
+(15 rows)
+
+
+=== 3. coverage: of substrate=ok articles last 7d, how many have stances? ===
+ substrate_ok_7d | with_stance | pct  
+-----------------+-------------+------
+           50841 |       37287 | 73.3
+(1 row)
+
+
+=== 4. TOP actors in stance corpus — are they meaningful entities or junk? ===
+         actor          | mentions | distinct_stances 
+------------------------+----------+------------------
+ Donald Trump           |     2989 |                5
+ Iran                   |     2000 |                4
+ United States          |     1978 |                4
+ Narendra Modi          |     1396 |                4
+ BJP                    |     1175 |                4
+ India                  |     1065 |                4
+ Police                 |      842 |                3
+ Russia                 |      837 |                4
+ Israel                 |      834 |                4
+ China                  |      820 |                3
+ Congress               |      657 |                3
+ Mamata Banerjee        |      642 |                4
+ Bharatiya Janata Party |      557 |                3
+ Supreme Court          |      447 |                3
+ Virat Kohli            |      445 |                5
+ Ukraine                |      442 |                4
+ Gujarat Titans         |      442 |                4
+ Hezbollah              |      435 |                4
+(18 rows)
+
+
+=== 5. STANCE-vs-ARTICLE samples: 12 random stance rows joined to title + summary ===
+                        title                         |             actor             |   stance   |                        intensity                        |                                     snippet                                      
+------------------------------------------------------+-------------------------------+------------+---------------------------------------------------------+----------------------------------------------------------------------------------
+ کاهنان معبد بنیادگرایی                               | religious clerics             | critical   |  0.6999999999999999555910790149937383830547332763671875 | The article argues that religious institutions historically mixed with power and
+ Irumudi Glimpse: ‘మందు మానేయ్  నాన్న’.. గుండెను పిండ        | Shiva Nirvana                 | neutral    |                                                     0.5 | Mass Maharaja Ravi Teja's 77th film 'Irumudi', directed by Shiva Nirvana, releas
+ नूंह में साइबर अपराध पर बड़ा एक्शन, पुलिस की निगरानी        | Cybercriminals                | critical   | 0.90000000000000002220446049250313080847263336181640625 | Nuh police launched 'Operation Clean' to monitor 58 villages linked to online fr
+ കാഫിർ സ്ക്രീൻഷോട്ടിലെ എസ്ഐടി അന്വേഷണത്തിൽ പ്രതികരിച്         | Pinarayi Vijayan              | critical   |  0.6999999999999999555910790149937383830547332763671875 | KK Shailaja responded to the SIT probe into the Kafir screenshot controversy, st
+ Britain’s reading revival may be failing to reach th | National Year of Reading 2026 | supportive |                                                     0.5 | The National Year of Reading 2026 aims to rebuild habits, but discussions often 
+ Nigeria: VP Shettima Lauds Space X Contributions to  | Kashim Shettima               | neutral    |                                                     0.5 | VP Shettima applauded Starlink's donation of equipment to NEMA, stating it enhan
+ New Ram Myles Garrett as the 2027 Madden cover is th | Myles Garrett                 | supportive |  0.8000000000000000444089209850062616169452667236328125 | EA Sports picked Caleb Williams for the 2027 Madden cover, but the author argues
+ 21 लोगों की जान पर भारी &#039;पांच लापरवाहियां&#039;    | Delhi Home Minister           | neutral    |                                                     0.5 | A massive fire at Hotel Floris Stay in Malviya Nagar, Delhi, killed 21 people. I
+ Satwiksairaj Rankireddy–Chirag Shetty withdraw from  | Satwiksairaj Rankireddy       | neutral    |                                                     0.5 | Satwiksairaj Rankireddy and Chirag Shetty withdrew from the POLYTRON Indonesia O
+ Dave Roberts blasts Dodgers rivals’ ‘lazy’ spending  | Dave Roberts                  | supportive |  0.8000000000000000444089209850062616169452667236328125 | Dodgers manager Dave Roberts criticized rivals for blaming the team's $420 milli
+ కువైట్ ఎయిర్‌పోర్ట్‌పై ఇరాన్ దాడి.. విమానాలు నిలిపివ                     | Iran                          | critical   |  0.8000000000000000444089209850062616169452667236328125 | Iran attacked Kuwait International Airport with drones and missiles, damaging th
+ SIGMA : జాసన్ సంజయ్ అచ్చు విజయ్ లాగే ఉంటాడు : సందీప్            | Sandeep Kishan                | neutral    |                                                     0.5 | Sandeep Kishan praised director Jason Sanjay's dedication and patience for the f
+(12 rows)
+
+
+=== 6. NEGATIVE stance examples — are they really negative? ===
+                         title                          |        actor         |  stance  |                        intensity                        
+--------------------------------------------------------+----------------------+----------+---------------------------------------------------------
+ کاهنان معبد بنیادگرایی                                 | religious clerics    | critical |  0.6999999999999999555910790149937383830547332763671875
+ नूंह में साइबर अपराध पर बड़ा एक्शन, पुलिस की निगरानी म        | Cybercriminals       | critical | 0.90000000000000002220446049250313080847263336181640625
+ കാഫിർ സ്ക്രീൻഷോട്ടിലെ എസ്ഐടി അന്വേഷണത്തിൽ പ്രതികരിച്ച്          | Pinarayi Vijayan     | critical |  0.6999999999999999555910790149937383830547332763671875
+ Tirupati: తిరుపతి స్విమ్స్‌లో ప్రపంచ పొగాకు వ్యతిరేక ద               | Dr. R.V. Kumar       | critical |  0.6999999999999999555910790149937383830547332763671875
+ ఐపీఎల్ రూల్స్ మార్చండని చెప్పిన సచిన్ టెండూల్కర్.. బీస                 | Virat Kohli          | critical | 0.59999999999999997779553950749686919152736663818359375
+ 1800 அரசு பள்ளிகளில் தலைமை ஆசிரியர்கள் இல்லை - அன்புமண       | DMK                  | critical |  0.8000000000000000444089209850062616169452667236328125
+ نمایندگان پاکستان و چین درباره فعالیت‌های گروه‌های ترو   | Pakistan             | critical |  0.6999999999999999555910790149937383830547332763671875
+ Maratha quota: Jarange ends fast after talks with govt | Manoj Jarange        | critical |  0.8000000000000000444089209850062616169452667236328125
+ కువైట్ ఎయిర్‌పోర్ట్‌పై ఇరాన్ దాడి.. విమానాలు నిలిపివేత                      | Iran                 | critical |  0.8000000000000000444089209850062616169452667236328125
+ Billionaire Mark Cuban exposes American healthcare: Wh | US Healthcare System | critical |  0.6999999999999999555910790149937383830547332763671875
+(10 rows)
+
+
+=== 7. POSITIVE stance examples ===
+                         title                          |          actor           |   stance   |                        intensity                         
+--------------------------------------------------------+--------------------------+------------+----------------------------------------------------------
+ ‘This is not monarchy’: Bihar CM's indirect swipe at R | Samrat Choudhary         | supportive |  0.59999999999999997779553950749686919152736663818359375
+ US Expects Hezbollah to De-Escalate — Rubio Tells Leba | Joseph Aoun              | supportive |  0.59999999999999997779553950749686919152736663818359375
+ TikTok warped Americans’ view of the Iran war — one po | American military forces | supportive |  0.59999999999999997779553950749686919152736663818359375
+ Ardian backs €5bn AI ‘gigafactory’ near Paris          | Ardian                   | supportive |   0.6999999999999999555910790149937383830547332763671875
+ New Mobile App Feature Brings Real-Time Bus Tracking t | Prasanna Gunasena        | supportive |  0.59999999999999997779553950749686919152736663818359375
+ north korea win asian women s champions league title 1 | Naegohyang FC            | supportive |  0.40000000000000002220446049250313080847263336181640625
+ PBBM ends ‘highly productive’ Japan state visit with e | Ferdinand R. Marcos Jr.  | supportive |  0.59999999999999997779553950749686919152736663818359375
+ 'टीचर्स ही पेपर लीक में शामिल, ये सबसे चिंताजनक', NEET        | Yogesh Singh             | supportive |  0.40000000000000002220446049250313080847263336181640625
+ Senate issues may affect passage of PBBM admin priorit | Ferdinand R. Marcos Jr.  | supportive |  0.40000000000000002220446049250313080847263336181640625
+ WHO chief arrives at epicentre of DRC’s Ebola outbreak | Government of DRC        | supportive | 0.299999999999999988897769753748434595763683319091796875
+(10 rows)
+
+
+=== 8. potential issues: stances with NULL/empty actor + suspiciously generic actors ===
+ null_actor | generic_actor | null_intensity | total  
+------------+---------------+----------------+--------
+          0 |           658 |              0 | 182970
+(1 row)
+

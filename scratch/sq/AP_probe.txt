@@ -1,0 +1,47 @@
+name|domain|lang|tier|kind|notes|home_status|feed_path|feed_status|feed_kind
+Andhra Prabha|andhraprabha.com|te|2|rss|Eenadu group|200||000|
+Andhra Bhoomi|andhrabhoomi.net|te|2|rss|established Telugu daily|000000||000|
+Suryaa|suryaa.com|te|2|rss|Telugu daily|000000||000|
+Prajashakti|prajasakti.com|te|3|rss|CPI Telugu paper|403||000|
+Visalandhra|visalaandhra.com|te|3|rss|CPI(M) Telugu paper|200|https://visalaandhra.com/feed/|200|autodiscovered:<rss
+Praja Pakshapatam|prajapakshapatham.com|te|3|rss||000000||000|
+Mahaa News|mahaanews.com|te|2|rss||200||000|
+10TV|10tv.in|te|2|rss||200|https://10tv.in/rss|200|common-path:<rss
+ABN Andhra Jyothi|abnandhrajyothy.com|te|1|rss||200||000|
+ABN Telugu TV|abntelugutv.com|te|2|rss||000000||000|
+Sakshi TV|sakshi.tv|te|1|rss||000000||000|
+Big TV Live|bigtvlive.com|te|2|rss||403||000|
+Studio N Telugu|studion.tv|te|3|rss||200||000|
+ETV Andhra Pradesh|etv.co.in|te|1|rss|ETV network|200||000|
+RTV Telugu|rtv.in|te|3|rss||200||000|
+iNews Telugu|inews.zee5.com|te|3|rss||000000||000|
+CVR News|cvrnews.in|te|2|rss||000000||000|
+TV5 News Telugu|tv5news.in|te|2|rss||200|https://www.tv5news.in/google_feeds.xml|200|autodiscovered:<rss
+T News Live|tnewslive.com|te|3|rss||000000||000|
+Bharat Today|bharattoday.in|te|3|rss||000000||000|
+V6 News|v6news.tv|te|2|rss||000000||000|
+10TV News|10tvnews.in|te|3|rss||200||000|
+Tupaki|tupaki.com|te|2|rss|popular Telugu news aggregator|200|https://www.tupaki.com/google_feeds.xml|200|autodiscovered:<rss
+AP7AM|ap7am.com|te|2|rss|AP-focused|200||000|
+Telugu Rajyam|telugurajyam.com|te|3|rss||200|https://telugurajyam.com/feed|200|autodiscovered:<rss
+Greater Andhra|greatandhra.com|en|3|rss|mixed entertainment+news|200|https://www.greatandhra.com/feed/|200|autodiscovered:<rss
+AP Beat|apbeat.in|en|3|rss||000000||000|
+Andhra Wishesh|andhrawishesh.com|en|3|rss||000000||000|
+Telugu One|teluguone.com|te|3|rss||200|https://www.teluguone.com/news/rss/politics/politics-39.rss|200|autodiscovered:<rss
+iDream Media News|idreammedia.com|te|3|rss||200||000|
+SumanTV News|sumantv.com|te|3|rss||200||000|
+Telugu Stop|telugustop.com|te|3|rss||403||000|
+Gulte|gulte.com|en|3|rss|AP+TG news/ent|200||000|
+NTV Live|ntvlive.in|te|3|rss||000000||000|
+Telugu Reporter|telugureporter.com|te|3|rss||200||000|
+Telugu Bullet|telugubullet.com|te|3|rss||200|https://telugubullet.com/feed/|200|autodiscovered:<rss
+Andhra Today|andhratoday.com|en|3|rss||403||000|
+Andhra Headlines|andhraheadlines.com|en|3|rss||200||000|
+Just Andhra|justandhra.com|en|3|rss||000000||000|
+Times of India — Andhra Pradesh|timesofindia.indiatimes.com/city/andhra-pradesh|en|1|rss||404||000|
+Times of India — Hyderabad|timesofindia.indiatimes.com/city/hyderabad|en|1|rss||200||000|
+Times of India — Vijayawada|timesofindia.indiatimes.com/city/vijayawada|en|1|rss||200||000|
+Times of India — Visakhapatnam|timesofindia.indiatimes.com/city/visakhapatnam|en|1|rss||200||000|
+News9 Live — Telangana|news9live.com/state/telangana|en|2|rss||200|https://www.news9live.com/feedapi/state/telangana|200|autodiscovered:<rss
+News9 Live — AP|news9live.com/state/andhra-pradesh|en|2|rss||200|https://www.news9live.com/feedapi/state/andhra-pradesh|200|autodiscovered:<rss
+The Wire Telugu|telugu.thewire.in|te|2|rss||000000||000|

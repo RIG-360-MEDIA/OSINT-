@@ -1,0 +1,622 @@
+[
+  {
+    "i": 0,
+    "page": 1,
+    "headline": "Physics tops complaints on CBSE Class XII grading",
+    "subheadline": "Thousands Of Students, And Teachers, Claim Missing Marks",
+    "byline": "Swati Shinde Gole",
+    "body_head": "Mathematics generated the second largest volume of complaints, with students alleging intermediate steps weren't adequately marked.\n\nWhen a student applied for re-evaluation, CBSE sent a scanned copy of the answer sheet, with step-wise marking, to the student's roll number. CBSE acknowledged the err",
+    "body_paras": 3,
+    "body_len": 849,
+    "section": "National",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 241.3,
+    "bbox": [
+      772.8,
+      392.2,
+      1970.4,
+      918.2
+    ]
+  },
+  {
+    "i": 1,
+    "page": 1,
+    "headline": "On last day to seek re-evaluation, portal glitches lock students out",
+    "subheadline": "",
+    "byline": "Swati Shinde Gole",
+    "body_head": "Students across India extended their complaints after technical disruptions and security concerns on the CBSE re-evaluation portal. Students said the additional help line was of little use when technical glitches continued to affect the process.\n\nApplicants reported login failures, slow response tim",
+    "body_paras": 4,
+    "body_len": 815,
+    "section": "National",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 63.6,
+    "bbox": [
+      732.0,
+      1960.8,
+      1672.3,
+      2125.9
+    ]
+  },
+  {
+    "i": 2,
+    "page": 1,
+    "headline": "Law grad dies, woman takes ill at Mumbai gig, FIR against organisers",
+    "subheadline": "",
+    "byline": "Ahmad Ali Khan | TNN",
+    "body_head": "Mumbai: A 26-year-old law graduate died and a woman was severely injured after consuming suspected spurious alcohol at a music event at Worli's NSCI Dome on Saturday night. Police have registered an FIR against the event's organisers.\n\nPreliminary findings suggest dehydration or a drug overdose may ",
+    "body_paras": 3,
+    "body_len": 601,
+    "section": "National",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 115.5,
+    "bbox": [
+      81.1,
+      2148.0,
+      678.2,
+      2553.6
+    ]
+  },
+  {
+    "i": 3,
+    "page": 1,
+    "headline": "ASI removes Vagdevi idol stealthily installed at Bhojshala sanctum",
+    "subheadline": "",
+    "byline": "Rajesh Jauhar | TNN",
+    "body_head": "Dhar: An 8th-century idol of Goddess Vagdevi was surreptitiously installed inside the sanctum sanctorum of the highly sensitive Bhojshala complex in Madhya Pradesh's Dhar district on May 22. It allegedly remained there for several hours before being removed by ASI officials later that evening.\n\nThe ",
+    "body_paras": 3,
+    "body_len": 853,
+    "section": "National",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 88.3,
+    "bbox": [
+      2074.1,
+      387.8,
+      2662.1,
+      735.4
+    ]
+  },
+  {
+    "i": 4,
+    "page": 1,
+    "headline": "IITs add 600+ seats, total intake goes up to 18,826",
+    "subheadline": "",
+    "byline": "Hemali Chhaparia",
+    "body_head": "Mumbai: The Indian Institutes of Technology have increased their seat intake by over 600 this year, taking the total number to 18,826, up from 18,218 last year.\n\nThe largest increase comes from IIT Jodhpur, which has added 126 seats, followed by IIT Mandi with an addition of 120 seats.",
+    "body_paras": 2,
+    "body_len": 286,
+    "section": "National",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 72.5,
+    "bbox": [
+      2074.6,
+      1617.6,
+      2666.9,
+      1871.5
+    ]
+  },
+  {
+    "i": 5,
+    "page": 2,
+    "headline": "DMK out of alliance, TMC not in office, INDIA bloc eyes reset",
+    "subheadline": "23 Parties Have Confirmed Their Participation: Jairam Ramesh",
+    "byline": "Subodh Shukla",
+    "body_head": "New Delhi: Amid political polarisation and accumulating grievances against the BJP govt, opposition parties on Monday for a brainstorming session on the road ahead — the first such meeting beyond parliamentary coordination since the 2024 Lok Sabha elections.\n\nThe meeting concludes with PM Narendra M",
+    "body_paras": 5,
+    "body_len": 1566,
+    "section": "Politics",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 243.6,
+    "bbox": [
+      81.1,
+      164.6,
+      1700.2,
+      583.7
+    ]
+  },
+  {
+    "i": 6,
+    "page": 2,
+    "headline": "World losing nearly $700 per domestic LPG cylinder: Govt",
+    "subheadline": "",
+    "byline": "Abad Mather",
+    "body_head": "New Delhi: Oil marketing companies are still incurring losses on LPG refills following international price hikes. It currently costs $730 per cylinder, while domestic consumers pay only $64 per cylinder — down from $94.5 earlier. The subsidy on domestic LPG cylinders, used by hotels and businesses, ",
+    "body_paras": 2,
+    "body_len": 1144,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 114.5,
+    "bbox": [
+      1382.9,
+      151.2,
+      2666.9,
+      392.2
+    ]
+  },
+  {
+    "i": 7,
+    "page": 2,
+    "headline": "Chhatrapati Shivaji statue to be installed in Israel",
+    "subheadline": "",
+    "byline": "Mansoor Iqbal",
+    "body_head": "Mumbai: The Chhatrapati Shivaji Maharaj Vastu Sangrahalaya (CSMVS) here has announced plans to install a replica of the iconic statue of Chhatrapati Shivaji Maharaj in Israel. The announcement was made on the occasion of Shivaji Jayanti, which marks the anniversary of the coronation of Chhatrapati S",
+    "body_paras": 1,
+    "body_len": 866,
+    "section": "International",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 30.6,
+    "bbox": [
+      85.9,
+      1568.6,
+      375.4,
+      1796.2
+    ]
+  },
+  {
+    "i": 8,
+    "page": 2,
+    "headline": "Trinamool HQ property owner goes to cops, wants party out",
+    "subheadline": "",
+    "byline": "Poulami Das",
+    "body_head": "Kolkata: TMC's state headquarters at 30, Hare Krishna Road, may soon be vacated. Suvendu Adhikari, Leader of Opposition in the state, on Sunday cited a spate of arrests and said the WB police may have to call on the Brigade Parade Ground if TMC does not vacate the premises.\n\nThe TMC's state headquar",
+    "body_paras": 3,
+    "body_len": 630,
+    "section": "Politics",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 128.1,
+    "bbox": [
+      420.0,
+      1563.8,
+      1351.7,
+      1894.1
+    ]
+  },
+  {
+    "i": 9,
+    "page": 2,
+    "headline": "MLAs opposed Pilot as CM in 2022, not party brass: Gehlot",
+    "subheadline": "",
+    "byline": "",
+    "body_head": "Jaipur: Former Rajasthan chief minister Ashok Gehlot on Sunday said that the indication given by Sachin Pilot in September 2022 was not a rebellion but a 'disagreement' among the MLAs over Sachin Pilot's elevation as the chief minister.\n\nGehlot said that he was 'hurt' when Sonia Gandhi did not atten",
+    "body_paras": 2,
+    "body_len": 463,
+    "section": "Politics",
+    "lang": "en",
+    "anchored": false,
+    "img_kb": 0.0,
+    "bbox": [
+      0.0,
+      0.0,
+      2748.0,
+      4278.0
+    ]
+  },
+  {
+    "i": 10,
+    "page": 2,
+    "headline": "No anaemia estimates in NFHS fact sheets, officials say report not final",
+    "subheadline": "",
+    "byline": "Tatws News Network",
+    "body_head": "New Delhi: The absence of anaemia estimates from the newly-released National Family Health Survey (NFHS-5) fact sheets has sparked concerns among experts. The Union health ministry on Sunday said that the report is not final and more data will be released later.\n\nThe fact sheets released so far prov",
+    "body_paras": 2,
+    "body_len": 777,
+    "section": "National",
+    "lang": "en",
+    "anchored": false,
+    "img_kb": 0.0,
+    "bbox": [
+      0.0,
+      0.0,
+      2748.0,
+      4278.0
+    ]
+  },
+  {
+    "i": 11,
+    "page": 2,
+    "headline": "Maha hotel denied stay for being 'Kashmiri': BJP neta",
+    "subheadline": "",
+    "byline": "Naseer Elias",
+    "body_head": "Srinagar: BJP's media in-charge in J&K, Sajid Yousuf, claimed that he was denied accommodation at a hotel in Aurangabad after the staff came to know he was Kashmiri. He was asked to leave due to 'suspicion'. The hotel owner denied the allegations.\n\nYousuf tweeted on Sunday that he was 'shocked' to b",
+    "body_paras": 2,
+    "body_len": 607,
+    "section": "National",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 80.0,
+    "bbox": [
+      1766.9,
+      2482.1,
+      2328.0,
+      2767.7
+    ]
+  },
+  {
+    "i": 12,
+    "page": 2,
+    "headline": "Man returns as sadhu after 46 yrs, asks mom for alms",
+    "subheadline": "",
+    "byline": "From Pundit",
+    "body_head": "Pithoragarh: A 46-year-old man from Pithoragarh returned home after spending 46 years as a sadhu. He had left home at the age of 16 and was living in a temple in Pithoragarh. He returned home on June 4 when a sadhu with a long beard arrived at his door seeking bhiksha. The family later learnt that t",
+    "body_paras": 2,
+    "body_len": 571,
+    "section": "National",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 71.8,
+    "bbox": [
+      1401.1,
+      3337.9,
+      2341.4,
+      3511.7
+    ]
+  },
+  {
+    "i": 13,
+    "page": 2,
+    "headline": "Akhilesh claims Ram temple funds missing",
+    "subheadline": "",
+    "byline": "Lucknow: Samajwadi Party's",
+    "body_head": "Lucknow: Samajwadi Party's Akhilesh Yadav on Sunday claimed that crores of rupees from donations offered at the Ram temple in Ayodhya have been embezzled. The SP chief alleged that the amount was used to fund the party's private businesses.\n\nThe BJP, however, termed it baseless and said the donation",
+    "body_paras": 2,
+    "body_len": 347,
+    "section": "Politics",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 15.2,
+    "bbox": [
+      2056.3,
+      3404.6,
+      2327.5,
+      3511.7
+    ]
+  },
+  {
+    "i": 14,
+    "page": 2,
+    "headline": "5 rebel TMC MLAs get security upgrades",
+    "subheadline": "",
+    "byline": "Bengal on Sunday",
+    "body_head": "The MLAs — Chandranath Sinha, Rajendra Prasad Singh, Sisir Shishat, Nalin Coomar and Biddhan Chatterjee — were upgraded from government-provided Level 2 to Level 3 security. The decision was taken after they received threats to their lives.",
+    "body_paras": 1,
+    "body_len": 240,
+    "section": "Politics",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 13.9,
+    "bbox": [
+      2381.8,
+      3560.6,
+      2653.0,
+      3645.6
+    ]
+  },
+  {
+    "i": 15,
+    "page": 2,
+    "headline": "FIR against SHO for illegal detention",
+    "subheadline": "",
+    "byline": "",
+    "body_head": "A UP court has directed registration of an FIR against the SHO of Sawahar police station after finding prima facie evidence of illegal detention and fabrication of police records.",
+    "body_paras": 1,
+    "body_len": 179,
+    "section": "National",
+    "lang": "en",
+    "anchored": false,
+    "img_kb": 0.0,
+    "bbox": [
+      0.0,
+      0.0,
+      2748.0,
+      4278.0
+    ]
+  },
+  {
+    "i": 16,
+    "page": 3,
+    "headline": "RBI survey: Weak sentiment among consumers, analysts",
+    "subheadline": "Driven By Lowered Growth Outlook, Inflation Fears, ₹ Woes",
+    "byline": "TIMES NEWS NETWORK",
+    "body_head": "Mumbai: A sharp deterioration in consumer sentiment alongside downgraded growth expectations and a weakening rupee has signalled a cautious approach to spending, according to the Reserve Bank of India’s (RBI) survey. The RBI’s Consumer Confidence Survey and the 100th round of Professional Forecaster",
+    "body_paras": 3,
+    "body_len": 1263,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 514.2,
+    "bbox": [
+      429.1,
+      507.8,
+      2666.9,
+      1033.9
+    ]
+  },
+  {
+    "i": 17,
+    "page": 3,
+    "headline": "Tata-backed Small Animal Hospital sees board churn",
+    "subheadline": "",
+    "byline": "",
+    "body_head": "Mumbai: The board of Small Animal Hospital, India’s largest pet care facility and a Chennai-based Tata Trusts initiative, has undergone a significant reshuffle. Shan Reddy, former personal assistant to Tata Trusts chairman Ratan Tata, has stepped down. Sources close to the development said he was as",
+    "body_paras": 3,
+    "body_len": 1052,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 75.4,
+    "bbox": [
+      452.2,
+      1644.5,
+      1324.3,
+      1876.3
+    ]
+  },
+  {
+    "i": 18,
+    "page": 3,
+    "headline": "Aviation min initiates study on financially stressed airlines",
+    "subheadline": "",
+    "byline": "",
+    "body_head": "New Delhi: The ongoing efforts to help financially stressed airlines in India to assess structural weaknesses and find a turnaround plan may account for half of global air transport demand growth and 15% increase in global aircraft deliveries over the next decade, making it one of the world’s bigges",
+    "body_paras": 1,
+    "body_len": 732,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 123.1,
+    "bbox": [
+      438.2,
+      2562.2,
+      1328.6,
+      2865.6
+    ]
+  },
+  {
+    "i": 19,
+    "page": 3,
+    "headline": "LIC to look at long-term investment instruments",
+    "subheadline": "",
+    "byline": "",
+    "body_head": "New Delhi: State-owned LIC is engaging with key financial regulators, including RBI and SEBI, on the availability of long-term investment instruments. When annuity markets are becoming more favoured by policyholders, we need to have more investment products on the table. Given that insurance compani",
+    "body_paras": 3,
+    "body_len": 819,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 523.2,
+    "bbox": [
+      433.9,
+      507.8,
+      2666.9,
+      1033.9
+    ]
+  },
+  {
+    "i": 20,
+    "page": 3,
+    "headline": "Germany's G+D bets ₹1,100cr on India, eyes on financially stressed acquisition",
+    "subheadline": "",
+    "byline": "",
+    "body_head": "Mumbai: Giesecke+Devrient (G+D), a German technology company spanning currency, digital payments and security solutions, has bet ₹1,100cr on India, betting on the country's growing digital economy and a push for financial inclusion. The company also sees an opportunity to acquire financially stresse",
+    "body_paras": 3,
+    "body_len": 624,
+    "section": "Business",
+    "lang": "en",
+    "anchored": false,
+    "img_kb": 0.0,
+    "bbox": [
+      0.0,
+      0.0,
+      2748.0,
+      4278.0
+    ]
+  },
+  {
+    "i": 21,
+    "page": 3,
+    "headline": "Protein products flood market, reshape Indian diet",
+    "subheadline": "THE GREAT PROTEIN PUSH",
+    "byline": "",
+    "body_head": "Mumbai: Every other Indian—from eggs to coffee and atta to jams—is now going the protein way. Enthusiasts, now growing more than 80% of the protein consumed in India—are pushing new products following the lead of Nestle, which has introduced protein-enriched coffee creamers and milkshakes. Protein i",
+    "body_paras": 3,
+    "body_len": 1281,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 128.4,
+    "bbox": [
+      90.2,
+      3413.8,
+      1979.5,
+      3574.1
+    ]
+  },
+  {
+    "i": 22,
+    "page": 3,
+    "headline": "TaMo to gain from scrapage push",
+    "subheadline": "",
+    "byline": "",
+    "body_head": "Chennai: With a network of 1,85,000 retail touchpoints across India, Tata Motors is well-positioned to benefit from the proposed scrappage policy. The company expects to boost vehicle scrappage activity and demand for cleaner vehicles. For Tata Motors, which manufactures more than 50% of India’s com",
+    "body_paras": 1,
+    "body_len": 741,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 33.2,
+    "bbox": [
+      1730.9,
+      2887.7,
+      2666.9,
+      2968.3
+    ]
+  },
+  {
+    "i": 23,
+    "page": 3,
+    "headline": "Decoding Investing In Balanced Advantage Funds",
+    "subheadline": "",
+    "byline": "",
+    "body_head": "Balanced advantage funds (BAFs) are mutual fund schemes that invest in a mix of equity and debt. The percentage allocation to equity may vary between 30-90% depending on market valuations. When market valuations are high, allocation to equity decreases. When valuations become cheap, equity allocatio",
+    "body_paras": 9,
+    "body_len": 846,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 31.0,
+    "bbox": [
+      1910.9,
+      1443.8,
+      2327.5,
+      1622.4
+    ]
+  },
+  {
+    "i": 24,
+    "page": 3,
+    "headline": "'India to a/c for half of oil demand growth'",
+    "subheadline": "",
+    "byline": "",
+    "body_head": "St Petersburg (Russia): India will account for half of global oil demand growth and 15% increase in global aircraft deliveries over the next decade, making it one of the world’s biggest aviation sector challenges. The aviation ministry has been talking to assess structural weaknesses and find a turn",
+    "body_paras": 1,
+    "body_len": 457,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 15.0,
+    "bbox": [
+      76.8,
+      2950.1,
+      379.7,
+      3035.0
+    ]
+  },
+  {
+    "i": 25,
+    "page": 4,
+    "headline": "The Stayatollahs",
+    "subheadline": "100 days of Iran war are littered with US missteps. Trump should start firing some advisers",
+    "byline": "",
+    "body_head": "It's a conflict that nobody - except Israel - wanted. And yet, the US Israel war against Iran has now lasted 100 days, with no clear end in sight. To put it bluntly this speaks to terribly poor strategy. Hundreds of thousands displaced, thousands killed, hundreds of thousands of displaced, and unpre",
+    "body_paras": 1,
+    "body_len": 1427,
+    "section": "Opinion",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 120.1,
+    "bbox": [
+      162.7,
+      405.6,
+      795.4,
+      766.6
+    ]
+  },
+  {
+    "i": 26,
+    "page": 4,
+    "headline": "The Cockroach Isn't A Nuisance",
+    "subheadline": "India's too big for a movement of the young to upend its system. And youth anger doesn't necessarily produce better governance. That said, politicians must respond to what justifiably angry young Indians are saying",
+    "byline": "R Jagannathan",
+    "body_head": "Politicians tend to get spooked when they hear of an unexpected source. A social media phenomenon called the Cockroach effect may have been potent enough to block its website, and related social media handles on Instagram and X. But its founders, Himanta Biswa Sarma, Suvendu Adhikari and Joseph Vija",
+    "body_paras": 1,
+    "body_len": 792,
+    "section": "Opinion",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 215.3,
+    "bbox": [
+      998.9,
+      200.6,
+      2621.8,
+      521.3
+    ]
+  },
+  {
+    "i": 27,
+    "page": 4,
+    "headline": "No Handshakes",
+    "subheadline": "Sport is no longer insulated from geopolitics, but every qualified athlete must get to compete",
+    "byline": "",
+    "body_head": "Organised sports play inside the theatre of politeness. Sportsmanship, it's often called. Ritualised handshakes, lining up after the game, applauding opponents, accepting officials' decisions, wearing uniforms, observing rules... these are all built around the 'good idea' of how human beings ought t",
+    "body_paras": 1,
+    "body_len": 1503,
+    "section": "Opinion",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 44.3,
+    "bbox": [
+      203.5,
+      1880.6,
+      736.8,
+      2072.2
+    ]
+  },
+  {
+    "i": 28,
+    "page": 4,
+    "headline": "One Fire In Capital, Three Lessons For India",
+    "subheadline": "Delhi P&R tragedy shows why safe density, proportionate fire compliance, and continuous inspection matter more than ritual NOCs - Piyush Doshi",
+    "byline": "Piyush Doshi",
+    "body_head": "Last week, 21 people died when a fire tore through a five-storey bed-and-breakfast in Hauz Rani, Malviya Nagar, in south Delhi. Reports say the building had no fire NOC, a single entry and exit, sealed windows and no fire extinguishers or kitchen chimney from which smoke and flames moved up the cent",
+    "body_paras": 1,
+    "body_len": 704,
+    "section": "National",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 144.7,
+    "bbox": [
+      1098.2,
+      1715.5,
+      2517.6,
+      1952.2
+    ]
+  },
+  {
+    "i": 29,
+    "page": 4,
+    "headline": "Wild Objections",
+    "subheadline": "Animals demand linguistic justice",
+    "byline": "Sunil Wadhwani",
+    "body_head": "At precisely 11am, on the unforgiving Mumbai sun, Azad Maidan, animals assembled in what authorities are calling the largest protest ever. Association Against Verbal Abuse of Animals (AAVA) is calling it 'a call to action'. There were loud slogans, occasional bursts of laughter, and a sea of placard",
+    "body_paras": 1,
+    "body_len": 995,
+    "section": "Other",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 36.7,
+    "bbox": [
+      212.6,
+      3092.6,
+      736.8,
+      3279.8
+    ]
+  },
+  {
+    "i": 30,
+    "page": 4,
+    "headline": "A Rebel Against The Absurdity Of Life",
+    "subheadline": "",
+    "byline": "Jug Suraya",
+    "body_head": "Camus portrayed Sisyphus as the archetypal 'absurdist hero' who, instead of longing for oblivion through an existential crisis, encounters an inviolable object. For Camus, the irresistible force was 'the absurd' - man's unquenchable thirst for meaning in an apparently meaningless world. In The Myth ",
+    "body_paras": 1,
+    "body_len": 808,
+    "section": "Other",
+    "lang": "en",
+    "anchored": false,
+    "img_kb": 0.0,
+    "bbox": [
+      0.0,
+      0.0,
+      2748.0,
+      4278.0
+    ]
+  }
+]

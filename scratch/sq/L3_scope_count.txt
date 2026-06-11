@@ -1,0 +1,3 @@
+=== L3 in-scope count: is_template_family=false AND article_count>=5 ===
+598
+36452

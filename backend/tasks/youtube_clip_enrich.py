@@ -37,6 +37,29 @@ _MAX_OUTPUT_TOKENS = 1500     # TOKEN_LIMITS['transcript_analysis']
 # Intensity string → numeric (TRANSCRIPT_SYS emits high/medium/low strings)
 _INTENSITY_MAP = {"high": 0.9, "medium": 0.5, "low": 0.3}
 
+# Dedicated enrichment prompt — the clip is ALREADY identified, so we extract
+# structured fields directly (no clip-finding, no [Ns] timestamps). Reusing the
+# extraction prompt here returned clips=[] because the stored transcript_segment
+# has no timestamp markers.
+_ENRICH_SYS = """You are a political-intelligence analyst. You are given the transcript of ONE already-selected news clip about {entity}. Extract structured intelligence from it.
+
+Output VALID JSON only — no markdown, no prose — with EXACTLY these keys:
+{{
+  "segment_type": "debate|interview|speech|press_conference|news_report|panel",
+  "speaker": "<name of the main speaker, or null>",
+  "quotes": [{{"speaker": "<name>", "text": "<verbatim words, original language ok>", "is_verbatim": false}}],
+  "claims": [{{"subject": "<actor>", "predicate": "<action or assertion>", "object": "<target, topic or figure>"}}],
+  "stances": [{{"actor": "<real named person/org>", "target": "<entity, policy or topic>", "stance": "supports|opposes|criticises|praises|neutral", "intensity": "high|medium|low"}}],
+  "locations": [{{"country": "<full English name e.g. India>", "region": "<state or null>", "city": "<city or null>"}}]
+}}
+
+RULES:
+- Extract EVERY factual/political assertion as a subject-predicate-object claim. Political speech usually has 2-5.
+- quotes: statements actually made; name the speaker where the transcript allows.
+- stances: who is for/against whom. Use real named actors only — never 'Speaker', 'Anchor', 'Host', 'Unknown'.
+- Any array with nothing to extract = []. Never invent.
+- The clip is ALREADY chosen — do NOT judge newsworthiness or emit a 'clips' wrapper, just extract these fields."""
+
 
 # ── Celery entry points ───────────────────────────────────────────────────────
 
@@ -150,15 +173,11 @@ async def _enrich_claimed(clip_id: int) -> bool:
         return True  # terminal, not an error
 
     entity = clip.matched_entity
-    sys_prompt = build_transcript_sys(
-        channel_name=clip.channel_name,
-        entities=[entity],
-    )
+    sys_prompt = _ENRICH_SYS.format(entity=entity)
     user_msg = (
-        f"Video title: {clip.video_title}\n"
-        f"Entity to focus on: {entity}\n"
+        f"Clip is about: {entity}\n"
         f"Transcript language: {lang}\n\n"
-        f"Transcript:\n{segment[:_MAX_SEGMENT_CHARS]}"
+        f"Clip transcript:\n{segment[:_MAX_SEGMENT_CHARS]}"
     )
 
     parsed = await _call_with_retry(
@@ -169,27 +188,16 @@ async def _enrich_claimed(clip_id: int) -> bool:
         await _mark_status(clip_id, "extract_failed")
         return False
 
-    # Merge structured fields from all clips the LLM found in this segment.
-    all_claims: list[dict] = []
-    all_quotes: list[dict] = []
-    all_stances: list[dict] = []
-    all_locations: list[dict] = []
-    segment_type: str | None = None
-    speaker: str | None = None
-
-    for clip_raw in (parsed.get("clips", []) or []):
-        if not isinstance(clip_raw, dict):
-            continue
-        if not segment_type:
-            segment_type = clip_raw.get("segment_type") or None
-        if speaker is None:
-            raw_speaker = clip_raw.get("speaker")
-            if raw_speaker and str(raw_speaker).strip():
-                speaker = str(raw_speaker).strip()
-        all_claims.extend(clip_raw.get("claims", []) or [])
-        all_quotes.extend(clip_raw.get("quotes", []) or [])
-        all_stances.extend(clip_raw.get("stances", []) or [])
-        all_locations.extend(clip_raw.get("locations", []) or [])
+    # Flat structured fields extracted directly from this already-identified clip
+    # (no clip-finding, no timestamps — the old code reused the extraction prompt
+    # which needs [Ns]-marked input and returned clips=[] on these segments).
+    all_claims: list[dict] = parsed.get("claims", []) or []
+    all_quotes: list[dict] = parsed.get("quotes", []) or []
+    all_stances: list[dict] = parsed.get("stances", []) or []
+    all_locations: list[dict] = parsed.get("locations", []) or []
+    segment_type = parsed.get("segment_type") or None
+    _sp = parsed.get("speaker")
+    speaker = str(_sp).strip() if _sp and str(_sp).strip() else None
 
     topic_fine, topic_coarse = await _classify_topic(clip.summary, entity)
 

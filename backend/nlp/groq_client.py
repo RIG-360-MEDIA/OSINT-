@@ -57,6 +57,44 @@ TEMPERATURES: dict[str, float] = {
 # Task types that use the fast model by default
 _FAST_TASK_TYPES = frozenset({"classification", "translation"})
 
+# ── Per-pillar model routing + cross-model fallback ──────────────────────────
+# Groq TPD/RPD limits are PER-MODEL, per-key. Pinning each pillar to a
+# DIFFERENT primary model means the three heavy pillars (articles / youtube /
+# newspapers) draw from separate quota universes instead of all hammering one
+# model — so no single model is driven to its daily cap while ~9 others sit
+# idle on the same keys. Each chain then falls THROUGH to the next model when
+# its primary is exhausted (each hop = fresh quota). All models below were
+# confirmed available on the Groq free tier (probe 2026-06-11).
+# Kill-switch: LLM_MODEL_FALLBACK=0 restores the legacy single-model behaviour.
+_MODEL_FALLBACK = os.getenv("LLM_MODEL_FALLBACK", "1") == "1"
+_PILLAR_CHAINS: dict[str, list[str]] = {
+    "articles":   ["qwen/qwen3-32b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
+    "youtube":    ["llama-3.3-70b-versatile", "qwen/qwen3-32b", "llama-3.1-8b-instant"],
+    "newspapers": ["openai/gpt-oss-120b", "qwen/qwen3-32b", "llama-3.1-8b-instant"],
+}
+_DEFAULT_CHAIN: list[str] = [
+    "qwen/qwen3-32b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant",
+]
+_FALLBACK_TAIL: list[str] = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+
+
+def _resolve_chain(model: str | None, pillar: str | None, task_type: str) -> list[str]:
+    """Ordered models to try for this call, primary first.
+
+    - Fallback OFF → single model (legacy behaviour, byte-for-byte).
+    - Fast tasks  → the cheap fast model only (high TPM, own quota).
+    - Explicit model → honour it, then the shared fallback tail.
+    - Otherwise   → the pillar's chain (or the default chain)."""
+    if not _MODEL_FALLBACK:
+        if model is not None:
+            return [model]
+        return [FAST_MODEL if task_type in _FAST_TASK_TYPES else QUALITY_MODEL]
+    if task_type in _FAST_TASK_TYPES:
+        return [FAST_MODEL]
+    if model is not None:
+        return [model] + [m for m in _FALLBACK_TAIL if m != model]
+    return _PILLAR_CHAINS.get(pillar or "", _DEFAULT_CHAIN)
+
 
 # ── Custom Exceptions ──────────────────────────────────────────────────────────
 
@@ -1043,6 +1081,7 @@ async def call_groq(
     model: str | None = None,
     json_response: bool = False,
     max_tokens_override: int | None = None,
+    pillar: str | None = None,
 ) -> str:
     """
     Make a Groq API call with automatic key rotation and retry on rate limit.
@@ -1058,6 +1097,11 @@ async def call_groq(
                        Needed when one logical task_type covers multiple call shapes
                        (e.g. extraction v2 uses different caps for English vs
                        non-English with translation embedded in the output).
+        pillar:        Which ingestion pillar is calling ("articles", "youtube",
+                       "newspapers"). Selects a per-pillar primary model + fallback
+                       chain so the pillars draw from separate Groq per-model quotas
+                       instead of all hammering one model. Ignored when an explicit
+                       model is given or LLM_MODEL_FALLBACK=0.
 
     Returns:
         Stripped response text from Groq.
@@ -1068,8 +1112,10 @@ async def call_groq(
     """
     max_tokens = max_tokens_override or TOKEN_LIMITS.get(task_type, 1000)
 
-    if model is None:
-        model = FAST_MODEL if task_type in _FAST_TASK_TYPES else QUALITY_MODEL
+    # Resolve the ordered model chain (per-pillar primary + cross-model
+    # fallback). With LLM_MODEL_FALLBACK=0 this is a single-element list and
+    # the loop below behaves exactly like the legacy single-model path.
+    chain = _resolve_chain(model, pillar, task_type)
 
     temperature = TEMPERATURES.get(task_type, TEMPERATURES["generation"])
 
@@ -1086,36 +1132,43 @@ async def call_groq(
     # caller's higher-level retry logic to recover.
     attempts = min(len(groq_manager.keys), 3)
 
-    # Parallel pool path — gated by PARALLEL_LLM_POOL env flag (default on).
-    # Mixes Groq + Cerebras keys; rotates per call. No wasted retries on
-    # already-exhausted Groq keys before reaching Cerebras.
-    if _PARALLEL_LLM_POOL and (
-        _CEREBRAS_KEYS or _LLM_LOCAL_ONLY or _LOCAL_LLM_ENABLED
-    ):
-        return await _call_unified_pool(
-            messages, model, max_tokens, temperature, json_response
-        )
-
-    # Legacy sequential failover — Groq first, Cerebras only if Groq pool dies.
-    # Per-process rate limiting happens inside _call_groq_inner — once per
-    # HTTP attempt, not per call_groq invocation. That way a single
-    # call_groq's 3-key retry loop spreads its requests across the rate
-    # cap instead of bursting them all in the same second.
-    try:
-        return await _call_groq_inner(
-            messages, model, max_tokens, temperature, json_response, attempts
-        )
-    except GroqQuotaExhausted as exc:
-        # Groq pool fully cooled. Fail over to Cerebras (separate quota
-        # universe, same Llama models). Only triggers when configured.
-        if not _CEREBRAS_KEYS:
+    last_exc: Exception | None = None
+    for i, m in enumerate(chain):
+        try:
+            # Parallel pool path — gated by PARALLEL_LLM_POOL (default on).
+            # Mixes Groq + Cerebras keys; rotates per call.
+            if _PARALLEL_LLM_POOL and (
+                _CEREBRAS_KEYS or _LLM_LOCAL_ONLY or _LOCAL_LLM_ENABLED
+            ):
+                return await _call_unified_pool(
+                    messages, m, max_tokens, temperature, json_response
+                )
+            # Legacy sequential failover — Groq first, then Cerebras.
+            try:
+                return await _call_groq_inner(
+                    messages, m, max_tokens, temperature, json_response, attempts
+                )
+            except GroqQuotaExhausted:
+                if not _CEREBRAS_KEYS:
+                    raise
+                logger.info(
+                    "Groq pool exhausted — failing over to Cerebras for this call."
+                )
+                return await _call_cerebras(
+                    messages, m, max_tokens, temperature, json_response
+                )
+        except GroqQuotaExhausted as exc:
+            # This model's whole quota universe is exhausted — drop to the
+            # next model in the chain (a fresh per-model quota on the same keys).
+            last_exc = exc
+            if i < len(chain) - 1:
+                logger.info(
+                    "model %s exhausted (%s pillar) — falling back to %s",
+                    m, pillar or "default", chain[i + 1],
+                )
+                continue
             raise
-        logger.info(
-            "Groq pool exhausted — failing over to Cerebras for this call."
-        )
-        return await _call_cerebras(
-            messages, model, max_tokens, temperature, json_response
-        )
+    raise last_exc or GroqQuotaExhausted("model chain was empty")
 
 
 async def _call_groq_inner(

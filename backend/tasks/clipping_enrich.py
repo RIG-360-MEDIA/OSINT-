@@ -157,7 +157,7 @@ async def _enrich_claimed(clipping_id: str) -> bool:
     user_msg = f"HEADLINE: {headline}\n\nBODY (OCR):\n{body[:body_cap(lang)]}"
 
     parsed = await _call_with_retry(
-        call_groq, FAST_MODEL, sys_prompt, user_msg, max_tok, TASK_TYPE
+        call_groq, "newspapers", sys_prompt, user_msg, max_tok, TASK_TYPE
     )
     if parsed is None:
         await _mark_status(clipping_id, "extract_failed")
@@ -182,7 +182,7 @@ async def _enrich_claimed(clipping_id: str) -> bool:
 # ── LLM call with 2-attempt retry + robust parse (mirror substrate) ───────────
 
 async def _call_with_retry(
-    call_groq, model, sys_prompt: str, user_msg: str, max_tok: int, task_type: str
+    call_groq, pillar, sys_prompt: str, user_msg: str, max_tok: int, task_type: str
 ) -> dict[str, Any] | None:
     import json
     import re
@@ -195,7 +195,7 @@ async def _call_with_retry(
             raw = await call_groq(
                 system=sys_prompt,
                 user=user_msg,
-                model=model,
+                pillar=pillar,
                 task_type=task_type,
                 json_response=True,
                 max_tokens_override=max_tok,

@@ -162,7 +162,7 @@ async def _enrich_claimed(clip_id: int) -> bool:
     )
 
     parsed = await _call_with_retry(
-        call_groq, FAST_MODEL, sys_prompt, user_msg,
+        call_groq, "youtube", sys_prompt, user_msg,
         _MAX_OUTPUT_TOKENS, "transcript_analysis",
     )
     if parsed is None:
@@ -216,7 +216,7 @@ async def _enrich_claimed(clip_id: int) -> bool:
 # ── LLM call with 2-attempt retry + robust parse (mirror substrate) ───────────
 
 async def _call_with_retry(
-    call_groq, model: str, sys_prompt: str,
+    call_groq, pillar: str, sys_prompt: str,
     user_msg: str, max_tok: int, task_type: str,
 ) -> dict[str, Any] | None:
     import json
@@ -229,7 +229,7 @@ async def _call_with_retry(
             raw = await call_groq(
                 system=sys_prompt,
                 user=user_msg,
-                model=model,
+                pillar=pillar,
                 task_type=task_type,
                 json_response=True,
                 max_tokens_override=max_tok,

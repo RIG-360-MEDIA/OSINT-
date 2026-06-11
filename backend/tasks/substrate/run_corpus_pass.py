@@ -696,7 +696,7 @@ async def groq_semantic(
             raw = await call_groq(
                 system=sys_prompt or GROQ_SYS,
                 user=user_prompt,
-                model=FAST_MODEL,
+                pillar="articles",
                 task_type=GROQ_TASK_TYPE,
                 json_response=True,
                 max_tokens_override=max_tokens,

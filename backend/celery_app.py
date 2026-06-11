@@ -232,11 +232,15 @@ app.config_from_object(
             },
             # YouTube transcript fetch via relay — Hetzner calls the Tailscale
             # relay on the laptop, relay fetches from YouTube on residential IP.
-            # Limit 3 keeps us well under the relay's 15/min rate cap.
-            "fetch-youtube-transcripts-every-3-min": {
+            # Eased to limit 2 / 6 min (~20/hr, was 3/3min ~60/hr) — the laptop IP
+            # was ~67% blocked; backing off lets the IP cool so the success rate
+            # recovers (33%->~90%). The priority queue feeds political/newest first,
+            # so the reduced rate still covers the important videos. Dial back up
+            # once the block-rate drops.
+            "fetch-youtube-transcripts-every-6-min": {
                 "task": "tasks.fetch_youtube_transcripts",
-                "schedule": timedelta(minutes=3),
-                "kwargs": {"limit": 3},
+                "schedule": timedelta(minutes=6),
+                "kwargs": {"limit": 2},
                 "options": {"queue": "youtube"},
             },
             # YouTube extraction — drain transcribed rows into clips, every 5 min.

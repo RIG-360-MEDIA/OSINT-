@@ -134,6 +134,7 @@ def build_stored_clips(
                 ),
                 embedding=tuple(embedding),
                 importance=clip.importance,
+                is_watchlisted=clip.is_watchlisted,
             )
         )
     return out
@@ -172,14 +173,14 @@ async def persist_clips(clips: list[StoredClip], db, metrics: PipelineMetrics) -
                         clip_start_seconds, clip_end_seconds, embed_url,
                         matched_entity, summary, transcript_segment,
                         transcript_language, transcript_source, confidence,
-                        importance, labse_embedding
+                        importance, is_watchlisted, labse_embedding
                     ) VALUES (
                         :video_id, :video_title, :channel_id, :channel_name,
                         :video_published_at, :video_url,
                         :clip_start_seconds, :clip_end_seconds, :embed_url,
                         :matched_entity, :summary, :transcript_segment,
                         :transcript_language, :transcript_source, :confidence,
-                        :importance, CAST(:embedding AS vector)
+                        :importance, :is_watchlisted, CAST(:embedding AS vector)
                     )
                     ON CONFLICT (video_id, clip_start_seconds, matched_entity)
                     DO NOTHING
@@ -202,6 +203,7 @@ async def persist_clips(clips: list[StoredClip], db, metrics: PipelineMetrics) -
                     "transcript_source": c.transcript_source.value,
                     "confidence": c.confidence,
                     "importance": c.importance.value,
+                    "is_watchlisted": c.is_watchlisted,
                     # pgvector needs a string literal + an explicit CAST; asyncpg
                     # cannot encode a raw Python list to the vector type. Mirrors
                     # backend/nlp/nlp_embedding.py (the proven article path).

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 
 from .metrics import PipelineMetrics
 from .models import ExtractedClip, Importance, Transcript
@@ -30,6 +31,12 @@ from .quality import (
 )
 
 logger = logging.getLogger("youtube_v2")
+
+# Keep-all mode: store newsworthy clips even when the subject is NOT on the
+# monitored watchlist (tagged is_watchlisted=False), mirroring the article
+# corpus where the watchlist is a score, not an ingest gate. Off → legacy
+# watchlist-gated behaviour. Rollback instantly via YOUTUBE_KEEP_ALL=0.
+_YOUTUBE_KEEP_ALL = os.getenv("YOUTUBE_KEEP_ALL", "1") == "1"
 
 # Actor/speaker placeholder values the LLM emits when it has no real name.
 # Stances with these actors are dropped — they carry no intelligence value.
@@ -135,6 +142,7 @@ async def _extract_chunk(
     system_prompt: str,
     canonical: dict[str, str],
     metrics: PipelineMetrics,
+    keep_all: bool = False,
 ) -> list[ExtractedClip]:
     from backend.nlp.groq_client import FAST_MODEL, call_groq
 
@@ -161,14 +169,15 @@ async def _extract_chunk(
     metrics.record_proposed(len(proposed))
     out: list[ExtractedClip] = []
     for c in proposed:
-        gated = _gate_clip(c, canonical, metrics)
+        gated = _gate_clip(c, canonical, metrics, keep_all)
         if gated is not None:
             out.append(gated)
     return out
 
 
 def _gate_clip(
-    c: dict, canonical: dict[str, str], metrics: PipelineMetrics
+    c: dict, canonical: dict[str, str], metrics: PipelineMetrics,
+    keep_all: bool = False,
 ) -> ExtractedClip | None:
     """Apply entity / English / filler / importance gates to one raw clip."""
     if not isinstance(c, dict):
@@ -179,8 +188,22 @@ def _gate_clip(
         metrics.record_reject(RejectReason.LOW_IMPORTANCE)
         return None
 
-    entity = canonicalize_entity(c.get("entity"), canonical)
-    if entity is None:
+    # The watchlist is a TAG, not a gate (keep_all): a monitored subject is
+    # canonicalised + flagged watchlisted; an off-watchlist but newsworthy
+    # subject is kept verbatim and flagged is_watchlisted=False. Only a clip
+    # with no identifiable subject at all is dropped. (Legacy mode: any
+    # non-canonical entity is rejected, as before.)
+    canon = canonicalize_entity(c.get("entity"), canonical)
+    if canon is not None:
+        entity = canon
+        is_watchlisted = True
+    elif keep_all:
+        entity = str(c.get("entity") or "").strip()[:200]
+        if not entity:
+            metrics.record_reject(RejectReason.NON_CANONICAL_ENTITY, "empty")
+            return None
+        is_watchlisted = False
+    else:
         metrics.record_reject(
             RejectReason.NON_CANONICAL_ENTITY, f"got={c.get('entity')!r}"
         )
@@ -218,6 +241,7 @@ def _gate_clip(
         end_seconds=end,
         summary=summary,
         importance=importance,
+        is_watchlisted=is_watchlisted,
     )
 
 
@@ -254,7 +278,9 @@ async def extract_clips(
 
     canonical = build_canonical_lookup(entities)
     from .prompts import build_transcript_sys
-    system_prompt = build_transcript_sys(channel_name, entities, alias_block)
+    system_prompt = build_transcript_sys(
+        channel_name, entities, alias_block, keep_all=_YOUTUBE_KEEP_ALL
+    )
 
     results = await asyncio.gather(
         *(
@@ -265,6 +291,7 @@ async def extract_clips(
                 system_prompt=system_prompt,
                 canonical=canonical,
                 metrics=metrics,
+                keep_all=_YOUTUBE_KEEP_ALL,
             )
             for chunk in chunks
         )

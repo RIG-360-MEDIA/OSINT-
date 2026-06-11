@@ -103,11 +103,12 @@ class TranscriptFailure:
 class ExtractedClip:
     """A candidate clip from Groq, BEFORE quality gating / storage."""
 
-    entity: str            # canonical entity name (validated downstream)
+    entity: str            # canonical name if watchlisted, else the raw subject
     start_seconds: int
     end_seconds: int
     summary: str           # English summary (validated downstream)
     importance: Importance
+    is_watchlisted: bool = True  # False = newsworthy but off the monitored list
 
 
 @dataclass(frozen=True)
@@ -129,6 +130,7 @@ class StoredClip:
     confidence: float
     embedding: tuple[float, ...]
     importance: Importance
+    is_watchlisted: bool = True
 
     @property
     def embed_url(self) -> str:

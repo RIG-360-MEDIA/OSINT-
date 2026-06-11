@@ -69,6 +69,7 @@ def build_transcript_sys(
     channel_name: str,
     entities: list[str],
     alias_block: str = "",
+    keep_all: bool = False,
 ) -> str:
     """Return the TRANSCRIPT_SYS system prompt with entities injected.
 
@@ -106,9 +107,16 @@ def build_transcript_sys(
     parts += [
         (
             "WHAT TO EXTRACT:\n"
-            "Emit a clip for every segment where a monitored entity is mentioned AND "
-            "the mention carries intelligence value: a policy announcement, allegation, "
-            "direct statement, denial, election claim, controversy, or significant event. "
+            + (
+                "Emit a clip for every newsworthy segment — WHETHER OR NOT it mentions "
+                "a monitored entity. A segment qualifies if it carries intelligence "
+                "value: "
+                if keep_all else
+                "Emit a clip for every segment where a monitored entity is mentioned AND "
+                "the mention carries intelligence value: "
+            )
+            + "a policy announcement, allegation, direct statement, denial, election "
+            "claim, controversy, or significant event. "
             "Passive or incidental mentions ('X was also present') do not qualify."
         ),
         (
@@ -124,13 +132,21 @@ def build_transcript_sys(
         ),
         (
             "ENTITY RULES:\n"
-            "1. 'entity' MUST be copied EXACTLY from the monitored list — character "
-            "for character. Never invent, shorten, translate, or rename.\n"
+            "1. When the subject IS on the monitored list, 'entity' MUST be copied "
+            "EXACTLY from it — character for character. Never invent, shorten, "
+            "translate, or rename a monitored name.\n"
             "2. Resolve indirect references: if 'he', 'the CM', 'the party president', "
             "'ఆయన' clearly refers to a monitored entity from context, use that entity.\n"
-            "3. Entities NOT on the monitored list must be skipped entirely — do not "
-            "add them as new entries.\n"
-            "4. An entity can appear as speaker OR as target of a claim — both qualify."
+            + (
+                "3. If a newsworthy segment's main subject is NOT on the monitored "
+                "list, STILL emit it — set 'entity' to that main subject (the primary "
+                "person, organisation, or place), cleaned to a concise proper name. "
+                "Prefer a monitored entity whenever one is genuinely the subject.\n"
+                if keep_all else
+                "3. Entities NOT on the monitored list must be skipped entirely — do "
+                "not add them as new entries.\n"
+            )
+            + "4. An entity can appear as speaker OR as target of a claim — both qualify."
         ),
         (
             "STRUCTURED FIELDS:\n"

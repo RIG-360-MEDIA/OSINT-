@@ -1,0 +1,48 @@
+# RIG SURVEILLANCE - Caddy (night-desk only; legacy sites decommissioned 2026-06-10)
+# Public URL: https://desk.rig360media.com/
+
+desk.rig360media.com {
+    encode gzip zstd
+
+    # Same-origin API: /osint/* -> osint-backend (no CORS)
+    handle_path /osint/* {
+        reverse_proxy osint-backend:8000
+    }
+
+    # Night-desk SPA: static files + history-API fallback
+    handle {
+        root * /srv/night-desk
+        try_files {path} /index.html
+        file_server
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    log {
+        output stdout
+    }
+}
+mc.178-105-63-154.nip.io {
+    encode gzip zstd
+    basic_auth {
+        admin $2a$14$Yy57e5ic1IsvcJ9mcMIKQOwxIlqFTfWERsx0qc4JBkHbxJM/E0Dr.
+    }
+    reverse_proxy mc-frontend:3030
+}
+
+mc-api.178-105-63-154.nip.io {
+    encode gzip zstd
+    @public path /public/*
+    handle @public {
+        reverse_proxy mc-backend:8088
+    }
+    handle {
+        respond "Not found" 404
+    }
+}
+

@@ -107,3 +107,8 @@ python-jose[cryptography]==3.4.0  # security: PYSEC-2024-232, PYSEC-2024-233
 starlette>=0.47.2  # security: CVE-2024-47874, CVE-2025-54121
 pillow>=12.2.0  # security: CVE-2026-25990, CVE-2026-40192, CVE-2026-42308, CVE-2026-42310, CVE-2026-42311
 litellm>=1.83.10  # security: CVE-2026-40217, CVE-2026-42203, CVE-2026-42208, CVE-2026-42271
+
+# P16 newspaper hybrid extractor — Tesseract line OCR + Indic headline matching.
+pytesseract>=0.3.10            # Tesseract 5 line OCR (clean grounded body text)
+indic-transliteration>=2.3.0   # IAST romanisation for Indic headline anchoring
+wordsegment>=1.3.1             # split OCR word-merges ("digitalassistant")

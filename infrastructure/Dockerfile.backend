@@ -28,6 +28,20 @@ RUN apt-get update && apt-get install -y \
     libcups2 \
     ffmpeg \
     unzip \
+    # Tesseract 5 + language packs (newspaper hybrid extractor body OCR).
+    # eng/hin/tel cover the pillar languages; the other Indic packs match
+    # _TESS_LANG_MAP in collectors/newspaper_layout/ocr.py.
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-hin \
+    tesseract-ocr-tel \
+    tesseract-ocr-tam \
+    tesseract-ocr-kan \
+    tesseract-ocr-mal \
+    tesseract-ocr-ben \
+    tesseract-ocr-guj \
+    tesseract-ocr-pan \
+    tesseract-ocr-mar \
     && rm -rf /var/lib/apt/lists/*
 
 # Deno JS runtime — required by recent yt-dlp for YouTube nsig extraction.
@@ -53,6 +67,19 @@ RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 # fallback for simple digital PDFs. Installed in a dedicated layer so the
 # heavier requirements.txt install above stays cached.
 RUN pip install --no-cache-dir opendataloader-pdf pymupdf
+
+# P16 — newspaper hybrid extractor: bake Tesseract `tessdata_best` (float LSTM)
+# models for the Indic languages. The apt packs ship lower-accuracy "fast"
+# integer models that garble Devanagari/Telugu conjuncts and tank both body
+# quality and headline-anchor rate; the best models fix that. ocr.py auto-uses
+# this dir via TESSDATA_BEST_DIR when a model is present (--oem 1).
+ENV TESSDATA_BEST_DIR=/usr/share/tesseract-ocr/5/tessdata_best
+RUN mkdir -p "$TESSDATA_BEST_DIR" \
+ && for L in hin tel tam kan mal ben guj pan mar; do \
+      curl -sL -o "$TESSDATA_BEST_DIR/$L.traineddata" \
+        "https://github.com/tesseract-ocr/tessdata_best/raw/main/$L.traineddata" \
+      || echo "tessdata_best/$L download skipped"; \
+    done
 
 # Install Crawl4AI browser + JS snippets.
 # crawl4ai-setup installs Playwright Chromium and populates

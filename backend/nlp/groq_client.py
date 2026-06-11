@@ -41,6 +41,7 @@ TOKEN_LIMITS: dict[str, int] = {
     "translation": 500,
     "profile_extraction": 1000,
     "transcript_analysis": 1500,
+    "clipping_extraction": 3500,
     "relevance_explanation": 200,
     "brief_generation": 4000,
     "rag_response": 2048,

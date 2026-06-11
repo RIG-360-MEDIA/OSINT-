@@ -61,6 +61,9 @@ app = Celery(
         # YouTube clips: discovery + extraction + substrate enrichment drain
         "backend.tasks.youtube_task",
         "backend.tasks.youtube_clip_enrich",
+        # Newspaper clippings: daily collection fan-out + substrate enrichment
+        "backend.tasks.newspaper_task",
+        "backend.tasks.clipping_enrich",
     ],
 )
 
@@ -109,6 +112,13 @@ app.config_from_object(
             "tasks.run_youtube_extraction":      {"queue": "youtube"},
             "tasks.enrich_clip":                 {"queue": "youtube"},
             "tasks.drain_pending_clips":         {"queue": "youtube"},
+            # Newspaper clippings — collection + substrate enrichment both on
+            # the documents queue (design §6.2: NEVER nlp — that's article NLP).
+            "tasks.collect_newspapers":          {"queue": "documents"},
+            "tasks.collect_newspapers_fallback": {"queue": "documents"},
+            "tasks.collect_one_newspaper":       {"queue": "documents"},
+            "tasks.enrich_clipping":             {"queue": "documents"},
+            "tasks.drain_pending_clippings":     {"queue": "documents"},
         },
         "beat_schedule": {
             # YouTube discovery (RSS, 30m) → relay transcript fetch (3m) →
@@ -135,6 +145,27 @@ app.config_from_object(
                 "schedule": timedelta(minutes=10),
                 "kwargs": {"limit": 20},
                 "options": {"queue": "youtube"},
+            },
+            # Newspaper clippings — two idempotent passes (design §3).
+            # PRIMARY 02:00 UTC = 07:30 IST: fan out every active paper.
+            "collect-newspapers-primary": {
+                "task": "tasks.collect_newspapers",
+                "schedule": crontab(hour=2, minute=0),
+                "options": {"queue": "documents"},
+            },
+            # FALLBACK 03:00 UTC = 08:30 IST: only papers with NO clipping
+            # row for today (covers late CareersWave uploads + failures).
+            "collect-newspapers-fallback": {
+                "task": "tasks.collect_newspapers_fallback",
+                "schedule": crontab(hour=3, minute=0),
+                "options": {"queue": "documents"},
+            },
+            # Catch-up drain for any clipping left in substrate_status=pending.
+            "drain-pending-clippings-every-10-min": {
+                "task": "tasks.drain_pending_clippings",
+                "schedule": timedelta(minutes=10),
+                "kwargs": {"limit": 50},
+                "options": {"queue": "documents"},
             },
             "collect-rss-every-15-min": {
                 "task": "tasks.collect_rss",
@@ -345,7 +376,7 @@ def _collector_catch_up(sender=None, **_kw) -> None:  # noqa: D401, ANN001
     # Tables to inspect → task to fire if stale.
     targets = [
         ("govt_documents", "tasks.collect_govt_documents"),
-        ("newspaper_clippings", "tasks.collect_newspapers"),
+        ("clippings", "tasks.collect_newspapers"),
     ]
     threshold = datetime.now(tz=timezone.utc) - _td(hours=24)
 

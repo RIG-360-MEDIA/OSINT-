@@ -18,9 +18,8 @@ from typing import Any
 from sqlalchemy import text
 
 import i18n
-from llm_synth import synthesize_paragraph
 from map_page import STATE_CODE
-from posture import POL, current_mood, principal_of
+from posture import POL, principal_of
 
 logger = logging.getLogger("report_builder")
 
@@ -111,13 +110,8 @@ async def _scalar(db, sql: str, p: dict | None = None):
 async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
     sc = _primary_state(prefs)
     state_name = STATE_NAMES.get(sc, sc)
-    pid, principal = principal_of(prefs)
+    _, principal = principal_of(prefs)
     N = "analytics.now_sim()"
-    # Shared canonical 3-day mood — the ONE directed, intensity-weighted headline
-    # mood that Home, War Room and this Report must all show identically. Used for
-    # the 'Overall mood' glance card, the Mood section and any mood-driven prose so
-    # the whole report is internally consistent (and never contradicts Home/War Room).
-    mood = await current_mood(db, pid) if pid else None
     # Block geo_primary markers of every state EXCEPT the persona's, plus foreign.
     block = sorted({m for s, ms in STATE_MARKERS.items() if s != sc for m in ms} | FOREIGN_GEO)
 
@@ -167,51 +161,15 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
     sev_rank = {"CRITICAL": 0, "HIGH": 1, "MODERATE": 2, "LOW": 3}
     domains.sort(key=lambda d: (sev_rank[d["severity"]], -d["n24"]))
 
-    # ── sentiment: the PRINCIPAL's DIRECTED sentiment (how the press leans TOWARD
-    # the desk's subject), not the state-wide undirected coverage tone. Each article
-    # mentioning the principal is scored by the AVERAGE of the principal's OWN stance
-    # rows (actor_entity_id = the principal = the stance TARGET), so an article that
-    # is hostile to the principal reads negative even if its overall tone is mixed. ──
-    if pid:
-        s = (await db.execute(text(f"""
-            WITH pa AS (
-              SELECT DISTINCT a.id
-                FROM article_entity_mentions m JOIN articles a ON a.id = m.article_id
-               WHERE m.entity_id = CAST(:pid AS uuid)
-                 AND a.collected_at >= {N} - interval '24 hours'
-            )
-            SELECT count(*) FILTER (WHERE lean >= 0.1) pos,
-                   count(*) FILTER (WHERE lean <= -0.1) neg,
-                   count(*) FILTER (WHERE lean > -0.1 AND lean < 0.1) neu,
-                   round(100*avg(lean))::int fav
-              FROM (
-                SELECT pa.id,
-                       (SELECT avg(({POL}) * st.intensity) FROM article_stances st
-                         WHERE st.article_id = pa.id
-                           AND st.actor_entity_id = CAST(:pid AS uuid)) lean
-                  FROM pa
-              ) x
-             WHERE lean IS NOT NULL
-        """), {"pid": pid})).fetchone()
-    else:
-        # Cold-start (no primary subject): fall back to the state-wide undirected tone.
-        s = (await db.execute(text(f"""
-            SELECT count(*) FILTER (WHERE lean >= 0.1) pos, count(*) FILTER (WHERE lean <= -0.1) neg,
-                   count(*) FILTER (WHERE lean > -0.1 AND lean < 0.1) neu,
-                   round(100*avg(lean))::int fav
-              FROM _rep WHERE ca >= {N} - interval '24 hours'
-        """))).fetchone()
+    # ── sentiment ──
+    s = (await db.execute(text(f"""
+        SELECT count(*) FILTER (WHERE lean >= 0.1) pos, count(*) FILTER (WHERE lean <= -0.1) neg,
+               count(*) FILTER (WHERE lean > -0.1 AND lean < 0.1) neu
+          FROM _rep WHERE ca >= {N} - interval '24 hours'
+    """))).fetchone()
     pos, neu, neg = int(s.pos), int(s.neu), int(s.neg)
     scored = pos + neu + neg or 1
-    # Net sentiment = the SHARED 3-day directed mood (so the report's headline mood
-    # matches Home + War Room exactly). The favourability flips sign by window, so
-    # we deliberately use the canonical 3-day value rather than this 24h read. Fall
-    # back to the local 24h directed favourability only at cold-start (no principal).
-    if mood is not None:
-        net_pct = int(mood["fav"])
-    else:
-        fav = getattr(s, "fav", None)
-        net_pct = int(fav) if fav is not None else round(100 * (pos - neg) / scored)
+    net_pct = round(100 * (pos - neg) / scored)
 
     # ── districts ──
     dd = (await db.execute(text(f"""
@@ -229,31 +187,27 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
                  for r in dd]
 
     # ── top stories: ranked by IMPORTANCE (how many distinct outlets ran the same
-    # story, via its lead entity) — not just recency. Thumbnail + recency break ties.
-    # We surface the lead entity (the one giving the article its breadth) so the
-    # deep-dive block can pull the rest of THAT story's coverage for its Sources line. ──
+    # story, via its lead entity) — not just recency. Thumbnail + recency break ties. ──
     ts = (await db.execute(text(f"""
         WITH ent AS (
           SELECT m.entity_id, count(DISTINCT a.source_id) outlets
             FROM article_entity_mentions m JOIN _rep a ON a.id = m.article_id
            WHERE a.ca >= {N} - interval '24 hours' GROUP BY 1
         ), scored AS (
-          SELECT DISTINCT ON (m.article_id) m.article_id aid, e.outlets breadth, e.entity_id lead_ent
+          SELECT m.article_id aid, max(e.outlets) breadth
             FROM article_entity_mentions m JOIN ent e ON e.entity_id = m.entity_id
             JOIN _rep r ON r.id = m.article_id AND r.ca >= {N} - interval '24 hours'
-           ORDER BY m.article_id, e.outlets DESC
+           GROUP BY 1
         )
-        SELECT r.id::text aid, r.title, r.lang, s.name src, s.source_tier tier, r.thumb, r.url, r.sp,
-               r.geo, r.lean, r.ca, r.tc,
-               COALESCE(sc.breadth, 1) breadth, sc.lead_ent::text lead_ent
+        SELECT r.title, r.lang, s.name src, s.source_tier tier, r.thumb, r.url, r.sp, r.geo, r.lean, r.ca,
+               COALESCE(sc.breadth, 1) breadth
           FROM _rep r JOIN sources s ON s.id = r.source_id
           LEFT JOIN scored sc ON sc.aid = r.id
          WHERE r.ca >= {N} - interval '24 hours'
-         ORDER BY COALESCE(sc.breadth, 1) DESC, (r.thumb IS NOT NULL) DESC, r.ca DESC LIMIT 15
+         ORDER BY COALESCE(sc.breadth, 1) DESC, (r.thumb IS NOT NULL) DESC, r.ca DESC LIMIT 6
     """))).fetchall()
-    top = [{"aid": r.aid, "title": _clean_title(r.title), "lang": r.lang, "source": r.src, "tier": r.tier,
-            "thumb": r.thumb, "url": r.url, "summary": (r.sp or "").strip(), "geo": r.geo,
-            "breadth": int(r.breadth), "lead_ent": r.lead_ent, "topic": r.tc, "ca": str(r.ca) if r.ca else "",
+    top = [{"title": _clean_title(r.title), "lang": r.lang, "source": r.src, "tier": r.tier, "thumb": r.thumb,
+            "url": r.url, "summary": (r.sp or "").strip(), "geo": r.geo, "breadth": int(r.breadth),
             "tone": "supportive" if (r.lean or 0) >= 0.1 else "hostile" if (r.lean or 0) <= -0.1 else "neutral"}
            for r in ts]
     await i18n.attach_en(db, top, "title")
@@ -328,35 +282,8 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
     early.sort(key=lambda x: -x["growth"])
     early = early[:5]
 
-    # ── deep-dives for the top 3-5 stories (rich grounded prose + every source link) ──
-    deep_dives = await _deep_dives(db, top, principal, state_name, N)
-
     # ── themed development clusters (data; LLM writes the prose) ──
     themes = await _themes(db, sc, N)
-
-    # ── At-a-glance: a plain-language where-it-stands strip (no jargon/formulas) ──
-    top_issue = domains[0]["domain"] if domains else "—"
-    # Overall mood = the SHARED 3-day directed mood (matches Home + War Room). Note
-    # carries the supportive/critical split, the directed subject, and the window so
-    # the headline can't be misread. Cold-start (no principal) falls back to the 24h
-    # count-based read with its own window label.
-    if mood is not None:
-        mood_word = mood["word"]
-        mood_note = (f"{mood['pos']} supportive vs {mood['neg']} critical · "
-                     f"toward {principal} · {mood['window_label']}")
-    else:
-        mood_word = "broadly positive" if net_pct > 8 else "broadly negative" if net_pct < -8 else "mixed"
-        mood_note = f"{pos} supportive vs {neg} critical · last 24 hours"
-    at_a_glance = [
-        {"label": "Stories today", "value": str(n24),
-         "note": f"{'up' if n24 >= nprev else 'down'} from {nprev} the day before"},
-        {"label": "Overall mood", "value": mood_word,
-         "note": mood_note},
-        {"label": "Districts active", "value": str(len(districts)),
-         "note": (districts[0]["name"] if districts else "—") + " busiest"},
-        {"label": "Top issue", "value": top_issue,
-         "note": "the day's most active area of coverage"},
-    ]
 
     structured = {
         "state": state_name, "state_code": sc, "principal": principal,
@@ -364,313 +291,15 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
         "kpis": {"n24": n24, "nprev": nprev, "delta_pct": round(100 * (n24 - nprev) / nprev) if nprev else 0,
                  "net_sentiment": net_pct, "pos": pos, "neu": neu, "neg": neg,
                  "districts_active": len(districts), "adverse_pct": round(100 * neg / scored)},
-        "at_a_glance": at_a_glance,
-        # Shared 3-day directed mood (matches Home + War Room) — carried so the Mood
-        # section and any mood prose label the window + directed subject identically.
-        "mood": ({"word": mood["word"], "fav": mood["fav"], "pos": mood["pos"],
-                  "neg": mood["neg"], "neu": mood["neu"], "label": mood["label"],
-                  "window_label": mood["window_label"], "n": mood["n"]} if mood else None),
         "domains": domains, "sentiment": {"pos": pos, "neu": neu, "neg": neg, "net_pct": net_pct},
-        "districts": districts, "top_stories": top, "deep_dives": deep_dives,
-        "quotes": quotes, "figures": figures,
+        "districts": districts, "top_stories": top, "quotes": quotes, "figures": figures,
         "source_intel": {"tiers": tiers, "top_outlets": top_outlets, "cross": cross},
         "stakeholders": {"affected": affected, "drivers": drivers},
         "early_warning": early, "themes": themes,
         "confidence": "HIGH" if n24 >= 120 else "MODERATE" if n24 >= 40 else "LOW",
     }
     structured["narrative"] = await _narrate(structured)
-    structured["narrative"]["exec_paragraph"] = (
-        structured["narrative"].get("exec_paragraph") or _exec_paragraph_tpl(structured))
     return structured
-
-
-# ── Deep-dive prose: a calm political-desk correspondent, never an "AI". ──
-_DD_HAPPENED_SYS = (
-    "/no_think Respond in English only. You are a seasoned political-desk correspondent writing the "
-    "explanatory paragraph that sits under a headline in a serious daily newspaper. Using ONLY the "
-    "facts provided (the headline, the outlets that ran it, and any quotes or claims on record), write "
-    "ONE flowing paragraph of 4 to 6 sentences telling the reader plainly WHAT HAPPENED and the "
-    "immediate context around it. Calm, factual, readable prose for a busy non-technical reader. "
-    "Do NOT invent any number, figure, date, place or name that is not in the facts. No bullet points, "
-    "no headings, no source citations in brackets, no meta-commentary about being an AI or about the data."
-)
-_DD_MATTERS_SYS = (
-    "/no_think Respond in English only. You are a trusted political adviser briefing your principal in "
-    "plain language. Using ONLY the facts provided, write ONE paragraph of 3 to 5 sentences explaining "
-    "WHY THIS MATTERS to the principal named in the facts: the significance, who is driving it, and the "
-    "concrete risk or the opportunity it opens. Be direct and practical, the way a chief of staff talks. "
-    "Do NOT invent any number, figure, date, place or name that is not in the facts. No bullet points, "
-    "no headings, no brackets, no mention of being an AI or of underlying data."
-)
-
-
-def _dd_facts(story: dict[str, Any], outlets: list[str], quotes: list[dict[str, Any]],
-              claims: list[dict[str, Any]], principal: str, state: str, n_out: int, n_crit: int) -> str:
-    """Plain labelled facts for one story — the grounding the correspondent writes from."""
-    head = story.get("title_en") or story["title"]
-    lines = [f"STATE: {state}. PRINCIPAL (the reader's desk): {principal}.",
-             f"HEADLINE: {head}",
-             f"LEAD OUTLET: {story.get('source', '')}."]
-    if story.get("summary"):
-        lines.append(f"STANDFIRST: {story['summary']}")
-    if outlets:
-        lines.append(f"ALSO RUNNING THIS STORY: {', '.join(outlets[:8])}.")
-    lines.append(f"SPREAD: {n_out} outlet(s) carried it; {n_crit} of those pieces were critical in tone.")
-    lines.append(f"TONE TOWARD THE SUBJECT: {story.get('tone', 'neutral')}.")
-    for q in quotes[:3]:
-        who = q.get("who") or "a figure quoted"
-        txt = q.get("q_en") or q.get("q") or ""
-        if txt:
-            lines.append(f"ON RECORD — {who}: \"{txt}\"")
-    for c in claims[:3]:
-        txt = c.get("text_en") or c.get("text") or ""
-        if txt:
-            lines.append(f"CLAIM ({c.get('pred', 'claim')}): {txt}")
-    return "\n".join(lines)
-
-
-def _dd_why1_tpl(story: dict[str, Any], n_out: int) -> str:
-    """One-line 'why this matters to you' teaser that sits under the headline."""
-    tone = story.get("tone", "neutral")
-    if n_out >= 4:
-        reach = "It is one of the most widely-carried stories on your desk today"
-    elif n_out > 1:
-        reach = "It is being carried by several outlets at once"
-    else:
-        reach = "It is an early-stage story worth watching before it spreads"
-    angle = {"hostile": "and the framing is running against you",
-             "supportive": "and the framing is currently in your favour"}.get(
-        tone, "and the framing has not yet settled")
-    return f"{reach} {angle}."
-
-
-def _dd_happened_tpl(story: dict[str, Any], outlets: list[str], n_out: int, n_crit: int,
-                     quotes: list[dict[str, Any]], claims: list[dict[str, Any]],
-                     numbers: list[dict[str, Any]]) -> str:
-    """A complete, journalist-voice 'what happened' narrative built only from this
-    story's own facts — headline, breadth, standfirst, a quote, a claim, a figure."""
-    head = (story.get("title_en") or story["title"]).rstrip(".")
-    src = story.get("source") or "a state outlet"
-    s = [f"{head}, first carried by {src}."]
-    if story.get("summary"):
-        sm = story["summary"].replace("\n", " ").strip().rstrip(".")
-        if sm:
-            s.append(sm + ".")
-    if n_out > 1:
-        also = (", among them " + ", ".join(outlets[:4])) if len(outlets) > 1 else ""
-        s.append(f"The same story has been picked up across {n_out} outlets in the state{also}, "
-                 f"which puts it among the day's more widely-run items.")
-    else:
-        s.append("For now it sits with a single outlet, so it is worth watching to see whether "
-                 "the rest of the press follows.")
-    q0 = next((q for q in quotes if (q.get("q_en") or q.get("q"))), None)
-    if q0:
-        qt = (q0.get("q_en") or q0.get("q") or "").strip().strip('"')
-        who = q0.get("who") or "one of those quoted"
-        s.append(f"On the record, {who} said: “{qt}”")
-    c0 = next((c for c in claims if (c.get("text_en") or c.get("text"))), None)
-    if c0:
-        ct = (c0.get("text_en") or c0.get("text") or "").strip().rstrip(".")
-        if ct:
-            s.append(f"Among the specifics being reported: {ct}.")
-    f0 = numbers[0] if numbers else None
-    if f0 and f0.get("context"):
-        s.append(f"One figure running through the coverage is {f0.get('value','')} "
-                 f"{f0.get('unit','')} — {f0['context'].rstrip('.')}.")
-    if n_crit and (story.get("tone") == "hostile" or n_crit >= 2):
-        s.append(f"The tone has run critical in {n_crit} of those pieces, which will shape how "
-                 "the story is read over the next news cycle.")
-    elif story.get("tone") == "supportive":
-        s.append("The coverage has been broadly favourable in tone so far.")
-    else:
-        s.append("The reporting has been largely straight in tone to this point.")
-    # Trim to ~4-5 sentences so the block fits one page; readability over length.
-    sentences = [x for x in s if x]
-    return " ".join(sentences[:5]).strip()
-
-
-def _dd_matters_tpl(story: dict[str, Any], principal: str, drivers: list[str],
-                    n_out: int, n_crit: int) -> str:
-    """A complete 3-5 sentence diagnosis: significance, who is driving it, the
-    risk or opportunity, and the practical next move — chief-of-staff voice."""
-    tone = story.get("tone", "neutral")
-    s = [f"For the {principal} desk, the signal here is reach rather than any single line: "
-         f"{n_out} outlet{'s' if n_out != 1 else ''} carrying the same story means it is "
-         "helping to set the day's agenda whether or not it is answered."]
-    if drivers:
-        who = ", ".join(drivers[:3])
-        s.append(f"The figures driving the coverage are {who}, so any response is best aimed "
-                 "at the frame they are setting rather than at the outlets alone.")
-    if tone == "hostile" or n_crit:
-        s.append("Because the tone is largely adverse, the near-term risk is that the criticism "
-                 "hardens into the accepted version of events before a counter-account is on record.")
-        s.append("The practical move is to decide quickly whether to contest it through a "
-                 "friendly outlet now or let it run its course.")
-    elif tone == "supportive":
-        s.append("The tone is favourable, so the opportunity is to amplify it while it is still "
-                 "fresh and travelling, and to tie it to the wider message of the week.")
-        s.append("The risk is only that a single supportive cycle is mistaken for a settled "
-                 "narrative; it should be reinforced, not assumed.")
-    else:
-        s.append("The tone is neutral for now, which leaves room to shape how the story is "
-                 "understood before a frame sets and becomes costly to move.")
-        s.append("The practical move is to get ahead of it with a clear line while the coverage "
-                 "is still open.")
-    # Trim to ~3-4 sentences so the block fits one page; substantive but not maximal.
-    return " ".join(s[:4]).strip()
-
-
-def _story_sig(story: dict[str, Any]) -> str:
-    """A coarse de-dupe key for a story so we don't deep-dive the same event twice,
-    WITHOUT collapsing every political story onto one shared lead entity. Built from
-    the first few significant words of the (English) headline."""
-    head = (story.get("title_en") or story.get("title") or "").lower()
-    words = re.findall(r"[a-z0-9]{4,}", head)
-    return " ".join(words[:5])
-
-
-async def _deep_dives(db, top: list[dict[str, Any]], principal: str, state: str,
-                      N: str) -> list[dict[str, Any]]:
-    """The 5-6 biggest stories, each a COMPLETE block: a rich grounded narrative, a
-    diagnosis, who is driving it, verbatim quotes, the numbers, and EVERY source
-    article that ran the story. The LLM is an optional enhancement only — the
-    multi-sentence template is itself complete and grounded in the story's own facts."""
-    TARGET = 6
-    out: list[dict[str, Any]] = []
-    seen_sig: set[str] = set()
-    for story in top:
-        if len(out) >= TARGET:
-            break
-        # De-dupe on a HEADLINE signature, not the lead entity: high-breadth political
-        # stories nearly all share one dominant lead entity (the ruling figure/party),
-        # so an entity-keyed dedup collapsed the whole list onto a single deep-dive.
-        sig = _story_sig(story)
-        if sig and sig in seen_sig:
-            continue
-        if sig:
-            seen_sig.add(sig)
-        lead = story.get("lead_ent")
-
-        outlets: list[str] = []
-        sources: list[dict[str, Any]] = []
-        n_out, n_crit = 1, 0
-        if lead:
-            # Every article in the window whose lead/any entity is this story's lead
-            # entity = the full footprint of this story. These are the Sources links.
-            srows = (await db.execute(text(f"""
-                SELECT DISTINCT r.url, s.name src, s.source_tier tier, r.title,
-                       (r.lean <= -0.1) crit
-                  FROM article_entity_mentions m
-                  JOIN _rep r ON r.id = m.article_id AND r.ca >= {N} - interval '24 hours'
-                  JOIN sources s ON s.id = r.source_id
-                 WHERE m.entity_id = CAST(:eid AS uuid)
-                 ORDER BY s.source_tier NULLS LAST, s.name
-            """), {"eid": lead})).fetchall()
-            seen_url: set[str] = set()
-            for sr in srows:
-                if sr.url and sr.url in seen_url:
-                    continue
-                if sr.url:
-                    seen_url.add(sr.url)
-                sources.append({"url": sr.url, "outlet": sr.src, "tier": sr.tier})
-                if sr.src and sr.src not in outlets:
-                    outlets.append(sr.src)
-                if sr.crit:
-                    n_crit += 1
-            n_out = len(outlets) or 1
-        if not sources and story.get("url"):
-            sources = [{"url": story["url"], "outlet": story.get("source"), "tier": story.get("tier")}]
-            outlets = [story.get("source")] if story.get("source") else []
-        # n_out is the breadth of THIS story; fall back to the story's own breadth count.
-        n_out = max(n_out, int(story.get("breadth", 1) or 1))
-
-        # Grounding material: quotes + claims + numbers attached to this story's articles.
-        quotes: list[dict[str, Any]] = []
-        claims: list[dict[str, Any]] = []
-        numbers: list[dict[str, Any]] = []
-        drivers: list[str] = []
-        if lead:
-            qrows = (await db.execute(text(f"""
-                SELECT q.quote_text q, NULLIF(q.quote_text_en,'') qen,
-                       COALESCE(q.speaker_name_en, q.speaker_name) who, s.name src
-                  FROM article_quotes q
-                  JOIN article_entity_mentions m ON m.article_id = q.article_id
-                  JOIN _rep r ON r.id = q.article_id AND r.ca >= {N} - interval '24 hours'
-                  JOIN sources s ON s.id = r.source_id
-                 WHERE m.entity_id = CAST(:eid AS uuid) AND q.speaker_name IS NOT NULL
-                   AND length(COALESCE(q.quote_text_en, q.quote_text)) BETWEEN 24 AND 220
-                 ORDER BY r.ca DESC LIMIT 4
-            """), {"eid": lead})).fetchall()
-            quotes = [{"q": r.q, "q_en": (r.qen if (r.qen and r.qen != r.q) else None),
-                       "who": r.who, "src": r.src} for r in qrows]
-            await i18n.attach_en(db, quotes, "q")
-            crows = (await db.execute(text(f"""
-                SELECT c.predicate pred, COALESCE(c.object_text, c.claim_text) txt
-                  FROM article_claims c
-                  JOIN article_entity_mentions m ON m.article_id = c.article_id
-                  JOIN _rep r ON r.id = c.article_id AND r.ca >= {N} - interval '24 hours'
-                 WHERE m.entity_id = CAST(:eid AS uuid)
-                   AND COALESCE(c.object_text, c.claim_text) IS NOT NULL
-                   AND length(COALESCE(c.object_text, c.claim_text)) BETWEEN 12 AND 200
-                 ORDER BY r.ca DESC LIMIT 3
-            """), {"eid": lead})).fetchall()
-            claims = [{"pred": (r.pred or "claim"), "text": (r.txt or "").strip()} for r in crows]
-            await i18n.attach_en(db, claims, "text")
-            nrows = (await db.execute(text(f"""
-                SELECT an.value v, an.unit u, an.context c
-                  FROM article_numbers an
-                  JOIN article_entity_mentions m ON m.article_id = an.article_id
-                  JOIN _rep r ON r.id = an.article_id AND r.ca >= {N} - interval '24 hours'
-                 WHERE m.entity_id = CAST(:eid AS uuid) AND an.unit IS NOT NULL
-                   AND length(an.context) BETWEEN 10 AND 120
-                 ORDER BY r.ca DESC LIMIT 4
-            """), {"eid": lead})).fetchall()
-            numbers = [{"value": str(r.v), "unit": r.u, "context": (r.c or "").strip()} for r in nrows]
-            drows = (await db.execute(text(f"""
-                SELECT ed.canonical_name nm, count(DISTINCT m2.article_id) n
-                  FROM article_entity_mentions m
-                  JOIN _rep r ON r.id = m.article_id AND r.ca >= {N} - interval '24 hours'
-                  JOIN article_entity_mentions m2 ON m2.article_id = m.article_id
-                  JOIN entity_dictionary ed ON ed.id = m2.entity_id
-                 WHERE m.entity_id = CAST(:eid AS uuid)
-                   AND ed.entity_type IN ('person','organization')
-                 GROUP BY 1 ORDER BY 2 DESC LIMIT 4
-            """), {"eid": lead})).fetchall()
-            drivers = [r.nm for r in drows if r.nm]
-
-        facts = _dd_facts(story, outlets, quotes, claims, principal, state, n_out, n_crit)
-        # source_check = the real headlines/standfirst/quotes — what the numeric gate
-        # validates the prose against. Story metrics (n_out/n_crit) live here too so a
-        # faithful "3 outlets" line passes.
-        check = facts + f"\n{n_out} {n_crit} 24"
-
-        # LLM is OPTIONAL enhancement; the template fallback is complete on its own.
-        happened = await synthesize_paragraph(
-            system=_DD_HAPPENED_SYS, facts=facts, source_check=check, min_words=40, min_chars=200)
-        matters = await synthesize_paragraph(
-            system=_DD_MATTERS_SYS, facts=facts, source_check=check, min_words=24, min_chars=120)
-
-        out.append({
-            "thumb": story.get("thumb"),
-            "headline": story.get("title", ""),
-            "headline_en": story.get("title_en"),
-            "tone": story.get("tone", "neutral"),
-            "topic": (story.get("topic") or "").title(),
-            "breadth": n_out,
-            "why1": _dd_why1_tpl(story, n_out),
-            "drivers": drivers,
-            # n_crit is counted from UNDIRECTED article lean (overall adverse tone),
-            # NOT pieces critical OF the principal — so label it 'adverse' to stay honest.
-            "metric_line": (f"{n_out} outlet{'s' if n_out != 1 else ''} · "
-                            f"{n_crit} adverse piece{'s' if n_crit != 1 else ''} · last 24h"),
-            "happened": happened or _dd_happened_tpl(story, outlets, n_out, n_crit, quotes, claims, numbers),
-            "matters": matters or _dd_matters_tpl(story, principal, drivers, n_out, n_crit),
-            "quotes": [q for q in quotes if (q.get("q_en") or q.get("q"))][:2],
-            "numbers": numbers[:3],
-            # Cap sources so a deep dive fits one page (compact inline list of ~18).
-            "sources": sources[:18],
-        })
-    return out
 
 
 async def _themes(db, sc: str, N: str) -> list[dict[str, Any]]:
@@ -699,16 +328,9 @@ async def _themes(db, sc: str, N: str) -> list[dict[str, Any]]:
 
 
 def _facts_blob(s: dict[str, Any]) -> str:
-    md = s.get("mood")
-    sent_line = (f"SENTIMENT (mood directed toward {s['principal']}, {md['window_label']}): "
-                 f"{md['word']} (net {s['sentiment']['net_pct']:+d}%); "
-                 f"{md['pos']} supportive / {md['neu']} neutral / {md['neg']} critical pieces toward them."
-                 if md else
-                 f"SENTIMENT: {s['sentiment']['pos']} supportive / {s['sentiment']['neu']} neutral / "
-                 f"{s['sentiment']['neg']} critical (net {s['sentiment']['net_pct']:+d}%).")
     lines = [f"STATE: {s['state']} (principal desk: {s['principal']})",
              f"VOLUME: {s['kpis']['n24']} stories in 24h vs {s['kpis']['nprev']} prior ({s['kpis']['delta_pct']:+d}%).",
-             sent_line]
+             f"SENTIMENT: {s['sentiment']['pos']} supportive / {s['sentiment']['neu']} neutral / {s['sentiment']['neg']} critical (net {s['sentiment']['net_pct']:+d}%)."]
     lines.append("RISK DOMAINS: " + "; ".join(f"{d['domain']}={d['severity']} ({d['n24']} stories, {d['adverse_pct']}% adverse, {d['delta_pct']:+d}% vs prior)" for d in s["domains"]))
     lines.append("TOP DISTRICTS: " + ", ".join(f"{d['name']} {d['n24']}({d['delta_pct']:+d}%)" for d in s["districts"][:6]))
     if s["early_warning"]:
@@ -737,7 +359,6 @@ _SYS = (
     "4. No citations, no source names in brackets, no hedging boilerplate.\n\n"
     "Return ONLY valid JSON with this exact shape:\n"
     "{\n"
-    '  "exec_paragraph": "<3-4 plain-language sentences summarising the whole day for a busy non-technical reader: how active the press was, the overall tone, and the single biggest story — no numbers beyond those in the FACTS, no jargon>",\n'
     '  "exec_summary": [ "<6-7 punchy bullets, each one rich sentence, on what changed in 24h and why it matters>" ],\n'
     '  "hotspot_read": "<2-3 sentences interpreting the district geography>",\n'
     '  "sentiment_narrative": "<3-4 sentences on tone, polarisation, and any narrative divergence>",\n'
@@ -746,35 +367,6 @@ _SYS = (
     "}\n"
     "Make developments cover the themes provided. Make it genuinely useful, not generic."
 )
-
-
-def _exec_paragraph_tpl(s: dict[str, Any]) -> str:
-    """A plain-language 3-4 sentence executive summary of the day — no jargon, no
-    formulas. Reads like the opening of a real morning brief, grounded in the data."""
-    k = s["kpis"]
-    state = s["state"]
-    n24, nprev = k["n24"], k["nprev"]
-    moved = "busier than" if n24 > nprev else "quieter than" if n24 < nprev else "in line with"
-    net = k["net_sentiment"]
-    if net > 8:
-        mood = "and the overall tone leaned in your favour"
-    elif net < -8:
-        mood = "and the overall tone ran against you"
-    else:
-        mood = "and the tone was mixed, with no clear lean either way"
-    lead = ""
-    deep = s.get("deep_dives") or []
-    if deep:
-        h = (deep[0].get("headline_en") or deep[0].get("headline") or "").rstrip(".")
-        if h:
-            lead = f" The story leading the desk today is {h}."
-    dom = s["domains"][0]["domain"] if s["domains"] else "general affairs"
-    dists = s["districts"]
-    where = (f" Coverage was heaviest around {dists[0]['name']}"
-             + (f" and {dists[1]['name']}" if len(dists) > 1 else "") + ".") if dists else ""
-    return (f"Across {state} the press ran {n24} stories in the last 24 hours, {moved} the "
-            f"{nprev} of the day before, {mood}.{lead} The most active area of coverage was "
-            f"{dom.lower()}.{where}").strip()
 
 
 def _templates(s: dict[str, Any]) -> dict[str, Any]:
@@ -798,8 +390,7 @@ def _templates(s: dict[str, Any]) -> dict[str, Any]:
     for e in s["early_warning"][:2]:
         actions.append(f"Track the {e['label']} surge (+{e['growth']}%) over the next 48 hours.")
     actions.append("Hold on low-severity domains; preserve attention for the amber board.")
-    return {"exec_paragraph": _exec_paragraph_tpl(s),
-            "exec_summary": exec_s, "hotspot_read": "Coverage concentrates in the busiest districts; watch the fastest risers.",
+    return {"exec_summary": exec_s, "hotspot_read": "Coverage concentrates in the busiest districts; watch the fastest risers.",
             "sentiment_narrative": f"Tone is net {k['net_sentiment']:+d}%, with negativity concentrated in the higher-severity domains.",
             "developments": devs, "actions": actions}
 
@@ -815,7 +406,7 @@ async def _narrate(s: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("empty exec_summary")
         # backfill any missing keys from templates
         tpl = _templates(s)
-        for key in ("exec_paragraph", "exec_summary", "hotspot_read", "sentiment_narrative", "developments", "actions"):
+        for key in ("exec_summary", "hotspot_read", "sentiment_narrative", "developments", "actions"):
             if not data.get(key):
                 data[key] = tpl[key]
         data["_source"] = "llm"

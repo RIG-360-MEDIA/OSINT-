@@ -43,8 +43,8 @@ TOKEN_LIMITS: dict[str, int] = {
     "transcript_analysis": 1500,
     "relevance_explanation": 200,
     "brief_generation": 4000,
-    "rag_response": 2048,
     "chronicle_generation": 6000,
+    "rag_response": 2048,
 }
 
 # Temperature settings

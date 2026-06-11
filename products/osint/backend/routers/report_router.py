@@ -1,11 +1,9 @@
 """Daily State Intelligence Brief — preview JSON, PDF download, and email send."""
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from sqlalchemy import text
 
 from auth.middleware import get_optional_user
 from brief_prefs import load_prefs
@@ -16,39 +14,13 @@ import report_render
 
 router = APIRouter(prefix="/api/brief", tags=["brief"])
 
-# A report is a FIXED DAILY EDITION, not a live view: built once per user per edition day
-# and frozen until the next day's edition. The edition rolls at 07:00 IST so the morning
-# brief is the new day's and it never changes through the day on refresh/export.
-_EDITION_SQL = "((analytics.now_sim() AT TIME ZONE 'Asia/Kolkata') - interval '7 hours')::date"
 
-
-async def _build(user_id: str, force: bool = False) -> dict[str, Any]:
-    """Serve today's frozen edition: return the cached build for the current edition day;
-    only (re)build on a cache miss (or force), then freeze it so every later view is the same."""
+async def _build(user_id: str) -> dict[str, Any]:
     async with get_db() as db:
-        ed = (await db.execute(text(f"SELECT {_EDITION_SQL} AS d"))).scalar()
-        if not force:
-            cached = (await db.execute(text(
-                "SELECT report FROM analytics.report_cache "
-                "WHERE user_id = CAST(:u AS uuid) AND edition_date = :d"
-            ), {"u": user_id, "d": ed})).scalar()
-            if cached:
-                return cached
         prefs = await load_prefs(db, user_id)
         if not prefs:
             raise HTTPException(status_code=403, detail="No persona configured")
-        r = await report_builder.build_report(db, prefs)
-        try:  # caching is best-effort — never fail the request on a cache write
-            await db.execute(text("""
-                INSERT INTO analytics.report_cache (user_id, edition_date, report, built_at)
-                VALUES (CAST(:u AS uuid), :d, CAST(:r AS jsonb), analytics.now_sim())
-                ON CONFLICT (user_id, edition_date)
-                DO UPDATE SET report = EXCLUDED.report, built_at = EXCLUDED.built_at
-            """), {"u": user_id, "d": ed, "r": json.dumps(r, default=str)})
-            await db.commit()
-        except Exception:
-            pass
-        return r
+        return await report_builder.build_report(db, prefs)
 
 
 @router.get("/report")

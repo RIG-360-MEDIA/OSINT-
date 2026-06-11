@@ -10,10 +10,6 @@ import {
 import {
   SPARK, STORIES, ENTITIES, HORIZON, CLIMBING, BLINDSPOT, RECOMMENDED, nextRefreshAt
 } from '../lib/data.js';
-import { ExecutiveRead } from './ExecutiveRead.jsx';
-import { CMPerspective } from './CMPerspective.jsx';
-import { authFetch } from '../lib/supabase';
-import { ENTITY_PHOTOS } from '../lib/photos';
 
 
 // === Live API hook for KPI tiles (Day 1) ===
@@ -36,23 +32,12 @@ function useLiveKpi() {
   return kpi;
 }
 
-// ISO 639-1 → display name, for turning the live lang_breakdown into a
-// readable list (persona-agnostic: whatever the corpus actually carries).
-const LANG_NAMES = {
-  EN: 'English', HI: 'Hindi', TE: 'Telugu', UR: 'Urdu', TA: 'Tamil',
-  BN: 'Bengali', MR: 'Marathi', KN: 'Kannada', ML: 'Malayalam', GU: 'Gujarati',
-  PA: 'Punjabi', OR: 'Odia', AS: 'Assamese', NE: 'Nepali',
-};
-const langName = (code) => LANG_NAMES[String(code || '').toUpperCase()] || code;
-// Top-N language names present in the live KPI breakdown.
-const topLangNames = (kpi, n = 4) =>
-  (kpi?.lang_breakdown || []).slice(0, n).map((l) => langName(l.code)).filter(Boolean);
-
 function useLiveEntities() {
   const [entities, setEntities] = React.useState(null);  // null = use static WATCHED fallback
   React.useEffect(() => {
     let cancelled = false;
-    const fetchIt = () => authFetch('/api/brief/entities')
+    const fetchIt = () => fetch(`${RIG_API_BASE}/api/brief/entities`)
+      .then(r => r.ok ? r.json() : null)
       .then(j => { if (j && j.entities && !cancelled) setEntities(j.entities); })
       .catch(() => {});
     fetchIt();
@@ -81,7 +66,8 @@ function useLiveStories() {
   const [stories, setStories] = React.useState(null);
   React.useEffect(() => {
     let cancelled = false;
-    const fetchIt = () => authFetch('/api/brief/stories?limit=5')
+    const fetchIt = () => fetch(`${RIG_API_BASE}/api/brief/stories?limit=5`)
+      .then(r => r.ok ? r.json() : null)
       .then(j => { if (j && j.stories && !cancelled) setStories(j.stories); })
       .catch(() => {});
     fetchIt();
@@ -89,59 +75,6 @@ function useLiveStories() {
     return () => { cancelled = true; clearInterval(t); };
   }, []);
   return stories;
-}
-
-// Phase 4 endpoints — voices, climbing, horizon, mood.
-// All four are auth-free read-only and follow the same null-fallback pattern.
-function useLiveVoices() {
-  const [v, setV] = React.useState(null);
-  React.useEffect(() => {
-    let c = false;
-    const f = () => authFetch('/api/brief/voices?limit=5')
-      .then(j => { if (j && !c) setV(j); }).catch(() => {});
-    f(); const t = setInterval(f, 120000);
-    return () => { c = true; clearInterval(t); };
-  }, []);
-  return v;
-}
-
-function useLiveClimbing() {
-  const [climbing, setClimbing] = React.useState(null);
-  React.useEffect(() => {
-    let c = false;
-    const f = () => fetch(`${RIG_API_BASE}/api/brief/climbing?limit=3&since_hours=4`)
-      .then(r => r.ok ? r.json() : null)
-      .then(j => { if (j && j.climbing && !c) setClimbing(j.climbing); }).catch(() => {});
-    f(); const t = setInterval(f, 120000);
-    return () => { c = true; clearInterval(t); };
-  }, []);
-  return climbing;
-}
-
-function useLiveHorizon() {
-  const [horizon, setHorizon] = React.useState(null);
-  React.useEffect(() => {
-    let c = false;
-    const f = () => fetch(`${RIG_API_BASE}/api/brief/horizon?days=7`)
-      .then(r => r.ok ? r.json() : null)
-      .then(j => { if (j && j.days && !c) setHorizon(j); }).catch(() => {});
-    f(); const t = setInterval(f, 300000);  // 5-min refresh — calendar moves slowly
-    return () => { c = true; clearInterval(t); };
-  }, []);
-  return horizon;
-}
-
-function useLiveMood() {
-  const [mood, setMood] = React.useState(null);
-  React.useEffect(() => {
-    let c = false;
-    const f = () => fetch(`${RIG_API_BASE}/api/brief/mood?since_hours=24`)
-      .then(r => r.ok ? r.json() : null)
-      .then(j => { if (j && !c) setMood(j); }).catch(() => {});
-    f(); const t = setInterval(f, 120000);
-    return () => { c = true; clearInterval(t); };
-  }, []);
-  return mood;
 }
 
 
@@ -385,11 +318,7 @@ const Waveform = () => (
   </svg>
 );
 
-const SystemStatusBand = () => {
-  const kpi = useLiveKpi();
-  const langs = topLangNames(kpi, 4);
-  const asOf = kpi?.as_of?.label;
-  return (
+const SystemStatusBand = () => (
   <div className="status-band">
     <div className="container">
       <div className="status-ribbon" role="status" aria-label="System status">
@@ -397,22 +326,16 @@ const SystemStatusBand = () => {
           <span className="gdot" aria-hidden="true"></span>
           <div className="text">
             <span className="lbl">System Online</span>
-            <span className="val">Live intelligence feed</span>
+            <span className="val">Source integrity 98.7%</span>
           </div>
         </div>
         <div className="cell">
           <span className="ic-w"><Icon name="target" size={20} stroke={1.4}/></span>
           <div className="text">
-            <span className="lbl">{kpi.outlets || '—'} Sources Monitored</span>
+            <span className="lbl">247 Sources Monitored</span>
             <span className="val">
               <span className="lang-list">
-                {langs.length
-                  ? langs.map((l, i) => (
-                      <React.Fragment key={l}>
-                        {i ? <span className="dot"></span> : null}{l}
-                      </React.Fragment>
-                    ))
-                  : '—'}
+                Telugu <span className="dot"></span> English <span className="dot"></span> Hindi <span className="dot"></span> Urdu
               </span>
             </span>
           </div>
@@ -420,15 +343,15 @@ const SystemStatusBand = () => {
         <div className="cell">
           <span className="ic-w"><Icon name="clock" size={20} stroke={1.4}/></span>
           <div className="text">
-            <span className="lbl">Updated</span>
-            <span className="val">{asOf || '—'}</span>
+            <span className="lbl">Last Updated 05:42 IST</span>
+            <span className="val">Tuesday, 13 May 2026</span>
           </div>
         </div>
         <div className="cell next">
           <span className="ic-w"><Icon name="refresh" size={20} stroke={1.4}/></span>
           <div className="text">
-            <span className="lbl">Last 24 Hours</span>
-            <span className="val">{(kpi.articlesParsed || 0).toLocaleString()} articles</span>
+            <span className="lbl">Next Refresh In</span>
+            <span className="val"><Countdown to={nextRefreshAt} bare/></span>
           </div>
         </div>
       </div>
@@ -436,8 +359,7 @@ const SystemStatusBand = () => {
     <div className="status-waveform"><Waveform/></div>
     <div className="status-sweep" aria-hidden="true"></div>
   </div>
-  );
-};
+);
 
 const TopBar = () => (
   <>
@@ -546,8 +468,7 @@ const KtrLink = ({ children }) => (
 );
 
 const MoodSection = () => {
-  const kpi = useLiveKpi();
-  const asOf = kpi?.as_of?.label;
+  const _kpi = useLiveKpi();
   return (
   <section className="container section">
     <div className="glass elevated mood-card">
@@ -579,46 +500,111 @@ const MoodSection = () => {
           </Reveal>
           <Reveal delay={300}>
             <div className="mood-meta">
-              <span>{asOf || '—'}</span>
+              <span>Tuesday, 13 May 2026</span>
               <span className="sep">|</span>
-              <span>Daily Brief</span>
+              <span>06:00 AM IST</span>
             </div>
           </Reveal>
         </div>
         <div className="masthead-right">
           <div className="mr-lbl">Overnight Synthesis<M k="synthesis"/></div>
-          <div className="mr-val">As of {asOf || '—'}</div>
+          <div className="mr-val">Compiled 05:42 AM IST</div>
         </div>
       </header>
 
-      <ExecutiveRead />
+      <div className="kpi-row">
+        <KpiTile label="Articles Parsed" value={_kpi.articlesParsed} tone="amber"  spark="articles"  delay={0} methodKey="articlesParsed" />
+        <KpiTile label="Outlets"         value={_kpi.outlets}  tone="cyan"   spark="outlets"   delay={100} methodKey="outlets" />
+        <KpiTile label="Languages"       value={_kpi.languages}   tone="violet" langStack         delay={200} methodKey="languages" />
+        <KpiTile label="Sentiment" value={_kpi.sentiment} format="decimal" tone="rose" spark="sentiment" delay={300} arrow methodKey="sentiment" />
+      </div>
+
+      <div className="mood-body">
+        <div className="synthesis">
+          <div className="synth-label">Overnight Summary</div>
+          <p>
+            Overnight discourse pivoted from the <span className="entity-link">Musi Rejuvenation</span> announcement
+            toward fiscal-credibility framing, driven primarily by a 02:14 IST tweet from
+            <KtrLink> KTR</KtrLink> citing the ₹85,000 crore Kaleshwaram overrun figure.
+            Telugu vernaculars — <span className="entity-link">Eenadu</span>, <span className="entity-link">V6 News</span>,
+            <span className="entity-link"> Sakshi</span> — led overwhelmingly critical, with displacement testimony from the
+            <span className="entity-link"> Kothagudem</span> corridor providing the strongest emotional anchor.
+            <Cite n={1} /><Cite n={2} />
+          </p>
+          <p>
+            English desks took a measurably more descriptive posture. <span className="entity-link">The Hindu</span>,
+            <span className="entity-link"> Indian Express</span> and <span className="entity-link">Mint</span> foregrounded the
+            funding-architecture question and the cabinet's ₹1,500 crore Phase 1 clearance without taking up the
+            land-acquisition grievance that dominates regional bulletins. The asymmetry is consistent with the
+            seven-day rolling baseline (correlation 0.82). <Cite n={3} />
+          </p>
+
+          <details className="more-context">
+            <summary>More context</summary>
+            <p>
+              <span className="entity-link">CM Revanth Reddy</span>'s <span className="entity-link">Khammam</span> rally line —
+              that BRS "wasted ₹40,000 crore" — was repeated verbatim by three Hindi outlets but received only descriptive
+              English coverage. The principal should expect this framing to harden into a recurring attack line, given the
+              party's <span className="entity-link">Karimnagar</span> rally on Sunday is being pre-positioned along similar
+              fiscal-mismanagement themes. <Cite n={4} />
+            </p>
+            <p>
+              A small, favourable signal: the Adilabad farmer-loan-waiver second tranche was announced at Mancherial without
+              English national coverage. The waiver is fiscally modest and politically clean; surfacing it to friendly desks
+              today could rebalance the morning's net sentiment from −0.42 toward neutral. <Cite n={5} />
+            </p>
+          </details>
+        </div>
+
+        <aside className="pull-quote">
+          <svg className="pq-rings" viewBox="0 0 360 360" aria-hidden="true">
+            <circle className="r1" cx="260" cy="180" r="60"  fill="none" stroke="#e9c46a" strokeOpacity="0.40" strokeWidth="0.6"/>
+            <circle className="r2" cx="260" cy="180" r="105" fill="none" stroke="#e9c46a" strokeOpacity="0.28" strokeWidth="0.5"/>
+            <circle className="r3" cx="260" cy="180" r="150" fill="none" stroke="#e9c46a" strokeOpacity="0.18" strokeWidth="0.5"/>
+            <circle className="r4" cx="260" cy="180" r="195" fill="none" stroke="#e9c46a" strokeOpacity="0.10" strokeWidth="0.5"/>
+            <line x1="260" y1="5"   x2="260" y2="50"  stroke="#e9c46a" strokeOpacity="0.22" strokeWidth="0.5"/>
+            <line x1="260" y1="310" x2="260" y2="355" stroke="#e9c46a" strokeOpacity="0.22" strokeWidth="0.5"/>
+            <line x1="65"  y1="180" x2="110" y2="180" stroke="#e9c46a" strokeOpacity="0.18" strokeWidth="0.5"/>
+            <line x1="410" y1="180" x2="455" y2="180" stroke="#e9c46a" strokeOpacity="0.18" strokeWidth="0.5"/>
+            <circle cx="260" cy="180" r="2" fill="#e9c46a" opacity="0.8"/>
+          </svg>
+          <span className="big-mark" aria-hidden="true">“</span>
+          <div className="q">
+            We will not build Telangana on press releases. We will build it on <em>rivers, records, and receipts.</em>
+          </div>
+          <div className="meta">
+            <div className="who">— CM Revanth Reddy</div>
+            <div className="ctx">Press Briefing · 12 May 2026</div>
+          </div>
+        </aside>
+      </div>
 
       <div className="mood-footer">
         <div className="mf-cell">
           <span className="ic"><Icon name="target" size={14} stroke={1.4}/></span>
           <span className="lbl">Sources Scanned</span>
-          <b className="val">{kpi.outlets || '—'}</b>
+          <b className="val">247</b>
           <span className="mini-spark"><Sparkline values={SPARK.articles} height={14} color="#5fd47b"/></span>
         </div>
         <div className="mf-cell langs">
-          {((kpi.lang_breakdown || []).slice(0, 3)).map((l) => (
-            <span className="lpair" key={l.code}><span className="lk">{l.code}</span><b>{l.n}</b></span>
-          ))}
+          <span className="lpair"><span className="lk">TE</span><b>142</b></span>
+          <span className="lpair"><span className="lk">HI</span><b>38</b></span>
+          <span className="lpair"><span className="lk">EN</span><b>67</b></span>
         </div>
         <div className="mf-cell">
-          <span className="ic"><Icon name="doc" size={14} stroke={1.4}/></span>
-          <span className="lbl">Articles · 24h</span>
-          <b className="val">{(kpi.articlesParsed || 0).toLocaleString()}</b>
+          <span className="ic"><Icon name="clock" size={14} stroke={1.4}/></span>
+          <span className="lbl">Process Time</span>
+          <b className="val">4M 22S</b>
         </div>
         <div className="mf-cell">
-          <span className="ic"><Icon name="globe" size={14} stroke={1.4}/></span>
-          <span className="lbl">Languages</span>
-          <b className="val">{kpi.languages || '—'}</b>
+          <span className="ic"><Icon name="building" size={14} stroke={1.4}/></span>
+          <span className="lbl">Editorial Desk</span>
+          <b className="val">Hyderabad Bureau</b>
         </div>
         <div className="mf-cell refresh">
-          <span className="ic"><Icon name="clock" size={14} stroke={1.4}/></span>
-          <span className="lbl">Dateline</span>
-          <b className="val time">{kpi?.as_of?.iso || '—'}</b>
+          <span className="ic"><Icon name="refresh" size={14} stroke={1.4}/></span>
+          <span className="lbl">Next Refresh In</span>
+          <b className="val time"><Countdown to={nextRefreshAt} bare/></b>
         </div>
       </div>
     </div>
@@ -715,107 +701,66 @@ const MiniIndia = ({ regionKey, tone }) => {
 
 const WatchedEntityCard = ({ e }) => {
   const color = weTone(e.tone);
-  const attacking = e.posture === "critical";
-  const verdict = e.verdict || e.classification;
-  const subtitle = [e.party, e.role].filter(Boolean).join(" · ") || e.region || "";
-  const photo = ENTITY_PHOTOS[(e.name || "").toLowerCase()];
-  const [open, setOpen] = React.useState(false);
-  const [doss, setDoss] = React.useState(null); // null | 'loading' | 'error' | 'empty' | {read,actions,quotes}
-  const toggle = () => {
-    const next = !open;
-    setOpen(next);
-    if (next && doss == null) {
-      setDoss('loading');
-      authFetch(`/api/brief/entity_read?name=${encodeURIComponent(e.name)}`)
-        .then(j => setDoss(j && (j.read || (j.quotes || []).length) ? j : 'empty'))
-        .catch(() => setDoss('error'));
-    }
-  };
-  const stop = (ev) => ev.stopPropagation();
   return (
-    <article id={`entity-${slugify(e.name)}`} className={`we-card we-card-text ${e.tone}${open ? ' open' : ''}`} style={{ "--tone": color }}>
-      <div className="we-card-click" role="button" tabIndex={0} onClick={toggle}
-           onKeyDown={ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggle(); } }}>
-        <header className="we-card-head">
-          <span className="we-rank">{e.rank}</span>
-          <span className={`we-verdict ${e.tone}`} style={{ "--tone": color }}>{verdict}</span>
-          {e.campRole ? <span className="we-camprole">{e.campRole}</span> : null}
-          <span className="we-chev" aria-hidden="true">{open ? '▾' : '▸'}</span>
-        </header>
-        <div className="we-id">
-          <span className="we-avatar" aria-hidden="true">
-            {e.init}
-            {photo ? <img className="we-avatar-img" src={photo} alt="" loading="lazy"
-                          onError={ev => { ev.currentTarget.style.opacity = "0"; }} /> : null}
-          </span>
-          <div className="we-id-text">
-            <h3 className="we-name">{e.name}</h3>
-            {subtitle ? <div className="we-party-line">{subtitle}</div> : null}
+    <article id={`entity-${slugify(e.name)}`} className={`we-card ${e.tone}`} style={{ "--tone": color }}>
+      <header className="we-card-head">
+        <span className="we-rank">{e.rank}</span>
+        <span className="we-classification">{e.classification}</span>
+      </header>
+      <h3 className="we-name">{e.name}</h3>
+      <div className="we-party-line">
+        <span className="we-party-name">{e.party}</span>
+        <span className="we-sep">·</span>
+        <span className="we-region">{e.region}</span>
+      </div>
+      <div className="we-portrait-row">
+        <div className={`we-portrait${e.image ? ' has-img' : ''}`}>
+          <span className="we-portrait-ring r1" aria-hidden="true"></span>
+          <span className="we-portrait-ring r2" aria-hidden="true"></span>
+          {e.image ? (
+            <img className="we-portrait-photo" src={e.image} alt={e.name}/>
+          ) : (
+            <span className="we-portrait-face">{e.init}</span>
+          )}
+        </div>
+        <div className="we-influence">
+          <span className="we-inf-lbl">Influence Score<M k="influenceScore"/></span>
+          <div className="we-inf-row">
+            <div className="we-inf-num"><b>{e.influence}</b><span className="we-inf-max">/100</span></div>
+            <div className="we-inf-spark"><Sparkline values={SPARK[e.spark]} height={20} color={color}/></div>
+          </div>
+          <div className="we-inf-change">
+            <span className="we-change-arrow">↗</span>
+            <span className="we-change-val">{e.change}</span>
+            <span className="we-change-sub">vs yesterday<M k="influenceDelta"/></span>
           </div>
         </div>
-        {e.quote ? (
-          <blockquote className="we-quote">
-            <span className="we-quote-mark-sm" aria-hidden="true">“</span>{e.quote}”
-            {e.quoteOutlet ? <cite>— {e.quoteOutlet}{e.quoteTs ? ` · ${e.quoteTs}` : ""}</cite> : null}
-          </blockquote>
-        ) : (
-          <p className="we-noquote">No direct quote captured in this window.</p>
-        )}
-        <div className="we-intel">
-          {e.stanceN ? (
-            <>
-              <span className={`we-intel-line ${attacking ? "crit" : "supp"}`}>
-                {attacking ? `On the attack — ${e.critPct}% of coverage is critical`
-                           : `Supportive posture — ${e.suppPct}% supportive`}
-              </span>
-              <div className="we-meter" title={`${e.critPct}% critical · ${e.suppPct}% supportive · ${e.stanceN} items`}>
-                <span className="we-meter-crit" style={{ width: `${e.critPct}%` }} />
-                <span className="we-meter-supp" style={{ width: `${e.suppPct}%` }} />
-              </div>
-            </>
-          ) : null}
-          {e.mentions != null ? (
-            <span className="we-intel-line dim">
-              {e.mentions} mentions · {e.sov}% of your watch
-              {e.surge ? ` · ${e.surgeLabel?.toLowerCase()} ${e.surge}` : ""}
-              {e.outlets ? ` · ${e.outlets} outlets` : ""}
-            </span>
-          ) : null}
-        </div>
-        <span className="we-read">{open ? 'Hide analyst read ▾' : 'Analyst read →'}</span>
       </div>
-
-      {open ? (
-        <div className="we-dossier">
-          {doss === 'loading' ? <div className="we-doss-load">Reading the room…</div> : null}
-          {doss === 'error' ? <div className="we-doss-empty">Couldn’t load the read — try again.</div> : null}
-          {doss === 'empty' ? <div className="we-doss-empty">Not enough signal for a read yet.</div> : null}
-          {doss && typeof doss === 'object' ? (
-            <>
-              {doss.read ? (<><div className="we-doss-label">The Read</div><p className="we-doss-read">{doss.read}</p></>) : null}
-              {doss.actions && doss.actions.length ? (
-                <>
-                  <div className="we-doss-label">Recommended actions</div>
-                  <ul className="we-doss-actions">{doss.actions.map((a, i) => <li key={i}>{a}</li>)}</ul>
-                </>
-              ) : null}
-              {doss.quotes && doss.quotes.length ? (
-                <>
-                  <div className="we-doss-label">In their words</div>
-                  {doss.quotes.map((q, i) => (
-                    <blockquote key={i} className="we-doss-quote">
-                      “{q.text}”
-                      {q.url ? (
-                        <a href={q.url} target="_blank" rel="noopener noreferrer" onClick={stop} className="we-doss-src">— {q.outlet}{q.ts ? ` · ${q.ts}` : ''} ↗</a>
-                      ) : <cite>— {q.outlet}</cite>}
-                    </blockquote>
-                  ))}
-                </>
-              ) : null}
-            </>
-          ) : null}
+      <div className="we-metric">
+        <div className="we-metric-head"><span className="we-metric-lbl">Sentiment Trend (7D)<M k="sevenDaySent"/></span></div>
+        <div className="we-sent-row">
+          <div className="we-sent-spark"><Sparkline values={SPARK[e.sentiment.spark]} height={28} color={color}/></div>
+          <div className="we-sent-meta">
+            <span className={`we-sent-label ${e.sentiment.label.toLowerCase()}`}>{e.sentiment.label}</span>
+            <span className="we-sent-val">{e.sentiment.value}</span>
+          </div>
         </div>
-      ) : null}
+      </div>
+      <div className="we-metric we-velocity">
+        <div className="we-metric-head"><Icon name="activity" size={12} stroke={1.5}/><span className="we-metric-lbl">Media Velocity<M k="mediaVelocity"/></span><span className="we-metric-val">{e.velocity}</span></div>
+        <MiniBars values={e.velocityBars} color={color}/>
+      </div>
+      <div className="we-metric we-regional">
+        <div className="we-metric-head"><Icon name="target" size={12} stroke={1.5}/><span className="we-metric-lbl">Regional Traction<M k="regionalTrac"/></span><span className="we-metric-val">{e.regionalLabel}</span></div>
+        <div className="we-regional-map"><MiniIndia regionKey={e.regionKey} tone={color}/></div>
+      </div>
+      <div className="we-quote-block">
+        <div className="we-quote-head"><Icon name="chat" size={11} stroke={1.5}/><span>Latest Quote</span></div>
+        <span className="we-quote-mark-sm" aria-hidden="true">“</span>
+        <p>{e.quote}</p>
+        <span className="we-quote-attr-sm">— {e.quoteCtx}</span>
+      </div>
+      <div className="we-tag"><Icon name="warn" size={11} stroke={1.5}/><span>{e.tag}</span></div>
     </article>
   );
 };
@@ -1024,60 +969,59 @@ const Thumbnail = ({ hue, rank }) => {
 
 const DefiningStoryRow = ({ s }) => {
   const color = dsTone(s.tone);
-  const m = s.metrics || {};
-  const pq = s.principalQuote;
-  const hasStance = (m.stance_n || 0) > 0;
-  const articles = m.articles || 0;
-  const outletText = m.outlets > 1 ? `${m.outlets} outlets` : (s.outlets || "single source");
-  const thumb = s.image || s.thumbnail;
-  const inner = (
-    <>
+  const triad = (s.lens || []).slice(0, 3);
+  return (
+    <article className={`ds-row ${s.tone}`} style={{ "--tone": color }} id={`story-${s.rank}`}>
+      <ImageSlot kind="rect" id={`story-${s.rank}-thumb`} label="STORY IMAGE" src={s.image} className="ds-row-thumb" />
       <div className="ds-row-content">
         <div className="ds-row-head">
           <span className="ds-rank">{s.rank}</span>
           <span className="ds-rule" style={{ background: color }}></span>
-          <div className="ds-cats">{(s.categories || []).map((c, i) => <React.Fragment key={i}>{i > 0 && <span className="ds-cat-sep">·</span>}<span className="ds-cat">{c}</span></React.Fragment>)}</div>
-          {s.url ? <span className="ds-ext" aria-hidden="true">↗</span> : null}
+          <div className="ds-cats">{s.categories.map((c, i) => <React.Fragment key={i}>{i > 0 && <span className="ds-cat-sep">·</span>}<span className="ds-cat">{c}</span></React.Fragment>)}</div>
         </div>
         <h3 className="ds-headline">{s.headline}</h3>
         <p className="ds-summary">{s.summary}</p>
-        {pq && pq.text ? (
-          <blockquote className="ds-quote">
-            <span className="ds-quote-mark" style={{ color }}>&ldquo;</span>
-            {pq.text}
-            <cite>— {pq.attribution || "—"}{pq.source && pq.source !== "—" ? `, ${pq.source}` : ""}</cite>
-          </blockquote>
-        ) : null}
-        <div className="ds-textmeta">
-          {s.matched ? (
-            <span className="ds-why" style={{ "--tone": color }}>
-              <Icon name="target" size={12} stroke={1.6} /> On your watch · {s.matched}
-            </span>
-          ) : null}
-          <span className="ds-source-line">
-            via {outletText}{articles ? ` · ${articles} report${articles > 1 ? "s" : ""}` : ""}
-          </span>
-          {hasStance && s.coverage ? (
-            <span className="ds-cov-line">
-              Coverage {s.coverage.crit}% critical · {s.coverage.sup}% supportive
-            </span>
-          ) : null}
-          {s.url ? <span className="ds-read">Read full story →</span> : null}
+        <div className="ds-outlets">
+          {s.outletChips && s.outletChips.map((o, i) => <span key={i} className="ds-outlet-chip">{o}</span>)}
+          <span className="ds-outlet-more">{s.outletsMore || ""}</span>
+        </div>
+        {triad.length > 0 && (
+          <div className="ds-lens-triad" id={`lens-${s.rank}`}>
+            <div className="ds-lens-head"><span>Source Lens · 3 Perspectives</span></div>
+            <div className="ds-lens-row">
+              {triad.map((l, i) => <LensCard key={i} id={`lens-${s.rank}-${i}`} {...l} />)}
+            </div>
+          </div>
+        )}
+        <a href={`#lens-${s.rank}`} className="drill-link" onClick={handleAnchorClick(`lens-${s.rank}`)}>
+          Drill into evidence <Icon name="arrowRight" size={11} />
+        </a>
+      </div>
+      <div className="ds-row-metrics">
+        <div className="ds-impact-cell">
+          <span className="ds-cell-label">Impact Velocity<M k="impactVelocity" placement="left"/></span>
+          <ImpactRing value={s.impact} color={color} label={s.impactLabel}/>
+        </div>
+        <div className="ds-sent-cell">
+          <span className="ds-cell-label">Sentiment Shift<M k="sentimentShift" placement="left"/></span>
+          <div className="ds-sent-row">
+            <div className="ds-sent-spark"><Sparkline values={SPARK[s.sentimentSpark]} height={22} color={color}/></div>
+            <div className={`ds-sent-val ${s.sentimentLabel.toLowerCase()}`}>{s.sentiment}</div>
+          </div>
+          <div className="ds-sent-lbl">{s.sentimentLabel}</div>
+        </div>
+        <div className="ds-momentum-cell">
+          <span className="ds-cell-label">Media Momentum<M k="mediaMomentum" placement="left"/></span>
+          <MomentumBars values={s.momentumBars} color={color}/>
+          <div className="ds-momentum-lbl">{s.momentumLabel}</div>
+        </div>
+        <div className="ds-peak-cell">
+          <span className="ds-cell-label">Peak Time<M k="peakTime" placement="left"/></span>
+          <div className="ds-peak-time">{s.peakTime.split(" ")[0]}</div>
+          <div className="ds-peak-sub">{s.peakTime.split(" ").slice(1).join(" ")}</div>
         </div>
       </div>
-      {thumb ? (
-        <div className="ds-thumb-wrap">
-          <img className="ds-thumb" src={thumb} alt="" loading="lazy"
-               onError={(e) => { const w = e.currentTarget.parentElement; if (w) w.style.display = "none"; }} />
-        </div>
-      ) : null}
-    </>
-  );
-  const cls = `ds-row ds-row-text ${s.url ? "ds-row-link" : ""} ${s.tone}`;
-  return s.url ? (
-    <a className={cls} style={{ "--tone": color }} href={s.url} target="_blank" rel="noopener noreferrer" id={`story-${s.rank}`}>{inner}</a>
-  ) : (
-    <article className={cls} style={{ "--tone": color }} id={`story-${s.rank}`}>{inner}</article>
+    </article>
   );
 };
 
@@ -1088,8 +1032,9 @@ const DefiningStories = () => {
   <section className="container section ds-section">
     <DefiningHeader/>
     <div className="ds-rows">
-      {_list.slice(0, 5).map((s, i) => <DefiningStoryRow key={i} s={s}/>)}
+      {_list.slice(0, 3).map((s, i) => <DefiningStoryRow key={i} s={{...s, lens: (s.lens && s.lens.length) ? s.lens : (SOURCE_LENS_DATA[s.rank] || [])}}/>)}
     </div>
+    <button type="button" className="ts-cta ds-view-all"><Icon name="doc" size={13}/><span>View All Defining Stories</span></button>
   </section>
 );
 };
@@ -1369,64 +1314,21 @@ const HorizonOutlook = () => (
   </div>
 );
 
-// Map osint-backend event_type → boss's icon name.
-const HZ_ICON_MAP = {
-  cabinet: "building", approval: "chat", release: "trendUp",
-  announcement: "megaphone", election: "vote", court: "scale",
-  ruling: "scale", hearing: "scale", sports_result: "target",
-  press_briefing: "chat", summit: "building", rally: "megaphone",
-  policy_launch: "megaphone", budget: "trendUp",
-};
-
-const KeyEvents = () => {
-  const liveHz = useLiveHorizon();
-
-  // Flatten live horizon days → boss's per-event shape. Falls back to mock
-  // until the API responds, or if no events are available.
-  const events = React.useMemo(() => {
-    if (!liveHz?.days) return HORIZON_EVENTS;
-    const out = [];
-    for (const day of liveHz.days) {
-      if (!day.events?.length) continue;
-      const dt = new Date(day.date);
-      const dayLabel = dt.toLocaleString('en-US', { month: 'short' });
-      const dateLabel = String(dt.getUTCDate());
-      const weekdayLabel = dt.toLocaleString('en-US', { weekday: 'short' });
-      for (const e of day.events) {
-        const conf = e.confidence ?? 1.0;
-        const risk = conf >= 0.8 ? "High" : conf >= 0.5 ? "Medium" : "Low";
-        const riskTone = conf >= 0.8 ? "rose" : conf >= 0.5 ? "amber" : "green";
-        out.push({
-          day: dayLabel, date: dateLabel, weekday: weekdayLabel,
-          icon: HZ_ICON_MAP[e.type] || "chat",
-          tone: e.tone || "amber",
-          title: (e.description || e.type || "").slice(0, 70),
-          desc: e.source ? `via ${e.source}` : "",
-          risk, riskTone,
-        });
-        if (out.length >= 6) break;
-      }
-      if (out.length >= 6) break;
-    }
-    return out.length ? out : HORIZON_EVENTS;
-  }, [liveHz]);
-
-  return (
-    <div className="hz-panel">
-      <header className="hz-panel-head"><h3>Key Events To Watch</h3><p>High-impact events shaping the week ahead</p></header>
-      <div className="hz-events">
-        {events.map((e, i) => (
-          <article key={i} className={`hz-event ${e.tone} ${e.risk === "High" ? "alert-glow tone-rose" : ""}`}>
-            <div className="hz-event-date"><span className="m">{e.day}</span><span className="d">{e.date}</span><span className="w">{e.weekday}</span></div>
-            <div className="hz-event-icon"><Icon name={e.icon} size={18} stroke={1.4}/></div>
-            <div className="hz-event-body"><h5>{e.title}</h5><p>{e.desc}</p></div>
-            <div className="hz-event-risk"><span className="lbl">Risk</span><span className={`val ${e.riskTone}`}>{e.risk}</span><span className={`dot ${e.riskTone}`}></span></div>
-          </article>
-        ))}
-      </div>
+const KeyEvents = () => (
+  <div className="hz-panel">
+    <header className="hz-panel-head"><h3>Key Events To Watch</h3><p>High-impact events shaping the week ahead</p></header>
+    <div className="hz-events">
+      {HORIZON_EVENTS.map((e, i) => (
+        <article key={i} className={`hz-event ${e.tone} ${e.risk === "High" ? "alert-glow tone-rose" : ""}`}>
+          <div className="hz-event-date"><span className="m">{e.day}</span><span className="d">{e.date}</span><span className="w">{e.weekday}</span></div>
+          <div className="hz-event-icon"><Icon name={e.icon} size={18} stroke={1.4}/></div>
+          <div className="hz-event-body"><h5>{e.title}</h5><p>{e.desc}</p></div>
+          <div className="hz-event-risk"><span className="lbl">Risk</span><span className={`val ${e.riskTone}`}>{e.risk}</span><span className={`dot ${e.riskTone}`}></span></div>
+        </article>
+      ))}
     </div>
-  );
-};
+  </div>
+);
 
 const ForecastPulse = () => {
   const points = [[10, 270],[80, 220],[150, 180],[220, 130],[290, 90],[360, 75],[430, 105],[500, 140]];
@@ -1506,31 +1408,21 @@ const Horizon7Days = () => (
    ════════════════════════════════════════════════════════════ */
 const stanceTone = (s) => s === "supportive" ? "green" : s === "critical" ? "rose" : "amber";
 
-const QuoteCard = ({ q }) => {
-  const inner = (
-    <>
-      <p className="quote">"{q.quote}"</p>
-      <div className="meta-row">
-        <ImageSlot kind="avatar" id={`voice-${slugify(q.speaker)}`} src={q.image} className="avatar-slot"/>
-        <div className="attribution">
-          <span className="name">{q.speaker}</span>
-          <span className="role">{q.role}{q.source ? ` · ${q.source}` : ""}</span>
-        </div>
-        {q.contextTag ? <span className="source-pill">{q.contextTag}</span> : null}
+const QuoteCard = ({ q }) => (
+  <article className="voice-card" data-stance={q.stance}>
+    <p className="quote">"{q.quote}"</p>
+    <div className="meta-row">
+      <ImageSlot kind="avatar" id={`voice-${slugify(q.speaker)}`} src={q.image} className="avatar-slot"/>
+      <div className="attribution">
+        <span className="name">{q.speaker}</span>
+        <span className="role">{q.role} · {q.source}</span>
       </div>
-    </>
-  );
-  return q.url ? (
-    <a className="voice-card voice-card-link" data-stance={q.stance} href={q.url} target="_blank" rel="noopener noreferrer">{inner}</a>
-  ) : (
-    <article className="voice-card" data-stance={q.stance}>{inner}</article>
-  );
-};
+      <span className="source-pill">{q.contextTag}</span>
+    </div>
+  </article>
+);
 
-const VoicesOvernight = () => {
-  const data = useLiveVoices();
-  const list = (data && data.voices && data.voices.length) ? data.voices : VOICES_DATA;
-  return (
+const VoicesOvernight = () => (
   <section className="container section voices-section">
     <header className="voices-header">
       <div>
@@ -1539,11 +1431,10 @@ const VoicesOvernight = () => {
       </div>
     </header>
     <div className="voices-grid">
-      {list.slice(0, 5).map((q, i) => <QuoteCard key={i} q={q}/>)}
+      {VOICES_DATA.map((q, i) => <QuoteCard key={i} q={q}/>)}
     </div>
   </section>
-  );
-};
+);
 
 /* ════════════════════════════════════════════════════════════
    SECTION: CM PERSPECTIVE
@@ -1782,10 +1673,12 @@ const App = () => (
     <TopBar />
     <div className="shell">
       <MoodSection />
-      <CMPerspective />
       <DefiningStories />
       <VoicesOvernight />
       <WatchedEntities />
+      <BlindspotComparison />
+      <Horizon7Days />
+      <CmPerspective />
       <FooterStrip />
     </div>
   </>

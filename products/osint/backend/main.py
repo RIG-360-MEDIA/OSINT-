@@ -24,7 +24,7 @@ from sqlalchemy import text
 
 from config import load_settings
 from db import dispose_engine, get_db, get_engine
-from routers import admin, analytics_router, chronicle_router, climbing, cm_perspective, dossier_router, entities, emerging, executive, export, home, horizon, intel, kpi, map_router, me, mood, onboarding, posture, report_router, sources_router, stories, textual, ticker_router, top_articles, voices, war_room_router
+from routers import admin, analytics_router, chronicle_router, climbing, cm_perspective, dossier_router, entities, emerging, executive, export, home, horizon, intel, kpi, map_router, me, mood, onboarding, posture, report_router, stories, textual, top_articles, voices, war_room_router
 
 settings = load_settings()
 
@@ -74,6 +74,7 @@ app.include_router(home.router)
 app.include_router(dossier_router.router)
 app.include_router(war_room_router.router)
 app.include_router(analytics_router.router)
+app.include_router(chronicle_router.router)
 app.include_router(map_router.router)
 app.include_router(report_router.router)
 app.include_router(executive.router)
@@ -89,9 +90,6 @@ app.include_router(mood.router)
 app.include_router(me.router)
 app.include_router(admin.router)
 app.include_router(onboarding.router)
-app.include_router(chronicle_router.router)
-app.include_router(sources_router.router)
-app.include_router(ticker_router.router)
 
 
 @app.get("/health", tags=["meta"])

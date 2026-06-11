@@ -390,6 +390,14 @@ async def _call_cerebras(
         # article (5.5KB body): 30% failure → 0% failure.
         if cerebras_model.startswith("zai-glm"):
             body["reasoning_effort"] = "none"
+        # 2026-05-29: prompt_cache_key forces all our substrate-v3 calls
+        # into the same prompt-cache routing slot within each per-key org.
+        # Cerebras does prefix-cache automatically, but the explicit key
+        # (a) standardises routing across all calls (better hit rate),
+        # (b) makes hit/miss observable via response.usage.prompt_tokens_details.cached_tokens.
+        # Caching saves latency, not quota — per docs, cached tokens still
+        # count toward TPM/TPD. See docs/audits/cerebras-rate-limits-2026-05-29.md.
+        body["prompt_cache_key"] = "rig-substrate-v3"
         try:
             # Browser UA is REQUIRED — Cerebras's API sits behind Cloudflare
             # WAF which rejects default python-httpx/urllib UAs with error
@@ -885,6 +893,9 @@ async def _call_via_slot(
     # reasoning_effort=none to skip chain-of-thought (saves ~3K tok/call).
     if cerebras_model.startswith("zai-glm"):
         body["reasoning_effort"] = "none"
+    # See _call_cerebras docstring: standardise prompt_cache_key for
+    # observable cache routing across parallel-mode + sequential calls.
+    body["prompt_cache_key"] = "rig-substrate-v3"
     async with _httpx.AsyncClient(timeout=30.0) as c:
         r = await c.post(
             _CEREBRAS_BASE,

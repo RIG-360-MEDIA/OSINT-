@@ -148,11 +148,31 @@ async def get_pdf_url_from_careerswave(careerswave_url: str) -> str | None:
         )
         return _gdrive_direct_url(m.group(1))
 
-    # Defect B6: silent failure here used to be the hardest debug.
-    # Emit a warning naming the page, the dates we tried, and whether
-    # any Drive link was even present so a human can tell at a glance
-    # whether the issue is upload delay, site format change, or the
-    # source URL being wrong.
+    # Raw HTML has no Drive links — site may be using JS-rendered tables.
+    # Fall back to Playwright to execute the page JS before scraping.
+    logger.info(
+        "CareersWave %s: no Drive link in raw HTML, trying Playwright",
+        careerswave_url,
+    )
+    pw_html = await _careerswave_playwright_fetch(careerswave_url)
+    if pw_html:
+        for offset in (0, 1, 2):
+            target = today - timedelta(days=offset)
+            file_id = _find_gdrive_id_near_date(pw_html, target)
+            if file_id:
+                logger.info(
+                    "CareersWave Playwright %s → drive file %s (date offset %d)",
+                    careerswave_url, file_id, offset,
+                )
+                return _gdrive_direct_url(file_id)
+        m = _GDRIVE_FILE_ID_RE.search(pw_html)
+        if m:
+            logger.info(
+                "CareersWave Playwright %s → undated drive file %s",
+                careerswave_url, m.group(1),
+            )
+            return _gdrive_direct_url(m.group(1))
+
     drive_link_present = "drive.google.com/file/d/" in html
     logger.warning(
         "CareersWave %s: no Drive link matched dates %s "
@@ -165,6 +185,45 @@ async def get_pdf_url_from_careerswave(careerswave_url: str) -> str | None:
         len(html),
     )
     return None
+
+
+async def _careerswave_playwright_fetch(url: str) -> str | None:
+    """Render a CareersWave page with Playwright and return the full HTML.
+
+    The dated download table (with the Google Drive links) is JS-rendered and
+    lazy-loaded as the page scrolls, so a plain httpx GET sees zero Drive links.
+    We load the page, scroll to the bottom in steps to trigger the lazy-load,
+    settle briefly, then return the fully rendered HTML for date matching.
+    """
+    try:
+        from playwright.async_api import async_playwright
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(
+                args=["--no-sandbox", "--disable-dev-shm-usage"]
+            )
+            ctx = await browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0.0.0 Safari/537.36"
+                )
+            )
+            page = await ctx.new_page()
+            await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            # Scroll the page in steps to trigger lazy-loading of the dated
+            # download table that holds the Google Drive links.
+            for _ in range(10):
+                await page.evaluate(
+                    "window.scrollBy(0, document.body.scrollHeight/10)"
+                )
+                await page.wait_for_timeout(600)
+            await page.wait_for_timeout(2500)
+            html = await page.content()
+            await browser.close()
+            return html
+    except Exception as exc:
+        logger.warning("CareersWave Playwright fetch failed for %s: %s", url, exc)
+        return None
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -385,8 +444,8 @@ _BBOX_PROMPT = (
     "TV schedules, stock tickers, page headers/footers, edition info.\n\n"
     "For each article output:\n"
     "{\n"
-    '  "section": "<Front Page/Business/Politics/National/International/'
-    'City/Sports/Entertainment/Opinion/Other>",\n'
+    '  "section": "<Politics/Business/Crime/Education/Health/'
+    'National/International/City/Sports/Entertainment/Opinion/Other>",\n'
     '  "headline": "<exact headline text>",\n'
     '  "body": "<full article body — every paragraph>",\n'
     '  "language": "<2-letter ISO: en/hi/te/ta/ml/kn/gu/bn/or/pa/ur/mr>",\n'

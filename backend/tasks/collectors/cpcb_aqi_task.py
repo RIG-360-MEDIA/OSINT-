@@ -169,8 +169,14 @@ async def _run() -> dict[str, int]:
 
 @app.task(name="tasks.collectors.cpcb_aqi", bind=True, max_retries=2)
 def cpcb_aqi(self) -> dict[str, int]:  # type: ignore[no-untyped-def]
-    try:
-        return asyncio.run(_run())
-    except Exception as exc:
-        logger.exception("cpcb_aqi failed")
-        raise self.retry(exc=exc, countdown=300)
+    # DISABLED 2026-06-08: upstream CPCB source decommissioned. app.cpcbccr.com
+    # now 301-redirects every data path (caaqms_landing, caaqms_landing_data,
+    # aqi_all_Parameters) to aqinow.org -- an unverified third-party domain whose
+    # data endpoints 404. Repointing at it would ingest from an untrusted source,
+    # so this task is a no-op until re-implemented against a verified CPCB AQI
+    # endpoint. Returning cleanly (no retry) stops the 404 failure storm.
+    logger.warning(
+        "cpcb_aqi disabled: source decommissioned (app.cpcbccr.com -> aqinow.org, "
+        "data paths 404). No-op until re-implemented against a verified source."
+    )
+    return {"stations_in_state": 0, "rows": 0}

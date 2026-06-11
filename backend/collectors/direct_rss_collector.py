@@ -170,11 +170,26 @@ class DirectRSSCollector:
 
         # asyncpg connections are NOT safe under concurrent ops — use a pool
         # sized to MAX_CONCURRENT_FEEDS so each task can acquire its own.
+        #
+        # Resilience knobs (added 2026-06-05 after the Postgres-restart
+        # cascade that wedged all collectors with "connection is closed"
+        # errors for ~30 min until the worker was manually recycled):
+        #   - setup= runs `SELECT 1` on every checkout. Dead conns raise
+        #     immediately and asyncpg replaces them before the caller sees
+        #     them.
+        #   - max_inactive_connection_lifetime=60 closes idle conns after
+        #     60 s so a Postgres restart can leave at most ~60 s of stale
+        #     conns in the pool.
+        async def _pool_setup(conn: asyncpg.Connection) -> None:
+            await conn.fetchval("SELECT 1")
+
         pool: asyncpg.Pool = await asyncpg.create_pool(
             DATABASE_URL,
             min_size=2,
             max_size=MAX_CONCURRENT_FEEDS + 2,
             command_timeout=30,
+            setup=_pool_setup,
+            max_inactive_connection_lifetime=60,
         )
 
         try:

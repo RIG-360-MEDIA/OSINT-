@@ -58,6 +58,9 @@ app = Celery(
         "backend.tasks.entity_mention_task",
         # Nightly v2→v3 upgrade pass (translation + register fields)
         "backend.tasks.v3_upgrade_task",
+        # YouTube clips: discovery + extraction + substrate enrichment drain
+        "backend.tasks.youtube_task",
+        "backend.tasks.youtube_clip_enrich",
     ],
 )
 
@@ -99,8 +102,40 @@ app.config_from_object(
             "tasks.collectors.tgspdcl_power":   {"queue": "collectors"},
             "tasks.collectors.welfare_coverage":{"queue": "collectors"},
             "tasks.collectors.acled_sink":      {"queue": "collectors"},
+            # YouTube: discovery on collectors (RSS safe from Hetzner),
+            # transcript fetch via relay + extraction + enrichment on youtube.
+            "tasks.discover_youtube_channels":   {"queue": "collectors"},
+            "tasks.fetch_youtube_transcripts":   {"queue": "youtube"},
+            "tasks.run_youtube_extraction":      {"queue": "youtube"},
+            "tasks.enrich_clip":                 {"queue": "youtube"},
+            "tasks.drain_pending_clips":         {"queue": "youtube"},
         },
         "beat_schedule": {
+            # YouTube discovery (RSS, 30m) → relay transcript fetch (3m) →
+            # extraction (5m) → substrate enrich drain (10m). Mirrors live Hetzner.
+            "discover-youtube-channels-every-30-min": {
+                "task": "tasks.discover_youtube_channels",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "collectors"},
+            },
+            "fetch-youtube-transcripts-every-3-min": {
+                "task": "tasks.fetch_youtube_transcripts",
+                "schedule": timedelta(minutes=3),
+                "kwargs": {"limit": 3},
+                "options": {"queue": "youtube"},
+            },
+            "run-youtube-extraction-every-5-min": {
+                "task": "tasks.run_youtube_extraction",
+                "schedule": timedelta(minutes=5),
+                "kwargs": {"limit": 10},
+                "options": {"queue": "youtube"},
+            },
+            "drain-pending-clips-every-10-min": {
+                "task": "tasks.drain_pending_clips",
+                "schedule": timedelta(minutes=10),
+                "kwargs": {"limit": 20},
+                "options": {"queue": "youtube"},
+            },
             "collect-rss-every-15-min": {
                 "task": "tasks.collect_rss",
                 "schedule": timedelta(minutes=15),

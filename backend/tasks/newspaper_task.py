@@ -308,7 +308,7 @@ async def _insert_clipping(
             "is_duplicate": bool(art.get("is_duplicate", False)),
             "duplicate_of": art.get("duplicate_of"),
             "pdf_path": pdf_path,
-            "edition_date": date.today().isoformat(),
+            "edition_date": date.today(),  # asyncpg DATE wants a date obj, not str
         },
     )
     fetched = row.fetchone()

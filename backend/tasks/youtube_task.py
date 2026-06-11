@@ -31,6 +31,53 @@ from backend.celery_app import app
 logger = logging.getLogger(__name__)
 
 
+# ── Political-priority matcher ────────────────────────────────────────────────
+# A pending video is "political" (top transcript priority, NEVER deprioritised or
+# aged out) when its TITLE mentions a watched entity or any political term. Biased
+# to HIGH RECALL: a false positive just transcribes a clip a little sooner; a false
+# negative would risk missing political content, which we never accept.
+_POLITICAL_KEYWORDS = frozenset({
+    "revanth", "kcr", "ktr", "kt rama", "harish rao", "kishan reddy", "bhatti",
+    "uttam", "owaisi", "modi", "rahul", "amit shah", "kharge", "bjp", "congress",
+    "brs", "aimim", "tdp", "ysrcp", "janasena", "pawan kalyan", "chandrababu",
+    "jagan", "minister", "cm ", " cm", "mla", " mp ", "assembly", "sansad",
+    "parliament", "election", "poll", "party", "politics", "political", "govt",
+    "government", "cabinet", "manifesto", "alliance", "opposition", "rally",
+    "protest", "scheme", "telangana", "andhra", "aicc", "supreme court",
+    "high court", "నేత", "ప్రభుత్వ", "ఎన్నిక", "మంత్రి", "సర్కార్",
+    "नेता", "सरकार", "चुनाव", "मंत्री",
+})
+
+_terms_cache: "set[str] | None" = None
+
+
+async def _load_political_terms(db) -> "set[str]":
+    """Watched-entity names + political keywords, lowercased; loaded once per process."""
+    global _terms_cache
+    if _terms_cache is not None:
+        return _terms_cache
+    from sqlalchemy import text
+    terms = set(_POLITICAL_KEYWORDS)
+    try:
+        rows = (await db.execute(text("SELECT lower(canonical_name) FROM user_entities"))).fetchall()
+        for (name,) in rows:
+            if not name:
+                continue
+            terms.add(name)
+            for w in name.split():
+                if len(w) > 3:
+                    terms.add(w)
+    except Exception:  # noqa: BLE001
+        pass
+    _terms_cache = terms
+    return terms
+
+
+def _is_political(title: "str | None", terms: "set[str]") -> bool:
+    t = (title or "").lower()
+    return any(term in t for term in terms)
+
+
 # ── Discovery ─────────────────────────────────────────────────────────────────
 
 @app.task(name="tasks.discover_youtube_channels", queue="collectors")
@@ -61,6 +108,9 @@ async def _discover() -> dict:
         logger.info("discover_youtube_channels: no active channels")
         return {"channels": 0, "new_videos": 0}
 
+    async with get_db() as _tdb:
+        terms = await _load_political_terms(_tdb)
+
     total_new = 0
     for ch in channels:
         try:
@@ -90,8 +140,8 @@ async def _discover() -> dict:
                         """
                         INSERT INTO pending_youtube_videos
                           (video_id, video_title, channel_id, channel_name,
-                           video_published_at)
-                        VALUES (:vid, :title, :cid, :cname, :pub)
+                           video_published_at, is_political)
+                        VALUES (:vid, :title, :cid, :cname, :pub, :pol)
                         ON CONFLICT (video_id) DO NOTHING
                         """
                     ),
@@ -101,6 +151,7 @@ async def _discover() -> dict:
                         "cid":   v.channel_id,
                         "cname": v.channel_name[:200],
                         "pub":   pub_dt,
+                        "pol":   _is_political(v.title, terms),
                     },
                 )
                 if result.rowcount:
@@ -165,7 +216,9 @@ async def _fetch_transcripts(limit: int) -> dict:
                          WHERE id = (
                             SELECT id FROM pending_youtube_videos
                              WHERE status = 'pending'
-                             ORDER BY discovered_at
+                             ORDER BY is_political DESC,
+                                      video_published_at DESC NULLS LAST,
+                                      discovered_at DESC
                              FOR UPDATE SKIP LOCKED
                              LIMIT 1
                          )

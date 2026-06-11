@@ -151,7 +151,6 @@ async def _collect_and_extract(
     from backend.collectors.newspaper_collector import (
         get_pdf_url_from_careerswave,
         download_pdf_from_url,
-        is_relevant_to_user,
     )
     from backend.collectors.newspaper_layout.hybrid_pipeline import extract_articles_hybrid
     from backend.database import get_db
@@ -177,12 +176,15 @@ async def _collect_and_extract(
         return 0, 0
 
     async with get_db() as db:
-        user_entities, user_geos = await _load_relevance_scope(db)
-
         inserted = skipped = 0
         new_ids: list[str] = []
         for art in articles:
-            # Filter statutory notices and front-page teasers (design §4 step 5).
+            # GLOBAL INGESTION: keep ALL real news. Relevance is a per-user VIEW
+            # concern (the feed/frontend filters by watched entities), NOT an
+            # ingestion gate — same model as articles (RBAC: global ingest +
+            # per-user filtering). relevance_score is left NULL on-row; the feed
+            # scores per user. We still drop non-news: statutory notices, teasers,
+            # and too-short OCR fragments.
             if art.get("is_notice") or art.get("is_duplicate"):
                 skipped += 1
                 continue
@@ -193,15 +195,8 @@ async def _collect_and_extract(
                 skipped += 1
                 continue
 
-            relevant, score, _ = await is_relevant_to_user(
-                headline, body, user_entities, user_geos
-            )
-            if not relevant:
-                skipped += 1
-                continue
-
             new_id = await _insert_clipping(
-                db, paper_id, language, pdf_path, art, headline, body, score
+                db, paper_id, language, pdf_path, art, headline, body, None
             )
             if new_id:
                 inserted += 1
@@ -220,37 +215,6 @@ async def _collect_and_extract(
         paper_name, inserted, skipped, len(new_ids),
     )
     return inserted, skipped
-
-
-async def _load_relevance_scope(db) -> tuple[list[str], list[str]]:
-    """Watched entity names + geo states (union across users) for scoring."""
-    from sqlalchemy import text
-
-    entity_rows = (
-        await db.execute(
-            text(
-                "SELECT DISTINCT e.canonical_name FROM user_watched_entities uwe "
-                "JOIN entity_dictionary e ON e.id = uwe.entity_id LIMIT 300"
-            )
-        )
-    ).fetchall()
-    user_entities = [r.canonical_name for r in entity_rows]
-
-    geo_rows = (
-        await db.execute(
-            text(
-                "SELECT DISTINCT lower(e.state) AS state "
-                "FROM user_watched_entities uwe "
-                "JOIN entity_dictionary e ON e.id = uwe.entity_id "
-                "WHERE e.state IS NOT NULL AND e.state <> ''"
-            )
-        )
-    ).fetchall()
-    user_geos = [r.state for r in geo_rows if r.state]
-    for baseline in ("andhra pradesh", "telangana"):
-        if baseline not in user_geos:
-            user_geos.append(baseline)
-    return user_entities, user_geos
 
 
 async def _insert_clipping(

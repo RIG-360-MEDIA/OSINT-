@@ -51,7 +51,7 @@ _PLACEHOLDER_ACTORS = frozenset({
 # bounded via max_tokens_override. ~150s of speech ≈ 2200 chars here.
 _CHUNK_SECONDS = 150          # ~2.5-minute analysis windows
 _MAX_CHUNK_CHARS = 2200       # ≈ 4400 input tokens for Indic scripts
-_MAX_OUTPUT_TOKENS = 1200     # reserved output — keeps input+output < 6000 TPM
+_MAX_OUTPUT_TOKENS = 1500     # room for 5-6 sentence executive summaries per clip
 _MAX_CHUNKS_PER_VIDEO = 24    # cap Groq calls/video (~60 min); excess is logged
 
 

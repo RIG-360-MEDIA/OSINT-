@@ -30,7 +30,7 @@ _JSON_SCHEMA = """\
       "importance": "high|medium|low",
       "segment_type": \"""" + _VALID_SEGMENT_TYPES + """\",
       "speaker": "<name of the person speaking, or null if unknown>",
-      "summary": "<1-2 sentences in fluent English: WHO said/claimed/announced WHAT to WHOM>",
+      "summary": "<a 5-6 sentence EXECUTIVE BRIEF in fluent English — what was announced/claimed/alleged, by whom, to whom, the context and background, the specific details (names, numbers, places), and why it matters; a self-contained news brief an analyst can act on without watching the clip>",
       "quotes": [
         {
           "speaker": "<name>",
@@ -163,9 +163,13 @@ def build_transcript_sys(
         ),
         (
             "QUALITY RULES:\n"
-            "1. 'summary' must answer: who said what to whom. Never: 'entity was "
-            "mentioned', 'too short to summarise', bare timecodes, or vague openers "
-            "like 'In this clip...'.\n"
+            "1. 'summary' is a 5-6 sentence EXECUTIVE BRIEF (like a newspaper's "
+            "executive summary), NOT a one-liner. Cover: what was said/announced/"
+            "alleged, the key actors, the context and background, the concrete "
+            "details (names, numbers, places, dates), and why it matters. It must "
+            "stand alone — an analyst should grasp the whole story without watching. "
+            "Never: 'entity was mentioned', 'too short to summarise', bare timecodes, "
+            "or vague openers like 'In this clip...'.\n"
             "2. Fewer precise clips > many vague ones. If in doubt, omit.\n"
             "3. Do NOT emit 'low' importance clips. "
             "'high' = major announcement / breaking controversy. "

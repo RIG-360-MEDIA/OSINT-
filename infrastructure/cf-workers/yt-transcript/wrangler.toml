@@ -1,0 +1,7 @@
+name = "rig-yt-transcript"
+main = "worker.js"
+compatibility_date = "2024-01-15"
+workers_dev = true
+
+# Worker URL: https://rig-yt-transcript.pranavpuri03.workers.dev
+# Set API_KEY secret via: wrangler secret put API_KEY

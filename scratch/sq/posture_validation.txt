@@ -1,0 +1,60 @@
+CREATE TABLE
+INSERT 0 10
+UPDATE 10
+=== Per-entity catch/spare validation ===
+  label   | total_attrib | canonical_only_hit | widened_hit | additional_caught | widened_pct 
+----------+--------------+--------------------+-------------+-------------------+-------------
+ TMC      |         4446 |                133 |        1237 |              1104 |        27.8
+ BJP      |         3291 |               1048 |        2777 |              1729 |        84.4
+ Modi     |         2131 |               1623 |        1948 |               325 |        91.4
+ DMK      |          733 |                192 |         641 |               449 |        87.4
+ INC      |          703 |                 34 |          84 |                50 |        11.9
+ BRS      |          661 |                115 |         464 |               349 |        70.2
+ AAP      |          228 |                134 |         207 |                73 |        90.8
+ KCR      |          210 |                  9 |          67 |                58 |        31.9
+ Kejriwal |          101 |                 90 |          96 |                 6 |        95.0
+ Owaisi   |           40 |                 35 |          35 |                 0 |        87.5
+(10 rows)
+
+
+=== SPOT-READ FP check: 3 sampled articles per entity caught ONLY by the new aliases (not canonical alone) ===
+  label   |                                    title                                    
+----------+-----------------------------------------------------------------------------
+ AAP      | Twin blasts: Opposition accuses CM of ‘sedition’; BJP plotting unrest in St
+ AAP      | AAP's Punjab architects now powering BJP's 2027 poll push
+ AAP      | ಪಂಜಾಬ್ ಸ್ಥಳೀಯ ಸಂಸ್ಥೆ ಚುನಾವಣೆ: ಮತದಾರರಿಂದ 'ED ಪಕ್ಷ' ನಿರ್ನಾಮ; ಬಿಜೆಪಿ ವಿರುದ್ಧ ಕ
+ BJP      | AGP backs Himanta Biswa Sarma as Assam Chief Minister for another term
+ BJP      | 'Cockroach' keeps up the crawl: Police action at Dipke home, BJP ally's ‘co
+ BJP      | Tripura BJP celebrates win in Assembly bye-election
+ BRS      | KTR, Harish Rao pay tributes to Telangana martyrs on State Formation Day
+ BRS      | KTR promises legal fight if funds to BRS-led gram panchayats are blocked
+ BRS      | Revanth claims ony 20 per cent of paddy to be procured
+ DMK      | Post poll Tamil Nadu alliances divided in supporting TVK
+ DMK      | Exit polls: DMK in TN, BJP in Assam, UDF in Kerala? | Above the Fold | 29.0
+ DMK      | Jofra Archer: అద్భుతం.. విజయ్ గెలుపును ముందే ఊహించి ట్వీట్ చేసిన క్రికెటర్ 
+ INC      | For TP comparability, functional similarity and scale of operations were cr
+ INC      | India Inc. ramps up FY27 investments; energy, defence, digital infra lead ₹
+ INC      | Diana Shipping Inc. Comments On Genco Shipping & Trading’s Rejection Of $24
+ KCR      | KTR, Harish Rao pay tributes to Telangana martyrs on State Formation Day
+ KCR      | KCR : బీఆర్ఎస్ సభ్యత్వ నమోదులో డిజిటల్ విప్లవం.. ఎర్రవెల్లిలో కేసీఆర్ సుదీర
+ KCR      | KCR | బక్రీద్‌ సందర్భంగా ముస్లిం సోదరులకు కేసీఆర్‌ శుభాకాంక్షలు
+ Kejriwal | NTA promises fresh attempt for 5% candidates who missed CUET-UG 2026 exam d
+ Kejriwal | TVK Vijay: అలా అయితే మద్దతు విత్‌డ్రా చేసుకుంటాం.. సీఎం విజయ్‌కు కొత్త తలనొ
+ Kejriwal | NEET UG Re-Exam 2026: Kejriwal Appeals For Free Bus Travel For Students
+ Modi     | బెంగాల్‌లో గెలిచాం.. తదుపరి లక్ష్యం తెలంగాణ: ప్రధాని మోదీ
+ Modi     | PM Modi Welcomes Move To Implement Ayushman Bharat Scheme In West Bengal
+ Modi     | prakash raj attacks pm modi chaiwala claim controversy 138079710.html?type=
+ TMC      | Uttarpara 2026 Election: TMC’s Bandopadhyay vs BJP’s Chakraborty
+ TMC      | Will things change for TMC after ‘sunset’? Mamata Banerjee stares at crushi
+ TMC      | ଅମାନତ ହରାଇବ TMC? ମ୍ୟାଜିକ ନମ୍ବର ପାର କଲା ଭାଜପା
+(27 rows)
+
+
+=== CONTROL regression: Iran/Modi/Tesla widened-Latin should match or beat the baseline numbers ===
+ label | total | widened_hit 
+-------+-------+-------------
+ Iran  |  8322 |        7846
+ Modi  |  2131 |        1948
+ Tesla |   130 |         130
+(3 rows)
+

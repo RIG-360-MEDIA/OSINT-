@@ -1,0 +1,77 @@
+=== 1. INGESTION rhythm ===
+ total_articles | last_1h | last_24h | last_7d | newest_age_min 
+----------------+---------+----------+---------+----------------
+         181891 |    1008 |    14521 |   62493 |            5.2
+(1 row)
+
+
+=== 2. SUBSTRATE extraction status (the headline scrape→article pipeline) ===
+ substrate_status |   n   | pct  
+------------------+-------+------
+ ok               | 50821 | 81.3
+ fetch_failed     |  5856 |  9.4
+ junk             |  4325 |  6.9
+ pending          |  1100 |  1.8
+ extract_failed   |   255 |  0.4
+ processing       |   136 |  0.2
+(6 rows)
+
+
+=== 3. NLP + EMBEDDING coverage ===
+ total_last_7d | nlp_done | embedded | nlp_backlog | embed_backlog 
+---------------+----------+----------+-------------+---------------
+         62493 |    62164 |    60380 |           0 |          1213
+(1 row)
+
+
+=== 4. PER-FIELD fill rate (among substrate=ok last 7d) ===
+        field         |  pct  |   n   
+----------------------+-------+-------
+ narrative_frame      |   0.0 | 50821
+ full_text_translated |  19.5 | 50821
+ author_name          |  60.2 | 50821
+ geo_primary          |  72.2 | 50821
+ register_style       |  78.0 | 50821
+ register_emotion     |  78.0 | 50821
+ primary_subject      |  78.3 | 50821
+ summary_executive    |  78.3 | 50821
+ published_at         |  89.7 | 50821
+ entities_extracted   |  90.7 | 50821
+ embedding_revision   |  97.6 | 50821
+ language_detected    |  97.9 | 50821
+ thumbnail_url        |  98.3 | 50821
+ title                |  98.9 | 50821
+ lead_text_translated |  99.4 | 50821
+ word_count           | 100.0 | 50821
+ topic_category       | 100.0 | 50821
+ quotes_extracted     | 100.0 | 50821
+ claims_extracted     | 100.0 | 50821
+ full_text_scraped    | 100.0 | 50821
+(20 rows)
+
+
+=== 5. RECENT-vs-ALL-TIME field drift (any fields degrading?) ===
+       field        | pct_30d_to_7d_window | pct_last_7d 
+--------------------+----------------------+-------------
+ title              |                100.0 |        98.9
+ entities_extracted |                 80.1 |        90.7
+ topic_category     |                 97.3 |       100.0
+ embedding_revision |                100.0 |        97.6
+ thumbnail_url      |                 99.3 |        98.3
+ narrative_frame    |                  0.0 |         0.0
+(6 rows)
+
+
+=== 6. SOURCE health (active sources with broken collection) ===
+ active_total | stale_24h | stale_7d | failing | auto_deactivated 
+--------------+-----------+----------+---------+------------------
+          604 |        58 |      512 |       6 |              120
+(1 row)
+
+
+=== 7. backlogs (substrate + NLP + embedding) ===
+ substrate_pending | v3_backlog | nlp_backlog | embed_backlog 
+-------------------+------------+-------------+---------------
+              1100 |          0 |           0 |          1239
+(1 row)
+

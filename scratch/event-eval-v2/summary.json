@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-05-21T11:45:08.887499Z",
+  "since_days": 5,
+  "events_total": 7999,
+  "counts": {
+    "assigned": 1113,
+    "spawned": 6859,
+    "skipped": 27,
+    "errors": 0,
+    "llm_calls": 1354,
+    "fast_assign": 658,
+    "fast_spawn": 5987
+  },
+  "duration_sec": 1367.6,
+  "clusters_total": 250,
+  "multi_article_clusters": 250,
+  "size_buckets": {
+    "11-50": 3,
+    "4-10": 57,
+    "2-3": 190
+  },
+  "source_diversity": {
+    "4+ sources": 22,
+    "2-3 sources": 97,
+    "1 source": 131
+  }
+}

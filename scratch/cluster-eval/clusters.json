@@ -1,0 +1,1236 @@
+{
+  "clusters": [
+    [
+      0,
+      31,
+      51,
+      57,
+      69,
+      79,
+      87,
+      97
+    ],
+    [
+      36,
+      39,
+      65,
+      75
+    ],
+    [
+      1,
+      68
+    ],
+    [
+      13,
+      22
+    ],
+    [
+      18,
+      45
+    ],
+    [
+      28,
+      64
+    ],
+    [
+      2
+    ],
+    [
+      3
+    ],
+    [
+      4
+    ],
+    [
+      5
+    ],
+    [
+      6
+    ],
+    [
+      7
+    ],
+    [
+      8
+    ],
+    [
+      9
+    ],
+    [
+      10
+    ],
+    [
+      11
+    ],
+    [
+      12
+    ],
+    [
+      14
+    ],
+    [
+      15
+    ],
+    [
+      16
+    ],
+    [
+      17
+    ],
+    [
+      19
+    ],
+    [
+      20
+    ],
+    [
+      21
+    ],
+    [
+      23
+    ],
+    [
+      24
+    ],
+    [
+      25
+    ],
+    [
+      26
+    ],
+    [
+      27
+    ],
+    [
+      29
+    ],
+    [
+      30
+    ],
+    [
+      32
+    ],
+    [
+      33
+    ],
+    [
+      34
+    ],
+    [
+      35
+    ],
+    [
+      37
+    ],
+    [
+      38
+    ],
+    [
+      40
+    ],
+    [
+      41
+    ],
+    [
+      42
+    ],
+    [
+      43
+    ],
+    [
+      44
+    ],
+    [
+      46
+    ],
+    [
+      47
+    ],
+    [
+      48
+    ],
+    [
+      49
+    ],
+    [
+      50
+    ],
+    [
+      52
+    ],
+    [
+      53
+    ],
+    [
+      54
+    ],
+    [
+      55
+    ],
+    [
+      56
+    ],
+    [
+      58
+    ],
+    [
+      59
+    ],
+    [
+      60
+    ],
+    [
+      61
+    ],
+    [
+      62
+    ],
+    [
+      63
+    ],
+    [
+      66
+    ],
+    [
+      67
+    ],
+    [
+      70
+    ],
+    [
+      71
+    ],
+    [
+      72
+    ],
+    [
+      73
+    ],
+    [
+      74
+    ],
+    [
+      76
+    ],
+    [
+      77
+    ],
+    [
+      78
+    ],
+    [
+      80
+    ],
+    [
+      81
+    ],
+    [
+      82
+    ],
+    [
+      83
+    ],
+    [
+      84
+    ],
+    [
+      85
+    ],
+    [
+      86
+    ],
+    [
+      88
+    ],
+    [
+      89
+    ],
+    [
+      90
+    ],
+    [
+      91
+    ],
+    [
+      92
+    ],
+    [
+      93
+    ],
+    [
+      94
+    ],
+    [
+      95
+    ],
+    [
+      96
+    ],
+    [
+      98
+    ],
+    [
+      99
+    ]
+  ],
+  "edges": [
+    [
+      0,
+      31
+    ],
+    [
+      0,
+      57
+    ],
+    [
+      0,
+      79
+    ],
+    [
+      0,
+      87
+    ],
+    [
+      0,
+      97
+    ],
+    [
+      1,
+      68
+    ],
+    [
+      13,
+      22
+    ],
+    [
+      18,
+      45
+    ],
+    [
+      28,
+      64
+    ],
+    [
+      31,
+      87
+    ],
+    [
+      36,
+      65
+    ],
+    [
+      39,
+      65
+    ],
+    [
+      39,
+      75
+    ],
+    [
+      51,
+      69
+    ],
+    [
+      51,
+      87
+    ],
+    [
+      57,
+      69
+    ],
+    [
+      57,
+      79
+    ],
+    [
+      57,
+      87
+    ],
+    [
+      57,
+      97
+    ],
+    [
+      65,
+      75
+    ],
+    [
+      69,
+      79
+    ],
+    [
+      69,
+      87
+    ],
+    [
+      79,
+      87
+    ],
+    [
+      79,
+      97
+    ],
+    [
+      87,
+      97
+    ]
+  ],
+  "judgments": {
+    "16-25": {
+      "pair": "16-25",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers RJ Balaji facing backlash over past remarks on Telugu cinema, while the other discusses his admiration for Ram Charan and interest in collaborating with him\u2014distinct events despite same person and film context.",
+      "sim": 0.7830267548561096
+    },
+    "29-52": {
+      "pair": "29-52",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Articles describe distinct events\u2014one on a water board meeting about river allocation, the other on a court ruling affecting a political floor test.",
+      "sim": 0.5063222050666809
+    },
+    "1-92": {
+      "pair": "1-92",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: The articles describe the launch of two different films with different lead actors, directors, and production teams.",
+      "sim": 0.5554342269897461
+    },
+    "9-92": {
+      "pair": "9-92",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article reviews a Telangana film about a father-daughter relationship streaming on ZEE5 Kannada; the other announces a new horror film project starring Aadi Saikumar with a different cast, crew, and theme.",
+      "sim": 0.5168807506561279
+    },
+    "39-94": {
+      "pair": "39-94",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article discusses NEET paper leak criticism against Modi government, the other is about BJP condemning remarks against Modi by an opposition leader.",
+      "sim": 0.5420322418212891
+    },
+    "68-92": {
+      "pair": "68-92",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different actors and distinct film projects with different genres and production teams.",
+      "sim": 0.6335560083389282
+    },
+    "10-67": {
+      "pair": "10-67",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different locations and distinct incidents of land encroachment with no evidence of same event.",
+      "sim": 0.5079036951065063
+    },
+    "29-60": {
+      "pair": "29-60",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article is about Krishna River Board rejecting a meeting reschedule request; the other is about a temple development committee swearing-in in Telangana.",
+      "sim": 0.6053183078765869
+    },
+    "52-75": {
+      "pair": "52-75",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a court ruling affecting a political party's floor test; the other covers a national exam cancellation due to a paper leak and resulting political backlash.",
+      "sim": 0.5124310255050659
+    },
+    "16-50": {
+      "pair": "16-50",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article discusses RJ Balaji's controversy over remarks about Telugu cinema ahead of his film release; the other reports on Nandamuri Balakrishna's dual role in an upcoming Vivek Athreya film \u2014 distinct events involving different people and projects.",
+      "sim": 0.6154589056968689
+    },
+    "41-61": {
+      "pair": "41-61",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article discusses a Supreme Court committee on modernizing judicial infrastructure, while the other examines transparency in central and state cabinet meetings; they cover distinct governmental issues.",
+      "sim": 0.5157381892204285
+    },
+    "3-50": {
+      "pair": "3-50",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Articles cover distinct film projects with different directors, casts, and subjects.",
+      "sim": 0.575984001159668
+    },
+    "52-82": {
+      "pair": "52-82",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Article A covers a court ruling affecting a TVK MLA's participation in a floor test due to electoral irregularities, while Article B discusses a party directive by CM Vijay against erecting banners and flexes. These are distinct events involving different actions and contexts.",
+      "sim": 0.5378577709197998
+    },
+    "10-84": {
+      "pair": "10-84",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different locations and distinct incidents\u2014one involves illegal construction on government land in Bobbili, the other involves fake land certificates in Kadiri.",
+      "sim": 0.5275747776031494
+    },
+    "69-79": {
+      "pair": "69-79",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same specific event\u2014the POCSO case against Bandi Sanjay's son Bageerath/Bhagirath\u2014and focus on the legal and political developments surrounding it, including intensified charges and related protests.",
+      "sim": 0.5952267646789551
+    },
+    "29-79": {
+      "pair": "29-79",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article is about Krishna River Board rejecting a meeting reschedule request; the other is about political protests over a POCSO case involving Bandi Sanjay's son.",
+      "sim": 0.5160039067268372
+    },
+    "55-59": {
+      "pair": "55-59",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different MLAs and distinct events\u2014one involves distributing marriage subsidies, the other concerns wheat procurement and transportation.",
+      "sim": 0.5136157274246216
+    },
+    "3-68": {
+      "pair": "3-68",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article is about Mira Nair's biographical film on artist Amrita Sher-Gil, while the other is about Nara Rohit's new commercial family entertainer film; they discuss different films, casts, and production details.",
+      "sim": 0.5772534012794495
+    },
+    "47-57": {
+      "pair": "47-57",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers Modi's political remarks during a development event in Telangana; the other covers a protest demanding arrest of a Union Minister's son in a POCSO case. Distinct events, people, and issues.",
+      "sim": 0.5572429895401001
+    },
+    "3-92": {
+      "pair": "3-92",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different films with different casts, directors, and production teams; no overlap in events or subjects.",
+      "sim": 0.6275315284729004
+    },
+    "16-94": {
+      "pair": "16-94",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers RJ Balaji's controversy with Telugu cinema fans over past remarks, while the other discusses BJP condemning a YSRCP leader's alleged remarks against PM Modi; distinct events involving different people and contexts.",
+      "sim": 0.502128005027771
+    },
+    "18-45": {
+      "pair": "18-45",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same event\u2014Rahul Dravid becoming owner and Ravichandran Ashwin being named captain of the Dublin franchise in the European T20 Premier League.",
+      "sim": 0.6507099866867065
+    },
+    "47-60": {
+      "pair": "47-60",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers Modi's political remarks during a development event in Telangana, while the other reports on the swearing-in of a temple development committee and associated infrastructure plans; distinct events with no overlap in incident or announcement.",
+      "sim": 0.5445988178253174
+    },
+    "69-87": {
+      "pair": "69-87",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same POCSO case against Bandi Sanjay's son, involving the same allegations, complainants, and legal proceedings, with updates on charges and police action.",
+      "sim": 0.6834412813186646
+    },
+    "69-86": {
+      "pair": "69-86",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article is about a POCSO case against a Union Minister's son; the other is about a Maoist leader surrendering to police. Distinct events with no overlap in incident or individuals involved.",
+      "sim": 0.5164348483085632
+    },
+    "11-35": {
+      "pair": "11-35",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Article A describes a specific event where an MLA attended Hanuman Jayanti celebrations, while Article B discusses the spiritual significance of Hanuman's birth and general religious observances, with no mention of the MLA or the specific event.",
+      "sim": 0.6986598968505859
+    },
+    "31-57": {
+      "pair": "31-57",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Protests occurred in different locations (Kamareddy vs. Kurnool) and were led by different individuals, despite involving the same accused; Article A describes a Congress party protest, while Article B involves a Telangana MLA's protest, indicating distinct events.",
+      "sim": 0.7462238073348999
+    },
+    "11-60": {
+      "pair": "11-60",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different events at different temples with different MLAs and purposes\u2014one is attendance at Hanuman Jayanti celebrations, the other is a temple development committee swearing-in.",
+      "sim": 0.6411737203598022
+    },
+    "55-71": {
+      "pair": "55-71",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers marriage subsidy distribution in Ghanpur, the other covers SC student seat allocation in Hyderabad schools; distinct events and locations.",
+      "sim": 0.5097918510437012
+    },
+    "31-79": {
+      "pair": "31-79",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Article A describes a Congress-led protest demanding arrest of Bandi Sanjay's son in a minor assault case, while Article B describes BRS-led protests accusing BJP and Congress of colluding to shield the same individual, indicating distinct events with different organizers and focuses.",
+      "sim": 0.7206034064292908
+    },
+    "57-69": {
+      "pair": "57-69",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same POCSO case involving Bandi Sanjay's son, with details of legal actions and public response centered on the same incident.",
+      "sim": 0.6650143265724182
+    },
+    "4-11": {
+      "pair": "4-11",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different locations and events; one in Tirupati temple with rituals, another in Nagole with MLA participation",
+      "sim": 0.7794787883758545
+    },
+    "20-83": {
+      "pair": "20-83",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Two separate road accidents in different districts involving different vehicles and circumstances.",
+      "sim": 0.5520682334899902
+    },
+    "47-79": {
+      "pair": "47-79",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article critiques Modi's political remarks during a development event in Telangana, while the other covers BRS-led protests against BJP and Congress over a POCSO case involving Bandi Sanjay's son.",
+      "sim": 0.5850582718849182
+    },
+    "71-95": {
+      "pair": "71-95",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers SC student seat allocation in Hyderabad schools, the other covers PM Modi dedicating railway projects in Telangana.",
+      "sim": 0.5571494698524475
+    },
+    "11-74": {
+      "pair": "11-74",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers an MLA attending a religious festival, the other covers a new MPDO appointment; different events with no overlap in incident or announcement.",
+      "sim": 0.5209113359451294
+    },
+    "57-74": {
+      "pair": "57-74",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a protest demanding arrest in a POCSO case involving a minister's son; the other reports a local administrative appointment in Singareni Mandal.",
+      "sim": 0.554021954536438
+    },
+    "31-87": {
+      "pair": "31-87",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same specific incident involving allegations against Union Minister Bandi Sanjay's son Bandi Bhagirath in a POCSO case, including related legal actions and public response.",
+      "sim": 0.5246355533599854
+    },
+    "4-35": {
+      "pair": "4-35",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Article A describes a specific Hanuman Jayanti religious ceremony at a temple in Tirupati with rituals and offerings, while Article B discusses the spiritual significance of Hanuman's birth and general observances on Hanuman Jayanti, without referencing the same event or location.",
+      "sim": 0.6606310606002808
+    },
+    "22-74": {
+      "pair": "22-74",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Articles describe distinct appointments in different regions and roles; one involves a Tamil Nadu CM appointing an astrologer as OSD, the other a local administrative appointment in Telangana.",
+      "sim": 0.569240152835846
+    },
+    "47-81": {
+      "pair": "47-81",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Article A critiques Modi's political remarks during a development event in Telangana, while Article B discusses Bloomberg's analysis of Modi's long-term political strategy and potential fourth term beyond 2030.",
+      "sim": 0.5424132943153381
+    },
+    "74-86": {
+      "pair": "74-86",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a local administrative appointment in Singareni Mandal, while the other reports on a senior Maoist leader's surrender to Telangana Police; the events are unrelated.",
+      "sim": 0.5597187876701355
+    },
+    "11-76": {
+      "pair": "11-76",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a politician attending Hanuman Jayanti celebrations in Telangana; the other describes a village in Karnataka with a unique snakebite healing ritual linked to Hanuman worship. Different locations, events, and subjects.",
+      "sim": 0.5424582958221436
+    },
+    "31-97": {
+      "pair": "31-97",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Protests by different parties in different districts over same allegation, but distinct events with separate organizers and locations.",
+      "sim": 0.6516368985176086
+    },
+    "4-60": {
+      "pair": "4-60",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different temples and events; one is a Hanuman Jayanti celebration in Tirupati, the other is a temple development committee swearing-in for a different temple in Telangana.",
+      "sim": 0.5945432186126709
+    },
+    "57-79": {
+      "pair": "57-79",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe protests demanding arrest of Bandi Bhagiratha, son of Union Home Minister Bandi Sanjay, in the same POCSO case involving a minor.",
+      "sim": 0.7832423448562622
+    },
+    "25-50": {
+      "pair": "25-50",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Articles discuss different actors and film projects; one involves RJ Balaji's interest in working with Ram Charan, the other is about Nandamuri Balakrishna's dual role in a Vivek Athreya film.",
+      "sim": 0.6407520771026611
+    },
+    "76-77": {
+      "pair": "76-77",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article describes a village's ritual for snakebite healing linked to Hanuman, while the other covers a Hanuman Jayanti festival at a temple; distinct events and locations.",
+      "sim": 0.5897910594940186
+    },
+    "11-77": {
+      "pair": "11-77",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different temple events in different locations (Nagole vs. Kondagattu) during Hanuman Jayanti, with no indication of same specific incident.",
+      "sim": 0.8085391521453857
+    },
+    "57-86": {
+      "pair": "57-86",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a political protest demanding arrest of a minister's son in a POCSO case; the other reports a Maoist leader's surrender to police\u2014distinct events with no overlap in incident, individuals, or context.",
+      "sim": 0.5742145776748657
+    },
+    "47-94": {
+      "pair": "47-94",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article critiques Modi's political remarks during a development event in Telangana, while the other covers BJP condemning alleged derogatory remarks against Modi by a YSRCP leader in Andhra Pradesh; these are distinct events involving different parties and contexts.",
+      "sim": 0.594679057598114
+    },
+    "0-57": {
+      "pair": "0-57",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe protests demanding the arrest of Bandi Sanjay's son in the same POCSO case involving sexual assault of a minor.",
+      "sim": 0.6862484216690063
+    },
+    "33-46": {
+      "pair": "33-46",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article is about a green egg masala recipe, while the other focuses on ragi-based breakfast recipes; they discuss different foods and recipes despite both emphasizing healthy eating.",
+      "sim": 0.5244174003601074
+    },
+    "4-76": {
+      "pair": "4-76",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One describes a Hanuman Jayanti religious ceremony in Tirupati; the other covers a snakebite healing ritual in a Karnataka village linked to Hanuman worship\u2014distinct events, locations, and contexts.",
+      "sim": 0.5749967694282532
+    },
+    "25-68": {
+      "pair": "25-68",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Articles discuss different film projects involving different actors and directors; no shared event or announcement.",
+      "sim": 0.5330451726913452
+    },
+    "76-99": {
+      "pair": "76-99",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article describes a village's ritual for treating snakebites through Hanuman worship, while the other covers Hanuman Jayanti celebrations at a different temple; distinct events, locations, and contexts.",
+      "sim": 0.6096310019493103
+    },
+    "49-57": {
+      "pair": "49-57",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a planned student pledge event on drug prevention, while the other reports a protest demanding arrest in a POCSO case; distinct events with no overlap in incident or announcement.",
+      "sim": 0.5102068185806274
+    },
+    "57-87": {
+      "pair": "57-87",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same specific incident \u2014 the POCSO case involving Bandi Bhagiratha, son of Union Minister Bandi Sanjay, including allegations of harassment of a minor and official actions taken (protest demanding arrest in Article A, police notice issued in Article B).",
+      "sim": 0.7522073984146118
+    },
+    "35-76": {
+      "pair": "35-76",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article discusses Hanuman Jayanti celebrations and spiritual significance of Hanuman's birth, while the other describes a village's ritual for snakebite healing linked to Hanuman worship; they cover distinct events and practices.",
+      "sim": 0.5797302722930908
+    },
+    "11-79": {
+      "pair": "11-79",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a cultural/religious event attended by an MLA, the other reports on political protests related to a POCSO case; distinct events despite shared location and political context.",
+      "sim": 0.5627555847167969
+    },
+    "25-92": {
+      "pair": "25-92",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Articles discuss different film projects involving different actors and directors; no shared event or announcement.",
+      "sim": 0.5104133486747742
+    },
+    "4-77": {
+      "pair": "4-77",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different temples and locations (Tirupati vs. Kondagattu) hosting separate Hanuman Jayanti events.",
+      "sim": 0.8247787952423096
+    },
+    "49-60": {
+      "pair": "49-60",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a student pledge event against drugs on June 12, the other covers a temple development committee's swearing-in; distinct events.",
+      "sim": 0.5525170564651489
+    },
+    "11-86": {
+      "pair": "11-86",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a politician attending a religious festival, the other reports a Maoist leader surrendering to police; distinct events with no overlap in incident or announcement.",
+      "sim": 0.5914281606674194
+    },
+    "4-98": {
+      "pair": "4-98",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a religious ceremony for Hanuman Jayanti in Tirupati, while the other reports on the discovery of a 16th-century stone inscription in Atmakur; the events are unrelated despite both involving temples.",
+      "sim": 0.5490317344665527
+    },
+    "77-98": {
+      "pair": "77-98",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers Hanuman Jayanti celebrations at Kondagattu temple, while the other reports a historical inscription discovery at Ahobilam temple; different events, locations, and subjects.",
+      "sim": 0.5467801094055176
+    },
+    "26-60": {
+      "pair": "26-60",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a job fair in Banjara Hills, the other a temple development committee swearing-in; distinct events with no overlap in incident or announcement.",
+      "sim": 0.5126348733901978
+    },
+    "35-77": {
+      "pair": "35-77",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Article A discusses the spiritual significance and mythological aspects of Hanuman's birth on Hanuman Jayanti, while Article B reports on the large-scale celebrations and devotee turnout at the Kondagattu temple during the festival\u2014two distinct events under the same religious observance.",
+      "sim": 0.6863667964935303
+    },
+    "57-94": {
+      "pair": "57-94",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a protest demanding arrest of a Home Minister's son in a POCSO case, while the other covers BJP condemning political remarks against PM Modi; distinct events with different individuals and contexts.",
+      "sim": 0.5117174983024597
+    },
+    "39-79": {
+      "pair": "39-79",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article discusses NEET exam paper leak and criticism of Modi government; the other covers protests over a POCSO case involving Bandi Sanjay's son and alleged political shielding.",
+      "sim": 0.548079252243042
+    },
+    "77-99": {
+      "pair": "77-99",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different temples (Kondagattu vs. Devrayanallu) hosting separate Hanuman Jayanti celebrations.",
+      "sim": 0.8768907785415649
+    },
+    "35-99": {
+      "pair": "35-99",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Article A discusses the spiritual significance of Hanuman's birth and general observances on Hanuman Jayanti, while Article B reports on specific celebrations at a particular temple in Devrayanallu.",
+      "sim": 0.7507251501083374
+    },
+    "11-87": {
+      "pair": "11-87",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers an MLA attending Hanuman Jayanti celebrations, the other covers a POCSO case notice issued to a minister's son; distinct events with no overlap in incident or announcement.",
+      "sim": 0.5469810962677002
+    },
+    "57-97": {
+      "pair": "57-97",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe protests demanding the arrest of Bandi Bhagiratha, son of Union Minister Bandi Sanjay, in the same POCSO case involving a minor.",
+      "sim": 0.6933826208114624
+    },
+    "49-71": {
+      "pair": "49-71",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article discusses a student pledge event against drugs on June 12, while the other covers seat allocation for SC students in Hyderabad Public Schools; distinct initiatives.",
+      "sim": 0.5092087984085083
+    },
+    "4-99": {
+      "pair": "4-99",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different temples in different locations (Tirupati vs. Devrayanallu) hosting separate Hanuman Jayanti celebrations.",
+      "sim": 0.8345857262611389
+    },
+    "67-84": {
+      "pair": "67-84",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different locations and distinct incidents\u2014one is illegal occupation in Hyderabad with political backing, the other is fake land certificates in Kadiri rural area.",
+      "sim": 0.552656888961792
+    },
+    "27-38": {
+      "pair": "27-38",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a Union Minister criticizing Karnataka's Congress government over economic policies, while the other reports on Himanta Biswa Sharma's swearing-in as Assam Chief Minister for a second term. These are distinct political events in different states.",
+      "sim": 0.5128911733627319
+    },
+    "49-79": {
+      "pair": "49-79",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a government-organized student pledge event against drugs, while the other reports on political protests related to a POCSO case involving a Union Minister's son.",
+      "sim": 0.5450745820999146
+    },
+    "79-86": {
+      "pair": "79-86",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers political protests over a POCSO case involving a Union Minister's son, while the other reports on a senior Maoist leader surrendering to police; the events are unrelated.",
+      "sim": 0.5406219959259033
+    },
+    "11-99": {
+      "pair": "11-99",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different temples and locations; one involves a specific MLA's participation, the other a community celebration at a historic temple with distinct rituals.",
+      "sim": 0.7575722932815552
+    },
+    "36-39": {
+      "pair": "36-39",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Article A focuses on the arrest of a Bihar-based gang involved in a NEET exam scam with a medical student as kingpin, while Article B covers political criticism by KTR blaming the Modi government for the NEET paper leak; they describe different aspects and actors related to the broader NE",
+      "sim": 0.7325975894927979
+    },
+    "59-63": {
+      "pair": "59-63",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers wheat transfer to mills in multiple mandals on directive of a Telangana MLA; the other covers inspections of rice mills for grain import violations in Miryalaguda ahead of monsoon. Different commodities, locations, and events.",
+      "sim": 0.5465834140777588
+    },
+    "5-49": {
+      "pair": "5-49",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article is about the release of a postgraduate entrance exam notification, the other about a student pledge event against drugs; different events despite shared state context.",
+      "sim": 0.5325486063957214
+    },
+    "27-39": {
+      "pair": "27-39",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article criticizes Karnataka Congress government's economic policies, while the other blames Modi government for NEET paper leak; distinct events and issues.",
+      "sim": 0.629594087600708
+    },
+    "49-87": {
+      "pair": "49-87",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a student pledge event planned by the Telangana government; the other reports on a POCSO case involving the son of a Union Minister.",
+      "sim": 0.5301796197891235
+    },
+    "79-87": {
+      "pair": "79-87",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same specific event\u2014the POCSO case involving Bandi Bhagirath, including allegations, police action, and political context.",
+      "sim": 0.727121889591217
+    },
+    "12-40": {
+      "pair": "12-40",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a specific IPL match between Delhi Capitals and Punjab, while the other discusses the broader IPL 2026 playoff race involving multiple teams.",
+      "sim": 0.5042262077331543
+    },
+    "36-65": {
+      "pair": "36-65",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the cancellation of the NEET UG 2026 exam due to a paper leak and irregularities, with re-testing to be conducted and fees refunded.",
+      "sim": 0.7309280037879944
+    },
+    "60-74": {
+      "pair": "60-74",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different events in different locations\u2014one about a temple development committee swearing-in, the other about a government appointment in a different mandal.",
+      "sim": 0.5414632558822632
+    },
+    "5-60": {
+      "pair": "5-60",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article is about the release of a postgraduate entrance exam notification; the other is about the swearing-in of a temple development committee and a related infrastructure plan.",
+      "sim": 0.5601259469985962
+    },
+    "0-31": {
+      "pair": "0-31",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe protests demanding the arrest of Union Minister Bandi Sanjay's son in the same alleged minor assault case, despite different dates and locations.",
+      "sim": 0.7188428640365601
+    },
+    "27-47": {
+      "pair": "27-47",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a Union Minister criticizing Karnataka's Congress government over economic policies, while the other analyzes PM Modi's political remarks during a development event in Telangana; distinct events and contexts.",
+      "sim": 0.6863043308258057
+    },
+    "50-68": {
+      "pair": "50-68",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Articles cover distinct film projects involving different actors and directors, with no shared event or announcement.",
+      "sim": 0.5167585611343384
+    },
+    "79-94": {
+      "pair": "79-94",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different events in different states involving different political figures and allegations\u2014one is a protest over a POCSO case in Telangana, the other is a condemnation of remarks against PM Modi in Andhra Pradesh.",
+      "sim": 0.5759069919586182
+    },
+    "13-22": {
+      "pair": "13-22",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same event \u2014 Tamil Nadu CM Vijay appointing his personal astrologer to a government position as Officer on Special Duty \u2014 with minor variations in the astrologer's name and details.",
+      "sim": 0.807013750076294
+    },
+    "36-75": {
+      "pair": "36-75",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Article A describes a NEET exam scam involving a Bihar-based gang and seat-selling for \u20b960 lakh per seat, while Article B covers the cancellation of NEET UG 2026 due to paper leak allegations and subsequent political backlash; the events differ in scope, actors, and context.",
+      "sim": 0.7218131422996521
+    },
+    "60-77": {
+      "pair": "60-77",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different temples and distinct events (temple development committee swearing-in vs. Hanuman Jayanti festival).",
+      "sim": 0.5874878168106079
+    },
+    "5-65": {
+      "pair": "5-65",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article is about the release of CPGET-2026 notification for postgraduate admissions in Telangana, while the other is about the cancellation and re-conduction of the NEET UG 2026 exam nationally; they concern different exams and events.",
+      "sim": 0.5018157362937927
+    },
+    "27-57": {
+      "pair": "27-57",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Articles describe distinct events involving different people, locations, and issues\u2014Article A covers economic criticism by a Union Minister against Karnataka's government, while Article B reports a protest demanding arrest in a POCSO case in Telangana.",
+      "sim": 0.5152038335800171
+    },
+    "50-74": {
+      "pair": "50-74",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Articles cover unrelated events\u2014one about a film project, the other about a government appointment.",
+      "sim": 0.5361263751983643
+    },
+    "79-97": {
+      "pair": "79-97",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same specific event \u2014 protests led by BRS and women's groups demanding the arrest of Bandi Bhagirath in a POCSO/sexual harassment case, with allegations of political shielding and police inaction.",
+      "sim": 0.6387866735458374
+    },
+    "13-38": {
+      "pair": "13-38",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different chief ministers and distinct swearing-in events in different states.",
+      "sim": 0.5192584991455078
+    },
+    "38-74": {
+      "pair": "38-74",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers the swearing-in of Himanta Biswa Sharma as Assam Chief Minister; the other reports a local administrative appointment in Singareni Mandal. The events involve different people, locations, and contexts.",
+      "sim": 0.5377109050750732
+    },
+    "60-86": {
+      "pair": "60-86",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a temple development committee swearing-in in Telangana, while the other reports a senior Maoist leader's surrender to police; these are distinct events with no overlap in incident, announcement, or unfolding crisis.",
+      "sim": 0.5036823153495789
+    },
+    "5-87": {
+      "pair": "5-87",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article is about the release of a postgraduate entrance exam notification, the other is about a POCSO case involving a politician's son; distinct events with no overlap in incident or announcement.",
+      "sim": 0.5570417642593384
+    },
+    "1-68": {
+      "pair": "1-68",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the launch of the same film 'RN23' starring Nara Rohit and Nayanthara, directed by Chinimilli Manikumar, produced under similar banners, with identical start dates and genre descriptions.",
+      "sim": 0.6370412707328796
+    },
+    "27-75": {
+      "pair": "27-75",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers criticism of Karnataka's economic policies by a Union Minister, while the other discusses political fallout from a NEET exam paper leak; distinct events with no overlap in incident or announcement.",
+      "sim": 0.5153372883796692
+    },
+    "50-92": {
+      "pair": "50-92",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different actors, directors, and film projects with no shared event or announcement.",
+      "sim": 0.6162322759628296
+    },
+    "87-97": {
+      "pair": "87-97",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same POCSO case involving Bandi Bhagirath, including allegations of sexual harassment of a minor, police action, and public response.",
+      "sim": 0.5633805990219116
+    },
+    "13-60": {
+      "pair": "13-60",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers the appointment of an astrologer as a special duty officer by CM Vijay, while the other reports on the swearing-in of a temple development committee in Telangana; these are distinct events with no overlap in incident or announcement.",
+      "sim": 0.5378345251083374
+    },
+    "39-47": {
+      "pair": "39-47",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Article A discusses a NEET exam paper leak and criticism of the Modi government by KTR, while Article B covers Modi's political remarks during a development event in Telangana; these are distinct events.",
+      "sim": 0.5999898314476013
+    },
+    "60-87": {
+      "pair": "60-87",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a temple development committee swearing-in; the other reports on a POCSO case involving a politician's son.",
+      "sim": 0.5201511979103088
+    },
+    "6-31": {
+      "pair": "6-31",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: The articles describe distinct events\u2014one is a farmers' protest over slow crop procurement in Bonakal, while the other is a Congress-led protest in Kamareddy demanding arrest of a Union Minister's son in an assault case.",
+      "sim": 0.518030047416687
+    },
+    "27-79": {
+      "pair": "27-79",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different events involving different people, locations, and issues\u2014one is a criticism of Karnataka's economic policies, the other is a protest in Telangana over a POCSO case.",
+      "sim": 0.5946942567825317
+    },
+    "51-57": {
+      "pair": "51-57",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Article A describes police upgrading charges against Bandi Sanjay's son in a POCSO case, while Article B covers a protest led by an MLA demanding arrest of the same individual; these are distinct events (legal action vs. political protest).",
+      "sim": 0.5723773837089539
+    },
+    "13-74": {
+      "pair": "13-74",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different events involving different appointments in different regions and contexts.",
+      "sim": 0.6991972923278809
+    },
+    "98-99": {
+      "pair": "98-99",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article reports a historical inscription discovery at a temple, while the other covers a religious festival celebration at a different temple.",
+      "sim": 0.535982072353363
+    },
+    "39-52": {
+      "pair": "39-52",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article discusses NEET paper leak and political criticism of Modi government; the other covers a Madras High Court ruling affecting a floor test and electoral dispute involving TVK.",
+      "sim": 0.5079399943351746
+    },
+    "6-73": {
+      "pair": "6-73",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Protests occurred in different locations (Bonakal vs. Armoor) over separate procurement delays involving distinct farmer groups and local authorities.",
+      "sim": 0.7458481788635254
+    },
+    "60-98": {
+      "pair": "60-98",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a modern temple development committee swearing-in in Cheruvugattu, while the other reports on a historical inscription discovery at Ahobilam Temple; different locations and events.",
+      "sim": 0.5558021664619446
+    },
+    "27-94": {
+      "pair": "27-94",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers BJP's Pralhad Joshi criticizing Karnataka Congress's economic policies, while the other covers BJP Andhra Pradesh condemning YSRCP remarks against Modi; different states, leaders, and incidents.",
+      "sim": 0.5772992372512817
+    },
+    "51-69": {
+      "pair": "51-69",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same event\u2014police upgrading charges against Bandi Sanjay's son in a POCSO case to aggravated penetrative sexual assault under Section 5(1).",
+      "sim": 0.7733457684516907
+    },
+    "0-79": {
+      "pair": "0-79",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same BRS-led protests demanding Union Minister Bandi Sanjay's removal and arrest of his son Bhagirath in connection with the same POCSO case.",
+      "sim": 0.6997740864753723
+    },
+    "13-86": {
+      "pair": "13-86",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers the appointment of an astrologer by CM Vijay, while the other reports on a Maoist leader's surrender to Telangana Police\u2014distinct events with no overlap in incident, person, or location.",
+      "sim": 0.5512512922286987
+    },
+    "39-57": {
+      "pair": "39-57",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article discusses NEET exam paper leak and political criticism of the Modi government, while the other covers a protest demanding arrest in a POCSO case involving a Union Minister's son; distinct events with no overlap in incidents.",
+      "sim": 0.5424584150314331
+    },
+    "9-16": {
+      "pair": "9-16",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Articles cover distinct films and events\u2014one reviews a Telangana film's emotional story and streaming release, while the other reports on controversy surrounding a different filmmaker's remarks about Telugu cinema.",
+      "sim": 0.5138163566589355
+    },
+    "60-99": {
+      "pair": "60-99",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different temples and distinct events (temple development committee swearing-in vs. Hanuman Jayanti celebrations)",
+      "sim": 0.5190331935882568
+    },
+    "28-64": {
+      "pair": "28-64",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles report the same event\u2014The Paradise film production team denying reshoot rumors and confirming the project is on schedule.",
+      "sim": 0.8125101923942566
+    },
+    "51-87": {
+      "pair": "51-87",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same POCSO case against Bandi Sanjay's son, involving police notice for questioning and legal proceedings, with charges being upgraded/registered under specific sections of the POCSO Act.",
+      "sim": 0.5551720857620239
+    },
+    "39-65": {
+      "pair": "39-65",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same specific event\u2014the cancellation of the NEET UG 2026 exam due to a paper leak and the announcement of a re-test.",
+      "sim": 0.5675693154335022
+    },
+    "9-68": {
+      "pair": "9-68",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article is about the streaming release and emotional impact of 'Love Mocktail 3', while the other is about the start of production for Nara Rohit's new film; they cover distinct movie events.",
+      "sim": 0.5764166116714478
+    },
+    "29-49": {
+      "pair": "29-49",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article is about a Krishna River Board meeting on water allocation; the other is about a student pledge event against drug use.",
+      "sim": 0.5758743286132812
+    },
+    "52-65": {
+      "pair": "52-65",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article covers a Madras High Court ruling affecting a political floor test, while the other reports on the cancellation and re-conduction of the NEET UG 2026 exam due to irregularities.",
+      "sim": 0.5097417831420898
+    },
+    "0-97": {
+      "pair": "0-97",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe protests by BRS members demanding the arrest of Bandi Bhagirath (son of Union Minister Bandi Sanjay) over the same sexual assault allegation, and call for action against his father; the events are part of the same unfolding crisis.",
+      "sim": 0.7676798105239868
+    },
+    "15-68": {
+      "pair": "15-68",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Articles cover distinct events involving different people and films; one discusses Savitri's past cinematic legacy and her assistant's role, while the other reports on the start of production for Nara Rohit's new movie.",
+      "sim": 0.5623334050178528
+    },
+    "0-87": {
+      "pair": "0-87",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same specific incident\u2014the allegations against Bandi Bhagirath (son of Union Minister Bandi Sanjay) in a POCSO case involving a minor, including related legal actions and public response.",
+      "sim": 0.5026533007621765
+    },
+    "15-50": {
+      "pair": "15-50",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article discusses Savitri's personal assistant and behind-the-scenes support in her films; the other reports on Nandamuri Balakrishna's dual role in an upcoming film with Vivek Athreya. Different subjects and events.",
+      "sim": 0.6063454747200012
+    },
+    "63-73": {
+      "pair": "63-73",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: Different events in different locations\u2014Article A covers inspections at rice mills in Miryalaguda over grain import rules, while Article B describes a farmers' protest in Armoor over delayed grain collection.",
+      "sim": 0.5352701544761658
+    },
+    "39-75": {
+      "pair": "39-75",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the same specific event\u2014the NEET UG 2026 exam paper leak and cancellation\u2014and cover identical political reactions, including demands for an apology from the Modi government, a probe, and concerns over student impact.",
+      "sim": 0.7595727443695068
+    },
+    "65-75": {
+      "pair": "65-75",
+      "verdict": "SAME",
+      "reason": "SAME: Both articles describe the cancellation of the NEET UG 2026 exam held on May 3 due to paper leak allegations, the CBI inquiry, and plans for a re-test.",
+      "sim": 0.7762550115585327
+    },
+    "15-92": {
+      "pair": "15-92",
+      "verdict": "DIFFERENT",
+      "reason": "DIFFERENT: One article discusses Savitri's personal assistant and her behind-the-scenes role in maintaining cinematic continuity, while the other announces a new horror film starring Aadi Saikumar with no connection to Savitri or the same event.",
+      "sim": 0.5801247358322144
+    }
+  },
+  "model": "qwen-3-235b-a22b-instruct-2507",
+  "sim_floor": 0.5,
+  "top_k": 10,
+  "n_articles": 100
+}

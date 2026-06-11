@@ -1,0 +1,149 @@
+[
+  {
+    "i": 0,
+    "page": 1,
+    "headline": "Bombay HC strikes down ₹22,000-cr spectrum levy",
+    "subheadline": "",
+    "byline": "Urvi Malaviya & Rishi Raj",
+    "body_head": "The Bombay High Court on Monday struck down the Centre's 2012 decision to levy a retrospective charge of ₹22,000 crore on telecom operators for spectrum holdings beyond 6.2 MHz. The judgment is significant as it ends a long-drawn litigation. The court ruled that neither the telecom licences nor Sect",
+    "body_paras": 1,
+    "body_len": 1177,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "src": "layout",
+    "img_kb": 13.7,
+    "bbox": [
+      391.4,
+      699.4,
+      527.9,
+      835.2
+    ]
+  },
+  {
+    "i": 1,
+    "page": 1,
+    "headline": "Ceasefire faces its toughest test",
+    "subheadline": "Iran, Israel trade strikes for 1st time since April; Trump plea leads to a halt",
+    "byline": "Reuters",
+    "body_head": "Iran and Israel said on Monday they had halted attacks on each other after an Israeli air strike on Iranian military facilities and Iran's subsequent missile strikes on Israel. The wave of attacks over 24 hours were the most direct clashes between Israel and Iran since an April ceasefire, threatenin",
+    "body_paras": 1,
+    "body_len": 691,
+    "section": "International",
+    "lang": "en",
+    "anchored": true,
+    "src": "text",
+    "img_kb": 54.4,
+    "bbox": [
+      194.7,
+      1020.1,
+      927.8,
+      1185.1
+    ]
+  },
+  {
+    "i": 2,
+    "page": 1,
+    "headline": "India sees surprise current account surplus in Jan-Mar",
+    "subheadline": "",
+    "byline": "FE Bureau",
+    "body_head": "The country is said to witness a 'balance of payments' surplus in FY25. The current account balance reached $7.1 billion (0.7% of GDP) in Q4FY24 from a surplus of $0.6 billion (0.06% of GDP) in Q3FY24. This was supported by strong net services receipts of $64.6 billion and remittances of $63.8 billi",
+    "body_paras": 1,
+    "body_len": 392,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "src": "layout",
+    "img_kb": 8.0,
+    "bbox": [
+      754.7,
+      894.8,
+      928.1,
+      925.5
+    ]
+  },
+  {
+    "i": 3,
+    "page": 1,
+    "headline": "Tata Trusts meet skips contentious flashpoints",
+    "subheadline": "",
+    "byline": "Urvi Malaviya",
+    "body_head": "A meeting of the Sir Dorabji Tata Trust on Monday steered clear of the contentious issues confronting the Tata Group, focusing instead on routine business. The board did not take up sensitive subjects currently pending over the Tata Sons Chairman N Chandrasekaran. Sources said the board appears to b",
+    "body_paras": 1,
+    "body_len": 1022,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "src": "text",
+    "img_kb": 24.7,
+    "bbox": [
+      944.5,
+      950.1,
+      1120.3,
+      1140.2
+    ]
+  },
+  {
+    "i": 4,
+    "page": 1,
+    "headline": "IndiGo expects FY27 growth in single digits",
+    "subheadline": "",
+    "byline": "Akbar Merchant",
+    "body_head": "The country's largest airline IndiGo expects capacity growth to remain in single digits in FY27 as it deals with the challenges of Pratt & Whitney engine issues and a weak international market. IndiGo's international expansion plans are on track, with the airline expecting to deploy nine A321LRs uni",
+    "body_paras": 1,
+    "body_len": 489,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "src": "text",
+    "img_kb": 176.5,
+    "bbox": [
+      944.8,
+      1632.4,
+      1258.7,
+      2272.6
+    ]
+  },
+  {
+    "i": 5,
+    "page": 1,
+    "headline": "HDFC Bank legal review report likely in a week",
+    "subheadline": "",
+    "byline": "Kshipra Petkar",
+    "body_head": "An independent legal review commissioned by HDFC Bank following the abrupt resignation of Managing Director Aditya Chakraborty and Chief Executive Officer Sashidhar Jagadishan whose second tenure ends in October. The findings, prepared by lawyers Trilokchand and Wadha Ghandhy & Co, along with an int",
+    "body_paras": 1,
+    "body_len": 804,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "src": "text",
+    "img_kb": 107.4,
+    "bbox": [
+      1137.6,
+      947.5,
+      1480.6,
+      1382.7
+    ]
+  },
+  {
+    "i": 6,
+    "page": 1,
+    "headline": "AI for everything until the hefty bill comes",
+    "subheadline": "",
+    "byline": "Vishal Sikka, Swarna Bapat",
+    "body_head": "We do not believe in micro-managing individual employee tokens (for AI coding tools), which token quotas are applied to. Enterprises are applying significant weightage to financial investments to AI as a per-emptive measure. Throwing in agentic workflows (AI systems that autonomously execute multi-s",
+    "body_paras": 1,
+    "body_len": 701,
+    "section": "Opinion",
+    "lang": "en",
+    "anchored": true,
+    "src": "text",
+    "img_kb": 370.1,
+    "bbox": [
+      9.8,
+      1925.0,
+      925.5,
+      2392.7
+    ]
+  }
+]

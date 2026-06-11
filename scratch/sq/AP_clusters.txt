@@ -1,0 +1,45 @@
+=== A. ALL clusters where top entity is AP-political (regardless of suppression) ===
+ n  | isc | core |            top_ent             | tf | sr | last_seen  |                          rt                          
+----+-----+------+--------------------------------+----+----+------------+------------------------------------------------------
+ 88 |  18 | 0.46 | nara chandrababu naidu ( tdp ) | f  |    | 2026-05-31 | Dedicated platform soon to strengthen public grievan
+ 35 |  12 | 0.74 | visakhapatnam                  | f  |    | 2026-06-01 | South Coast Railway zone in Visakhapatnam goes opera
+ 35 |  13 | 0.51 | kerala                         | f  |    | 2026-05-31 | Kerala HSCAP Plus One Admission Begins: Check Last D
+ 23 |  16 | 0.52 | srikanth kidambi               | f  |    | 2026-05-31 | Top Sri Lankan Buddhist monk arrested over alleged s
+ 19 |  14 | 0.58 | kurnool                        | f  |    | 2026-05-27 | DRDO completes final trials of ULPGM-V3 precision mi
+ 18 |  14 | 0.56 | kalyan banerjee                | f  |    | 2026-06-01 | After Abhishek, Trinamool MP Kalyan Banerjee mobbed,
+  6 |   6 | 0.83 | nara lokesh                    | f  |    | 2026-05-31 | Ravi Mohan becomes a part of the LCU with ‘Benz’ aft
+  3 |   2 | 0.33 | russia and china               | f  |    | 2026-05-12 | ‘India’s seafood industry bets on quality, certifica
+  3 |   2 | 0.67 | karnataka                      | f  |    | 2026-06-01 | चमत्कार या मान्यता? नंदी महाराज के उपचार से जुड़ा ये
+  3 |   2 | 0.67 | puri jagannadh                 | f  |    | 2026-05-10 | Puri Jagannadh | డిప్రెషన్ పూర్తిగా చెడు కాదు.. జీవి
+  3 |   3 | 0.67 | assam                          | f  |    | 2026-05-31 | SLBC conducts ECLGS 5.0 outreach programme for MSMEs
+  3 |   3 | 0.33 | aligarh                        | f  |    | 2026-05-03 | 9-year-old shot dead in Kasganj after refusing to fe
+  3 |   2 | 0.33 | odisha                         | f  |    | 2026-05-29 | పెన‌గ‌డ‌ప‌లో వడదెబ్బతో వడ్రంగి మృతి
+  2 |   2 | 1.00 | visakhapatnam                  | f  |    | 2026-05-08 | Vizag Collector felicitates Class 10 toppers from go
+  2 |   2 | 0.50 | vijayawada                     | f  |    | 2026-05-11 | Artificial limbs, callipers distributed to 90 benefi
+  2 |   2 | 1.00 | vijayawada                     | f  |    | 2026-05-27 | Capital Hospital performs high-risk cardiac surgery 
+  2 |   2 | 1.00 | pollachi                       | f  |    | 2026-06-01 | Mega 158 : నేటి నుండి పొల్లాచ్చిలో మెగా 158.. ఏమి చే
+  2 |   2 | 0.50 | nara lokesh                    | f  |    | 2026-05-20 | Nara Lokesh felicitates archer Jyothi Surekha Vennam
+(18 rows)
+
+
+=== B. SURFACED only (the ones a user would actually see) ===
+ n  | isc | core |            top_ent             | last_seen  |                              rt                              
+----+-----+------+--------------------------------+------------+--------------------------------------------------------------
+ 88 |  18 | 0.46 | nara chandrababu naidu ( tdp ) | 2026-05-31 | Dedicated platform soon to strengthen public grievance redre
+ 35 |  13 | 0.51 | kerala                         | 2026-05-31 | Kerala HSCAP Plus One Admission Begins: Check Last Date, Fee
+ 35 |  12 | 0.74 | visakhapatnam                  | 2026-06-01 | South Coast Railway zone in Visakhapatnam goes operational u
+ 23 |  16 | 0.52 | srikanth kidambi               | 2026-05-31 | Top Sri Lankan Buddhist monk arrested over alleged sex abuse
+ 19 |  14 | 0.58 | kurnool                        | 2026-05-27 | DRDO completes final trials of ULPGM-V3 precision missile ne
+ 18 |  14 | 0.56 | kalyan banerjee                | 2026-06-01 | After Abhishek, Trinamool MP Kalyan Banerjee mobbed, injured
+  6 |   6 | 0.83 | nara lokesh                    | 2026-05-31 | Ravi Mohan becomes a part of the LCU with ‘Benz’ after annou
+  3 |   3 | 0.33 | aligarh                        | 2026-05-03 | 9-year-old shot dead in Kasganj after refusing to fetch wate
+  3 |   3 | 0.67 | assam                          | 2026-05-31 | SLBC conducts ECLGS 5.0 outreach programme for MSMEs in Guwa
+(9 rows)
+
+
+=== C. count breakdown ===
+ total_clusters_with_ap_entity | surfaced_only | ge10_articles 
+-------------------------------+---------------+---------------
+                           231 |             9 |             6
+(1 row)
+

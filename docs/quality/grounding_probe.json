@@ -1,0 +1,1332 @@
+{
+  "article_quotes": {
+    "table": "article_quotes",
+    "needle_col": "quote_text",
+    "sampled": 2000,
+    "hits": 1550,
+    "hit_rate": 0.775,
+    "floor": 0.7,
+    "gate_passed": true,
+    "per_source_top": [
+      {
+        "source": "Eenadu",
+        "n": 9,
+        "hits": 0,
+        "hit_rate": 0.0
+      },
+      {
+        "source": "Andhra Jyothy",
+        "n": 24,
+        "hits": 1,
+        "hit_rate": 0.042
+      },
+      {
+        "source": "Namasthe Telangana",
+        "n": 41,
+        "hits": 4,
+        "hit_rate": 0.098
+      },
+      {
+        "source": "HMTV",
+        "n": 33,
+        "hits": 4,
+        "hit_rate": 0.121
+      },
+      {
+        "source": "TV9 Telugu",
+        "n": 43,
+        "hits": 6,
+        "hit_rate": 0.14
+      },
+      {
+        "source": "Mana Telangana",
+        "n": 11,
+        "hits": 2,
+        "hit_rate": 0.182
+      },
+      {
+        "source": "NTV Telugu",
+        "n": 33,
+        "hits": 6,
+        "hit_rate": 0.182
+      },
+      {
+        "source": "V6 Velugu",
+        "n": 34,
+        "hits": 7,
+        "hit_rate": 0.206
+      },
+      {
+        "source": "Dharitri",
+        "n": 37,
+        "hits": 8,
+        "hit_rate": 0.216
+      },
+      {
+        "source": "Prabhat Khabar",
+        "n": 31,
+        "hits": 7,
+        "hit_rate": 0.226
+      },
+      {
+        "source": "Prajavani",
+        "n": 5,
+        "hits": 2,
+        "hit_rate": 0.4
+      },
+      {
+        "source": "PIB \u2014 Hindi",
+        "n": 5,
+        "hits": 3,
+        "hit_rate": 0.6
+      },
+      {
+        "source": "Al Jazeera English",
+        "n": 16,
+        "hits": 10,
+        "hit_rate": 0.625
+      },
+      {
+        "source": "Africa News",
+        "n": 11,
+        "hits": 7,
+        "hit_rate": 0.636
+      },
+      {
+        "source": "The Sentinel Assam",
+        "n": 6,
+        "hits": 4,
+        "hit_rate": 0.667
+      }
+    ],
+    "per_lang": {
+      "en": {
+        "n": 1816,
+        "hits": 1512,
+        "hit_rate": 0.833
+      },
+      "ne": {
+        "n": 37,
+        "hits": 8,
+        "hit_rate": 0.216
+      },
+      "te": {
+        "n": 112,
+        "hits": 10,
+        "hit_rate": 0.089
+      },
+      "hi": {
+        "n": 17,
+        "hits": 8,
+        "hit_rate": 0.471
+      },
+      "sw": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "hr": {
+        "n": 2,
+        "hits": 0,
+        "hit_rate": 0.0
+      },
+      "tl": {
+        "n": 2,
+        "hits": 2,
+        "hit_rate": 1.0
+      },
+      "kn": {
+        "n": 3,
+        "hits": 0,
+        "hit_rate": 0.0
+      },
+      "bn": {
+        "n": 8,
+        "hits": 7,
+        "hit_rate": 0.875
+      },
+      "ca": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "?": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      }
+    },
+    "miss_examples": [
+      {
+        "aid": "50a42a81-a24b-491e-a5b4-7dad2bf5d4f3",
+        "source": "Sydney Morning Herald",
+        "needle": "I\u2019m happy for our fans to be excited. We\u2019re playing an exciting brand of footy. We\u2019ve won a lot of games in a row. Our f",
+        "title": "Fremantle flying, but captain cut down by knee injury"
+      },
+      {
+        "aid": "0720f15c-ef15-49ee-9aeb-09a35f394b20",
+        "source": "TV9 Telugu",
+        "needle": "I have not seen Rama, I have not seen Krishna, I have not seen Adi Shankarulu, I have not seen Vivekananda. We cannot se",
+        "title": "Tanikella Bharani: \u0c28\u0c47\u0c28\u0c41 \u0c30\u0c3e\u0c2e\u0c41\u0c23\u0c4d\u0c23\u0c3f.. \u0c15\u0c43\u0c37\u0c4d\u0c23\u0c41\u0c23\u0c4d\u0c23\u0c3f \u0c1a\u0c42\u0c21\u0c32\u0c47\u0c26\u0c41.. \u0c15\u0c3e\u0c28\u0c40 \u0c2e\u0c4b\u0c26\u0c40\u0c28\u0c3f \u0c1a\u0c42\u0c36\u0c3e\u0c28\u0c41.. ! \u0c24"
+      },
+      {
+        "aid": "7a817793-1349-4536-8171-2477b724506a",
+        "source": "The Hindu \u2014 Security",
+        "needle": "We accept the verdict of the people with humility.",
+        "title": "Kerala Assembly Elections 2026: BJP emerges victorious in three seats"
+      },
+      {
+        "aid": "619e354b-d819-48e3-bd66-4b66fddd6aec",
+        "source": "Andhra Jyothy",
+        "needle": "The cancellation of the NEET exam was highly unfortunate",
+        "title": "neet exam cancellation unfortunate says damodara rajanarasimha ktr demands centr"
+      },
+      {
+        "aid": "96f82420-6411-420b-a637-c834fc95b94a",
+        "source": "ET \u2014 Mutual Funds",
+        "needle": "This is consistent with global rules on not impeding rights of users to access their assets absent justification. In fac",
+        "title": "No law bans withdrawal of cryptocurrency: Binance"
+      },
+      {
+        "aid": "d7b2882c-f9f2-4471-9be2-46fadf4e5455",
+        "source": "The Hindu \u2014 Security",
+        "needle": "their loss was the rejection of 'politics of blue-blood' by the people",
+        "title": "2026 Assam Assembly elections at a glance"
+      },
+      {
+        "aid": "97d74cc4-beaf-41c6-8d7a-773861abeb49",
+        "source": "HMTV",
+        "needle": "Parents must take proper care of their children and move forward responsibly for their future.",
+        "title": "Thoguta: \u0c38\u0c46\u0c32\u0c35\u0c41\u0c32\u0c4d\u0c32\u0c4b \u0c2a\u0c3f\u0c32\u0c4d\u0c32\u0c32\u0c2a\u0c48 \u0c15\u0c28\u0c4d\u0c28\u0c47\u0c38\u0c3f \u0c09\u0c02\u0c1a\u0c02\u0c21\u0c3f: \u0c24\u0c32\u0c4d\u0c32\u0c3f\u0c26\u0c02\u0c21\u0c4d\u0c30\u0c41\u0c32\u0c15\u0c41 \u0c24\u0c4a\u0c17\u0c41\u0c1f \u0c38\u0c40\u0c10 \u0c32\u0c24\u0c40\u0c2b\u0c4d \u0c15\u0c40\u0c32\u0c15 "
+      },
+      {
+        "aid": "60c8018c-c03f-4b29-b39b-0d14772704d8",
+        "source": "HMTV",
+        "needle": "I will marry him",
+        "title": "Viral News: \u0c2a\u0c46\u0c33\u0c4d\u0c32\u0c3f\u0c32\u0c4b \u0c0a\u0c39\u0c3f\u0c02\u0c1a\u0c28\u0c3f \u0c1f\u0c4d\u0c35\u0c3f\u0c38\u0c4d\u0c1f\u0c4d: \u0c35\u0c30\u0c41\u0c21\u0c41 \u0c2e\u0c3e\u0c32 \u0c35\u0c47\u0c2f\u0c2c\u0c4b\u0c24\u0c41\u0c02\u0c1f\u0c47.. \u0c2a\u0c4d\u0c30\u0c3f\u0c2f\u0c41\u0c21\u0c3f \u0c35\u0c26\u0c4d\u0c26\u0c15\u0c41 \u0c2a\u0c30"
+      },
+      {
+        "aid": "88504eb0-b45a-43c5-9469-f06df9c62f47",
+        "source": "Mana Telangana",
+        "needle": "We can approach the Prime Minister to allocate the health cluster.",
+        "title": "\u0c2a\u0c4d\u0c30\u0c1c\u0c3e\u0c2a\u0c4d\u0c30\u0c24\u0c3f\u0c28\u0c3f\u0c27\u0c41\u0c32\u0c41, \u0c38\u0c3f\u0c35\u0c3f\u0c32\u0c4d \u0c38\u0c30\u0c4d\u0c35\u0c40\u0c38\u0c4d \u0c05\u0c27\u0c3f\u0c15\u0c3e\u0c30\u0c41\u0c32\u0c41, \u0c1c\u0c30\u0c4d\u0c28\u0c32\u0c3f\u0c38\u0c4d\u0c1f\u0c41\u0c32\u0c15\u0c41 500 \u0c0e\u0c15\u0c30\u0c3e\u0c32\u0c41: \u0c38\u0c3f\u0c0e\u0c02"
+      },
+      {
+        "aid": "3343a41d-42d7-49c7-8b12-5cbe8776efb0",
+        "source": "Al Jazeera English",
+        "needle": "Labour \u2026 being wiped out by his party in many of their most traditional areas",
+        "title": "\u2018Leader of the pack\u2019: What next as Reform makes huge election gains?"
+      }
+    ]
+  },
+  "article_claims": {
+    "table": "article_claims",
+    "needle_col": "subject_text",
+    "sampled": 2000,
+    "hits": 860,
+    "hit_rate": 0.43,
+    "floor": 0.6,
+    "gate_passed": false,
+    "per_source_top": [
+      {
+        "source": "Channel 4 News",
+        "n": 7,
+        "hits": 0,
+        "hit_rate": 0.0
+      },
+      {
+        "source": "PIB \u2014 Economy",
+        "n": 6,
+        "hits": 0,
+        "hit_rate": 0.0
+      },
+      {
+        "source": "BBC News \u2014 UK",
+        "n": 7,
+        "hits": 1,
+        "hit_rate": 0.143
+      },
+      {
+        "source": "Sportstar",
+        "n": 27,
+        "hits": 4,
+        "hit_rate": 0.148
+      },
+      {
+        "source": "Hindu Business Line \u2014 Markets",
+        "n": 20,
+        "hits": 3,
+        "hit_rate": 0.15
+      },
+      {
+        "source": "Channel NewsAsia",
+        "n": 13,
+        "hits": 2,
+        "hit_rate": 0.154
+      },
+      {
+        "source": "Fortune India",
+        "n": 6,
+        "hits": 1,
+        "hit_rate": 0.167
+      },
+      {
+        "source": "Dharitri",
+        "n": 45,
+        "hits": 9,
+        "hit_rate": 0.2
+      },
+      {
+        "source": "PE Wire \u2014 India",
+        "n": 5,
+        "hits": 1,
+        "hit_rate": 0.2
+      },
+      {
+        "source": "Eenadu",
+        "n": 18,
+        "hits": 4,
+        "hit_rate": 0.222
+      },
+      {
+        "source": "The Hindu \u2014 Sport",
+        "n": 21,
+        "hits": 5,
+        "hit_rate": 0.238
+      },
+      {
+        "source": "Kannada Prabha",
+        "n": 8,
+        "hits": 2,
+        "hit_rate": 0.25
+      },
+      {
+        "source": "Andhra Jyothy",
+        "n": 28,
+        "hits": 7,
+        "hit_rate": 0.25
+      },
+      {
+        "source": "V6 Velugu",
+        "n": 43,
+        "hits": 11,
+        "hit_rate": 0.256
+      },
+      {
+        "source": "Hindu Business Line \u2014 Corporate",
+        "n": 22,
+        "hits": 6,
+        "hit_rate": 0.273
+      }
+    ],
+    "per_lang": {
+      "en": {
+        "n": 1738,
+        "hits": 767,
+        "hit_rate": 0.441
+      },
+      "te": {
+        "n": 162,
+        "hits": 56,
+        "hit_rate": 0.346
+      },
+      "kn": {
+        "n": 5,
+        "hits": 2,
+        "hit_rate": 0.4
+      },
+      "bn": {
+        "n": 15,
+        "hits": 5,
+        "hit_rate": 0.333
+      },
+      "hi": {
+        "n": 27,
+        "hits": 16,
+        "hit_rate": 0.593
+      },
+      "ne": {
+        "n": 45,
+        "hits": 9,
+        "hit_rate": 0.2
+      },
+      "hr": {
+        "n": 4,
+        "hits": 3,
+        "hit_rate": 0.75
+      },
+      "?": {
+        "n": 3,
+        "hits": 1,
+        "hit_rate": 0.333
+      },
+      "de": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      }
+    },
+    "miss_examples": [
+      {
+        "aid": "4c64c4fc-4d18-41d4-86e4-4f028467ccfd",
+        "source": "This Day Nigeria",
+        "needle": "article",
+        "title": "DStv Celebrates Arsenal\u2019s PL Victory with UCL Final Open View for Yanga Subscrib"
+      },
+      {
+        "aid": "7b564cf3-37b3-434b-8f3f-34cd9d9d8876",
+        "source": "Telangana Today",
+        "needle": "article",
+        "title": "FinMin warns of inflation upside, growth downside"
+      },
+      {
+        "aid": "1e0ac0dc-fdd9-46d2-b426-6801d87e06a6",
+        "source": "Mint \u2014 Economy",
+        "needle": "article",
+        "title": "Oil prices up amid stalemate over next round of peace talks, continued blockade "
+      },
+      {
+        "aid": "5c443cba-7542-4570-a5c1-41e3f271e83b",
+        "source": "Hindu Business Line \u2014 Portfolio",
+        "needle": "article",
+        "title": "Nifty Bank Prediction Today \u2013 April 27, 2026: Nifty Bank futures: Might stay fla"
+      },
+      {
+        "aid": "6d836cbb-943d-405d-8594-2f4984025f5e",
+        "source": "The Loadstar \u2014 India",
+        "needle": "article",
+        "title": "Spot rates edge up, but carriers plan more blanked sailings"
+      },
+      {
+        "aid": "6767523c-d28c-4ff7-b3aa-59312b0693ad",
+        "source": "Namasthe Telangana",
+        "needle": "article",
+        "title": "\u0c38\u0c2d\u0c4d\u0c2f\u0c24\u0c4d\u0c35 \u0c28\u0c2e\u0c4b\u0c26\u0c41\u0c15\u0c41 \u0c28\u0c3f\u0c2f\u0c4b\u0c1c\u0c15\u0c35\u0c30\u0c4d\u0c17 \u0c07\u0c28\u0c4d\u200c\u0c1a\u0c3e\u0c30\u0c4d\u0c1c\u0c40\u0c32\u0c41"
+      },
+      {
+        "aid": "2ccee2b8-f971-46dd-8a3c-71678aa7481f",
+        "source": "The Hindu \u2014 International",
+        "needle": "article",
+        "title": "Sleepless in Tehran as crowds rally behind the flag"
+      },
+      {
+        "aid": "4f73932d-4374-4020-9e02-5e72f66131f1",
+        "source": "NTV Telugu",
+        "needle": "article",
+        "title": "PEDDI : \u0c2a\u0c3e\u0c28\u0c4d \u0c07\u0c02\u0c21\u0c3f\u0c2f\u0c3e \u0c38\u0c4d\u0c25\u0c3e\u0c2f\u0c3f\u0c32\u0c4b \u0c2a\u0c46\u0c26\u0c4d\u0c26\u0c3f \u2018\u0c2a\u0c46\u0c2f\u0c3f\u0c21\u0c4d \u0c2a\u0c4d\u0c30\u0c40\u0c2e\u0c3f\u0c2f\u0c30\u0c4d\u0c38\u0c4d\u2019 \u0c2a\u0c4d\u0c32\u0c3e\u0c28\u0c3f\u0c02\u0c17\u0c4d"
+      },
+      {
+        "aid": "c24c3a2c-947b-4713-a911-646287f7397e",
+        "source": "TASS \u2014 Defence",
+        "needle": "article",
+        "title": "Long-term regional transport orders in Russia to be developed by 2035"
+      },
+      {
+        "aid": "11229f03-9ef7-403a-b9b9-ba881eeae285",
+        "source": "Kannada Prabha",
+        "needle": "article",
+        "title": "\u0cb8\u0c82\u0caa\u0cc1\u0c9f \u0cb8\u0cad\u0cc6\u0caf\u0cb2\u0ccd\u0cb2\u0cc2 \u0cb8\u0ca6\u0ccd\u0ca6\u0cc1 \u0cae\u0cbe\u0ca1\u0cbf\u0ca6 \u0ca6\u0cbe\u0cb5\u0ca3\u0c97\u0cc6\u0cb0\u0cc6 \u0ca6\u0c82\u0c97\u0cb2\u0ccd: \u0cae\u0cc1\u0cb8\u0ccd\u0cb2\u0cbf\u0c82 \u0ca8\u0cbe\u0caf\u0c95\u0cb0 \u0cb5\u0cbf\u0cb0\u0cc1\u0ca6\u0ccd\u0ca7 \u0c95\u0ccd\u0cb0\u0cae\u0c95\u0ccd\u0c95\u0cc6 \u0cb8\u0c9a\u0cbf\u0cb5\u0cb0\u0cc7"
+      }
+    ]
+  },
+  "article_numbers": {
+    "table": "article_numbers",
+    "needle_col": "value",
+    "sampled": 2000,
+    "hits": 1872,
+    "hit_rate": 0.936,
+    "floor": 0.5,
+    "gate_passed": true,
+    "per_source_top": [
+      {
+        "source": "Dharitri",
+        "n": 38,
+        "hits": 28,
+        "hit_rate": 0.737
+      },
+      {
+        "source": "Eenadu",
+        "n": 12,
+        "hits": 9,
+        "hit_rate": 0.75
+      },
+      {
+        "source": "India Strategic",
+        "n": 5,
+        "hits": 4,
+        "hit_rate": 0.8
+      },
+      {
+        "source": "The Hindu \u2014 International",
+        "n": 24,
+        "hits": 20,
+        "hit_rate": 0.833
+      },
+      {
+        "source": "Dawn \u2014 Defence",
+        "n": 12,
+        "hits": 10,
+        "hit_rate": 0.833
+      },
+      {
+        "source": "BBC News \u2014 UK",
+        "n": 6,
+        "hits": 5,
+        "hit_rate": 0.833
+      },
+      {
+        "source": "TV9 Telugu",
+        "n": 89,
+        "hits": 75,
+        "hit_rate": 0.843
+      },
+      {
+        "source": "Indian Defence Review",
+        "n": 13,
+        "hits": 11,
+        "hit_rate": 0.846
+      },
+      {
+        "source": "The Hindu \u2014 Andhra Pradesh",
+        "n": 14,
+        "hits": 12,
+        "hit_rate": 0.857
+      },
+      {
+        "source": "BBC News \u2014 Business",
+        "n": 7,
+        "hits": 6,
+        "hit_rate": 0.857
+      },
+      {
+        "source": "NTV Telugu",
+        "n": 42,
+        "hits": 36,
+        "hit_rate": 0.857
+      },
+      {
+        "source": "gCaptain",
+        "n": 7,
+        "hits": 6,
+        "hit_rate": 0.857
+      },
+      {
+        "source": "The Hindu \u2014 Security",
+        "n": 93,
+        "hits": 81,
+        "hit_rate": 0.871
+      },
+      {
+        "source": "Morung Express",
+        "n": 16,
+        "hits": 14,
+        "hit_rate": 0.875
+      },
+      {
+        "source": "Dawn (Pakistan)",
+        "n": 17,
+        "hits": 15,
+        "hit_rate": 0.882
+      }
+    ],
+    "per_lang": {
+      "en": {
+        "n": 1779,
+        "hits": 1674,
+        "hit_rate": 0.941
+      },
+      "ca": {
+        "n": 2,
+        "hits": 2,
+        "hit_rate": 1.0
+      },
+      "ne": {
+        "n": 37,
+        "hits": 27,
+        "hit_rate": 0.73
+      },
+      "te": {
+        "n": 128,
+        "hits": 117,
+        "hit_rate": 0.914
+      },
+      "bn": {
+        "n": 21,
+        "hits": 20,
+        "hit_rate": 0.952
+      },
+      "hi": {
+        "n": 23,
+        "hits": 22,
+        "hit_rate": 0.957
+      },
+      "it": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "hr": {
+        "n": 3,
+        "hits": 3,
+        "hit_rate": 1.0
+      },
+      "id": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "?": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "kn": {
+        "n": 3,
+        "hits": 3,
+        "hit_rate": 1.0
+      },
+      "pa": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      }
+    },
+    "miss_examples": [
+      {
+        "aid": "7e755000-6235-43b1-a2d3-229713df7185",
+        "source": "Dharitri",
+        "needle": "30",
+        "title": "\u0b67\u0b6d \u0b26\u0b3f\u0b28\u0b30\u0b47 \u0b2a\u0b39\u0b1e\u0b4d\u0b1a\u0b3f\u0b32\u0b3e \u0b2d\u0b1e\u0b4d\u0b1c\u0b28\u0b17\u0b30 \u0b2f\u0b3e\u0b24\u0b4d\u0b30\u0b3e: \u0b2e\u0b3e\u2019 \u0b2c\u0b4d\u0b5f\u0b3e\u0b18\u0b4d\u0b30\u0b26\u0b47\u0b2c\u0b40\u0b19\u0b4d\u0b15 \u0b06\u0b36\u0b40\u0b30\u0b4d\u0b2c\u0b3e\u0b26 \u0b28\u0b47\u0b32\u0b47 \u0b2c\u0b3e\u0b1a\u0b38\u0b4d\u0b2a\u0b24\u0b3f \u0b38\u0b41\u0b30\u0b2e"
+      },
+      {
+        "aid": "5f3d5dea-7c49-4871-b6a3-c064a76af46c",
+        "source": "NE Now",
+        "needle": "8",
+        "title": "Manipur: Security forces destroy 7 bunkers in Ukhrul, recover arms in Imphal Eas"
+      },
+      {
+        "aid": "5f8f6b60-1bf3-47c9-8d8f-232b82d874a9",
+        "source": "Sydney Morning Herald",
+        "needle": "9 million",
+        "title": "The bottomless pit has a bottom. LIV exit part of Saudi shift ahead of 2034 Worl"
+      },
+      {
+        "aid": "e014453d-9984-45aa-a331-1a1032a53d8b",
+        "source": "The Hindu \u2014 Security",
+        "needle": "60-69",
+        "title": "Kerala Assembly polls: LDF poised to retain power as exit polls confirm lack of "
+      },
+      {
+        "aid": "5436a671-b245-4569-9fd3-4d970550cd1d",
+        "source": "HMTV",
+        "needle": "33 percent",
+        "title": "\u0c13\u0c2c\u0c40\u0c38\u0c40 \u0c2e\u0c39\u0c3f\u0c33\u0c32\u0c15\u0c41 \u0c38\u0c2c\u0c4d \u0c15\u0c4b\u0c1f\u0c3e \u0c07\u0c35\u0c4d\u0c35\u0c15\u0c41\u0c02\u0c1f\u0c47 \u0c30\u0c3e\u0c37\u0c4d\u0c1f\u0c4d\u0c30\u0c35\u0c4d\u0c2f\u0c3e\u0c2a\u0c4d\u0c24 \u0c2a\u0c4b\u0c30\u0c3e\u0c1f\u0c3e\u0c32\u0c41 \u0c24\u0c2a\u0c4d\u0c2a\u0c35\u0c41: \u0c1c\u0c3e\u0c21\u0c3f \u0c36\u0c4d\u0c35\u0c47\u0c24 \u0c39\u0c46\u0c1a\u0c4d"
+      },
+      {
+        "aid": "10dfb7bb-98e4-4f1e-bf60-eb8e4b613bcb",
+        "source": "TV9 Telugu",
+        "needle": "100",
+        "title": "\u0c2d\u0c3e\u0c30\u0c24\u0c4d \u0c21\u0c40\u0c2a\u0c4d\u200c\u0c1f\u0c46\u0c15\u0c4d \u0c26\u0c42\u0c15\u0c41\u0c21\u0c41.. \u0c2a\u0c4d\u0c30\u0c2a\u0c02\u0c1a \u0c2a\u0c46\u0c1f\u0c4d\u0c1f\u0c41\u0c2c\u0c21\u0c3f\u0c26\u0c3e\u0c30\u0c41\u0c32 \u0c1a\u0c42\u0c2a\u0c41 \u0c07\u0c2a\u0c4d\u0c2a\u0c41\u0c21\u0c41 \u0c07\u0c02\u0c21\u0c3f\u0c2f\u0c3e\u0c2a\u0c48\u0c28\u0c47!"
+      },
+      {
+        "aid": "020d7c8d-3964-48fe-8fe8-64699619acd0",
+        "source": "Joy Online (Ghana)",
+        "needle": "2026-05-18",
+        "title": "World Bank mission team pays courtesy call on Gender Minister"
+      },
+      {
+        "aid": "13bb77c1-5ca5-4a0a-8319-25febf80e0e4",
+        "source": "Sportstar",
+        "needle": "9",
+        "title": "SRH vs KKR IPL 2026 Live Streaming Info: When, where to watch today\u2019s match Live"
+      },
+      {
+        "aid": "a56c89e4-182c-4390-9b01-61fe55efb5dc",
+        "source": "Indian Defence Review",
+        "needle": "1920-1921",
+        "title": "Scientists Say Adults Raised in the 60s and 70s Possess a Kind of Resilience Tha"
+      },
+      {
+        "aid": "598edb47-7704-446e-a94b-f1d6af3753e7",
+        "source": "Hindustan Times",
+        "needle": "8",
+        "title": "Pilgrim killed in leopard attack near Male Mahadeshwara Hills"
+      }
+    ]
+  },
+  "article_stances": {
+    "table": "article_stances",
+    "needle_col": "actor",
+    "sampled": 2000,
+    "hits": 1969,
+    "hit_rate": 0.9845,
+    "floor": 0.7,
+    "gate_passed": true,
+    "per_source_top": [
+      {
+        "source": "India Today",
+        "n": 5,
+        "hits": 4,
+        "hit_rate": 0.8
+      },
+      {
+        "source": "Mint \u2014 Industry",
+        "n": 7,
+        "hits": 6,
+        "hit_rate": 0.857
+      },
+      {
+        "source": "Sputnik \u2014 Defence",
+        "n": 12,
+        "hits": 11,
+        "hit_rate": 0.917
+      },
+      {
+        "source": "TV9 Telugu",
+        "n": 49,
+        "hits": 45,
+        "hit_rate": 0.918
+      },
+      {
+        "source": "Andhra Jyothy",
+        "n": 27,
+        "hits": 25,
+        "hit_rate": 0.926
+      },
+      {
+        "source": "Hindu Business Line \u2014 Economy",
+        "n": 17,
+        "hits": 16,
+        "hit_rate": 0.941
+      },
+      {
+        "source": "Dharitri",
+        "n": 35,
+        "hits": 33,
+        "hit_rate": 0.943
+      },
+      {
+        "source": "Namasthe Telangana",
+        "n": 63,
+        "hits": 60,
+        "hit_rate": 0.952
+      },
+      {
+        "source": "TASS \u2014 Defence",
+        "n": 49,
+        "hits": 47,
+        "hit_rate": 0.959
+      },
+      {
+        "source": "Daily Trust Nigeria",
+        "n": 26,
+        "hits": 25,
+        "hit_rate": 0.962
+      },
+      {
+        "source": "ET \u2014 Tech & Startups",
+        "n": 27,
+        "hits": 26,
+        "hit_rate": 0.963
+      },
+      {
+        "source": "Al Jazeera English",
+        "n": 28,
+        "hits": 27,
+        "hit_rate": 0.964
+      },
+      {
+        "source": "Sportstar",
+        "n": 30,
+        "hits": 29,
+        "hit_rate": 0.967
+      },
+      {
+        "source": "V6 Velugu",
+        "n": 34,
+        "hits": 33,
+        "hit_rate": 0.971
+      },
+      {
+        "source": "Siasat Daily",
+        "n": 38,
+        "hits": 37,
+        "hit_rate": 0.974
+      }
+    ],
+    "per_lang": {
+      "en": {
+        "n": 1784,
+        "hits": 1762,
+        "hit_rate": 0.988
+      },
+      "te": {
+        "n": 133,
+        "hits": 128,
+        "hit_rate": 0.962
+      },
+      "ne": {
+        "n": 35,
+        "hits": 33,
+        "hit_rate": 0.943
+      },
+      "?": {
+        "n": 4,
+        "hits": 4,
+        "hit_rate": 1.0
+      },
+      "bn": {
+        "n": 16,
+        "hits": 15,
+        "hit_rate": 0.938
+      },
+      "hi": {
+        "n": 18,
+        "hits": 18,
+        "hit_rate": 1.0
+      },
+      "kn": {
+        "n": 3,
+        "hits": 3,
+        "hit_rate": 1.0
+      },
+      "hr": {
+        "n": 4,
+        "hits": 4,
+        "hit_rate": 1.0
+      },
+      "pt": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "id": {
+        "n": 1,
+        "hits": 0,
+        "hit_rate": 0.0
+      },
+      "de": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      }
+    },
+    "miss_examples": [
+      {
+        "aid": "a3ef1e12-e18a-45a0-befc-f4ba14986299",
+        "source": "TASS \u2014 Defence",
+        "needle": "China",
+        "title": "Ukraine conflict highlights growing rift within NATO \u2014 Chinese publication"
+      },
+      {
+        "aid": "8aed43ee-ebdd-4761-82b0-23ddf635774d",
+        "source": "Mint \u2014 Industry",
+        "needle": "Indian investors",
+        "title": "A breather more than correction: How Dubai\u2019s red-hot real estate market stood up"
+      },
+      {
+        "aid": "fed836a1-29c8-4f79-8673-25acb5882f41",
+        "source": "TV9 Telugu",
+        "needle": "Jaish-e-Mohammed",
+        "title": "Operation Sindoor: \u0c06\u0c2a\u0c30\u0c47\u0c37\u0c28\u0c4d \u0c38\u0c3f\u0c02\u0c26\u0c42\u0c30\u0c4d\u200c\u0c15\u0c41 \u0c0f\u0c21\u0c3e\u0c26\u0c3f! \u0c09\u0c17\u0c4d\u0c30\u0c35\u0c3e\u0c26\u0c41\u0c32\u0c2a\u0c48 \u0c2d\u0c3e\u0c30\u0c24 \u0c38\u0c48\u0c28\u0c4d\u0c2f\u0c02 \u0c0e\u0c32\u0c3e \u0c35\u0c3f\u0c30\u0c41\u0c1a\u0c41\u0c15"
+      },
+      {
+        "aid": "36416ea9-bdaa-431a-be56-dfcadb5fd6dc",
+        "source": "NTV Telugu",
+        "needle": "Dr. L.H. Ghote",
+        "title": "Vitamin D Deficiency : \u0c35\u0c3f\u0c1f\u0c2e\u0c3f\u0c28\u0c4d \u0c21\u0c3f \u0c32\u0c4b\u0c2a\u0c02.. \u0c15\u0c47\u0c35\u0c32\u0c02 \u0c0e\u0c02\u0c21\u0c32\u0c4b \u0c15\u0c42\u0c30\u0c4d\u0c1a\u0c41\u0c02\u0c1f\u0c47 \u0c38\u0c30\u0c3f\u0c2a\u0c4b\u0c24\u0c41\u0c02\u0c26\u0c3e.?"
+      },
+      {
+        "aid": "67491472-5c82-4131-9856-384e7591b7f1",
+        "source": "The Hindu \u2014 Security",
+        "needle": "Left Democratic Front (LDF)",
+        "title": "Kerala Assembly Elections 2026: CPI suffers major setback, seat count halved"
+      },
+      {
+        "aid": "f41c27d5-9dc8-4f15-be08-3a931851be6d",
+        "source": "Namasthe Telangana",
+        "needle": "Lola Shankar",
+        "title": "Kotagiri | \u0c35\u0c3f\u0c26\u0c4d\u0c2f\u0c3e\u0c30\u0c4d\u0c25\u0c41\u0c32\u0c41 \u0c1a\u0c26\u0c41\u0c35\u0c41\u0c2a\u0c48 \u0c2a\u0c4d\u0c30\u0c24\u0c4d\u0c2f\u0c47\u0c15 \u0c06\u0c38\u0c15\u0c4d\u0c24\u0c3f \u0c15\u0c28\u0c2c\u0c30\u0c1a\u0c3e\u0c32\u0c3f.. \u0c15\u0c4b\u0c1f\u0c17\u0c3f\u0c30\u0c3f \u0c0e\u0c02\u0c2a\u0c40\u0c21\u0c40\u0c35\u0c4b \u0c35\u0c3f\u0c37\u0c4d"
+      },
+      {
+        "aid": "3b305316-5e26-4b26-952c-86351d5a670b",
+        "source": "ET \u2014 Tech & Startups",
+        "needle": "United States",
+        "title": "France's Macron announces \u20ac1.5 billion for quantum computing, advanced microchip"
+      },
+      {
+        "aid": "da8e75b1-0252-46e7-aadd-9b98524d6d5a",
+        "source": "Hindu Business Line \u2014 Economy",
+        "needle": "United States",
+        "title": "Renewable energies overtook global electricity demand last year, led by solar gr"
+      },
+      {
+        "aid": "b5f8addd-435a-4e06-ac71-d6f091cc712a",
+        "source": "Daily Trust Nigeria",
+        "needle": "United States",
+        "title": "Iran: US forces express readiness to resume combat operations"
+      },
+      {
+        "aid": "ceae1400-5933-4119-a18d-8f54088d0ddb",
+        "source": "TASS \u2014 Defence",
+        "needle": "United States",
+        "title": "Japanese authorities recognize importance of ties with Russia \u2014 lawmaker"
+      }
+    ]
+  },
+  "article_locations": {
+    "table": "article_locations",
+    "needle_col": "location_text",
+    "sampled": 2000,
+    "hits": 1819,
+    "hit_rate": 0.9095,
+    "floor": 0.7,
+    "gate_passed": true,
+    "per_source_top": [
+      {
+        "source": "Prajavani",
+        "n": 9,
+        "hits": 5,
+        "hit_rate": 0.556
+      },
+      {
+        "source": "Small Wars Journal",
+        "n": 5,
+        "hits": 3,
+        "hit_rate": 0.6
+      },
+      {
+        "source": "The Guardian \u2014 Politics",
+        "n": 10,
+        "hits": 6,
+        "hit_rate": 0.6
+      },
+      {
+        "source": "TV9 Telugu",
+        "n": 65,
+        "hits": 43,
+        "hit_rate": 0.662
+      },
+      {
+        "source": "The Hindu \u2014 Society",
+        "n": 6,
+        "hits": 4,
+        "hit_rate": 0.667
+      },
+      {
+        "source": "ET \u2014 Mutual Funds",
+        "n": 23,
+        "hits": 16,
+        "hit_rate": 0.696
+      },
+      {
+        "source": "Mana Telangana",
+        "n": 14,
+        "hits": 10,
+        "hit_rate": 0.714
+      },
+      {
+        "source": "The Conversation \u2014 UK",
+        "n": 8,
+        "hits": 6,
+        "hit_rate": 0.75
+      },
+      {
+        "source": "Andhra Jyothy",
+        "n": 35,
+        "hits": 27,
+        "hit_rate": 0.771
+      },
+      {
+        "source": "Economic Times \u2014 Markets",
+        "n": 9,
+        "hits": 7,
+        "hit_rate": 0.778
+      },
+      {
+        "source": "Eenadu",
+        "n": 18,
+        "hits": 14,
+        "hit_rate": 0.778
+      },
+      {
+        "source": "V6 Velugu",
+        "n": 37,
+        "hits": 29,
+        "hit_rate": 0.784
+      },
+      {
+        "source": "Splash 247",
+        "n": 10,
+        "hits": 8,
+        "hit_rate": 0.8
+      },
+      {
+        "source": "BBC News \u2014 Politics",
+        "n": 5,
+        "hits": 4,
+        "hit_rate": 0.8
+      },
+      {
+        "source": "The Guardian \u2014 UK News",
+        "n": 5,
+        "hits": 4,
+        "hit_rate": 0.8
+      }
+    ],
+    "per_lang": {
+      "en": {
+        "n": 1747,
+        "hits": 1614,
+        "hit_rate": 0.924
+      },
+      "te": {
+        "n": 153,
+        "hits": 119,
+        "hit_rate": 0.778
+      },
+      "et": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "ne": {
+        "n": 54,
+        "hits": 47,
+        "hit_rate": 0.87
+      },
+      "hi": {
+        "n": 18,
+        "hits": 17,
+        "hit_rate": 0.944
+      },
+      "bn": {
+        "n": 15,
+        "hits": 11,
+        "hit_rate": 0.733
+      },
+      "hr": {
+        "n": 5,
+        "hits": 3,
+        "hit_rate": 0.6
+      },
+      "kn": {
+        "n": 2,
+        "hits": 2,
+        "hit_rate": 1.0
+      },
+      "de": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "?": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "id": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "sw": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "ca": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      }
+    },
+    "miss_examples": [
+      {
+        "aid": "5077e3f4-e6ce-420b-ac0e-35414f97fa87",
+        "source": "Prajavani",
+        "needle": "India",
+        "title": "\u0cac\u0caf\u0cca\u0c95\u0cbe\u0ca8\u0ccd\u200c\u0c97\u0cc6 \u0c89\u0ca4\u0ccd\u0ca4\u0cb0\u0cbe\u0ca7\u0cbf\u0c95\u0cbe\u0cb0\u0cbf \u0c98\u0ccb\u0cb7\u0cbf\u0cb8\u0cbf\u0ca6 \u0c95\u0cbf\u0cb0\u0ca3\u0ccd \u0cae\u0c9c\u0cc1\u0c82\u0ca6\u0cbe\u0cb0\u0ccd\u200c \u0cb7\u0cbe: \u0c87\u0cb2\u0ccd\u0cb2\u0cbf\u0ca6\u0cc6 \u0cb5\u0cbf\u0cb5\u0cb0"
+      },
+      {
+        "aid": "95606c45-9560-4982-bd78-a5c8f7d22578",
+        "source": "The Hindu \u2014 Security",
+        "needle": "Hyderabad",
+        "title": "India and Ecuador exploring preferential trade deal to boost economic ties"
+      },
+      {
+        "aid": "82d250e3-e6cb-4b49-9c6b-fa2484a90286",
+        "source": "The Guardian \u2014 Politics",
+        "needle": "United Kingdom",
+        "title": "Andy Burnham vows to \u2018change Labour\u2019 in direct challenge to Keir Starmer"
+      },
+      {
+        "aid": "f584b749-5a3b-411c-bacc-62a841fee6e5",
+        "source": "Sunday Guardian",
+        "needle": "United States",
+        "title": "Nancy Guthrie Case Update: Human Bone Found Near Tucson Home Turns Out to Be 750"
+      },
+      {
+        "aid": "2f0f139e-812d-471b-9a25-5eacfd568e19",
+        "source": "Forbes India",
+        "needle": "United States",
+        "title": "Technologist Neel Somani conducts bleeding-edge research across the fields of AI"
+      },
+      {
+        "aid": "11496a30-1af0-4d04-8007-cf84eb894ea2",
+        "source": "NTV Telugu",
+        "needle": "Mangalagiri",
+        "title": "Minister Nara Lokesh: \u0c07\u0c15, \u0c2e\u0c47\u0c28\u0c47\u0c1c\u0c4d\u200c\u0c2e\u0c46\u0c02\u0c1f\u0c4d\u200c \u0c15\u0c2e\u0c3f\u0c1f\u0c40\u0c32\u0c15\u0c41 \u0c38\u0c4d\u0c15\u0c42\u0c33\u0c4d\u0c32 \u0c2a\u0c28\u0c41\u0c32\u0c41.. \u0c2e\u0c02\u0c24\u0c4d\u0c30\u0c3f \u0c32\u0c4b\u0c15\u0c47\u0c37\u0c4d\u200c "
+      },
+      {
+        "aid": "7c23d837-1bc2-4a8a-b575-7624150fc135",
+        "source": "YourStory \u2014 Tech",
+        "needle": "India",
+        "title": "Atlassian launches \u2018Unleash\u2019 in Bengaluru"
+      },
+      {
+        "aid": "e249488a-b1ad-49b6-9e2b-5e8c84e5388d",
+        "source": "Namasthe Telangana",
+        "needle": "Assam",
+        "title": "\u0c05\u0c35\u0c3f\u0c28\u0c40\u0c24\u0c3f \u0c28\u0c47\u0c24\u0c32\u0c15\u0c41 \u0c2c\u0c40\u0c1c\u0c47\u0c2a\u0c40 \u2018\u0c2a\u0c1f\u0c4d\u0c1f\u0c02\u2019!"
+      },
+      {
+        "aid": "cd4195b6-33db-4f99-869a-3bfc02d2ec30",
+        "source": "Hindustan Times",
+        "needle": "India",
+        "title": "Plans in works to revive central rural job scheme, PMAY in West Bengal"
+      },
+      {
+        "aid": "b7230912-7047-4063-b210-e7adfc98975c",
+        "source": "Punch Nigeria",
+        "needle": "United Kingdom",
+        "title": "Pop star declines to perform at Joshua, Fury fight"
+      }
+    ]
+  },
+  "article_events": {
+    "table": "article_events",
+    "needle_col": "actors",
+    "sampled": 2000,
+    "hits": 1830,
+    "hit_rate": 0.915,
+    "floor": 0.7,
+    "gate_passed": true,
+    "per_source_top": [
+      {
+        "source": "Indian Defence Review",
+        "n": 9,
+        "hits": 5,
+        "hit_rate": 0.556
+      },
+      {
+        "source": "RNZ \u2014 Pacific",
+        "n": 5,
+        "hits": 3,
+        "hit_rate": 0.6
+      },
+      {
+        "source": "Eenadu",
+        "n": 13,
+        "hits": 9,
+        "hit_rate": 0.692
+      },
+      {
+        "source": "Hindu Business Line \u2014 Markets",
+        "n": 17,
+        "hits": 13,
+        "hit_rate": 0.765
+      },
+      {
+        "source": "Economic Times",
+        "n": 13,
+        "hits": 10,
+        "hit_rate": 0.769
+      },
+      {
+        "source": "RFI English \u2014 Africa",
+        "n": 9,
+        "hits": 7,
+        "hit_rate": 0.778
+      },
+      {
+        "source": "gCaptain",
+        "n": 5,
+        "hits": 4,
+        "hit_rate": 0.8
+      },
+      {
+        "source": "Prajavani",
+        "n": 5,
+        "hits": 4,
+        "hit_rate": 0.8
+      },
+      {
+        "source": "Andhra Jyothy",
+        "n": 21,
+        "hits": 17,
+        "hit_rate": 0.81
+      },
+      {
+        "source": "Hindu Business Line \u2014 Economy",
+        "n": 21,
+        "hits": 17,
+        "hit_rate": 0.81
+      },
+      {
+        "source": "PIB \u2014 Economy",
+        "n": 6,
+        "hits": 5,
+        "hit_rate": 0.833
+      },
+      {
+        "source": "Channel NewsAsia",
+        "n": 12,
+        "hits": 10,
+        "hit_rate": 0.833
+      },
+      {
+        "source": "The Guardian \u2014 Politics",
+        "n": 12,
+        "hits": 10,
+        "hit_rate": 0.833
+      },
+      {
+        "source": "Al Jazeera \u2014 Asia",
+        "n": 25,
+        "hits": 21,
+        "hit_rate": 0.84
+      },
+      {
+        "source": "BBC World News",
+        "n": 13,
+        "hits": 11,
+        "hit_rate": 0.846
+      }
+    ],
+    "per_lang": {
+      "en": {
+        "n": 1763,
+        "hits": 1624,
+        "hit_rate": 0.921
+      },
+      "te": {
+        "n": 122,
+        "hits": 104,
+        "hit_rate": 0.852
+      },
+      "bn": {
+        "n": 21,
+        "hits": 19,
+        "hit_rate": 0.905
+      },
+      "hi": {
+        "n": 25,
+        "hits": 20,
+        "hit_rate": 0.8
+      },
+      "kn": {
+        "n": 7,
+        "hits": 7,
+        "hit_rate": 1.0
+      },
+      "ne": {
+        "n": 53,
+        "hits": 48,
+        "hit_rate": 0.906
+      },
+      "?": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "or": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "hr": {
+        "n": 4,
+        "hits": 3,
+        "hit_rate": 0.75
+      },
+      "pa": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "sw": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      },
+      "tl": {
+        "n": 1,
+        "hits": 1,
+        "hit_rate": 1.0
+      }
+    },
+    "miss_examples": [
+      {
+        "aid": "335bc7c8-356c-4273-a570-dfc2b65a77b7",
+        "source": "Andhra Jyothy",
+        "needle": "Andhrayoty",
+        "title": "the curve is moving 1521393.html"
+      },
+      {
+        "aid": "11105b27-fec0-46c4-be76-3f70b95e5749",
+        "source": "Eenadu",
+        "needle": "Narendra Modi",
+        "title": "2030 \u0c28\u0c3e\u0c1f\u0c3f\u0c15\u0c3f \u0c0f\u0c30\u0c4b\u0c38\u0c4d\u0c2a\u0c47\u0c38\u0c4d, \u0c21\u0c3f\u0c2b\u0c46\u0c28\u0c4d\u0c38\u0c4d\u200c \u0c30\u0c3e\u0c1c\u0c27\u0c3e\u0c28\u0c3f\u0c17\u0c3e \u0c24\u0c46\u0c32\u0c02\u0c17\u0c3e\u0c23"
+      },
+      {
+        "aid": "fae69f81-4f34-4fcc-8754-dca80c5134a4",
+        "source": "The Hindu \u2014 Security",
+        "needle": "",
+        "title": "Same family, different politics"
+      },
+      {
+        "aid": "c46eab34-dbd1-441e-b713-83bf208e8d51",
+        "source": "The Hindu \u2014 International",
+        "needle": "",
+        "title": "Turkiye to hold funerals for school shooting victims"
+      },
+      {
+        "aid": "84bf627e-13cc-4d29-b7d5-c018302352c6",
+        "source": "Telangana Today",
+        "needle": "",
+        "title": "Suvendu Adhikari to hold Bengal BJP government\u2019s first administrative meeting on"
+      },
+      {
+        "aid": "e630c026-d504-4b77-913f-654cb0166039",
+        "source": "Indian Defence Review",
+        "needle": "",
+        "title": "They Dug Into a Jungle Mound in Mexico and Found an Ancient Maya Settlement With"
+      },
+      {
+        "aid": "8ba78752-e630-4360-ba90-94d87eb3f89d",
+        "source": "Dharitri",
+        "needle": "",
+        "title": "\u0b2f\u0b41\u0b15\u0b4d\u0b24 \u0b26\u0b41\u0b07 \u0b2a\u0b30\u0b40\u0b15\u0b4d\u0b37\u0b3e \u0b2b\u0b33: \u0b24\u0b25\u0b4d\u0b5f \u0b2e\u0b3e\u0b17\u0b3f\u0b2c\u0b3e\u0b30\u0b41 \u0b38\u0b3e\u0b2e\u0b4d\u0b2c\u0b3e\u0b26\u0b3f\u0b15\u0b19\u0b4d\u0b15\u0b41 \u2018\u0b28\u0b3e\u0b32\u0b3f \u0b06\u0b16\u0b3f\u2019"
+      },
+      {
+        "aid": "061dbf36-2f65-4490-8157-54536c14db5f",
+        "source": "Eenadu",
+        "needle": "",
+        "title": "\u0c27\u0c3e\u0c28\u0c4d\u0c2f\u0c02 \u0c15\u0c4a\u0c28\u0c41\u0c17\u0c4b\u0c32\u0c41 \u0c1a\u0c47\u0c2f\u0c3e\u0c32\u0c28\u0c3f \u0c30\u0c48\u0c24\u0c41\u0c32 \u0c28\u0c3f\u0c30\u0c38\u0c28"
+      },
+      {
+        "aid": "3747f00c-6cd3-41c4-8534-0cc7e9b2b6d2",
+        "source": "gCaptain",
+        "needle": "",
+        "title": "U.N. Weighs Hormuz Sanctions as U.S. Pushes Resolution That Could Open Door to F"
+      },
+      {
+        "aid": "4907b97f-f99f-42ff-ad83-9ce83e26621a",
+        "source": "Telangana Today",
+        "needle": "",
+        "title": "Approach road of second bridge across river Godavari sinks in Kothagudem"
+      }
+    ]
+  }
+}

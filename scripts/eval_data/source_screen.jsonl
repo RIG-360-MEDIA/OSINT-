@@ -1,0 +1,44 @@
+{"name": "Anandabazar", "lang": "bn", "live": true, "articles": 7, "anchored": 0, "anchored_pct": 0, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "bn", "lang_ok": true}
+{"name": "Bartaman", "lang": "bn", "live": false}
+{"name": "Business Line", "lang": "en", "live": true, "articles": 19, "anchored": 11, "anchored_pct": 58, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "en", "lang_ok": true}
+{"name": "Business Standard", "lang": "en", "live": true, "articles": 19, "anchored": 17, "anchored_pct": 89, "mis_anchor": 0, "tiny": 2, "tiny_pct": 12, "maj_lang": "en", "lang_ok": true}
+{"name": "Deccan Chronicle", "lang": "en", "live": true, "articles": 30, "anchored": 25, "anchored_pct": 83, "mis_anchor": 0, "tiny": 4, "tiny_pct": 16, "maj_lang": "en", "lang_ok": true}
+{"name": "Deccan Herald", "lang": "en", "live": true, "articles": 13, "anchored": 11, "anchored_pct": 85, "mis_anchor": 0, "tiny": 1, "tiny_pct": 9, "maj_lang": "en", "lang_ok": true}
+{"name": "Economic Times", "lang": "en", "live": true, "articles": 11, "anchored": 10, "anchored_pct": 91, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "en", "lang_ok": true}
+{"name": "Financial Express", "lang": "en", "live": true, "articles": 11, "anchored": 8, "anchored_pct": 73, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "en", "lang_ok": true}
+{"name": "Greater Kashmir", "lang": "en", "live": false}
+{"name": "Hindustan Times", "lang": "en", "live": true, "articles": 11, "anchored": 9, "anchored_pct": 82, "mis_anchor": 0, "tiny": 5, "tiny_pct": 56, "maj_lang": "en", "lang_ok": true}
+{"name": "Indian Express", "lang": "en", "live": false}
+{"name": "Mint", "lang": "en", "live": true, "articles": 9, "anchored": 9, "anchored_pct": 100, "mis_anchor": 1, "tiny": 0, "tiny_pct": 0, "maj_lang": "en", "lang_ok": true}
+{"name": "Nagaland Post", "lang": "en", "live": false}
+{"name": "O Heraldo", "lang": "en", "live": false}
+{"name": "Telangana Today", "lang": "en", "live": true, "articles": 26, "anchored": 21, "anchored_pct": 81, "mis_anchor": 0, "tiny": 5, "tiny_pct": 24, "maj_lang": "te", "lang_ok": false}
+{"name": "The Hindu", "lang": "en", "live": true, "articles": 15, "anchored": 0, "anchored_pct": 0, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "hi", "lang_ok": false}
+{"name": "The Telegraph", "lang": "en", "live": true, "articles": 13, "anchored": 12, "anchored_pct": 92, "mis_anchor": 0, "tiny": 1, "tiny_pct": 8, "maj_lang": "en", "lang_ok": true}
+{"name": "Times of India", "lang": "en", "live": true, "articles": 27, "anchored": 23, "anchored_pct": 85, "mis_anchor": 1, "tiny": 0, "tiny_pct": 0, "maj_lang": "en", "lang_ok": true}
+{"name": "Divya Bhaskar", "lang": "gu", "live": true, "articles": 19, "anchored": 0, "anchored_pct": 0, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "gu", "lang_ok": true}
+{"name": "Gujarat Samachar", "lang": "gu", "live": true, "articles": 18, "anchored": 0, "anchored_pct": 0, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "gu", "lang_ok": true}
+{"name": "Amar Ujala", "lang": "hi", "live": true, "articles": 15, "anchored": 4, "anchored_pct": 27, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "hi", "lang_ok": true}
+{"name": "Dainik Bhaskar", "lang": "hi", "live": true, "articles": 24, "anchored": 7, "anchored_pct": 29, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "hi", "lang_ok": true}
+{"name": "Dainik Jagran", "lang": "hi", "live": true, "articles": 4, "anchored": 0, "anchored_pct": 0, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "hi", "lang_ok": true}
+{"name": "Dainik Navajyoti", "lang": "hi", "live": true, "articles": 10, "anchored": 1, "anchored_pct": 10, "mis_anchor": 0, "tiny": 1, "tiny_pct": 100, "maj_lang": "hi", "lang_ok": true}
+{"name": "Hari Bhoomi", "lang": "hi", "live": true, "articles": 17, "anchored": 2, "anchored_pct": 12, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "hi", "lang_ok": true}
+{"name": "Hindustan", "lang": "hi", "live": true, "articles": 25, "anchored": 19, "anchored_pct": 76, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "hi", "lang_ok": true}
+{"name": "Jansatta", "lang": "hi", "live": true, "articles": 22, "anchored": 6, "anchored_pct": 27, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "hi", "lang_ok": true}
+{"name": "Nai Dunia", "lang": "hi", "live": false}
+{"name": "Navbharat Times", "lang": "hi", "live": true, "articles": 16, "anchored": 3, "anchored_pct": 19, "mis_anchor": 0, "tiny": 1, "tiny_pct": 33, "maj_lang": "hi", "lang_ok": true}
+{"name": "Prabhat Khabar", "lang": "hi", "live": true, "articles": 7, "anchored": 4, "anchored_pct": 57, "mis_anchor": 0, "tiny": 3, "tiny_pct": 75, "maj_lang": "hi", "lang_ok": true}
+{"name": "Punjab Kesari", "lang": "hi", "live": true, "articles": 20, "anchored": 6, "anchored_pct": 30, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "hi", "lang_ok": true}
+{"name": "Rashtriya Sahara", "lang": "hi", "live": true, "articles": 15, "anchored": 3, "anchored_pct": 20, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "hi", "lang_ok": true}
+{"name": "Samachar Jagat", "lang": "hi", "live": false}
+{"name": "Prajavani", "lang": "kn", "live": false}
+{"name": "Udayavani", "lang": "kn", "live": true, "articles": 18, "anchored": 0, "anchored_pct": 0, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "kn", "lang_ok": true}
+{"name": "Vijaya Karnataka", "lang": "kn", "live": true, "articles": 5, "anchored": 0, "anchored_pct": 0, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "kn", "lang_ok": true}
+{"name": "Malayala Manorama", "lang": "ml", "live": true, "articles": 15, "anchored": 0, "anchored_pct": 0, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "ml", "lang_ok": true}
+{"name": "Mathrubhumi", "lang": "ml", "live": true, "articles": 13, "anchored": 0, "anchored_pct": 0, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "ml", "lang_ok": true}
+{"name": "Loksatta", "lang": "mr", "live": true, "articles": 22, "anchored": 5, "anchored_pct": 23, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "mr", "lang_ok": true}
+{"name": "Maharashtra Times", "lang": "mr", "live": true, "articles": 19, "anchored": 5, "anchored_pct": 26, "mis_anchor": 0, "tiny": 1, "tiny_pct": 20, "maj_lang": "mr", "lang_ok": true}
+{"name": "Ajit", "lang": "pa", "live": true, "articles": 18, "anchored": 0, "anchored_pct": 0, "mis_anchor": 0, "tiny": 0, "tiny_pct": 0, "maj_lang": "pa", "lang_ok": true}
+{"name": "Daily Thanthi", "lang": "ta", "live": false}
+{"name": "Dinamalar", "lang": "ta", "live": false}
+{"name": "Dinamani", "lang": "ta", "live": false}

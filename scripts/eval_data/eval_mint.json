@@ -1,0 +1,282 @@
+[
+  {
+    "i": 0,
+    "page": 1,
+    "headline": "India's big local solar cell push: what it means",
+    "subheadline": "",
+    "byline": "BY RITURAJ BARUAH",
+    "body_head": "India's push for a solar manufacturing ecosystem entered a new phase this month. Large, government projects must now use locally-made solar cells. While the move is seen boosting manufacturing, it may also influence costs, project timelines and power tariffs. Mint explores.\n\nSolar energy shines\nAnnu",
+    "body_paras": 15,
+    "body_len": 3118,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 42.8,
+    "bbox": [
+      34.1,
+      302.9,
+      278.4,
+      537.6
+    ]
+  },
+  {
+    "i": 1,
+    "page": 1,
+    "headline": "Rethink farming",
+    "subheadline": "",
+    "byline": "",
+    "body_head": "China's embrace of market reforms in the 1970s, as agriculture ended it, began in Xiaogang village, where farmer families struck a secret pact to defy collective farming by splitting up commune land and keeping profits private after meeting the state's harvest quota. Yields soared, the idea spread, ",
+    "body_paras": 1,
+    "body_len": 1207,
+    "section": "Opinion",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 70.9,
+    "bbox": [
+      336.5,
+      301.4,
+      441.1,
+      787.2
+    ]
+  },
+  {
+    "i": 2,
+    "page": 2,
+    "headline": "WHY SALESFORCE'S AI BET DOESN'T IMPRESS",
+    "subheadline": "",
+    "byline": "BY HOWINDIALIVES.COM",
+    "body_head": "Salesforce has a $5 billion stake in one of the hottest companies in artificial intelligence (AI). Investors aren't impressed. On 1 June, Bloomberg reported that Salesforce's investment in Anthropic is now worth about $5 billion. Salesforce shares initially rose on the news but have since fallen abo",
+    "body_paras": 26,
+    "body_len": 5203,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 114.2,
+    "bbox": [
+      518.9,
+      195.8,
+      948.5,
+      485.8
+    ]
+  },
+  {
+    "i": 3,
+    "page": 3,
+    "headline": "Disclosure gulf at heart of Rajesh Exports affair",
+    "subheadline": "Contradictory statements to regulators may have blurred finances of its units",
+    "byline": "Neelam Chaudhary and Vauri Goyal MUMBAI/BENGALURU",
+    "body_head": "Bengaluru-based Rajesh Exports Ltd (REL) and its Singapore subsidiary gave contradictory statements to regulators in the two countries. A Mint review of documents showed the actual financials of overseas units that account for almost all of its revenue. These consolidated financial statements were f",
+    "body_paras": 2,
+    "body_len": 1022,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 63.7,
+    "bbox": [
+      25.9,
+      443.5,
+      497.8,
+      615.4
+    ]
+  },
+  {
+    "i": 4,
+    "page": 3,
+    "headline": "Law firms defy India Inc's wage hike slowdown",
+    "subheadline": "",
+    "byline": "Yash Tiwari MUMBAI",
+    "body_head": "While much of India Inc is announcing a slowdown in wage hikes, law firms are emerging as an outlier, handing out double-digit bonuses as demand for legal services remains elevated.\n\nEarlier this year, consulting firms had projected salary hikes of 9.1% for 2026, compared with 10.3% in 2025. Against",
+    "body_paras": 4,
+    "body_len": 1334,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 18.1,
+    "bbox": [
+      20.6,
+      940.8,
+      232.8,
+      1036.8
+    ]
+  },
+  {
+    "i": 5,
+    "page": 3,
+    "headline": "HDFC Bank to decide on CEO's third term only after key report",
+    "subheadline": "",
+    "byline": "Sreepriya Shankar MUMBAI",
+    "body_head": "HDFC Bank's board will consider chief executive officer (CEO) Sashidhar Jagdishan's reappointment only after it receives the findings of a key review into concerns raised by former chairman of the board. With two people in the loop, Mint reported earlier that Jagdishan's reappointment was likely to ",
+    "body_paras": 4,
+    "body_len": 855,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 78.1,
+    "bbox": [
+      262.1,
+      939.4,
+      950.4,
+      1075.2
+    ]
+  },
+  {
+    "i": 6,
+    "page": 3,
+    "headline": "Foreign businesses are fleeing Cuba as its economy collapses",
+    "subheadline": "",
+    "byline": "Ryan Dubé, Amrith Ramachandran and Clea Yoo",
+    "body_head": "M asterwood and Visa are suspending transactions, hotel operators are pulling out and a major Canadian miner is rethinking its Cuban operations. The exodus follows several months of uncertainty in Washington, where a U.S. embargo on Americans using U.S. credit cards in Cuba has led to a sharp declin",
+    "body_paras": 5,
+    "body_len": 1098,
+    "section": "International",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 52.3,
+    "bbox": [
+      262.1,
+      1266.2,
+      955.2,
+      1354.1
+    ]
+  },
+  {
+    "i": 7,
+    "page": 3,
+    "headline": "iPhone India sales may be slowing after a blistering decade",
+    "subheadline": "",
+    "byline": "Shouvik Das, shouvik.d@livemint.com NEW DELHI",
+    "body_head": "The famed halo of Apple's Inc.'s iPhone may be approaching a glass ceiling in India. After nearly a decade of record sales growth, analysts expect the iPhone maker's sales growth in the country to slow as it nears the limits of the premium smartphone segment.\n\nThe slowdown in the growth pace of iPho",
+    "body_paras": 2,
+    "body_len": 719,
+    "section": "Business",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 28.3,
+    "bbox": [
+      551.5,
+      442.1,
+      779.5,
+      596.2
+    ]
+  },
+  {
+    "i": 8,
+    "page": 3,
+    "headline": "Panel pauses trials of TB vaccine, seeks more data",
+    "subheadline": "",
+    "byline": "Priyanka Sharma NEW DELHI",
+    "body_head": "Nearly half of the world's tuberculosis burden, and comes at a time India bears the world's highest tuberculosis burden.\n\nThe Securities and Exchange Board of India (Sebi) has sought more serious adverse event (SAE) data and additional data before the critical final safety data can begin.\n\nThe inter",
+    "body_paras": 5,
+    "body_len": 913,
+    "section": "National",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 76.3,
+    "bbox": [
+      262.1,
+      939.4,
+      937.4,
+      1075.2
+    ]
+  },
+  {
+    "i": 9,
+    "page": 4,
+    "headline": "LPG cylinder prices up ₹29 as war inflates import costs",
+    "subheadline": "The price hike comes after India's LPG consumption fell to 2.13 million tonnes in May",
+    "byline": "Ritika Bansal & Fernanda Neaz",
+    "body_head": "LPG supplies have been worst-affected due to the war and the blockade of the Strait of Hormuz as India used to import about 90% of these imports coming from West Asia. The landed cost of these imports tracked the Saudi Contract Price (SCP) which has been set at $700 a tonne in June, about 6% higher ",
+    "body_paras": 2,
+    "body_len": 838,
+    "section": "Economy & Policy",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 34.1,
+    "bbox": [
+      262.1,
+      142.6,
+      823.2,
+      228.5
+    ]
+  },
+  {
+    "i": 10,
+    "page": 4,
+    "headline": "E-bus tender for smaller towns delayed by a month",
+    "subheadline": "",
+    "byline": "Manas Pimpalkhare",
+    "body_head": "A tender under a central government scheme to deploy 3,000 electric buses in smaller cities has been delayed by a month. The PMO-Bus Sewa scheme, administered by the ministry of road transport and highways, aims to support deployment of 10,000 electric buses across 16 cities.\n\nThe Centre's Larsen & ",
+    "body_paras": 2,
+    "body_len": 489,
+    "section": "Economy & Policy",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 20.1,
+    "bbox": [
+      263.5,
+      730.6,
+      564.5,
+      811.2
+    ]
+  },
+  {
+    "i": 11,
+    "page": 4,
+    "headline": "Indian officials to visit Russia for talks on EAEU free trade deal",
+    "subheadline": "",
+    "byline": "Harsh Kumar",
+    "body_head": "An Indian delegation is expected to visit Russia towards the end of the month for talks on the proposed Eurasian Economic Union (EAEU) free trade agreement (FTA).\n\nQueries emailed to India's ministry of commerce and industry and the embassy of the Russian Federation remained unanswered.",
+    "body_paras": 2,
+    "body_len": 287,
+    "section": "Economy & Policy",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 48.6,
+    "bbox": [
+      620.2,
+      733.4,
+      958.6,
+      877.9
+    ]
+  },
+  {
+    "i": 12,
+    "page": 4,
+    "headline": "India's milk output to rise 6% in FY27 despite risks of weak monsoon",
+    "subheadline": "",
+    "byline": "Vjyay C Roy & Dharmendra Kumar",
+    "body_head": "India's milk production is expected to rise by 6% to 263 million tonnes (mt) this fiscal year (FY27) despite concerns of a sub-normal monsoon potentially hurting farm output and fodder availability, dairy experts said.\n\nHigher milk output is expected on the back of an increase in livestock populatio",
+    "body_paras": 2,
+    "body_len": 486,
+    "section": "Economy & Policy",
+    "lang": "en",
+    "anchored": false,
+    "img_kb": 0.0,
+    "bbox": [
+      0.0,
+      0.0,
+      989.1,
+      1554.5
+    ]
+  },
+  {
+    "i": 13,
+    "page": 4,
+    "headline": "Social media buzz fails to become political force",
+    "subheadline": "",
+    "byline": "",
+    "body_head": "The virtual political sensation, the Cockroach Janata Party (CJP) with 20 million online followers, failed to make any dent.\n\nThe CJP's mandatory membership-eligibility criteria of owning a motorcycle and a mobile phone are stringent. There are 178 million motorcycles in India but the situation is d",
+    "body_paras": 2,
+    "body_len": 515,
+    "section": "Opinion",
+    "lang": "en",
+    "anchored": true,
+    "img_kb": 17.4,
+    "bbox": [
+      22.6,
+      254.4,
+      243.8,
+      335.0
+    ]
+  }
+]

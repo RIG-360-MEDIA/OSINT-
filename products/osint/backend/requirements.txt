@@ -1,0 +1,17 @@
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+python-dotenv==1.0.1
+# Auth: Supabase HS256 JWT verification (matches rig-backend's choice).
+python-jose[cryptography]==3.3.0
+# Supabase Admin API calls (create-user, password sign-in) via thin httpx wrapper.
+httpx==0.27.2
+# Pydantic email validation for invite endpoints.
+email-validator==2.2.0
+# LLM pool (ported from rig-backend groq_client.py): Groq SDK; Cerebras uses httpx.
+groq==0.11.0
+
+# Daily intelligence-brief PDF rendering (HTML -> PDF).
+weasyprint==62.3
+pydyf==0.10.0

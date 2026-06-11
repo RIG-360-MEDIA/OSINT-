@@ -1,0 +1,24 @@
+name|domain|lang|tier|kind|notes|home_status|feed_path|feed_status|feed_kind
+Andhra Bhoomi|andhrabhoomi.in|te|2|rss||200||0|
+Andhra Bhoomi Online|andhrabhoominewspaper.com|te|2|rss||000||0|
+Suryaa News|surya.co.in|te|2|rss||200||0|
+Suryaa Daily|suryaaonline.com|te|2|rss||000||0|
+ABN Telugu|abntelugutv.com|te|2|rss||000||0|
+Sakshi Post|sakshipost.com|en|2|rss||403||0|
+V6 News|v6news.tv|te|2|rss||000||0|
+V6 Velugu|velugu.tv|te|2|rss||000||0|
+CVR News Telugu|cvrnews.com|te|2|rss||000||0|
+T News HD|tnewshd.com|te|3|rss||000||0|
+Bharat Today TV|bharattoday.tv|te|3|rss||000||0|
+NTV Telugu Live|ntvliveinternational.com|te|3|rss||000||0|
+Indiaglitz Telugu|indiaglitz.com/telugu-news|te|3|rss||404||0|
+News Meter|newsmeter.in|en|2|rss|hyderabad-focused|200|https://newsmeter.in/google_feeds.xml|200|auto:<rss
+Telangana Tribune|telanganatribune.com|en|3|rss||200|https://www.telanganatribune.com/feed/|200|auto:<rss
+Andhra Patrika|andhrapatrika.com|te|3|rss||200||0|
+ABP Desam Telugu|abplive.com/news/state/andhra-pradesh-news|te|2|rss||200||0|
+Khabar Live|khabarlive.com|en|3|rss|hyderabad/AP focused|200||0|
+The Mojo Story|themojostory.in|en|3|rss||000||0|
+TFIPOST South|tfipost.com|en|3|rss||200|https://tfipost.com/feed/|200|auto:<rss
+Telugu Express|teluguexpress.com|en|3|rss||200||0|
+Praja Bharat|prajabharat.in|te|3|rss||000||0|
+Andhra Pradesh Times|andhrapradeshtimes.com|en|3|rss||000||0|

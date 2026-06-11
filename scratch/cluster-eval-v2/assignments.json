@@ -1,0 +1,4002 @@
+[
+  {
+    "article_id": "d78e8849-6f08-4469-bdbe-14de8c33291c",
+    "thread_id": "8a9e99da-895e-4cb0-8f7f-dbfb78d21ab5",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "43fa9f78-b234-4ce9-82e3-db9e3d9088e2",
+    "thread_id": "d252d2db-64c4-4fa2-9a61-db2c05c4f21d",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "cf557fc3-5d33-4ce8-975a-4bc285fa064f",
+    "thread_id": "4bcbd819-72cc-48f6-91ef-2b5249f59f27",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "dbee73c0-f603-4720-88fc-647c8e1f0e11",
+    "thread_id": "052430ff-c988-4205-8fb0-0423f116e3c5",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e69d2e3c-d214-43c4-8265-981621da96e8",
+    "thread_id": "71516acf-1fa6-4da2-a97d-24af7c5bb9a9",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7b3e63c9-2c1c-4eb4-aca7-381c599205bd",
+    "thread_id": "8571d038-2c4a-4b1c-b977-f666a8aaf1ba",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "45ef9aeb-95b7-4e60-aaf9-06adaac9e3b3",
+    "thread_id": "6eacd645-3426-411e-b47f-03fa3248876b",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5a59ee1d-e2ae-42f5-8d18-ca5cf6b453c7",
+    "thread_id": "cfdc54c7-8607-4906-8ab5-3baf1dfe083d",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "89b81519-97b8-4cee-aced-b803343910f1",
+    "thread_id": "b5ebf895-d1b1-495e-81a1-7864b4fa6cee",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4917b43f-1e9b-4ec9-86fd-8e086ee2b6a0",
+    "thread_id": "e0ec40de-226e-4bc4-8971-6beacd398f65",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "aeb76bd5-4512-411e-aa4b-8fbd0de97b7d",
+    "thread_id": "7434fd77-0955-430f-ac05-512175e2f3d7",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "76d3e076-b7c9-4715-98bc-2788df9f632f",
+    "thread_id": "a0705005-740e-4c14-b762-311b10101a24",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0dec82c7-a40e-4016-a4dc-dec60d9fcc16",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "cf560282-a44e-419c-a711-f88e08658923",
+    "thread_id": "d340388c-5aca-486e-b4f2-9bb53ee53ae0",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f64d5246-1078-4794-8498-d0b49e45a688",
+    "thread_id": "ed50671b-ba41-427d-b633-98514f92bbcb",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1a2256fe-dd77-4ec0-8b4b-b4c7cdd50a34",
+    "thread_id": "9c572abb-2888-408d-9348-51e6bd112aef",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e50fc06c-0a4b-48de-ac5c-2053cb308a53",
+    "thread_id": "734b2f83-5a75-471c-a131-a6528239fcf3",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "56627df0-7082-4699-bb07-7b5c9ec843cc",
+    "thread_id": "4146e9bf-a497-4503-a65b-f4696f666214",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7def432e-2c0d-411e-a8cc-fbcaae2baf67",
+    "thread_id": "021dfd79-e074-437a-9551-aff3133f302c",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f0d25e93-058c-435b-84ac-cc2544298a8c",
+    "thread_id": "42d065e5-6f9b-4f94-b294-946c295afa5b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3eebc050-7e97-4a61-97ab-71d16378f4e9",
+    "thread_id": "1002f2b2-c610-49e9-b07d-8e2c3f5e40b4",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "eacc7b8e-bc0d-4b62-8475-1c67b46833cb",
+    "thread_id": "81566f92-ab7d-46e9-b3e1-3c1173ab0f7a",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e53fcf66-58d3-4831-8f32-73248d4f65db",
+    "thread_id": "5bd77ffe-c004-4e58-9fe0-bea07dc05c59",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b559582a-b5dc-4456-aea1-80861ae1c64f",
+    "thread_id": "c35d1e2a-609d-47d2-9cd9-e3eb585a915c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7890f97e-c144-424f-b9de-bd2fcf87691d",
+    "thread_id": "9c6423b6-c743-4304-95da-c17845a3136a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0a948ec1-96c2-49a3-8549-cd4eed04c5e0",
+    "thread_id": "dd283221-b026-4252-a915-fc42fa6233a9",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "36706b36-aabb-45d6-ade9-3c55dd1f2ce9",
+    "thread_id": "f48f0ed8-1021-49e0-a65b-6aa0a250d1bd",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9e08ae12-e52c-47b2-884c-0e5a0732d222",
+    "thread_id": "ecdbbf7a-e3a1-4ae5-b782-f9d4761dd74b",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9e724a78-ab2a-4c4f-a5d4-e01efa7135a2",
+    "thread_id": "0ff35c49-5b70-4d9f-a73c-2ef111499282",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a5cc3714-ee18-42e7-9c87-007723164d6e",
+    "thread_id": "29ccdef1-f937-42a6-b540-d2c115384a1f",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "004b15ae-9aff-4079-bd2a-093e192edbe5",
+    "thread_id": "b0065d20-f3d6-4d12-9157-ee03eb4fff16",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "675aec3c-5416-4f89-aff7-f0d233e20b15",
+    "thread_id": "7a00c22a-775e-4ac9-9153-80c38f34809d",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7770d185-a9ec-411f-b23f-4176c4601d0b",
+    "thread_id": "24f0d582-fe96-4e27-a099-73acf98318e1",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.1,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7439a972-d3a7-4a71-b4d0-134bf8762b60",
+    "thread_id": "849235da-e3eb-4738-9bc4-3b66713db1ae",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "24f4ce16-467f-43e4-9c7c-6f73b68029be",
+    "thread_id": "a4cbabcc-db08-4f1a-83b6-f5c3953f8b1f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6bfc8d5a-ee0e-457f-885b-94ba50ea2333",
+    "thread_id": "a367fd07-3a12-4e31-8abc-8d2a365acce1",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "eb856c5f-4b54-4048-8d4f-b70c6e6a3463",
+    "thread_id": "41616c10-4733-4d48-99bc-68f5e52382c6",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4dcb5897-fd37-4e54-bf5e-4d5e95e07b2c",
+    "thread_id": "60f375ae-b9ac-441a-8162-9585764084c9",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "015f8d0f-8452-4e5e-8b3f-98890224811c",
+    "thread_id": "dd23f40f-31cf-41f0-88ab-ee39148955e1",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9657d5eb-0874-4f40-bb94-298d75e9f8ad",
+    "thread_id": "3bc7058c-918f-4aa8-af4d-fa7938079f92",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ba64c90d-feb4-46db-a6b0-68460f348e62",
+    "thread_id": "a81def9a-182d-427c-b2b3-0569df603d89",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f2165d85-7416-4a01-a846-e466b4397a7e",
+    "thread_id": "d5f7b77c-8b18-4e2b-8267-6123d08ceb36",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c06e8f81-8803-4f8c-9270-9120021d1809",
+    "thread_id": "cd59af21-cf02-4671-a1c7-76d460e2727e",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "daf7bb1f-b312-406b-b971-c748422f8581",
+    "thread_id": "655709a7-7dba-4c0e-b141-20149bdd1e65",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6253bc05-085f-4702-aa43-08bcb898e78c",
+    "thread_id": "d35b9894-ba31-4c97-aa9b-6ba77223dc03",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6c9923d8-bf28-4934-8bc2-211d19221603",
+    "thread_id": "2ff5a33a-f97a-497f-a03d-67e8f193aef6",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "25456975-007d-4c12-967e-51ebe412daec",
+    "thread_id": "702074a0-e951-43fb-8426-44116306f863",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "d0cc0d3c-942c-42df-a198-722850de8185",
+    "thread_id": "00931392-3e8d-4795-b6f9-995719bd7d9f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.1,
+    "distance": 0.0
+  },
+  {
+    "article_id": "50a29496-9dac-4b18-9694-283269be5f9c",
+    "thread_id": "fe5ab47a-8978-49ba-9595-4989d4d28757",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b3c0ccc2-3132-4b77-8653-31164274d6f3",
+    "thread_id": "3f4af0da-42f3-478b-97d6-4ded4afdfcd9",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "bef17e3d-ff0a-45a8-904c-5433f489d7ee",
+    "thread_id": "04f390d4-e9d0-4d7a-9b6d-3a137e632e76",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "151b050e-c1cc-4281-a482-1a948d3afce5",
+    "thread_id": "23a98a5d-24a0-4423-8ca4-99150fca0e2b",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0ac19a4f-8f4f-40c2-ae32-bf4a697ad4de",
+    "thread_id": "769dc0d6-18b4-48e8-a866-631d790bca26",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "29cd8bec-0b76-4845-b34c-1e40c48e1219",
+    "thread_id": "04befe14-9b39-421b-9765-6ec9a1c55a5b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e62c54ce-cc35-4461-ad92-ee441d77ac65",
+    "thread_id": "99876380-cde2-444b-b33f-3d7b50555c5f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "89f27ad3-062f-4885-993a-fff77d06ce63",
+    "thread_id": "2320c070-b981-4ce3-917b-426b4da6d92b",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "18a9f228-4226-487d-bf65-7befb21471e3",
+    "thread_id": "fdf0627d-1847-478a-a87d-e82e867e1135",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "fb92fea1-e06f-4e15-845d-fa19cef3f84a",
+    "thread_id": "9091d1b6-c4c2-448e-9230-aa46ab740566",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e3203207-7012-423c-a68d-5e9c391725d0",
+    "thread_id": "988d8274-4e6b-4ac4-a568-8e669d9dbc3e",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c14e71fd-ec15-4e8e-93ef-3b806973a20d",
+    "thread_id": "68f0ca63-9064-4256-b126-8442a82418b9",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "033f4bd4-4375-45df-86d5-e81a5f587708",
+    "thread_id": "f6e244a9-8a7d-4a8e-84fc-b068b306d1b8",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "cac5ae4a-67ad-4d62-aa88-a4a72765d3ea",
+    "thread_id": "31692f0c-27d3-4c8a-949b-ac97dcec6481",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "fff69866-0b09-41ac-b29c-dfb5067a340d",
+    "thread_id": "64e55271-885d-401e-9f44-66d81d6cb3e7",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6446d2a4-6495-418c-b3da-88e9f495c5c5",
+    "thread_id": "c85ec7f7-c029-4ac7-9e60-c1cd57266436",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1ce52c7f-48f6-491c-82a6-2af6e2f24b16",
+    "thread_id": "c2c015df-10fd-4ceb-bc8b-a9d5152bfb8c",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e8c70aa1-173a-4504-9b91-211b271179a0",
+    "thread_id": "dc04bffb-c502-4393-ae3f-4c164b266046",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3cbbbfe6-1887-4b21-9c38-82917aab3eb9",
+    "thread_id": "8d675665-77d7-40e2-9565-ba4943a092e3",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "af40c942-7c65-4fad-ad88-0e66f6ab7ef4",
+    "thread_id": "0552a3cb-24e6-4a90-8997-763b6dfb2b91",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "25ed15b2-5f7b-4b7e-9ec1-aa995716c789",
+    "thread_id": "aaa43898-bb9d-4169-a67a-2bcb5ca64fde",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "10b368df-6a44-4905-8b81-bfaec1315a20",
+    "thread_id": "415e1e27-db0a-4bcc-bcce-2a5fcba89709",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3b018be6-31ec-41f7-8090-56da2b171e93",
+    "thread_id": "a4a5b414-5dc8-44d0-aaa0-a2271fc24c2f",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ffc9d90a-c97d-4a2e-bde9-5ded475914fe",
+    "thread_id": "fdeddfe3-3f27-43b2-9440-6de92da52fca",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "d67779c2-33a2-4e8e-88cb-70e85847b2f5",
+    "thread_id": "14aaa2a5-1441-4ecc-ae41-20ae3696b689",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e5a74d78-23dd-4bca-a750-526d03cce928",
+    "thread_id": "478307c9-d8b8-4146-ac7d-701e37c0805e",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7a1de408-909c-45a5-bba7-b3bad9e5dc17",
+    "thread_id": "e478892b-2f5e-4d2f-a587-7af71e84f7dc",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9316b12a-7b78-434a-a986-31ebf6e2dfee",
+    "thread_id": "e8bd8ff3-4a8f-4775-96e3-2a6c31733492",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6f282099-edc1-4744-90b2-9d51ce266dd8",
+    "thread_id": "0a2d9f6a-cefb-4a0c-8f8b-b9dec161eda5",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0446db9b-5895-49f3-8d6e-8cf581c6e013",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.9999999403953623,
+    "distance": 5.960463766996327e-08
+  },
+  {
+    "article_id": "50d85b48-f141-4598-8dd6-718b648bc077",
+    "thread_id": "bfb62918-6a5f-42b6-8936-c19e04a9c453",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f48ce146-73ca-4232-975c-b4a862df2db6",
+    "thread_id": "eba35ba3-02ce-4656-916e-900ac1a0f42b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9b7f7553-0814-494c-a326-b3e38bebf30b",
+    "thread_id": "1091a245-0c49-4142-aa0d-80ee26776e55",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0ef1bd90-4641-4d1d-af2e-290bd3c70a4e",
+    "thread_id": "96097214-05a2-4250-9be2-fc26584754e7",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "13b855c2-990a-4c1e-8aec-243c50421e07",
+    "thread_id": "116cd076-d81d-44ec-8f5c-676409309c03",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f3e89c8c-4de7-45f1-bc5b-96a76849f420",
+    "thread_id": "c4726943-eca9-4a50-b362-39f74fa619a5",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "dc8a3bf9-0ec5-4ea8-8f9d-f16770e44e7d",
+    "thread_id": "6e1d38ba-7c00-4635-897c-45e7353f0762",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "912168ec-82e3-4346-8f06-a507353314d0",
+    "thread_id": "ae6ddd22-a4b3-4777-ba09-52931247552f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c3976b51-c1be-432d-bda7-eb7c7e53a85f",
+    "thread_id": "d23ab236-c789-45e8-a0d6-865c0ada37fa",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "bbc08cbb-c8bd-45ef-80ee-f45b63290d37",
+    "thread_id": "c628efdf-d540-46c4-91a5-b1b4828ec4ad",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4eea342c-208c-44c6-8fba-21cf280a0e41",
+    "thread_id": "170974eb-9726-43df-9ced-0ada872baba0",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "aeb3a74e-c5b7-4937-8ec7-be635e639741",
+    "thread_id": "672b7d48-ba27-46df-9306-7cd29c832813",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4b103bc7-c35f-43bf-918a-2b7af56722d1",
+    "thread_id": "d99b3b93-e5f3-4cc9-b528-fb74da211ec6",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a10befca-3c68-4a5b-a4ce-ec3f1ed94b69",
+    "thread_id": "8fbce60b-e70c-4e29-9d5a-86aa746a79f0",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b888d405-4658-4948-b226-f772da7128fa",
+    "thread_id": "f52be524-9967-432e-8028-04d864d737bd",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ec642e7b-3df5-4785-84e9-4c39e5e26f42",
+    "thread_id": "5bd51089-dd92-462a-acad-28af3cf2ec56",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8242ff78-50ce-410b-af54-5d6de61e9ca2",
+    "thread_id": "8c68c3dc-378a-4d36-9e31-ce364dd1bd28",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6442d21d-9ca9-45db-b83c-147bdd05d63a",
+    "thread_id": "fa3bd729-0dae-4e55-ae2c-b3ee9649bf46",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f7c8c2d8-fca6-46c6-841c-b2f74e7b14ef",
+    "thread_id": "976dddbf-e2a4-4334-9441-0658fe9a029c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0f93f23f-b0c1-4593-be3a-53438e1f3cef",
+    "thread_id": "27cd9bb6-88f6-44a8-8bc0-88e334448c1d",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "659b1eaa-67c8-41f8-b0d7-a3f64fcab215",
+    "thread_id": "5a4e681b-d409-4401-a3d7-454e3149379a",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "dff6de99-40d9-49e6-88e3-98c86fcffbce",
+    "thread_id": "5a6873bd-f7c6-4bc5-945b-6f70699f84ad",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b9feaf2b-59ce-4657-8a95-f31e6f01ed78",
+    "thread_id": "8492186b-c226-4c38-a2c6-f03a79b11d63",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "326f2c52-a213-46c3-8f98-58d316419d7d",
+    "thread_id": "f294c5f1-1bcc-4659-b92c-5a5d32cb94e8",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e6e1f472-3b11-4e4d-9d07-2e1c27c91e4a",
+    "thread_id": "7b5b1951-cbb9-4496-adc8-ca5af05b5096",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "2fdc5b01-6d29-4a4c-bf29-52136dfae063",
+    "thread_id": "bccb1a12-67ec-44ec-a687-31e3441c30ee",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ed64285f-d586-4ed1-9351-056340710182",
+    "thread_id": "cf44955a-23f7-451b-9ff7-5dfb3fd704f2",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1a3ed42f-7979-41e1-849e-a03b3b1a5ee1",
+    "thread_id": "b6218f96-4767-4617-a89a-3e4dcc76a952",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8897b0c9-9cb5-4a20-a844-fb2907653aa6",
+    "thread_id": "ed210d35-b659-4818-8880-935455efaf9f",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "73db0a25-2990-4b78-a7a5-97d409f100fd",
+    "thread_id": "6f4ce942-3b31-4891-9746-f6517fc1d864",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "79c05530-8627-4304-b72c-07af0f328db6",
+    "thread_id": "859f8f1c-ddec-4b4b-99e0-1054178c43da",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f67fa4f1-cc7c-422b-ad30-4dbf3747e79b",
+    "thread_id": "08cfaf0e-0810-4e45-afe0-8043a4b2648c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5208401d-7592-4aeb-ad31-5f68e0f16b29",
+    "thread_id": "77fbb0e5-fca6-4643-9527-5f3596019448",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c27d2903-1e6d-413e-ad59-a263a8379cd0",
+    "thread_id": "80bbb4f1-46a8-42da-9958-634979c41447",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "02326444-182a-40b4-957f-3932b7367227",
+    "thread_id": "9f1767ac-8b8a-4280-917f-2cf2c6b0afe9",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "25ad2c22-5bc8-4e2f-afba-9e51e64a5943",
+    "thread_id": "6ad0fe83-eaba-494c-93fb-3522ecb2ec8f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a7336003-5a71-42d7-9873-1196d24e4815",
+    "thread_id": "8a9e99da-895e-4cb0-8f7f-dbfb78d21ab5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8436549715584543,
+    "distance": 0.15634502844154574
+  },
+  {
+    "article_id": "622d56ae-f9c5-4b31-b72d-c5f238301608",
+    "thread_id": "b0dad63e-33c3-45a1-a175-0d7e4281ed9f",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "07031ad4-5f25-444a-a3c2-dc90007fe0ee",
+    "thread_id": "2751a16a-dcd6-40ee-a721-59eed2e9e3df",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a4f7a1aa-6bf9-4862-b8cf-4de515a7465e",
+    "thread_id": "46dc072b-ea50-420d-b1e1-a0db5227686a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "60fa2b76-5527-4ab4-b645-decf6176750c",
+    "thread_id": "c06bc8d0-82a6-432d-92ab-7e06e186ef13",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "648dfe18-a314-42e8-83f9-fdb88bc3147c",
+    "thread_id": "09ac7edd-e75f-476c-8eea-a9362b6a9508",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4400e123-df44-4e85-9b12-6ace6525e940",
+    "thread_id": "eb30a3d6-968d-464f-b23e-f2715a8ab537",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "fea48a75-711c-4015-b9d7-b6807a18c212",
+    "thread_id": "d8310fc8-aaa1-4a11-ae1c-d5aabd884867",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a97ba41f-ec44-400b-bba9-b8b47a6a82a3",
+    "thread_id": "9cba9568-33d0-407d-84c6-04b9f7457f4a",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "337f1519-d096-4ab8-bf3e-614aea558630",
+    "thread_id": "1370fd4b-c553-486c-bec7-a134cabdf6b3",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "caf4ea9f-aed9-427d-8063-1b0239a4e373",
+    "thread_id": "6df06d11-93e9-4a9e-8108-2b056162174a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b66c7799-e6e6-45c1-8eb5-611fd27269ff",
+    "thread_id": "050c247f-a1c1-4170-b4ca-a5843738ab77",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "253c07f8-ce26-4c4d-95f7-0dcb1fab7895",
+    "thread_id": "6a774f9d-3bac-4a14-b2be-ab63aaf27c47",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f3611217-fb84-488f-933c-4e51d62e1409",
+    "thread_id": "d6f13e92-ccf3-4691-813c-7827966e8faa",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "bab5f98c-b4e8-4087-94b6-cac468e5fa2a",
+    "thread_id": "fe9421da-3c1e-4f6a-aee5-0628dd89a01d",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c0eb00c3-df2c-473f-b56e-deb3a8dd8afa",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.869418569241849,
+    "distance": 0.13058143075815098
+  },
+  {
+    "article_id": "b5d50d47-db0c-4f9f-9622-09b5084d0def",
+    "thread_id": "ddcaec54-d6c4-4635-aa3a-49a97dcabe95",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "230f774e-d2d2-41b1-a9c7-71c4cd1cf6c0",
+    "thread_id": "8013a6dc-b9b9-41bb-9271-f70815d9aa4f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9e18f3d5-2879-4cbd-bea3-7a32f79d150c",
+    "thread_id": "a79c202c-ab0c-48fe-96af-b81f02f5012e",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "59ff84bb-7eb5-4c59-ad7b-01e80906400b",
+    "thread_id": "3e49ba99-5b6b-45f5-9a79-299e28876a72",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "81f30a8e-c3b9-4e30-833e-fb7f033483ff",
+    "thread_id": "39f4c1a1-3533-4575-b33c-c45b32450934",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f2f2d9c8-ce8a-4025-83f0-0d7a6c2b7c24",
+    "thread_id": "718e45c3-f7f7-4709-978a-892e892409cb",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4156c429-f92c-4a9c-931a-820c11e2b8eb",
+    "thread_id": "1f4fc747-d8c8-4656-8c9c-d2b03408de8f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "dfca997a-bf84-44e0-a2cb-b1a3f709f78e",
+    "thread_id": "fa3bd729-0dae-4e55-ae2c-b3ee9649bf46",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.2050244341841646
+  },
+  {
+    "article_id": "dab38676-95c6-4592-97e3-0d07fdb37a6b",
+    "thread_id": "97faba29-da52-4a88-9175-b476a8f06219",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4bc3a248-0da8-41af-9612-074791ebda93",
+    "thread_id": "5bd51089-dd92-462a-acad-28af3cf2ec56",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8847914406781545,
+    "distance": 0.11520855932184548
+  },
+  {
+    "article_id": "a91e8500-ff3f-4c5e-95c3-04b1344323e7",
+    "thread_id": "b66d8377-aa45-48ff-a2eb-40fbef5036eb",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b0641cc7-177f-4c97-8402-5420c38e556c",
+    "thread_id": "13222d24-9cf1-41bb-acc2-451d48b03171",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "389b599f-492f-47fc-862b-97528e681779",
+    "thread_id": "cc13c4f4-94bd-448f-a050-6dfa0f97d6b0",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5f93db07-2089-4831-ab31-3d217ceeaf35",
+    "thread_id": "d9b515f8-72cf-4fec-834b-8c6bb7d9bdef",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b62870e7-92f4-463d-873c-b1bd503d420a",
+    "thread_id": "e3f7156d-3c9b-40d0-a4fe-93deaad53397",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7baeb48d-0a1d-49a2-a65a-208888372d61",
+    "thread_id": "98dec18e-7b8c-4b87-8a41-35acf854c351",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b1db7acc-eab9-4c6d-85e8-0365272a7ea4",
+    "thread_id": "61403a1e-273c-4aa4-a4ee-2af3cfbf89f4",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8c5e0638-7595-4c09-9ea1-04e2e4424095",
+    "thread_id": "ede2d740-c209-4bdf-9a88-17bf52257f99",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9d4c8387-5ab2-45d3-a4d2-52e9d894d660",
+    "thread_id": "74d6dd21-7518-4f1b-a4bc-9f2aa8736cf1",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7e268683-2b2e-45df-b7bf-531cfd766af0",
+    "thread_id": "5ca78247-13f0-441c-8f83-2681d251eeb1",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6b9870a1-26f0-4227-bf36-2e08809823dc",
+    "thread_id": "f922fa23-29b2-4d83-9baf-58c7dae4443c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b625b3bf-1b59-42a7-a01f-1e3de4b544ab",
+    "thread_id": "3a65ead3-3154-4579-9b08-6444dba7c1c6",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "be6da440-1572-4954-9be3-b251ad7075d0",
+    "thread_id": "e23d06cd-764d-4ba9-8efd-23c3ffbdc2c2",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "be989bae-fc96-41a8-80b9-f232de0c9039",
+    "thread_id": "747cd999-49b8-4209-9af4-1459a45bb993",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "49d5b4d4-8ea2-4934-bf16-c94898e18311",
+    "thread_id": "55760f37-f401-41d0-a34c-3ec4d0a807da",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.1,
+    "distance": 0.0
+  },
+  {
+    "article_id": "bad5bb38-cea1-43ca-b74a-7d983ad9bd7b",
+    "thread_id": "0215fcbe-714d-466d-8112-fb6cf49eab80",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "106970f0-7ea8-461b-9c27-17b16be265ce",
+    "thread_id": "432334e1-4d9f-444e-9342-6cf2874897a1",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "db98065d-588e-41ae-9661-c70c01a10cca",
+    "thread_id": "5abd1d7e-debb-49b5-ac0d-354d448b7d92",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e0532ee2-f036-479f-9bf3-111f74221909",
+    "thread_id": "1a732392-2250-4ccd-aafe-873a3af2c069",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4d9b13f1-e7d5-4ad0-a433-c56a27ee59d5",
+    "thread_id": "770375ab-f4c5-4cb3-8634-12370f9843c7",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3490618c-fa2e-40e7-9a15-19c949e7eca7",
+    "thread_id": "b0ad0f1f-edb6-41dd-bfba-f6234b7d408e",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "27cd09f6-114e-4364-aa9e-5689f96a0bbb",
+    "thread_id": "8713b5d4-33c2-4a73-b238-120c125a227e",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9392d611-f024-49ce-a852-2f4c8b6fef00",
+    "thread_id": "719db948-dd13-4b95-8354-0e6287d72244",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "096bbfc0-f1cf-447b-a06e-79de360586ed",
+    "thread_id": "3ab4a481-5e63-460a-9181-419d5c410a21",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "38cafa3d-f96e-4ecb-a6c6-145e55d5814d",
+    "thread_id": "16392eef-915f-4d8c-8859-e4dedf30bcbb",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "74d228e5-8a29-4df0-9740-46ada22e84df",
+    "thread_id": "3520e963-3ced-4943-bd8b-e9eeb5acda8f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f4525906-b4d3-4eed-a239-1663a221a1b2",
+    "thread_id": "585b9260-34e4-441c-97ab-2c4e0efa9ebf",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1d129e7f-32f1-4aca-887a-a5d73057a783",
+    "thread_id": "25a39386-efd9-4af8-a176-15eb2a77d363",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "cb29108a-c9e0-4033-b815-faa11cda2700",
+    "thread_id": "3be876fe-7050-4626-91e9-2804ba45a24a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e810bfc8-98fa-4bab-86ff-5e72e0db6700",
+    "thread_id": "8d7158b4-1ed1-4820-bf42-64f9a34f82df",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c907d34a-84b8-4907-b5b4-9ab589bf4233",
+    "thread_id": "a05707fc-1c0d-4311-88dd-a1a8ffe7bc56",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b302a51c-9148-402e-b0b5-026845e07a22",
+    "thread_id": "6e2978fa-12f0-49f9-af39-f2037ca9fad5",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8b6e3623-ca06-4562-986b-16a91cfc2a29",
+    "thread_id": "1012cd1c-192a-4208-bc24-e6991e8a53a6",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3abf4bbb-38d6-43f5-ad0c-44f8f9ac87ac",
+    "thread_id": "66c863f1-009c-4d19-b62f-c40ea0e6d876",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "37b8ad62-f611-4493-a1b7-e4ef6ec3b84e",
+    "thread_id": "734b2f83-5a75-471c-a131-a6528239fcf3",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.24431021613295845
+  },
+  {
+    "article_id": "afb1f22f-1b41-45b6-9689-0802fa56da18",
+    "thread_id": "aa786be4-3fb3-41f3-9e35-69faa5ffe8a2",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "beb6ea35-7155-4010-9c51-4258340af48e",
+    "thread_id": "406a491c-7236-4241-89e8-ed44703538ae",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3b048c4c-1cb4-4cab-a303-3fa089be3a5f",
+    "thread_id": "af0f152b-29ed-49cc-805e-5df2628af109",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "160075a5-cb7b-48bd-a471-968475c851ce",
+    "thread_id": "1fbb287d-0bc7-41eb-8c05-f68a40b25670",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "51b4efcb-c5cf-4697-9b01-184da6172ad7",
+    "thread_id": "341e177c-87df-4161-86d1-1e6bd515e240",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8ab6522f-5c75-48f9-9641-305fc079c533",
+    "thread_id": "a09a609f-83ca-43c2-b85b-8393b387d04b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "69f6628f-7212-43d4-9e4d-8994d9a006f1",
+    "thread_id": "bd80af8e-f220-4669-9e6e-9bc3dcfd44ab",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "30cb7377-18f7-4261-8ecd-70a42c0d8559",
+    "thread_id": "6ed2abbd-fbaa-4f8b-9a1b-e7eb801fd737",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "53409c41-275c-4cb2-86a7-9061df1b1722",
+    "thread_id": "fda68a8a-3240-4131-b5b4-60d8e1082302",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "05cf296e-712f-48be-9f97-beb28f3b11e3",
+    "thread_id": "74920aaa-c44a-4b50-b82a-0d0422792d82",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "2aca3ee1-6c13-4686-b33f-2d8f742645f5",
+    "thread_id": "f9a0510b-b443-4e1d-8be9-b2303bed1a5d",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a065990d-5d8b-40c7-ad04-2177fc5e41d5",
+    "thread_id": "907aad2b-0e67-4909-9ff9-16c396ba4252",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b6646738-820f-4351-a664-1401cae6d241",
+    "thread_id": "113fa05d-f4d2-4d0f-b2c2-a3015353dfe7",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1d4135f4-057b-4640-8967-161fb80f06d2",
+    "thread_id": "fa116bbf-bb18-4717-9977-af6a24d6ba4e",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5a6b4b93-74de-43e4-a21e-2b5686378228",
+    "thread_id": "705d9e4c-e3b2-417d-9d09-79aa17e0d476",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "16dbb9cb-78b5-4129-9b85-3e4f6acf4aed",
+    "thread_id": "c2f12f00-50c6-4d12-b5b0-fbc367fae730",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "07bbb6c3-ad6f-4370-8468-4c682faa3452",
+    "thread_id": "e1a0daf4-65ca-4a75-ac17-25f473ba9dd5",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f0aec3ba-40ba-4d12-badd-0e5472c3fc4b",
+    "thread_id": "d17e13ab-a319-4b48-8351-ec64fc99196f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c1e0be39-3ba4-4ac9-b57c-a4b10fc120c4",
+    "thread_id": "c0c7285f-4912-4b91-a6db-527e68bba699",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "757e6f34-0e7d-45ab-a922-a7d6cb6d953d",
+    "thread_id": "42e5f74d-a2ab-4f73-a60e-99876c9d4e3a",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0b10dddb-50e4-45b8-98ca-bb48fd28e021",
+    "thread_id": "0762b91c-e944-4570-b571-ef85695f7ff7",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4e8c08ab-0f89-48ff-a5c9-58044670beba",
+    "thread_id": "1ed61315-a616-4f48-8a72-fb45a89b6ebe",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "89f51495-829d-42bf-acf8-e99a00b076d8",
+    "thread_id": "8bdf152d-9973-46db-ab1b-354952a8c2f9",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "023fdc95-d971-48d9-b94f-674034cbdc2b",
+    "thread_id": "b7a38322-6e94-443d-89ca-aae7852b9dec",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c11cdd2b-16f7-4ad3-83e2-904c6f0d7ae5",
+    "thread_id": "3777bb3f-7bbd-41ab-8c3d-7b7a6d0aa69f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a480fc69-9218-4f19-a0b0-59a1c5634198",
+    "thread_id": "2a265810-aa1a-4e15-abcb-1abb63526d21",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4006e068-863c-4498-85c2-04f9b91e1ab4",
+    "thread_id": "11e155aa-a1fd-4142-b0de-ff3f8c7d5a79",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.1,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a76f2eff-e0be-4005-8020-be0ff8ff79dc",
+    "thread_id": "de87d7df-dd43-41a7-8274-25dae0839c51",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7651825a-fd39-434e-88ff-226458107790",
+    "thread_id": "37579661-2ba5-4492-acd4-ef586697d46e",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "26e801c4-3b20-4b73-ba4d-9a5a3004fd0d",
+    "thread_id": "cb783e87-011b-4cba-ba20-faf9c0b38fb6",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "affe67e4-e99a-433a-99bf-0e1eda37421f",
+    "thread_id": "6d15d89f-4b71-46b5-b5b5-be2303c76ea9",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3b58a18a-9514-4bd4-b861-2a5053020a7e",
+    "thread_id": "d6c25e3a-917c-4a1d-8c8a-3b01c64ae41a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6f52e68d-8105-46f4-b00d-8054cbb68443",
+    "thread_id": "eeae1662-f0df-4c7e-8bc5-4184dc106d65",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c3ede0c8-8cc0-487a-afd0-a7d540137f39",
+    "thread_id": "aa4c8a23-8ffb-4793-b255-9350feb090ec",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "47464b68-3c4f-469d-9934-612fe3694625",
+    "thread_id": "24c84e1d-c201-49b0-a54b-dcf011e9b1e9",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b0221cb0-aaea-4d25-b9b2-9923875d8daf",
+    "thread_id": "995971f2-7c19-4e2b-8e9e-bb956fdc1033",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "d6c27d5d-12a2-42e8-9bb1-75bf17881b42",
+    "thread_id": "e208a0e3-007b-4cc5-8067-7b6ae0151b38",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ea1508ea-cb08-48e2-8898-3b3a23ceb4a0",
+    "thread_id": "116f8ac4-ff15-4a3f-a91e-f993ea53e5f4",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "96393061-dfb4-438a-b3a1-0dde5969b6b7",
+    "thread_id": "757fffe3-6a90-46ca-8860-a388fc128c4e",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a24a2dd3-789c-4213-a5e8-e23a6cb701b2",
+    "thread_id": "594e05a1-eb2c-4e23-a3e0-85965967c0a7",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b4f55690-56ef-4fed-ab14-d2fa58dd653e",
+    "thread_id": "57644a81-7581-4405-a3dd-1a60b85e8969",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "cafd1f9d-79cc-4d32-975d-cc3db2e82952",
+    "thread_id": "d0858540-3f83-4834-836e-f1a88e6a2d0a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "d0a497a4-41d2-4262-8904-a0836a6d6f0b",
+    "thread_id": "3a65ead3-3154-4579-9b08-6444dba7c1c6",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.9242017314313826,
+    "distance": 0.07579826856861738
+  },
+  {
+    "article_id": "b5fd29ee-2321-48a0-8f4d-74dc480e6ae8",
+    "thread_id": "a5135088-a52e-4927-a3cd-8ae642523edd",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c863f1d7-9531-4035-987c-14bda5789e3a",
+    "thread_id": "859f8f1c-ddec-4b4b-99e0-1054178c43da",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8265824953589614,
+    "distance": 0.17341750464103856
+  },
+  {
+    "article_id": "4c9b3525-e8ba-42dc-93fc-beda9db71d56",
+    "thread_id": "578a7c2e-4846-4430-8753-03b8d40267d5",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6c34fcb9-2dbc-4473-921b-6d50e2f3a930",
+    "thread_id": "af12872c-a400-4ea5-a38a-ad2a5fe8ce09",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "913f63f8-56c5-46ca-9d5c-e8154cbb64df",
+    "thread_id": "dbfbfb55-2da3-482b-a587-eeff81693e13",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6efd7845-35d7-4fbf-924b-b37fd15104f9",
+    "thread_id": "1091a245-0c49-4142-aa0d-80ee26776e55",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8688833298280867,
+    "distance": 0.1311166701719133
+  },
+  {
+    "article_id": "27fcef14-58d3-4e6f-900c-847ed895ed58",
+    "thread_id": "06bc067d-5688-4dcb-86b3-893a2144d324",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "45061841-6859-42fe-9b96-19ebfb85e21b",
+    "thread_id": "fb03be59-dbd8-43fc-ba94-3218c8b91092",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "fc9584f3-bca1-4a2c-80cb-35a40ce7de3e",
+    "thread_id": "ca9d61ad-7e8f-4aa2-b218-218d5be4cb5c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "d39b4db7-98ef-4164-97f3-f52066950be2",
+    "thread_id": "5ac15a82-7808-4df9-8166-9083bc5c3536",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b03c3de9-c237-4af2-be1a-2f01496e269d",
+    "thread_id": "c5125570-f252-4825-8f9f-65ef459b2324",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7233395b-a6cb-403f-8252-c684f70a3505",
+    "thread_id": "89d0d2fa-0fda-4f65-ae75-f1d374cc9d40",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "935a7ada-b1eb-403e-8e42-3793623426c6",
+    "thread_id": "734b2f83-5a75-471c-a131-a6528239fcf3",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8354755934222486,
+    "distance": 0.16452440657775136
+  },
+  {
+    "article_id": "6880ac1a-d1fc-4c5c-9765-6831daf0e958",
+    "thread_id": "9276996f-d12c-4f02-b6e5-7f6073515bca",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "fd85a7a3-2e28-48e9-b2cd-d92f809cabbe",
+    "thread_id": "6ef04a64-0d10-4cda-aacc-1f8c32a4aa25",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "70cfa63b-8fe9-4417-9c2f-70a8e37683f5",
+    "thread_id": "47791c2a-4a16-4e99-a3c4-a97b06f41778",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a1792d40-9872-4fd3-b8b9-f41db941b6fe",
+    "thread_id": "0d38faa0-f793-4e7c-9436-a99b98c27253",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.15,
+    "distance": 0.0
+  },
+  {
+    "article_id": "52683416-46e2-46c3-824e-a3137d39c906",
+    "thread_id": "2d4aae09-c874-4454-9935-d81fc169fdcb",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.15,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c44b77ea-093e-43aa-bf87-bda924cb9af1",
+    "thread_id": "7d49c7f5-c26d-4581-ab39-53aea6db3963",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8f064d24-bd4e-4718-af39-af3490aea7ac",
+    "thread_id": "ba6c6ccb-aa61-44ee-84a9-8a267c1c69fc",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "96421349-4cf1-4525-ae3d-1cefcaef8541",
+    "thread_id": "9ffc3b18-c913-490d-a301-e329e0fe5f27",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "153405d0-73b3-4c4c-ac55-7a4f74b5cb44",
+    "thread_id": "8b911fa3-9537-49fd-89c2-87517f59432b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f892006d-bcd2-48ad-9be8-419538536ddf",
+    "thread_id": "b9f0548e-7e8c-4f96-97ef-2692b4194572",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "bd3d6b4c-da26-4b05-86b5-15f7934c9aee",
+    "thread_id": "0e82e21d-bc0e-44e5-b402-5f58d3a166c5",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "41c9e265-3512-4791-8ce2-146db024875f",
+    "thread_id": "30891557-9e9f-4848-a06b-a6b2724aebdf",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c120b7ab-8225-4d07-a62e-8b6b689d34b5",
+    "thread_id": "46d07961-e80b-4de9-800a-0129226c3c26",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "723c4eb1-da86-4ca5-a787-7e133c94ca64",
+    "thread_id": "30bffbd8-a47d-4964-8554-8277c128c94b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "93f89b94-e5a4-4f96-b95a-c3b8ddbab928",
+    "thread_id": "8f4c896a-1024-451f-8faa-c9bf5e9b4b1a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "2b7d7b5b-5825-407b-a9be-464bbd776c80",
+    "thread_id": "20032054-68e3-4f4d-8ebe-4d8d1cc95e8f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "16c11225-713e-4e57-8a46-5c7032ebc677",
+    "thread_id": "e07ebdfe-7f20-4972-94e5-603ef3a0ccd1",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "59599c97-7f8a-48cd-bd24-dcde1e4b53a5",
+    "thread_id": "0def1dbb-4cce-4e82-adb3-e19c5b8b1a69",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4f74ce27-f562-4fe3-b386-74c5685a461f",
+    "thread_id": "7aacec98-9e02-4129-8997-f65247eb3887",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3f9955a9-86b9-4583-84db-b9d4a9d4028c",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.869418569241849,
+    "distance": 0.13058143075815098
+  },
+  {
+    "article_id": "15c20713-1de7-4679-8e1f-5c5711838096",
+    "thread_id": "db04cc8b-27e5-4c0e-b042-5b478b984275",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ba12eb78-2f72-4c3f-955d-0880ecc71003",
+    "thread_id": "5c2578e9-632f-4128-aa2b-8216f1ccedbe",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e4d11545-a4e3-4c16-acdd-e1a6c2f6b724",
+    "thread_id": "162dfcdb-9de0-4c55-afee-d50eeec9fdcf",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e6286b08-011a-41c6-b3dc-1461442aa428",
+    "thread_id": "09e31ac7-fa8a-4f64-9db8-32c787b25dc9",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "da1b715c-b3a0-4a76-bcda-94dbccb7ccf5",
+    "thread_id": "ccaceecc-8a0f-44a5-90bd-887ddfc21d10",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "dbc0f84b-c4fc-449a-b556-12fa3f9799ef",
+    "thread_id": "b7c61f5f-bd84-4940-a5db-7cae995d75e7",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "fb2b343b-6291-4a0d-83e5-2a970fd3c525",
+    "thread_id": "0966a0b6-4a71-4100-8be2-7a21a6306bc5",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "d85acb25-8c07-4e83-828a-b00c74eececa",
+    "thread_id": "25786c69-836d-4d54-b324-b31db0d8081d",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4c11a15b-785e-497a-96da-7016c062abe4",
+    "thread_id": "ad5c8851-ba1d-4688-8d9a-8444548a74af",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e36beae4-2da2-4411-be8e-12c7cfe8d8ff",
+    "thread_id": "6cbfc9e0-a314-431f-bbc6-1d81163eb187",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "31cd9f49-c49c-40ed-99e1-63a811e17089",
+    "thread_id": "828c4d24-a3d5-404f-aafa-2a43c4f54c60",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "27b3571f-7ee7-430f-8ffe-d2ab00dc0488",
+    "thread_id": "021d815b-adc4-4845-9dbc-cf741cb26dab",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a2f9dcbb-6342-4137-bce1-dd1518529d5e",
+    "thread_id": "c08dd2ab-4c47-4b8b-97c4-20c2cbe4a5a6",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7c8f3815-5a41-4c5d-ab18-0814ad09fe7f",
+    "thread_id": "a6706619-c5fe-4ba6-b5fb-ec353f3e1dd2",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "aeaaf081-5700-421b-82ed-ff69d7582230",
+    "thread_id": "e3923a3d-4e28-4c81-9ca6-8a5e30a704fe",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6f58a76a-88df-40b9-b76e-d00544e9a401",
+    "thread_id": "6ed91f70-6077-481c-85e6-d230b24d1c97",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "58bf84e5-06d5-4c08-9819-055ce50855ad",
+    "thread_id": "06ac29b9-2470-40e4-ab08-173ccca7f45b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e1679007-9cab-428b-88fd-ec5918740bf9",
+    "thread_id": "98d15199-0cd9-45e7-b665-52c05bf0b922",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9676d0ae-4fce-43da-bdda-36787c917602",
+    "thread_id": "7335d7e9-39e7-4ad6-aefe-4aedd55cd04f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5a4b9a5d-d075-483f-8a13-749c764b7fff",
+    "thread_id": "af0f152b-29ed-49cc-805e-5df2628af109",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.30868204728578463
+  },
+  {
+    "article_id": "cdc122f2-64d3-4285-9673-51a0de64f7aa",
+    "thread_id": "c6ec7cee-7333-4428-8c47-e5eef2ef8b8d",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e1aaa60f-08e0-4b61-8ba9-8bf75a783a29",
+    "thread_id": "b88a7fcb-623f-4783-8da8-49cd6ed7cb29",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "220de161-fb9e-492d-9939-5f2af95800c1",
+    "thread_id": "bfc6b246-a249-4813-b260-ee3cc3a5e14b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "009d6971-eaa3-4a54-a8d1-da3dadd5a834",
+    "thread_id": "62118520-c693-4370-b51e-a60d49f79b8a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ecd5c397-f621-4f8e-8698-aace64c5733d",
+    "thread_id": "3140ca02-81e1-456d-9b6c-730a2a83c778",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0eca7e37-4647-4f3b-987e-1e216ed5626c",
+    "thread_id": "76cf386b-b6ee-4974-a551-90f6b4577a02",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5cdd6b63-216e-45ee-a49f-09648366bf6c",
+    "thread_id": "6ef04a64-0d10-4cda-aacc-1f8c32a4aa25",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.19572713451496204
+  },
+  {
+    "article_id": "e9dbeda4-1963-4860-88e4-b9e8fdf5460b",
+    "thread_id": "841eeb8e-d94f-4a25-ab7a-7ae86ebe11b3",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b6b897c0-c39f-4435-8f48-17aa39e2d794",
+    "thread_id": "149201d6-06ea-4237-b1df-06454840100c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c4232bba-03b3-4d44-bcdc-fa5e46129dcd",
+    "thread_id": "ba0762ed-460e-4e62-9465-ea17f8fece93",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8091b7ab-7c3e-444a-a197-c4ded00835ca",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.9999999403953623,
+    "distance": 5.960463766996327e-08
+  },
+  {
+    "article_id": "5a915487-9207-4918-bf72-595f3913a6ab",
+    "thread_id": "c61b528e-3e65-416a-b6ad-7d377f5d60d9",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8092f14a-97b9-44bc-95e6-9516c23f9135",
+    "thread_id": "fe5ab47a-8978-49ba-9595-4989d4d28757",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.9899061611210852,
+    "distance": 0.010093838878914796
+  },
+  {
+    "article_id": "07bef3c9-2f21-48f5-a9b8-8d23ae337a2f",
+    "thread_id": "4f386976-a57e-46e8-809d-95f4860eec40",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4e819666-f30d-4c85-8d4e-5e5015929816",
+    "thread_id": "bd696b29-d088-45c9-a728-63abc7d7eba7",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "92764446-1a71-493f-ab16-502ab46a3bf5",
+    "thread_id": "9ebf1239-989b-43cc-a8ec-5d0bbfb7ed93",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a22d173d-376e-4e42-a06e-23e1310aa58b",
+    "thread_id": "805442e7-41d9-46cc-a6d1-de599b26d830",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "09ade70c-2fee-415c-8d77-6d91393ebb12",
+    "thread_id": "fd2ce454-2718-4a5f-bdcd-90e344679ff3",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "95c3e67b-9367-4fe6-943b-5174566a1670",
+    "thread_id": "bbc1e04a-34d8-43e0-ad14-bb5c46b1a991",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5788984b-d97b-46ac-a413-4fc5610317a5",
+    "thread_id": "da151893-875a-4894-8b11-bb6736b3a0b8",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a71d588a-b6cf-446a-ae7c-2f5d14413ffb",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.869418569241849,
+    "distance": 0.13058143075815098
+  },
+  {
+    "article_id": "f07d4913-6f26-4bbd-afc7-a1c6dffd2285",
+    "thread_id": "29acc98a-3a3c-4bc3-98ff-9de5ffaa603c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "46047984-cf3f-41ec-810d-fb26015216b3",
+    "thread_id": "585b9260-34e4-441c-97ab-2c4e0efa9ebf",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8648453693137987,
+    "distance": 0.13515463068620126
+  },
+  {
+    "article_id": "0cddab74-13f3-4180-bcc3-c294a7de345b",
+    "thread_id": "c46e0cbe-99e3-4a77-9d9b-da266b583eb1",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "390ff102-de78-4961-b9f3-e4222c5642b6",
+    "thread_id": "fe5ab47a-8978-49ba-9595-4989d4d28757",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.9918696579894326,
+    "distance": 0.008130342010567393
+  },
+  {
+    "article_id": "51e198b0-6a65-4b55-9c69-5ca453b6b4ed",
+    "thread_id": "fe5ab47a-8978-49ba-9595-4989d4d28757",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.995351582627046,
+    "distance": 0.004648417372953961
+  },
+  {
+    "article_id": "49a5d2e3-8156-4f9c-9182-a16622ddccb0",
+    "thread_id": "5fec12d8-0d0e-458a-8d2e-f2a59efb3255",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a4f1b2de-c608-41f4-81d3-258933c065b5",
+    "thread_id": "75a910f9-2816-433f-8c16-60fe82c62030",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "d02be3bb-7e78-49bb-af6d-7e4a1df9016b",
+    "thread_id": "8a970721-d7fc-4658-b9c5-6333fc1bc2b5",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c75430a8-9107-4b6b-9e34-e668fd1013b7",
+    "thread_id": "ef88bd6e-f212-46da-86cf-092c47421077",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.1,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a80980cb-2ca3-427f-a703-8084f48eef99",
+    "thread_id": "e3b6083e-7dbd-456a-a984-17b0dcffbb27",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "707adb8b-5e3b-4e4d-833f-3972710af4f8",
+    "thread_id": "03e282c3-aad4-497b-aa7f-39398f884d1b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1d2b0f12-032b-43e9-a8b9-5b633adf32f1",
+    "thread_id": "8f4b2141-d840-49aa-86a2-66fc09212116",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "95439f76-c023-48a6-a67e-5b17ae68ad99",
+    "thread_id": "0f5d7804-41c5-49c5-8fdd-108855eb3e07",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b8ab87ff-9bbc-4084-a053-3f222a5c3081",
+    "thread_id": "7f1e08f5-c351-44a2-b23f-42a12a02cb53",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6bd452f4-3d21-43e5-b25d-c5732178d674",
+    "thread_id": "79633d42-dbb9-4949-81a1-a43c99ee292f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8f32f539-c862-4342-817b-4f03d6c153f3",
+    "thread_id": "35a94399-1c5d-4bc7-94b2-ba6cd920750d",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "eef332cc-f564-4fb6-96fb-12c0d44b1c8b",
+    "thread_id": "2bc7d99a-2e6a-41ba-89e4-945f0b1f0cc8",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "aa8448cb-8cfb-452c-adec-432a3e9837b9",
+    "thread_id": "bca05838-899e-4820-a667-7e4d1a4d89b5",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0d53b6d5-ef67-4e89-bca8-f8033f8c2816",
+    "thread_id": "ead79585-6e21-4a00-9978-b13378b4e4d2",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6f6c7655-ec27-4176-8e42-8b1ae4ce2708",
+    "thread_id": "20827004-d759-4f2f-910e-e33ddbe4f636",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6f1a86c4-250d-4d0c-806b-70f896dc80b2",
+    "thread_id": "6ef24ad0-32c4-4f54-a86f-0392b39855b8",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0fb36c83-6158-41ac-be5c-6290c1b7dbd6",
+    "thread_id": "1bf857cd-b2cf-45f0-bf54-de52acd6d56c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "28efe911-7655-401f-abca-e89442095ab2",
+    "thread_id": "890a101e-4fe1-4676-8acb-a73ac3afc5f4",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "236046cc-410f-4939-a2f5-bf6bf3f28c88",
+    "thread_id": "d68de0a5-6a40-455c-906c-c9f99b0c3467",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "744ec0bd-d039-4645-951c-efd6afde4403",
+    "thread_id": "f2eb16b4-3275-4c07-8eb1-9d720061b861",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "2482977f-b9d7-4c38-b17b-b35a0e9ffa36",
+    "thread_id": "daa32511-1b82-4d22-9429-5ae9086daf05",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.65,
+    "distance": 0.0
+  },
+  {
+    "article_id": "21d34a67-84cc-4d4b-92fb-81c616b88088",
+    "thread_id": "ce9e05a7-43e3-4058-b98c-2f3b3d18adf2",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3ea00ba3-9bb0-48eb-8d5f-5e970e4a158b",
+    "thread_id": "484ea831-bc5b-4c22-bc0d-39aedb85432f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "2d2d215f-b3b4-490d-92d1-a940c68b6908",
+    "thread_id": "07133e7e-a509-4920-9789-c87cd7c2ac09",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ee713bbd-b521-4ea3-9c71-db54d66905bd",
+    "thread_id": "28f26283-5ad3-4143-a021-dd5107ad1d30",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ef4d3d14-26c0-4a24-af6b-ae3148b8747a",
+    "thread_id": "753a1991-8b4e-46be-be94-bc03d27f5f8a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.3,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ddb4485e-bac0-487b-b634-cb96f5fea0f0",
+    "thread_id": "b01a0f19-8c2a-4c1e-bd4f-a01b70561b6a",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b8eaf938-cd6b-4262-9fb5-07e64104a06d",
+    "thread_id": "3bd9d84c-b6b2-4397-ba00-7ef1540f0446",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a3a5b2fb-a234-4545-8352-1be570ce7704",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8694186884511315,
+    "distance": 0.13058131154886854
+  },
+  {
+    "article_id": "277fa78d-82f4-4c73-bbb2-f72e438802a8",
+    "thread_id": "d8310fc8-aaa1-4a11-ae1c-d5aabd884867",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.9,
+    "distance": 0.34449509713082815
+  },
+  {
+    "article_id": "61c37ff8-16fb-4ae8-864e-15a82090995f",
+    "thread_id": "348b5f35-a97e-46e5-a585-147141a173b7",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "676e64ec-c805-42cc-af59-7a1501271594",
+    "thread_id": "4c01188a-b493-42f4-b1a1-4e54d73a2114",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "bd809a38-3147-4d1d-8139-26a7623f388c",
+    "thread_id": "46d07961-e80b-4de9-800a-0129226c3c26",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.27222642037553024
+  },
+  {
+    "article_id": "6b0f0c5c-49a6-48d7-97e0-1f58236e4507",
+    "thread_id": "00cc8733-2855-4748-b461-67608a44a5a2",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "265f50e0-94a7-43e3-87eb-411439f21776",
+    "thread_id": "3f4af0da-42f3-478b-97d6-4ded4afdfcd9",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8445469644395703,
+    "distance": 0.15545303556042966
+  },
+  {
+    "article_id": "ae97a45f-049d-4ffa-be84-dbf8acd13114",
+    "thread_id": "2d778206-40bb-4954-9009-d1e6cecbed74",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e94505d6-f40d-4239-be02-32903dfb2bd1",
+    "thread_id": "3cde68bb-d9d1-4df1-8cfe-edc0caae6413",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7976ca14-9974-4f48-99b6-5fb8153fccec",
+    "thread_id": "15500de1-f75f-4ca5-96a3-3e540cb94fe4",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "620282e1-99ce-400c-8f53-221ac3121259",
+    "thread_id": "46d07961-e80b-4de9-800a-0129226c3c26",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.2701219272322828
+  },
+  {
+    "article_id": "e2161860-41ea-4efc-a47b-8831e5ef4c63",
+    "thread_id": "e478892b-2f5e-4d2f-a587-7af71e84f7dc",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.20269464278471216
+  },
+  {
+    "article_id": "636578b5-a4eb-462d-89e3-b03aa4b28afb",
+    "thread_id": "bd80af8e-f220-4669-9e6e-9bc3dcfd44ab",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.28640959939899324
+  },
+  {
+    "article_id": "b42ad994-ae81-4b08-bc63-e01d7102a3f1",
+    "thread_id": "cc13c4f4-94bd-448f-a050-6dfa0f97d6b0",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.2813996626197961
+  },
+  {
+    "article_id": "fa4221bc-a6da-4a2f-a4db-2eff0fc3436c",
+    "thread_id": "db04cc8b-27e5-4c0e-b042-5b478b984275",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.30084019899368286
+  },
+  {
+    "article_id": "5a8a7db8-e00b-4da8-b5f5-6d8b0bf303df",
+    "thread_id": "2d748cde-9ec0-4ba0-ade9-05e5b6404786",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "174f291e-1d00-48c6-b1c2-e8fd10f41b14",
+    "thread_id": "415e1e27-db0a-4bcc-bcce-2a5fcba89709",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.2523189187049866
+  },
+  {
+    "article_id": "2ca8466a-850b-4825-8e49-53487f9e651b",
+    "thread_id": "d14bc56e-92dd-456d-b7e3-13f26d8037ec",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b045ef46-9e08-4f3e-b0bd-cea3d3167566",
+    "thread_id": "eb71decd-7d70-41bd-b1ce-2d4595c1f52f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9b4ba1cb-efdb-4a4a-8361-f94dd7277b6b",
+    "thread_id": "528974d9-8e9b-487b-b3e3-4df10ce504c4",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b39c694e-f070-48ca-b464-d481ca03e42f",
+    "thread_id": "871b9430-8607-4403-8da9-7f5686b8f33b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6e943723-6d85-4321-beab-efbd6efc5206",
+    "thread_id": "7d5e9e76-1d92-4d07-be03-9c8ec77c383d",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ee1cb4c8-3cf3-45fa-9883-6cdb0036ed26",
+    "thread_id": "ec959b2f-1973-41c0-a869-353f243e509c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "2644fde4-556c-4b4a-ac7d-a427cd59b92e",
+    "thread_id": "fe5ab47a-8978-49ba-9595-4989d4d28757",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.9918696579894326,
+    "distance": 0.008130342010567393
+  },
+  {
+    "article_id": "3a69c6ae-06a5-4578-9e6c-915306c06a79",
+    "thread_id": "6ea0d573-ffb2-49e9-8777-0637f9380a21",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8f1e3970-109b-4dfe-b1e5-cdadb07a9d2b",
+    "thread_id": "dbd492f7-caf2-4330-8b5c-e455ee62d46a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1e82bd95-58b7-48f6-82f8-a459cc81d26c",
+    "thread_id": "42e5f74d-a2ab-4f73-a60e-99876c9d4e3a",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.2861073868146623
+  },
+  {
+    "article_id": "93daa299-7ccb-492e-8ef6-14fc586067f6",
+    "thread_id": "6b6fca67-95c3-4f89-97e3-a1e24555a7e3",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "49f7fa74-7ea4-421f-9ea1-a92d53e974b1",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.869418569241849,
+    "distance": 0.13058143075815098
+  },
+  {
+    "article_id": "01d49381-76c0-4455-9918-137ad1d6b810",
+    "thread_id": "de88c644-ecdb-4d78-a849-ce6885e79106",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3acf61b4-3757-4852-bf72-718d8c1595da",
+    "thread_id": "3b6c1cb9-9813-4e80-a2b4-17f3ff46c9e2",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "54fa9596-14e4-4a58-b738-0318146be9b8",
+    "thread_id": "149201d6-06ea-4237-b1df-06454840100c",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.30728779158853836
+  },
+  {
+    "article_id": "68d04a22-5954-4565-a8d4-74253deae05a",
+    "thread_id": "b7c455d9-a417-4cb5-abee-ae5b62bf7fda",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "87ed693f-aac2-4404-96e8-5afdb71544d4",
+    "thread_id": "df9bd5f0-d668-40b9-8dc2-fafb6d347d85",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1dfaa4eb-98f6-4920-9072-1230a28cc615",
+    "thread_id": "0d52e225-4a67-4395-a65a-e3b3b7ce224f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "cf94bbf9-f07f-44be-a052-d5a9b9bc28a1",
+    "thread_id": "bd80af8e-f220-4669-9e6e-9bc3dcfd44ab",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.18091181744196205
+  },
+  {
+    "article_id": "9c0a2a8a-0b4e-406f-af34-57e2cd150b9b",
+    "thread_id": "97faba29-da52-4a88-9175-b476a8f06219",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.2472327351570076
+  },
+  {
+    "article_id": "522d4575-6f34-473f-b0de-88264e9112c7",
+    "thread_id": "fe9421da-3c1e-4f6a-aee5-0628dd89a01d",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.22186478637036566
+  },
+  {
+    "article_id": "c9ad6e1d-2d50-480f-be65-02b87c8c9d43",
+    "thread_id": "b61845ff-1ef0-48bd-ab74-59a569fd7893",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "2c7ec811-f455-4405-88cb-e7fa2c0e20b0",
+    "thread_id": "5c9b7836-d481-419a-b1c2-33a79e75e2a6",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "eb284519-a385-4496-8cfb-7d7072ce62cc",
+    "thread_id": "64ead094-d8ab-4654-8830-9e485e0578a6",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7e78642b-e510-4530-bb6f-911d044f1239",
+    "thread_id": "e23d06cd-764d-4ba9-8efd-23c3ffbdc2c2",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.9115824699401855,
+    "distance": 0.08841753005981445
+  },
+  {
+    "article_id": "e990e123-7ba4-4cc8-b8a9-76e69fe57dbb",
+    "thread_id": "0326333d-86ad-49e6-b9f4-436f91039b03",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ccf531ee-ca0d-4d90-aeb4-8baf9d203c70",
+    "thread_id": "eb71decd-7d70-41bd-b1ce-2d4595c1f52f",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8363100983911709,
+    "distance": 0.16368990160882912
+  },
+  {
+    "article_id": "944bacc0-77ae-48f9-91bc-bb780fcc0c73",
+    "thread_id": "cbfea6ee-d771-4e67-9341-67d052c6cfce",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "30b45a09-36a5-455d-9ade-1d713bd349f0",
+    "thread_id": "1e20b01f-bffe-43b2-913b-af694adef26d",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a7b532ff-e504-4834-abac-945d0e9549f4",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.9999999403953623,
+    "distance": 5.960463766996327e-08
+  },
+  {
+    "article_id": "2f47c327-d9cc-45b9-bd41-eab4af34be08",
+    "thread_id": "2b64ce06-d864-4e48-9193-af01ebcd95f7",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "862d24b3-24c0-4057-8bfe-0680f5b97c9b",
+    "thread_id": "3f4af0da-42f3-478b-97d6-4ded4afdfcd9",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.3574511025816848
+  },
+  {
+    "article_id": "241d0569-50ea-4ec0-9eba-729611aefb63",
+    "thread_id": "c1ec8bb3-3fca-45e1-9d80-1e1ff095de4a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.65,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5ae12be6-7fc9-4b46-845e-cf3959f6044b",
+    "thread_id": "3d0c9754-14b0-4cee-b4a5-a27a78025eb9",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f0f95678-8683-4951-b580-a6f50c98d80a",
+    "thread_id": "3c46dbb4-574b-4104-af43-552f8feb027b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "49de4932-a149-4fe0-bd41-18d945b85b0e",
+    "thread_id": "fe5ab47a-8978-49ba-9595-4989d4d28757",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c0db977a-c734-4564-8c32-209b59b483e1",
+    "thread_id": "7732aeda-486f-4fe5-b0aa-caf3ed6ea56d",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b1dbc471-f5d1-4f4a-b63a-07498ed517b6",
+    "thread_id": "1fc61ae4-c6ef-4a18-8036-5856094e90f0",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ec36de70-a01b-4c11-a737-43b3d01f3283",
+    "thread_id": "2d748cde-9ec0-4ba0-ade9-05e5b6404786",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.1846353035730427
+  },
+  {
+    "article_id": "fc31d5cd-9e56-4ae9-9fbf-49b42828f2e1",
+    "thread_id": "93e9b3e4-c231-4b9f-9027-34e3ece0e54e",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "79a9df70-f67c-4687-ab46-5c8342855432",
+    "thread_id": "db04cc8b-27e5-4c0e-b042-5b478b984275",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.19802699083170228
+  },
+  {
+    "article_id": "23b44619-91fb-4350-860e-6529cb33fd43",
+    "thread_id": "1795da2d-090e-45ce-bb07-7b7510d8bcba",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "91ca7f4a-77e5-4860-a08b-c2116e36fab0",
+    "thread_id": "20755959-62b1-403a-b9a0-2de739a2bca3",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ec282b04-94d0-4f9a-b8b2-406af3633fa6",
+    "thread_id": "261f5451-3a76-4798-852d-2d9f5397f269",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b3ff55a4-e552-463a-b1cb-0d129e83abcc",
+    "thread_id": "1091a245-0c49-4142-aa0d-80ee26776e55",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8854680188697609,
+    "distance": 0.1145319811302391
+  },
+  {
+    "article_id": "cac069c3-4c1f-444c-9a20-2684e9fdc3f1",
+    "thread_id": "cc1319a7-791e-4e0d-a211-443b641d8eef",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.3,
+    "distance": 0.0
+  },
+  {
+    "article_id": "88504eb0-b45a-43c5-9469-f06df9c62f47",
+    "thread_id": "228f49db-361a-47bb-b3ad-856a941b7a9f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.65,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5a14b26a-26f7-4790-99ea-a7b898041321",
+    "thread_id": "0bf5b9b6-940b-4129-9023-fd32f731c90b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f92abb39-8844-4e03-819d-2fd3132fc714",
+    "thread_id": "412e59bc-309d-4c9d-8326-4559fdc66b3f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1c647a1d-c076-4acb-90a0-8ff29fe30985",
+    "thread_id": "6854917e-b561-4f45-a2ae-033f1304ce73",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.65,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c4c98212-37b0-4d41-b77b-ce0bef91f453",
+    "thread_id": "6ad0fe83-eaba-494c-93fb-3522ecb2ec8f",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.18039188326572986
+  },
+  {
+    "article_id": "48565477-1cfb-4760-b698-d7c8fee2c0fc",
+    "thread_id": "9af2a2e5-889e-4eb4-b0fd-a3692a8a4b44",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.65,
+    "distance": 0.0
+  },
+  {
+    "article_id": "88b1b3fd-fd9d-4ada-bc92-0be7f6860efd",
+    "thread_id": "4205802a-4b86-46e8-be82-f0a94f3a8d52",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "2b67baf3-ff13-45a4-b2f3-1fadec84cd56",
+    "thread_id": "098ed892-4509-4b0b-9f12-369b1d222038",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "55e33629-6c42-489b-9498-707d2e20113c",
+    "thread_id": "fe5ab47a-8978-49ba-9595-4989d4d28757",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.9932991562276832,
+    "distance": 0.0067008437723168335
+  },
+  {
+    "article_id": "8302d731-0e37-4efb-a5b5-fe4e93a13d03",
+    "thread_id": "849235da-e3eb-4738-9bc4-3b66713db1ae",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.20539910825485497
+  },
+  {
+    "article_id": "e6fa17e9-37c5-473e-b7f3-6f7444e0d362",
+    "thread_id": "eb0270bd-35c8-4201-a839-fac599b27aff",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8215aa82-1473-4302-9b60-bae5ec149cf1",
+    "thread_id": "9091d1b6-c4c2-448e-9230-aa46ab740566",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8829653665752479,
+    "distance": 0.11703463342475207
+  },
+  {
+    "article_id": "cb0648be-8ce9-4969-a02f-a0aa659e26f0",
+    "thread_id": "aec6879a-2c6e-4ebb-a6f8-11de07379deb",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5af42255-b879-43fb-a696-d7ecdb91c122",
+    "thread_id": "8a9e99da-895e-4cb0-8f7f-dbfb78d21ab5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8633588050840539,
+    "distance": 0.13664119491594606
+  },
+  {
+    "article_id": "402aa337-7221-4b2a-a951-42a40cf01eee",
+    "thread_id": "42136918-ece5-490a-a32b-c190c8d2eb93",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.3,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f4c5879d-3327-4f38-9629-897ae9ab5ed9",
+    "thread_id": "8cdebcc8-792c-4f11-b496-44dba7e6de1e",
+    "spawned_new": true,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "55f9b071-c6b4-4c0f-a278-6ed455241aa7",
+    "thread_id": "acd9b3e7-8fca-4af5-bcb8-5dfa82978cbe",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b8662658-eb0e-49e6-af84-29863fafd252",
+    "thread_id": "1add3d3e-053b-4e15-b21c-63093ca9be6a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "4421c41d-2f68-4a65-8ae3-6d073e59f141",
+    "thread_id": "e12ab571-229e-49d2-a2ed-48cc0a0a500a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "d6e6b549-11d3-46dd-9dd6-9e92e9287a93",
+    "thread_id": "b7c61f5f-bd84-4940-a5db-7cae995d75e7",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8207084047372231,
+    "distance": 0.17929159526277694
+  },
+  {
+    "article_id": "d32f99be-0561-49ec-a8a8-7395535eb44a",
+    "thread_id": "4f51e556-3198-483c-a824-9fc3e233924f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3ae54677-6d4f-4ae8-b972-dda2f9c720ca",
+    "thread_id": "5edf9500-d3f6-4ab0-a4f7-a2d59b06fbcb",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "52be2f18-e0d7-4849-93a0-07177f711806",
+    "thread_id": "92b3743e-698a-4989-a67c-d5e0e17d6f0f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1dad6553-524b-441f-81dd-6f96ad20dc6c",
+    "thread_id": "66d810fc-1228-426c-ba51-69c93123a764",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "20e8862a-58d0-4ed0-89ee-9f2f607536be",
+    "thread_id": "594e05a1-eb2c-4e23-a3e0-85965967c0a7",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.318670137245603
+  },
+  {
+    "article_id": "8a5bc0e5-c985-4b30-8cf8-8433a70a284a",
+    "thread_id": "0c71d200-1b5c-4efb-bfb5-5a0200803a32",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0e4a4184-18c3-4415-8fa4-1ee3ea89a97d",
+    "thread_id": "6047b54a-dada-4443-83d5-11f7f5656a9a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ad4f3fc1-de67-463e-adfa-72c03501621b",
+    "thread_id": "f12873b5-3f9c-4276-938c-ed97459f807f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5cf3e7d3-b104-4ad5-b4af-a6a968463f88",
+    "thread_id": "96097214-05a2-4250-9be2-fc26584754e7",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.926240233368881,
+    "distance": 0.07375976663111905
+  },
+  {
+    "article_id": "794ded58-fcf3-4103-a7c6-e7e9f99f10bb",
+    "thread_id": "29585d33-c082-4963-a090-4af8ac258272",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "56b16d08-a4e1-4627-b1b0-0d0d74816c40",
+    "thread_id": "5ff74c18-49e7-46ff-b397-780e1b6c97a6",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a36fa371-b221-4c99-8196-7fbdcad888b3",
+    "thread_id": "f9a0510b-b443-4e1d-8be9-b2303bed1a5d",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8310641251726061,
+    "distance": 0.16893587482739392
+  },
+  {
+    "article_id": "e12f2371-e629-4079-bc11-87ff2c298cf9",
+    "thread_id": "e9e6ae35-92d8-4cf5-9bd8-651b7034ca60",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "d1f19b54-e541-48d3-9872-3b9b8b0e5271",
+    "thread_id": "3593cb5c-d1a0-4afe-a9e2-aa5508d5c620",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6fbffe62-fe59-43e2-bacf-336a4dc80452",
+    "thread_id": "794385ef-cd35-41ef-8d87-b51a62710e9d",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1f336b4d-c00f-4da1-9053-7e1e4e8fad88",
+    "thread_id": "e4a46156-0aa3-4d93-9f8f-078b0ac1d083",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e8ce6da5-9da8-406c-b4ec-a1bf48082140",
+    "thread_id": "9091d1b6-c4c2-448e-9230-aa46ab740566",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8473133283275465,
+    "distance": 0.15268667167245353
+  },
+  {
+    "article_id": "09186a5f-bb12-4796-a0ec-37cb16246177",
+    "thread_id": "cc13c4f4-94bd-448f-a050-6dfa0f97d6b0",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8790323852050882,
+    "distance": 0.1209676147949118
+  },
+  {
+    "article_id": "46d0598c-9f03-4533-b0cb-2abaae654f76",
+    "thread_id": "45dcfd6c-b122-4e0e-b974-a5ac0a7442d8",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "bc7ff159-24f4-4477-afa6-82710d4f0d9d",
+    "thread_id": "b2001dab-f62e-4f43-ae46-5fb767440a29",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.3,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ac85449a-eed6-457d-97ca-a66502500b20",
+    "thread_id": "052430ff-c988-4205-8fb0-0423f116e3c5",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.32103212821100136
+  },
+  {
+    "article_id": "e9734170-f2db-4ae1-9b92-a633e8f22c2f",
+    "thread_id": "c1332207-6694-493e-ab39-934ac0233e6a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.85,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7d9478b3-12e9-4546-9002-4f308bfae884",
+    "thread_id": "97eebb6f-5d5a-4eef-b679-5e685e4b4444",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "fedacc16-217e-4ed7-8849-d3cc1a5bab64",
+    "thread_id": "61386ab5-51d6-4d97-8eb7-c3283762d4de",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9fd25403-383f-4b01-858c-4483b3dae313",
+    "thread_id": "815a8841-587a-429e-8c94-2d117eb55c94",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5c473752-4756-4fa2-a4e9-f282e4e4c4de",
+    "thread_id": "cf8b6965-a8dc-4463-8ba8-25ced7f239af",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "732d8e4c-84b2-469d-84e1-bf03418f86f0",
+    "thread_id": "a05707fc-1c0d-4311-88dd-a1a8ffe7bc56",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.3199378252029419
+  },
+  {
+    "article_id": "315c383d-6bdf-45b2-86dc-aa2a85a6e020",
+    "thread_id": "61291a10-b07d-474f-8131-44acfe7f3103",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.1,
+    "distance": 0.0
+  },
+  {
+    "article_id": "879f5c55-1873-4a89-a4de-bebfc34421a8",
+    "thread_id": "c1141e09-fcf2-4b03-9ddf-96eae990d91d",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6090b38a-d31a-41a7-aa23-95a6e4c877af",
+    "thread_id": "d8460d0e-464d-497e-8be7-75f3e9d7fcc3",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "be2d3661-7a1e-47fa-8a81-dae164796eab",
+    "thread_id": "5810bf89-d272-439b-a9a1-93a7c0af5b9b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ed0dace0-eeb2-4f8b-8c1c-92fe2891b66d",
+    "thread_id": "0e96ac42-d827-47ef-a2f4-54c2321e4fcc",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b94748a5-239c-4617-a79c-fe2e5e144045",
+    "thread_id": "edf49c9f-75a1-479a-984a-1f39ef7d9d69",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "fa5bc7d5-0269-4b98-b5b6-8d0c250f9f5e",
+    "thread_id": "cf44955a-23f7-451b-9ff7-5dfb3fd704f2",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.3603356480598404
+  },
+  {
+    "article_id": "16df94bb-8fd8-49e8-bd2f-7f30e591b02e",
+    "thread_id": "3f4af0da-42f3-478b-97d6-4ded4afdfcd9",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8572667326172291,
+    "distance": 0.14273326738277092
+  },
+  {
+    "article_id": "271e2cd0-5202-4186-8fb1-61dcc4e679ba",
+    "thread_id": "bd24dfbf-28b7-41c5-9d58-48e7773fb621",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f6640f0d-8db5-4572-992a-492d1054b8a9",
+    "thread_id": "25a39386-efd9-4af8-a176-15eb2a77d363",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.19935420740023413
+  },
+  {
+    "article_id": "41ded5fd-b505-448a-bd12-f5a20816b595",
+    "thread_id": "d1ac96b5-9fa1-4774-a050-5b2f014a8ad5",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.65,
+    "distance": 0.0
+  },
+  {
+    "article_id": "704a6946-3c88-4479-8853-c22770f7ea04",
+    "thread_id": "4575de56-2cb5-413d-a830-38ccc0aa4b6a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c5862254-b938-45fe-9122-f84228aab527",
+    "thread_id": "405220cc-02bc-4b91-8912-d3831865f2a0",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "d1b53678-2dba-4c21-9d7f-56793c3a13cf",
+    "thread_id": "77beda6c-6175-45bc-9425-82045172d5cb",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9c402f06-fe7a-40c5-9687-ddd5253b8033",
+    "thread_id": "dc8f8df8-1d67-49af-a83e-ae449f3fbc65",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "eb0194c8-7e5e-44dc-bfa9-c141b485fc1c",
+    "thread_id": "91000a24-df1a-44ad-82d6-511ca7a34f2a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "26589483-d9d4-49e5-8482-8f83fcc40da0",
+    "thread_id": "7caad314-5d1e-400d-b0ce-2030d23c9d33",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "fc865792-fc81-4659-bf5b-63aaeea2c890",
+    "thread_id": "5fec12d8-0d0e-458a-8d2e-f2a59efb3255",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.18803857457982343
+  },
+  {
+    "article_id": "4ac33b27-bf7e-43df-8a33-09344956fb55",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.869418569241849,
+    "distance": 0.13058143075815098
+  },
+  {
+    "article_id": "8fb91c37-83bc-413a-a83d-7c07152a7474",
+    "thread_id": "6ef24ad0-32c4-4f54-a86f-0392b39855b8",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.21762047901030246
+  },
+  {
+    "article_id": "4e296166-2e42-481c-8cf1-19bfd062da37",
+    "thread_id": "0fc9ebfa-473b-4d63-ab3c-e65a79d85c53",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "2e8383c7-ed60-49b0-949b-3d49a726ccdf",
+    "thread_id": "e1d6b414-3016-4706-8c6d-fd43269fa74c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1926350b-8fc3-4ed7-a056-7c6095e9d6f9",
+    "thread_id": "a5e02808-100f-4435-a7c8-e20a2eef384f",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "caa4a3f1-602a-4d0a-ac53-8915efff9c12",
+    "thread_id": "eaf18199-041d-4fb3-9a44-011ab0b8cf27",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "76f0deb9-e1ce-4b53-b07a-ba4ed4574b8a",
+    "thread_id": "fe5ab47a-8978-49ba-9595-4989d4d28757",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "3e566a27-b359-4c51-8eba-bfb3629b5a79",
+    "thread_id": "de87d7df-dd43-41a7-8274-25dae0839c51",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8968389568828931,
+    "distance": 0.10316104311710694
+  },
+  {
+    "article_id": "0f92c32a-8db1-4d3a-ad13-fa0bb6b8a1d0",
+    "thread_id": "796bcc6f-97f8-477b-8cf8-bad1f72ed53b",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "d2641054-93f0-49a2-9406-e4aa0dfe8fd5",
+    "thread_id": "a5342c73-4505-4a3c-9829-36f7b8938887",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0b7f6203-62db-42e2-8981-00d19d5c6ce5",
+    "thread_id": "81101b03-15e9-45a4-8f34-1ece5c78d1bc",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "c2cf1dcb-b7ec-4fc4-b106-355057c780f7",
+    "thread_id": "1ada040f-08bb-4810-836c-44c9eff4d061",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "9b8d2e28-c15e-4fcf-9baa-6cb7553f0470",
+    "thread_id": "3dc58e6a-0c38-4807-9cc7-1ea75fed6ae5",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "251785d7-d404-4750-9c0c-a9d629eb77e9",
+    "thread_id": "cba32f94-b989-4e9b-abca-35a977c5f5ee",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "380401c2-272b-444d-b3bf-96617ac1b3d7",
+    "thread_id": "82611fa7-cc5d-47d7-993f-dd6a2c0719c5",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b739916b-f82b-4d1c-ace5-cc4b8220d35f",
+    "thread_id": "b0065d20-f3d6-4d12-9157-ee03eb4fff16",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.85,
+    "distance": 0.399839425077403
+  },
+  {
+    "article_id": "64d0ed47-4fd6-4653-9fb1-82855e7f8802",
+    "thread_id": "f717a672-a97f-4819-bcad-d77d400016e8",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "35a8b469-85a4-41fe-b937-acc0e80c5a57",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 1.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b7372f57-4764-4cb1-92c2-7d090aadf9bc",
+    "thread_id": "e23efcbc-96b7-4a27-be0d-4b91f67443f0",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "ae2cb8e6-8ddb-4049-96a0-44054770dde0",
+    "thread_id": "9de4ffbc-f2ad-4371-ba2e-ab8f6e4911f5",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8694186884511315,
+    "distance": 0.13058131154886854
+  },
+  {
+    "article_id": "d1f4a348-cb09-464a-9673-3d23782ef719",
+    "thread_id": "d42caa32-768a-470f-b58d-c416b8508ce2",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "a087622a-43a7-4706-914b-1e965be20c94",
+    "thread_id": "e124d34a-936d-4588-9d14-954d7317049c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f63856c6-576d-4c40-8e94-8c0b76a6714e",
+    "thread_id": "17052be9-b0a8-4859-a57b-df2c5c050636",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "f38a12bb-c0d2-463b-81d5-ca7736378ca5",
+    "thread_id": "180f4473-3029-4d2a-bd49-8ba623d92871",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "e2c9a998-4927-40aa-994f-b5ad4b365064",
+    "thread_id": "4da606c7-f938-4cfd-a270-f9d2d9563040",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "bb8e8a75-f4bd-467b-9bb4-66a2aa685685",
+    "thread_id": "8c62beda-3465-485c-8940-9af7ed3152a6",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.1,
+    "distance": 0.0
+  },
+  {
+    "article_id": "0deec44d-10c5-4e9b-b17d-d8a795352bef",
+    "thread_id": "d3b7b373-6954-4960-9c64-ca7946176d09",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7bc8f7cd-1e5d-484d-8c08-d65677e17a1d",
+    "thread_id": "18362a3b-b6be-4dd9-8604-0466af2cdca8",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.3,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1ecb5371-d43c-4d0b-b99a-9709c9fedcf2",
+    "thread_id": "ca3bd512-fdd5-467e-b26d-e2260c15fe35",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "afc77520-d414-455b-b413-28c6a34d7dca",
+    "thread_id": "cf677280-89f5-4805-ae9d-516a85f3ff57",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "18916b50-4871-4375-ac02-ac7145016d05",
+    "thread_id": "6dc01fd1-7d52-4b8e-b3c4-0175f261ad0c",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "72028dec-3950-44d0-911a-ca38d1970487",
+    "thread_id": "21e95184-92fd-4cff-8643-1bf55f42af24",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5203e16c-5b34-4337-96d5-00f90936d4f8",
+    "thread_id": "4f3839f2-8d81-499c-b841-c25a250fbb53",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "eb1f1277-472a-4b33-bbe7-783644b5a406",
+    "thread_id": "1d07f802-167b-49b3-85dd-b70cb97b55ae",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "2d3f2fed-8e2e-4106-af9e-ed289695ccc5",
+    "thread_id": "02be22a3-93bf-4b47-9f52-8c2707b2a7d5",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7a0f765e-c84c-4657-b966-fa60a5790cf3",
+    "thread_id": "9ff554f1-e1e1-46e9-b452-d7dfe2b2cf69",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "b1841cb4-0c8d-420e-9639-d1740c1bd47a",
+    "thread_id": "b08f698c-9685-4048-ad88-f87281e2c2e2",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5fe88b60-a04e-4102-b9c4-88661c3804c0",
+    "thread_id": "7a30046f-08b4-47ff-a28b-95fb8e2d4b26",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "5c42df13-ff89-4223-8dd7-59e00e9b1317",
+    "thread_id": "f2c95a90-47d8-403b-b3b1-b6c43db3de90",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "8e75d0c8-c259-4c08-bdbf-2811dc444bff",
+    "thread_id": "ebaea903-9d11-44da-8d60-57f39008802a",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.0,
+    "distance": 0.0
+  },
+  {
+    "article_id": "6b4c07c3-36b2-41bb-942b-02bed0a591ff",
+    "thread_id": "672b7d48-ba27-46df-9306-7cd29c832813",
+    "spawned_new": false,
+    "skipped_llm": false,
+    "confidence": 0.9,
+    "distance": 0.3287006616592407
+  },
+  {
+    "article_id": "3cfe0bb9-5a0e-48c8-8809-05a7b1cb5d78",
+    "thread_id": "4d21a363-00ee-4a43-be17-26f2b5c87d26",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "61940b5a-b3c0-47eb-8c87-862be8ffb844",
+    "thread_id": "7a9926b1-1a9d-44fb-b090-b2e1d468f8c2",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.15,
+    "distance": 0.0
+  },
+  {
+    "article_id": "1c38c5f0-082a-4550-852b-2ebdd536af72",
+    "thread_id": "20827004-d759-4f2f-910e-e33ddbe4f636",
+    "spawned_new": false,
+    "skipped_llm": true,
+    "confidence": 0.8801122450694808,
+    "distance": 0.11988775493051917
+  },
+  {
+    "article_id": "040fa94c-0d91-41ad-9f9a-97261971d34d",
+    "thread_id": "27ffc078-0f93-4a22-b590-192795711cab",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.85,
+    "distance": 0.0
+  },
+  {
+    "article_id": "7fee0cc3-65e6-4e5e-b1db-d7dd0f83961c",
+    "thread_id": "f638e2ec-807e-4740-bb27-c5ab1ea92212",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  },
+  {
+    "article_id": "09d3831a-3a71-4afd-96fc-32672d5f56f0",
+    "thread_id": "2ded9d0c-2a46-4778-89a7-050c7422db84",
+    "spawned_new": true,
+    "skipped_llm": false,
+    "confidence": 0.95,
+    "distance": 0.0
+  }
+]

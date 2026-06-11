@@ -1,0 +1,104 @@
+=== A. AP-related sources in our DB (active + inactive) ===
+                name                |                     domain                     | source_type | language | is_active | fails | last_coll  | lifetime_articles | last_7d 
+------------------------------------+------------------------------------------------+-------------+----------+-----------+-------+------------+-------------------+---------
+ Namasthe Telangana                 | ntnews.com                                     | rss         | te       | t         | 0     | 2026-06-04 |              3802 |    1075
+ TV9 Bharatvarsh                    | tv9hindi.com                                   | rss         | hi       | t         | 0     | 2026-06-04 |              1055 |    1055
+ TV9 Telugu                         | tv9telugu.com                                  | rss         | en       | t         | 0     | 2026-06-04 |              4566 |     844
+ HMTV                               | hmtvlive.com                                   | rss         | en       | t         | 0     | 2026-06-04 |              3135 |     766
+ Telangana Today                    | telanganatoday.com                             | rss         | en       | t         | 0     | 2026-06-04 |              2973 |     512
+ NTV Telugu                         | ntvtelugu.com                                  | rss         | en       | t         | 0     | 2026-06-04 |              2435 |     489
+ Prabhat Khabar                     | prabhatkhabar.com                              | rss         | hi       | t         | 0     | 2026-06-04 |              2029 |     409
+ Kannada Prabha                     | kannadaprabha.com                              | rss         | kn       | t         | 0     | 2026-06-04 |               696 |     385
+ Andhra Jyothy                      | andhrajyothy.com                               | scrape      | en       | t         | 0     | 2026-06-04 |              1525 |     359
+ Mana Telangana                     | manatelangana.news                             | rss         | te       | t         | 0     | 2026-06-04 |              1060 |     283
+ The Hindu — Andhra Pradesh         | thehindu.com/news/states/andhra-pradesh        | rss         | en       | t         | 0     | 2026-06-04 |               677 |     216
+ Deccan Chronicle                   | deccanchronicle.com                            | scrape      | en       | t         | 0     | 2026-06-03 |               259 |     151
+ Telugu 360                         | telugu360.com                                  | rss         | en       | t         | 0     | 2026-06-04 |               329 |      85
+ Times of India — Hyderabad         | timesofindia.indiatimes.com/hyderabad          | rss         | en       | t         | 0     | 2026-06-04 |               102 |      82
+ Telangana Today — Hyderabad        | telanganatoday.com/tag/hyderabad               | rss         | en       | t         | 0     | 2026-06-04 |               133 |      52
+ Telangana Tribune                  | telanganatribune.com                           | rss         | en       | t         | 0     | 2026-06-04 |               109 |      30
+ Telangana Today — Yadadri          | telanganatoday.com/tag/yadadri                 | rss         | en       | t         | 0     | 2026-06-04 |                95 |       6
+ Telangana Today — Siddipet         | telanganatoday.com/tag/siddipet                | rss         | en       | t         | 0     | 2026-06-04 |               101 |       4
+ Telangana Today — Khammam          | telanganatoday.com/tag/khammam                 | rss         | en       | t         | 0     | 2026-06-04 |                23 |       3
+ Telangana Today — Kumram Bheem     | telanganatoday.com/tag/kumram-bheem-asifabad   | rss         | en       | t         | 0     | 2026-06-04 |                22 |       2
+ Telangana Today — Sangareddy       | telanganatoday.com/tag/sangareddy              | rss         | en       | t         | 0     | 2026-06-04 |                20 |       2
+ Telangana Today — Mancherial       | telanganatoday.com/tag/mancherial              | rss         | en       | t         | 0     | 2026-06-04 |                17 |       2
+ Telangana Today — Jagtial          | telanganatoday.com/tag/jagtial                 | rss         | en       | t         | 0     | 2026-06-04 |                24 |       2
+ Telangana Today — Karimnagar       | telanganatoday.com/tag/karimnagar              | rss         | en       | t         | 0     | 2026-06-04 |                30 |       2
+ Telangana Today — Jangaon          | telanganatoday.com/tag/jangaon                 | rss         | en       | t         | 0     | 2026-06-04 |                20 |       1
+ Telangana Today — Peddapalli       | telanganatoday.com/tag/peddapalli              | rss         | en       | t         | 0     | 2026-06-04 |                23 |       1
+ Telangana Today — Nalgonda         | telanganatoday.com/tag/nalgonda                | rss         | en       | t         | 0     | 2026-06-04 |                19 |       1
+ Telangana Today — Rangareddy       | telanganatoday.com/tag/rangareddy              | rss         | en       | t         | 0     | 2026-06-04 |                17 |       0
+ Telangana Today — Wanaparthy       | telanganatoday.com/tag/wanaparthy              | rss         | en       | t         | 0     | 2026-06-04 |                18 |       0
+ Telangana Today — Adilabad         | telanganatoday.com/tag/adilabad                | rss         | en       | t         | 0     | 2026-06-04 |                25 |       0
+ Telangana Today — Mulugu           | telanganatoday.com/tag/mulugu                  | rss         | en       | t         | 0     | 2026-06-04 |                21 |       0
+ Telangana Today — Hanumakonda      | telanganatoday.com/tag/hanumakonda             | rss         | en       | t         | 0     | 2026-06-04 |                 8 |       0
+ Telangana Today — Narayanpet       | telanganatoday.com/tag/narayanpet              | rss         | en       | t         | 0     | 2026-06-04 |                19 |       0
+ Telangana Today — Kamareddy        | telanganatoday.com/tag/kamareddy               | rss         | en       | t         | 0     | 2026-06-04 |                20 |       0
+ Telangana Today — Warangal         | telanganatoday.com/tag/warangal                | rss         | en       | t         | 0     | 2026-06-04 |                18 |       0
+ Telangana Today — Suryapet         | telanganatoday.com/tag/suryapet                | rss         | en       | t         | 0     | 2026-06-04 |                19 |       0
+ Telangana Today — Nirmal           | telanganatoday.com/tag/nirmal                  | rss         | en       | t         | 0     | 2026-06-04 |                12 |       0
+ Telangana Today — Mahbubnagar      | telanganatoday.com/tag/mahbubnagar             | rss         | en       | t         | 0     | 2026-06-04 |                20 |       0
+ Telangana Today — Jogulamba Gadwal | telanganatoday.com/tag/jogulamba               | rss         | en       | t         | 0     | 2026-06-04 |                 2 |       0
+ Telangana Today — Medchal          | telanganatoday.com/tag/medchal                 | rss         | en       | t         | 0     | 2026-06-04 |                19 |       0
+ Telangana Today — Medak            | telanganatoday.com/tag/medak                   | rss         | en       | t         | 0     | 2026-06-04 |                20 |       0
+ Telangana Today — Nizamabad        | telanganatoday.com/tag/nizamabad               | rss         | en       | t         | 0     | 2026-06-04 |                15 |       0
+ Telangana Today — Vikarabad        | telanganatoday.com/tag/vikarabad               | rss         | en       | t         | 0     | 2026-06-04 |                20 |       0
+ Telangana Today — Jayashankar      | telanganatoday.com/tag/jayashankar             | rss         | en       | t         | 0     | 2026-06-04 |                 4 |       0
+ Telangana Today — Mahabubabad      | telanganatoday.com/tag/mahabubabad             | rss         | en       | t         | 0     | 2026-06-04 |                20 |       0
+ Telangana Today — Nagarkurnool     | telanganatoday.com/tag/nagarkurnool            | rss         | en       | t         | 0     | 2026-06-04 |                19 |       0
+ Telangana Today — Rajanna Sircilla | telanganatoday.com/tag/rajanna-sircilla        | rss         | en       | t         | 0     | 2026-06-04 |                18 |       0
+ TV9 Gujarati YouTube               | youtube.com/tv9gujarati                        | api         | gu       | t         | 0     |            |                 0 |       0
+ TV9 Kannada YouTube                | youtube.com/tv9kannada                         | api         | kn       | t         | 0     |            |                 0 |       0
+ TV9 Telugu YouTube                 | youtube.com/tv9telugu                          | api         | te       | t         | 0     |            |                 0 |       0
+ Namaste Telangana                  | namasthetelangana.com                          | scrape      | en       | t         | 0     |            |                 0 |       0
+ Hans India                         | thehansindia.com                               | scrape      | en       | t         | 0     |            |                 0 |       0
+ HMDA — Hyderabad Metro             | hmda.gov.in                                    | scrape      | en       | t         | 0     |            |                 0 |       0
+ Telangana Today — Bhadradri        | telanganatoday.com/tag/bhadradri               | rss         | en       | t         | 0     | 2026-06-04 |                20 |       0
+ Indian Express — Telangana         | indianexpress.com/section/india/telangana      | rss         | en       | f         | 25    | 2026-05-31 |                 0 |       0
+ News18 — Telangana (Hindi)         | hindi.news18.com/rss/telangana                 | rss         | hi       | f         | 25    | 2026-05-31 |                 0 |       0
+ Telangana CMO                      | cmo.telangana.gov.in                           | scrape      | en       | f         | 0     |            |                 0 |       0
+ Irrigation Department Telangana    | irrigation.telangana.gov.in                    | scrape      | en       | f         | 0     |            |                 0 |       0
+ Hyderabad Mirror                   | hyderabadmirror.in                             | scrape      | en       | f         | 0     |            |                 0 |       0
+ Eenadu ePaper                      | epaper.eenadu.net                              | scrape      | te       | f         | 0     |            |                 0 |       0
+ News18 Telugu                      | telugu.news18.com                              | rss         | te       | f         | 25    | 2026-05-31 |                 0 |       0
+ Eenadu                             | eenadu.net                                     | rss         | te       | f         | 25    | 2026-05-31 |               594 |       0
+ ZeeNews — Telangana (Hindi)        | zeenews.india.com/hindi/rss/telangana          | rss         | hi       | f         | 25    | 2026-05-31 |                 0 |       0
+ Deccan Herald — National           | deccanherald.com                               | rss         | en       | f         | 0     |            |                 0 |       0
+ Sakshi                             | sakshi.com                                     | rss         | te       | f         | 25    | 2026-05-31 |                 0 |       0
+ Indian Express — AP                | indianexpress.com/section/india/andhra-pradesh | rss         | en       | f         | 25    | 2026-05-31 |                 0 |       0
+ Telangana Legislature              | legislature.telangana.gov.in                   | scrape      | en       | f         | 0     |            |                 0 |       0
+ Telangana Journal                  | telanganajournal.com                           | scrape      | en       | f         | 0     |            |                 0 |       0
+ Telangana Government               | telangana.gov.in                               | scrape      | en       | f         | 0     |            |                 0 |       0
+(69 rows)
+
+
+=== B. dormant or never-collected AP sources we own ===
+           name           |                     domain                     | language | is_active | fails |           last_coll           | lifetime_articles 
+--------------------------+------------------------------------------------+----------+-----------+-------+-------------------------------+-------------------
+ TV9 Telugu YouTube       | youtube.com/tv9telugu                          | te       | t         | 0     | NEVER                         |                 0
+ Hans India               | thehansindia.com                               | en       | t         | 0     | NEVER                         |                 0
+ HMDA — Hyderabad Metro   | hmda.gov.in                                    | en       | t         | 0     | NEVER                         |                 0
+ Eenadu                   | eenadu.net                                     | te       | f         | 25    | 2026-05-31 07:55:34.752874+00 |               594
+ Indian Express — AP      | indianexpress.com/section/india/andhra-pradesh | en       | f         | 25    | 2026-05-31 00:48:02.261897+00 |                 0
+ Deccan Herald — National | deccanherald.com                               | en       | f         | 0     | NEVER                         |                 0
+ News18 Telugu            | telugu.news18.com                              | te       | f         | 25    | 2026-05-31 00:48:10.42283+00  |                 0
+ Eenadu ePaper            | epaper.eenadu.net                              | te       | f         | 0     | NEVER                         |                 0
+ Hyderabad Mirror         | hyderabadmirror.in                             | en       | f         | 0     | NEVER                         |                 0
+ Sakshi                   | sakshi.com                                     | te       | f         | 25    | 2026-05-31 00:48:05.227998+00 |                 0
+(10 rows)
+
+
+=== C. global scrape rhythm context ===
+ total_active | ingested_24h | ingested_1h 
+--------------+--------------+-------------
+          573 |        14082 |         716
+(1 row)
+
+
+=== D. is there ANY priority/weight column on sources? ===
+ column_name | data_type 
+-------------+-----------
+ source_tier | integer
+(1 row)
+

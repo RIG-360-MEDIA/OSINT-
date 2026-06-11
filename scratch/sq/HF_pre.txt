@@ -1,0 +1,24 @@
+=== resolve the 6 sids by prefix + capture BEFORE-state ===
+               story_id               |  n   | isc | core | tcoh | tf | sr |   top_ent    |                       rt                       
+--------------------------------------+------+-----+------+------+----+----+--------------+------------------------------------------------
+ 76c64c8e-8d66-4b1a-8470-082d46795912 | 1601 | 171 | 0.57 | 0.13 | f  |    | donald trump | What to know about the primary elections in th
+ 4ded16a6-a158-434e-af08-6afc152c9741 |  630 |  97 | 0.46 | 0.11 | f  |    | donald trump | From agave syrup to raw materials: EU, Mexico 
+ 224ee8d1-aa91-40bd-82b0-2f51e3b91a49 |  165 |  34 | 0.46 | 0.06 | f  |    | nigeria      | Party primaries and accountability, By Reuben 
+ c0a31ab7-98b6-4e9a-a6f8-7d6d311bab94 |  165 |  45 | 0.46 | 0.10 | f  |    | nigeria      | Accord faults deregistration calls, insists on
+ 404c6ad8-06b1-46c8-b91f-50a0be5339a8 |   54 |  15 | 0.54 | 0.13 | f  |    | hyderabad    | ‘Jo Chaahe Mango’: Hyderabad all set for mango
+ 2534e314-9045-4d5b-8fab-cad588bceeb3 |   29 |  22 | 0.66 | 0.55 | f  |    | donald trump | Trump’s DOJ ramps up efforts to strip citizens
+(6 rows)
+
+
+=== BEFORE: surfaced totals + core checksum + tf count ===
+ surfaced_strict | surfaced_loose | suppressed | size_core_gated | template_family | sum_core_checksum 
+-----------------+----------------+------------+-----------------+-----------------+-------------------
+             714 |          34546 |         53 |               2 |              51 |      22030.656000
+(1 row)
+
+
+=== suppression_reason check constraint? ===
+ pg_get_constraintdef 
+----------------------
+(0 rows)
+

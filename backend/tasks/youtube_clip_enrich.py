@@ -379,12 +379,18 @@ async def _persist_claims(db, clip_id: int, claims: list[dict[str, Any]]) -> Non
     for c in claims[:5]:
         if not isinstance(c, dict):
             continue
-        claim_text = (c.get("text") or "").strip()
-        if not claim_text:
-            continue
         subject = (c.get("subject") or "").strip() or None
         predicate = (c.get("predicate") or "").strip() or None
         obj = (c.get("object") or "").strip() or None
+        # The transcript prompt emits SPO triples with NO free-text 'text'
+        # field, so synthesise claim_text from the triple (falling back to an
+        # explicit 'text' if a future prompt revision adds one). Without this
+        # every claim was dropped as empty — youtube_clip_claims stayed at 0.
+        claim_text = (c.get("text") or "").strip() or " ".join(
+            p for p in (subject, predicate, obj) if p
+        ).strip()
+        if not claim_text:
+            continue
         await db.execute(
             text(
                 """
@@ -417,19 +423,25 @@ async def _persist_quotes(db, clip_id: int, quotes: list[dict[str, Any]]) -> Non
         speaker = (q.get("speaker") or "").strip()
         if not qtext or not speaker:
             continue
+        qtext = qtext[:4000]
+        # is_direct = the quote is a VERBATIM substring of the clip transcript
+        # (a real, checkable signal). The prompt's is_verbatim flag is hardcoded
+        # false for ASR captions, so it can never populate this honestly.
         await db.execute(
             text(
                 """
                 INSERT INTO youtube_clip_quotes
                   (clip_id, speaker_name, quote_text, is_direct)
-                VALUES (:id, :sp, :tx, :vb)
+                SELECT :id, :sp, :tx,
+                       position(:tx IN COALESCE(c.transcript_segment, '')) > 0
+                  FROM youtube_clips_v2 c
+                 WHERE c.id = :id
                 """
             ),
             {
                 "id": clip_id,
                 "sp": speaker[:200],
-                "tx": qtext[:4000],
-                "vb": bool(q.get("is_verbatim", False)),
+                "tx": qtext,
             },
         )
 

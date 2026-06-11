@@ -132,9 +132,12 @@ class StoredClip:
 
     @property
     def embed_url(self) -> str:
-        """Deep-link that 'rolls the tape' at the mention. Real timestamp XOR
-        full-video link is enforced by the storage gate before we get here."""
+        """Iframe-embeddable player URL that 'rolls the tape' at the mention
+        (youtube.com/embed/<id>?start=<s>) — matches the column name and is
+        droppable straight into an <iframe>. Real-timestamp clips only; the
+        storage gate enforces that before we get here. A plain click-through
+        watch link is derivable from video_url + clip_start_seconds."""
         return (
-            f"https://www.youtube.com/watch?v={self.video_id}"
-            f"&t={self.clip_start_seconds}s"
+            f"https://www.youtube.com/embed/{self.video_id}"
+            f"?start={self.clip_start_seconds}"
         )

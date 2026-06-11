@@ -4,8 +4,9 @@ Final gate before the database. Enforces:
   - real timestamps (validate_timestamps) — rejects fake 0/15 windows;
   - non-empty transcript_segment (the real caption text in the window) — the
     old pipeline stored '' on 8/12 sampled clips;
-  - timestamp ↔ URL invariant — embed_url always carries &t=<start>s, and we
-    only ever store real-timestamp clips, so the two never disagree;
+  - timestamp ↔ URL invariant — embed_url always carries the start offset
+    (?start=<s>), and we only ever store real-timestamp clips, so the two
+    never disagree;
   - within-video dedup (same entity within DEDUP_SECONDS);
   - English embedding generated from the summary (LaBSE 768-d).
 
@@ -19,6 +20,7 @@ from datetime import datetime
 from .metrics import PipelineMetrics
 from .models import (
     ExtractedClip,
+    Importance,
     SOURCE_CONFIDENCE,
     StoredClip,
     Transcript,
@@ -31,6 +33,16 @@ _DEDUP_SECONDS = 5
 _LEAD_IN = 5          # seconds of context before the mention
 _MIN_WINDOW = 15
 _MAX_WINDOW = 120
+
+# Per-clip confidence = source-reliability × the LLM's own importance signal,
+# so the stored score reflects BOTH how trustworthy the transcript source is
+# AND how salient the model judged the mention — instead of a flat constant
+# (every clip was previously 0.85 because all transcripts are auto_captions).
+_IMPORTANCE_CONF_WEIGHT: dict[Importance, float] = {
+    Importance.HIGH: 1.0,
+    Importance.MEDIUM: 0.88,
+    Importance.LOW: 0.70,
+}
 
 
 def _window_text(transcript: Transcript, start: int, end: int) -> str:
@@ -70,7 +82,7 @@ def build_stored_clips(
     from backend.nlp.nlp_embedding import generate_embedding
 
     duration = transcript.duration_seconds
-    confidence = SOURCE_CONFIDENCE[transcript.source]
+    source_conf = SOURCE_CONFIDENCE[transcript.source]
     seen: list[tuple[str, int]] = []
     out: list[StoredClip] = []
 
@@ -117,7 +129,9 @@ def build_stored_clips(
                 transcript_segment=segment,
                 transcript_language=transcript.language,
                 transcript_source=transcript.source,
-                confidence=confidence,
+                confidence=round(
+                    source_conf * _IMPORTANCE_CONF_WEIGHT.get(clip.importance, 0.88), 3
+                ),
                 embedding=tuple(embedding),
                 importance=clip.importance,
             )

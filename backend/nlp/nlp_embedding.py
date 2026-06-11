@@ -129,4 +129,16 @@ async def check_semantic_duplicate(
         return str(row.id) if row else None
     except Exception as exc:
         logger.warning("Semantic dedup check failed: %s", exc)
+        # CRITICAL: rollback the caller's session before returning. The pgvector
+        # query above shares the SQLAlchemy session with _process_single in
+        # nlp_processor.py; on failure SQLAlchemy marks the transaction
+        # invalid, and every subsequent `await db.execute(...)` on the same
+        # session raises "Can't reconnect until invalid transaction is rolled
+        # back". That wedged the entire NLP batch on 2026-06-04 (1,486-row
+        # backlog, Feed lagging 2h+). Swallow any rollback failure too — we
+        # never want this helper to raise.
+        try:
+            await db_conn.rollback()
+        except Exception:
+            pass
         return None

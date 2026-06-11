@@ -2,6 +2,7 @@
 
 import { observeApi } from '@/lib/observe-client'
 import { useObservePoll } from '../hooks/useObservePoll'
+import styles from '../observe.module.css'
 import { Panel } from './Panel'
 
 export function IngestPulse() {
@@ -11,49 +12,71 @@ export function IngestPulse() {
     { visibleIntervalMs: 5000, hiddenIntervalMs: 30000 }
   )
 
-  const totalLine =
-    data ? `${data.total_24h.toLocaleString()} articles in last 24h · ${data.stalled_sources.length} sources stalled` : ''
+  const stalled = data?.stalled_sources.length ?? 0
+  const status = !data ? null : stalled > 100 ? 'crit' : stalled > 30 ? 'warn' : 'ok'
+  const max = data ? Math.max(...data.by_hour.map((x) => x.n), 1) : 1
 
   return (
     <Panel
-      title="Ingest pulse"
-      subtitle={totalLine}
+      title="Ingest Pulse"
+      subtitle="How many articles arrived in the last 24 hours"
+      help="Updates every 5 seconds. Healthy ≤ 30 stalled sources."
+      status={status}
       loading={isLoading}
       error={error}
     >
       {data && (
-        <div className="space-y-2">
-          {/* Hourly sparkline (text bars — no chart lib needed) */}
-          <div className="flex h-12 items-end gap-px" data-testid="hourly-bars">
-            {data.by_hour.map((b) => {
-              const max = Math.max(...data.by_hour.map((x) => x.n), 1)
-              const h = Math.max(2, Math.round((b.n / max) * 48))
-              return (
+        <>
+          <div>
+            <span className={styles.bigNumber}>{data.total_24h.toLocaleString()}</span>
+            <span className={styles.bigCaption}>articles · last 24h</span>
+          </div>
+
+          <div className={styles.barRow}>
+            <div className={styles.barAxis}>
+              <span>24h ago</span><span>now</span>
+            </div>
+            <div className={styles.barCanvas} data-testid="hourly-bars">
+              {data.by_hour.map((b) => (
                 <div
                   key={b.hour}
-                  className="flex-1 bg-emerald-500/70"
-                  style={{ height: `${h}px` }}
-                  title={`${b.hour}: ${b.n}`}
+                  className={styles.bar}
+                  style={{ height: `${Math.max(3, (b.n / max) * 48)}px` }}
+                  title={`${b.hour}: ${b.n} articles`}
                 />
-              )
-            })}
+              ))}
+            </div>
           </div>
-          {data.stalled_sources.length > 0 && (
-            <details className="text-xs">
-              <summary className="cursor-pointer text-amber-700">
-                {data.stalled_sources.length} stalled (&gt;24h)
-              </summary>
-              <ul className="mt-1 max-h-40 overflow-y-auto">
+
+          <div className={styles.miniRow}>
+            <div className={styles.mini}>
+              <div className={styles.miniValue}>{data.per_source.length - stalled}</div>
+              <div className={styles.miniLabel}>Active</div>
+            </div>
+            <div className={`${styles.mini} ${stalled > 30 ? styles.miniWarn : ''}`}>
+              <div className={styles.miniValue}>{stalled}</div>
+              <div className={styles.miniLabel}>Stalled</div>
+            </div>
+            <div className={styles.mini}>
+              <div className={styles.miniValue}>{data.per_source.length}</div>
+              <div className={styles.miniLabel}>Total</div>
+            </div>
+          </div>
+
+          {stalled > 0 && (
+            <details className={styles.disclosure}>
+              <summary>Show {stalled} stalled sources</summary>
+              <ul className={styles.stalledList}>
                 {data.stalled_sources.slice(0, 50).map((s) => (
-                  <li key={s.source} className="flex justify-between border-b border-neutral-200 py-0.5">
+                  <li key={s.source} className={styles.stalledItem}>
                     <span>{s.source}</span>
-                    <span className="text-neutral-500">{s.hours_since.toFixed(1)}h</span>
+                    <span>{s.hours_since.toFixed(0)}h</span>
                   </li>
                 ))}
               </ul>
             </details>
           )}
-        </div>
+        </>
       )}
     </Panel>
   )

@@ -172,6 +172,11 @@ def main() -> int:
     for sz, src, core, ent, topgram in sorted(dry, reverse=True):
         print(f"  DRY n={sz:4d} src={src:3d} core={core:.2f}({ent[:18]:18s}) topgram={topgram[:22]}")
 
+    tco = [r for r in rescued if r[2] < CORE_T and r[4] >= TCOH_T]
+    print(f"\n-- the {len(tco)} tcoh-ONLY rescues (core<{CORE_T} but tcoh>={TCOH_T}) — SPOT-CHECK: real story or template? --")
+    for sz, ssrc, score, sent, stc, blobsz, blobcore, titles in sorted(tco, key=lambda r: -r[0]):
+        print(f"  n={sz:3d} src={ssrc:3d} core={score:.2f} tcoh={stc:.2f} | {' | '.join(titles)}")
+
     import statistics as _st
     print("\n-- RESCUE DISTRIBUTION (for analytics to lock the source floor off the distribution) --")
     srcs = [r[1] for r in rescued]

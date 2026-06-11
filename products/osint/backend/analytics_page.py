@@ -54,17 +54,28 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
 
     mods: list[dict[str, Any]] = []
 
-    # 1 — volume (area), last 14 days
+    # 1 — volume (area): COMPLETE days only. Exclude today's in-progress partial day
+    # (it always under-reads and crashes the line), and drop system collection-gap days
+    # (a day the scraper collected ~nothing is MISSING DATA, not zero volume — plotting a
+    # 0 there draws a false cliff). Gap = total daily articles (all sources) <= 100.
     vol = await _rows(db, """
-        SELECT d::date dd, COALESCE(c.n,0) n FROM generate_series(
-                 (analytics.now_sim()-make_interval(days=>13))::date, analytics.now_sim()::date,'1 day') d
-          LEFT JOIN (SELECT collected_at::date dd, count(*) n FROM _univ
-                      WHERE collected_at >= analytics.now_sim()-make_interval(days=>13) GROUP BY 1) c ON c.dd=d::date
-         ORDER BY d""")
+        WITH days AS (
+          SELECT d::date dd FROM generate_series(
+            (analytics.now_sim()-make_interval(days=>14))::date,
+            (analytics.now_sim()-make_interval(days=>1))::date, '1 day') d),
+        tot AS (SELECT collected_at::date dd, count(*) n FROM articles
+                 WHERE collected_at >= analytics.now_sim()-make_interval(days=>14)
+                   AND collected_at < analytics.now_sim()::date GROUP BY 1),
+        wl AS (SELECT collected_at::date dd, count(*) n FROM _univ
+                WHERE collected_at >= analytics.now_sim()-make_interval(days=>14) GROUP BY 1)
+        SELECT days.dd, COALESCE(wl.n,0) n
+          FROM days LEFT JOIN tot ON tot.dd=days.dd LEFT JOIN wl ON wl.dd=days.dd
+         WHERE COALESCE(tot.n,0) > 100
+         ORDER BY days.dd""")
     mods.append(_card("volume", "THE BIG PICTURE", "area", "Coverage Volume",
         "How many stories mention your watchlist each day", "articles.collected_at",
         {"labels": [str(r.dd.day) for r in vol], "series": [int(r.n) for r in vol],
-         "note": f"{base:,} articles mention your watchlist in the {round(WH/24)}-day window."},
+         "note": f"Line: stories per day, recent complete days (today + any collection-gap days excluded). Base: {base:,} articles in the {round(WH/24)}-day window."},
         base, "high", _verify("Articles mentioning any watchlist entity, per day.",
         "count(articles) grouped by collected_at::date", "article_entity_mentions ▸ articles",
         [f"{base:,} articles in-window", "deduplicated by article", "daily counts, last 14 days"]), span=2))
@@ -106,12 +117,12 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
     sm = await _rows(db, f"""
         SELECT count(*) FILTER (WHERE ({POL})>0) sup, count(*) FILTER (WHERE ({POL})=0) neu,
                count(*) FILTER (WHERE ({POL})<0) crit
-          FROM _univ u JOIN article_stances st ON st.article_id=u.id""")
+          FROM _univ u JOIN article_stances st ON st.article_id=u.id AND st.actor_entity_id=CAST(:pid AS uuid)""", pid=pid)
     r0 = sm[0]; tot_s = (int(r0.sup)+int(r0.neu)+int(r0.crit)) or 1
     pct = lambda x: round(100*int(x)/tot_s)
     mods.append(_card("forvsagainst", "THE BIG PICTURE", "stack", "For You vs Against You",
         "Supportive, neutral or critical — overall", "article_stances.stance",
-        {"foot": "Directional stance, not emotion.", "segments": [
+        {"foot": f"Directed at {pname} · {round(WH/24)}-day window.", "segments": [
             {"label": "Supportive", "value": pct(r0.sup), "color": "supportive"},
             {"label": "Neutral", "value": pct(r0.neu), "color": "muted"},
             {"label": "Critical", "value": pct(r0.crit), "color": "hostile"}]},
@@ -123,9 +134,9 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
     bf = await _rows(db, f"""
         SELECT COALESCE(u.topic_category,'OTHER') topic, count(*) FILTER (WHERE ({POL})>0) pos,
                count(*) FILTER (WHERE ({POL})<0) neg
-          FROM _univ u JOIN article_stances st ON st.article_id=u.id
+          FROM _univ u JOIN article_stances st ON st.article_id=u.id AND st.actor_entity_id=CAST(:pid AS uuid)
          WHERE u.topic_category IS NOT NULL AND u.topic_category<>'OTHER'
-         GROUP BY 1 ORDER BY (count(*) FILTER (WHERE ({POL})>0)+count(*) FILTER (WHERE ({POL})<0)) DESC LIMIT 6""")
+         GROUP BY 1 ORDER BY (count(*) FILTER (WHERE ({POL})>0)+count(*) FILTER (WHERE ({POL})<0)) DESC LIMIT 6""", pid=pid)
     mods.append(_card("battlefield", "THE BIG PICTURE", "lean", "Issues — Praised vs Attacked",
         "Which issues you're supported on vs hit on", "topic_category × article_stances",
         {"foot": "Net lean = supportive − critical, by issue.",
@@ -140,6 +151,7 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
           FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id
           JOIN entity_dictionary ed ON ed.id=m.entity_id
          WHERE m.entity_id=ANY(CAST(:ids AS uuid[])) AND a.collected_at>=analytics.now_sim()-make_interval(hours=>:wh)
+           AND ed.entity_type <> 'location'
          GROUP BY 1,2 ORDER BY 3 DESC LIMIT 8""", ids=ids, wh=WH)
     mods.append(_card("sov", "THE BIG PICTURE", "rank", "You vs Your Rivals",
         "Share of the conversation across watched figures", "article_entity_mentions",
@@ -161,11 +173,11 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
 
     # 8 — outlet lean (lean)
     ol = await _rows(db, f"""SELECT s.name nm, count(*) FILTER (WHERE ({POL})>0) pos, count(*) FILTER (WHERE ({POL})<0) neg
-          FROM _univ u JOIN sources s ON s.id=u.source_id JOIN article_stances st ON st.article_id=u.id
-         GROUP BY 1 HAVING count(*)>=5 ORDER BY count(*) DESC LIMIT 8""")
+          FROM _univ u JOIN sources s ON s.id=u.source_id JOIN article_stances st ON st.article_id=u.id AND st.actor_entity_id=CAST(:pid AS uuid)
+         GROUP BY 1 HAVING count(*)>=5 ORDER BY count(*) DESC LIMIT 8""", pid=pid)
     mods.append(_card("outletlean", "WHO & WHERE", "lean", "Outlets — Friendly vs Hostile",
         "Which papers lean supportive vs critical of you", "sources × article_stances",
-        {"foot": "Net lean by outlet (≥5 stance signals).", "items": [{"label": r.nm, "pos": int(r.pos), "neg": int(r.neg)} for r in ol]},
+        {"foot": f"Outlets with ≥5 stance signals toward {pname} (top 8) · {round(WH/24)}-day.", "items": [{"label": r.nm, "pos": int(r.pos), "neg": int(r.neg)} for r in ol]},
         sum(int(r.pos)+int(r.neg) for r in ol), "medium", _verify("Whether each outlet skews supportive or critical.",
         "(sup−crit)÷(sup+crit) per source", "sources × article_stances", ["stance-based"])))
 
@@ -235,12 +247,12 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
         ["'alarm' tags events, not hostility — for direction use For-vs-Against"])))
 
     # 15 — what's coming up (eventcal, future events)
-    up = await _rows(db, """SELECT COALESCE(e.effective_event_date,e.event_date) d, e.event_description l, e.event_type ty
-          FROM article_events e JOIN _univ u ON u.id=e.article_id
+    up = await _rows(db, """SELECT COALESCE(e.effective_event_date,e.event_date) d, e.event_description l, e.event_type ty, a.url url
+          FROM article_events e JOIN _univ u ON u.id=e.article_id JOIN articles a ON a.id=e.article_id
          WHERE e.is_future AND COALESCE(e.effective_event_date,e.event_date) >= analytics.now_sim()::date
            AND e.event_description IS NOT NULL
          ORDER BY 1 ASC LIMIT 6""")
-    up_items = [{"date": f"{r.d.day:02d} {_MONTHS[r.d.month]}", "label": (r.l or '')[:80], "type": (r.ty or 'event')} for r in up]
+    up_items = [{"date": f"{r.d.day:02d} {_MONTHS[r.d.month]}", "label": (r.l or '')[:80], "type": (r.ty or 'event'), "url": r.url} for r in up]
     await i18n.attach_en(db, up_items, "label")
     mods.append(_card("upcoming", "THE DETAIL", "eventcal", "What's Coming Up",
         "Upcoming dated events in your coverage", "article_events (is_future)",
@@ -259,11 +271,12 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
 
     # 17 — quotes (quotes)
     qt = await _rows(db, """SELECT q.quote_text q, NULLIF(q.quote_text_en,'') qen,
-            COALESCE(q.speaker_name_en,q.speaker_name) who, s.name src
+            COALESCE(q.speaker_name_en,q.speaker_name) who, s.name src, a.url url
           FROM article_quotes q JOIN _univ u ON u.id=q.article_id JOIN sources s ON s.id=u.source_id
+          JOIN articles a ON a.id=u.id
          WHERE length(COALESCE(q.quote_text_en,q.quote_text)) BETWEEN 24 AND 220 AND q.speaker_name IS NOT NULL
          ORDER BY u.collected_at DESC LIMIT 4""")
-    qt_items = [{"q": r.q, "q_en": (r.qen if (r.qen and r.qen != r.q) else None), "who": r.who or "—", "role": "", "src": r.src} for r in qt]
+    qt_items = [{"q": r.q, "q_en": (r.qen if (r.qen and r.qen != r.q) else None), "who": r.who or "—", "role": "", "src": r.src, "url": r.url} for r in qt]
     await i18n.attach_en(db, qt_items, "q")
     mods.append(_card("quotes", "THE DETAIL", "quotes", "In Their Words",
         "Actual quotes from your coverage", "article_quotes.quote_text",
@@ -302,7 +315,7 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
     # derived from the article's real stance (not cycled).
     pic = await _rows(db, f"""SELECT mu.url, mu.article_url, mu.title, mu.lean FROM (
             SELECT DISTINCT ON (u.id) md.url, a.url article_url, a.title,
-                   (SELECT avg(({POL}) * st.intensity) FROM article_stances st WHERE st.article_id=u.id) lean,
+                   (SELECT avg(({POL}) * st.intensity) FROM article_stances st WHERE st.article_id=u.id AND st.actor_entity_id=CAST(:pid AS uuid)) lean,
                    u.collected_at
               FROM _univ u
               JOIN articles a ON a.id = u.id
@@ -311,7 +324,7 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
                AND a.source_country = 'IN'
                AND md.url !~* '(logo|share|placeholder|default-?image|fallback)'
              ORDER BY u.id, u.collected_at DESC) mu
-        ORDER BY mu.collected_at DESC LIMIT 8""")
+        ORDER BY mu.collected_at DESC LIMIT 8""", pid=pid)
     def _tone(lean):
         if lean is None: return "neutral"
         if lean >= 0.1: return "supportive"
@@ -323,6 +336,11 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
         {"foot": "Hero images from your coverage — click to open the article.", "items": pic_items},
         len(pic_items), "high", _verify("Hero images attached to your coverage.", "article_media WHERE is_hero",
         "article_media", ["one hero image per article"])))
+
+    # Cards hidden per product decision: Issues Rising & Falling (rising),
+    # Tone of Coverage (tone), What's Happening (events), What's Being Claimed (claims).
+    # Filtered at the end so the builders above stay intact for an easy re-enable.
+    mods = [m for m in mods if m.get("id") not in {"rising", "tone", "events", "claims"}]
 
     await db.execute(text("DROP TABLE IF EXISTS _univ"))
     return {"personalized": True, "base": f"{base:,}", "window": f"{round(WH/24)}-DAY WINDOW",

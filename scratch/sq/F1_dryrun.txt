@@ -1,0 +1,65 @@
+=== BEFORE: core checksum + tf counts + suppression counts ===
+   sum_core   | tf | aph | scg | tmpf 
+--------------+----+-----+-----+------
+ 22030.656000 | 59 |   6 |   2 |   51
+(1 row)
+
+
+=== DRY-RUN: changes by current-vs-new ===
+SELECT 644
+ total_changes | surfaced_changes | aph_changes 
+---------------+------------------+-------------
+           644 |              473 |           6
+(1 row)
+
+
+=== 3 NAMED CLUSTERS: before -> after ===
+                             old                              |                             new_                             | new_st |  new_pub   
+--------------------------------------------------------------+--------------------------------------------------------------+--------+------------
+ From agave syrup to raw materials: EU, Mexico agree trade ex | Trump Promises NATO Additional 5,000 Troops for Poland       |      1 | 2026-05-22
+ Has the US-Iran ceasefire reset the clock on War Powers Act  | Again, US launches new strikes on Iran                       |      1 | 2026-06-01
+ Former OpenAI board member says Elon Musk offered her sperm  | Could anything but profit steer AI? The OpenAI trial offered |      1 | 2026-05-24
+(3 rows)
+
+
+=== 10 RANDOM CATCHES (display) ===
+  n  |                         old                          |                         new_                         
+-----+------------------------------------------------------+------------------------------------------------------
+  24 | IPL Fantasy 2026: Fantasy XI for Match 74: Final - R | IPL 2026 Final | Gujarat Titans lose Gill, Sudarshan
+  54 | ‘Jo Chaahe Mango’: Hyderabad all set for mango festi | Late-night spot near Gandipet for adventure activiti
+  49 | No cartels involved - but Mexico's pyramid attack pr | Sheinbaum Accuses US Of Interfering In Mexico's Poli
+ 330 | 'Where is Savannah?': Nancy Guthrie case takes new t | Eerie footage and DNA: What we know four months sinc
+  43 | Who Will Be Next Bengal CM If BJP Comes To Power? 5  | TMC Rift Erupts In Halishahar Municipality As 16 Cou
+  29 | Trump’s DOJ ramps up efforts to strip citizenship fr | Nigerians affected as Trump orders green card applic
+  19 | US general meets Cuban military officials at edge of | Exclusive-US general meets Cuban military officials 
+ 106 | Turaki PDP adopts Jonathan despite thugs invasion of | 2027: Say no to PDP presidential ticket – Keyamo tel
+  17 | Nepal Cabinet Shake-Up: Inside Removal of 2 Minister | Concerns mount over new Nepal government’s use of or
+  39 | PM Modi Says Nordic Investment In India Surged 200%  | More Than Trade: Modi’s Visit to Sweden and Norway
+(10 rows)
+
+
+=== 20-row SPARE check: surfaced clusters where pick == current rep (no change) ===
+ n  |                         representative_title                         
+----+----------------------------------------------------------------------
+ 35 | SpaceX, OpenAI windfall fuels bets on next-wave Asian AI winners
+ 49 | Former Southampton and Nigerian forward Victor Udoh passes away aged
+ 37 | North Korea Tests New Multi-Purpose Missile Launch System: Report
+ 73 | Patients find help with therapy donkeys at psychiatric hospital near
+ 20 | IPL 2026: Rishabh Pant Steps Down As Lucknow Super Giants Captain
+ 62 | 10 reasons why Justice Swarana Kanta Sharma rejected Arvind Kejriwal
+ 18 | After Abhishek, Trinamool MP Kalyan Banerjee mobbed, injured near Ko
+ 98 | 'One felt nice ... ': Virat Kohli dons special T-shirt, dances with 
+ 37 | French Open 2026: Sabalenka, Osaka clash in blockbuster encounter
+ 19 | India At UN Slams Pakistan Over Civilian Deaths, Raises Afghanistan 
+ 32 | Heatwave to persist across central and northwest India until the end
+ 30 | Admiral Krishna Swaminathan assumes charge as Indian Navy chief
+ 31 | Sabastian Sawe given hero’s welcome in Kenya after sub-two marathon 
+ 20 | Thailand’s former PM Thaksin Shinawatra released from jail
+ 44 | IPL 2026: Dhoni will make decision in best interest of CSK — Simons
+ 20 | More die of suspected Ebola as WHO warns that numbers will rise furt
+ 19 | India and Cyprus Form Strategic Partnership Amid Regional Developmen
+ 32 | British leader Keir Starmer under pressure after heavy election loss
+ 31 | Building collapses in New Delhi, some people rescued, more feared tr
+ 22 | PM Modi Departs For India After Completing Five-Nation Tour
+(20 rows)
+

@@ -1,0 +1,76 @@
+=== 1. headline numbers ===
+ total_new_sources | tried_collection | collected_ok | failing | total_articles_ingested 
+-------------------+------------------+--------------+---------+-------------------------
+                31 |               11 |           11 |       0 |                     190
+(1 row)
+
+
+=== 2. per-source collection status (the 31) ===
+            name            |  type  |           last_coll           | fails | articles 
+----------------------------+--------+-------------------------------+-------+----------
+ TV5 News Telugu            | rss    | 2026-06-04 06:46:38.821347+00 |     0 |       20
+ Telugu Bullet              | rss    | 2026-06-04 06:45:59.627301+00 |     0 |       20
+ Telugu Rajyam              | rss    | 2026-06-04 06:45:37.541859+00 |     0 |       20
+ Tupaki                     | rss    | 2026-06-04 06:44:34.581612+00 |     0 |       20
+ News Meter                 | rss    | 2026-06-04 06:43:56.172937+00 |     0 |       20
+ News9 Live — Telangana     | rss    | 2026-06-04 06:43:55.116141+00 |     0 |       20
+ 10TV                       | rss    | 2026-06-04 06:43:37.484224+00 |     0 |       20
+ TFIPOST South              | rss    | 2026-06-04 06:45:38.248866+00 |     0 |       15
+ Telugu One                 | rss    | 2026-06-04 06:45:28.195352+00 |     0 |       15
+ Visalandhra                | rss    | 2026-06-04 06:45:32.666801+00 |     0 |       10
+ Greater Andhra             | rss    | 2026-06-04 06:44:58.528082+00 |     0 |       10
+ Mahaa News                 | scrape | NEVER                         |     0 |        0
+ ABN Andhra Jyothi          | scrape | NEVER                         |     0 |        0
+ Studio N Telugu            | scrape | NEVER                         |     0 |        0
+ ETV Andhra Pradesh         | scrape | NEVER                         |     0 |        0
+ RTV Telugu                 | scrape | NEVER                         |     0 |        0
+ 10TV News                  | scrape | NEVER                         |     0 |        0
+ AP7AM                      | scrape | NEVER                         |     0 |        0
+ iDream Media News          | scrape | NEVER                         |     0 |        0
+ SumanTV News               | scrape | NEVER                         |     0 |        0
+ Andhra Bhoomi              | scrape | NEVER                         |     0 |        0
+ Suryaa News                | scrape | NEVER                         |     0 |        0
+ Andhra Patrika             | scrape | NEVER                         |     0 |        0
+ Gulte                      | scrape | NEVER                         |     0 |        0
+ Telugu Reporter            | scrape | NEVER                         |     0 |        0
+ Andhra Headlines           | scrape | NEVER                         |     0 |        0
+ Times of India — Hyderabad | scrape | NEVER                         |     0 |        0
+ ABP Desam Telugu           | scrape | NEVER                         |     0 |        0
+ Khabar Live                | scrape | NEVER                         |     0 |        0
+ Telugu Express             | scrape | NEVER                         |     0 |        0
+ Andhra Prabha              | scrape | NEVER                         |     0 |        0
+(31 rows)
+
+
+=== 3. sample of actual articles ingested from these sources ===
+     source      |                                title                                 | lang |         collected_at          
+-----------------+----------------------------------------------------------------------+------+-------------------------------
+ TV5 News Telugu | Petrol Prices: పాకిస్థాన్ లో భారీగా తగ్గిన పెట్రోల్, డీజిల్ ధరలు..                     | te   | 2026-06-04 06:46:38.818473+00
+ TV5 News Telugu | TG: భారత సైన్యానికి అండగా తెలంగాణ టెక్నాలజీ                                       | te   | 2026-06-04 06:46:31.981092+00
+ TV5 News Telugu | MUSK: ప్రపంచంలోనే తొలి 'ట్రిలియనీర్' కానున్న ఎలాన్ మస్క్!                            | te   | 2026-06-04 06:46:25.333202+00
+ TV5 News Telugu | Bhumana Karunakar Reddy  : దారుణంగా 'భూమన' తీరు.. హిందూ సంఘాల ఆగ్రహం       | te   | 2026-06-04 06:46:20.265666+00
+ TV5 News Telugu | AP: ఆంధ్రప్రదేశ్‌లో 48 డిగ్రీలు దాటిన ఎండలు                                     | te   | 2026-06-04 06:46:14.577871+00
+ TV5 News Telugu | Coimbatore Girl Murder Case: కోయంబత్తూరు చిన్నారి హత్య కేసు.. తమిళనా           | te   | 2026-06-04 06:46:07.301051+00
+ TV5 News Telugu | Supreme Court : ట్విషా శర్మ మృతి కేసు.. మీడియా సంయమనం పాటించాలి: సుప              | te   | 2026-06-04 06:46:03.1924+00
+ Telugu Bullet   | Jr NTR Offers a Heartfelt Tribute to Sr NTR on His 103rd Birth Anniv | en   | 2026-06-04 06:45:59.621869+00
+ TV5 News Telugu | LIC : మార్చి త్రైమాసికంలో ఎల్‌ఐసీ ఊచకోత.. ఎస్బీఐ, హెచ్‌డీఎఫ్సీ బ్యాం                       | te   | 2026-06-04 06:45:59.603152+00
+ Telugu Bullet   | OTT Update: Dhanush’s heist thriller Kara premieres on Netflix       | en   | 2026-06-04 06:45:56.732293+00
+ Telugu Bullet   | Sumanth Prabhas’ Godari Gattupaina Arrives on OTT                    | en   | 2026-06-04 06:45:54.467029+00
+ TV5 News Telugu | Foreign Spends : ఫారిన్ టూర్లపై తగ్గిన ఇంట్రెస్ట్.. ఆర్బీఐ రిపోర్ట్‌                   | te   | 2026-06-04 06:45:54.444014+00
+ Telugu Bullet   | Jason Sanjay’s Directorial Debut With Sundeep Kishan Fixes Release D | en   | 2026-06-04 06:45:51.327929+00
+ Telugu Bullet   | Peddi Cleared for AP Premiere Shows at 8 PM; Ticket Rates and Hike A | en   | 2026-06-04 06:45:49.2754+00
+ Telugu Bullet   | Divyenndu: Peddi Explores a Love Triangle with Ram Charan, Janhvi Ka | en   | 2026-06-04 06:45:47.222654+00
+ TV5 News Telugu | India US Trade Deal 2026 : భారత్-అమెరికా మధ్య భారీ ట్రేడ్ డీల్.. అఫీ               | te   | 2026-06-04 06:45:47.203399+00
+ Telugu Bullet   | 2026 Horror Hit ‘The Mummy’ Lands on Indian OTT – Why Many Viewers M | en   | 2026-06-04 06:45:44.771833+00
+ Telugu Bullet   | Premalu Sequel Shelved: Naslen Confirms Disappointing Update for Fan | en   | 2026-06-04 06:45:42.57823+00
+ TV5 News Telugu | Credit Card : క్రెడిట్ కార్డ్ వాడుతున్నారా? ఈ 5 ఛార్జీల గురించి తెలి                   | te   | 2026-06-04 06:45:42.545025+00
+ Telugu Bullet   | Hollywood Horror Film Obsession Opens Well in India                  | en   | 2026-06-04 06:45:39.867049+00
+(20 rows)
+
+
+=== 4. AP-relevance check among new articles ===
+ total | ap_relevant | telugu 
+-------+-------------+--------
+   190 |          51 |     69
+(1 row)
+

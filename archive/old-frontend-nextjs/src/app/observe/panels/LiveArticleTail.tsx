@@ -2,7 +2,18 @@
 
 import { observeApi } from '@/lib/observe-client'
 import { useObservePoll } from '../hooks/useObservePoll'
+import styles from '../observe.module.css'
 import { Panel } from './Panel'
+
+function timeAgo(iso: string | null): string {
+  if (!iso) return '—'
+  const t = new Date(iso).getTime()
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000))
+  if (s < 60) return `${s}s ago`
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
+  return `${Math.floor(s / 86400)}d ago`
+}
 
 export function LiveArticleTail() {
   const { data, isLoading, error } = useObservePoll(
@@ -13,25 +24,24 @@ export function LiveArticleTail() {
 
   return (
     <Panel
-      title="Live article tail"
-      subtitle="Most recent 30 articles (5s polling)"
+      title="Live Article Tail"
+      subtitle="The 30 most recently collected articles"
+      help="Updates every 5 seconds."
       loading={isLoading}
       error={error}
     >
-      <ul className="space-y-1 text-xs max-h-80 overflow-y-auto" data-testid="live-tail-list">
+      <ul className={styles.tailList}>
         {data?.articles.map((a) => (
-          <li key={a.aid} className="border-b border-neutral-200/60 py-0.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="truncate" title={a.title}>
-                {a.title || '(no title)'}
-              </span>
-              <span className="shrink-0 font-mono text-[10px] text-neutral-500">
-                {a.lang ?? '?'} · v{a.extraction_version} · {a.summary_len}c
-              </span>
-            </div>
-            <div className="text-[10px] text-neutral-500">
-              {a.source} ·{' '}
-              {a.collected_at ? new Date(a.collected_at).toLocaleTimeString() : '?'}
+          <li key={a.aid} className={styles.tailItem}>
+            <p className={styles.tailTitle} title={a.title}>{a.title || '(no title)'}</p>
+            <div className={styles.tailMeta}>
+              <strong>{a.source}</strong>
+              <span>·</span>
+              <span>{timeAgo(a.collected_at)}</span>
+              <span>·</span>
+              <span className={styles.chip}>{a.lang ?? '?'}</span>
+              <span className={styles.chip}>v{a.extraction_version}</span>
+              <span className={styles.chip}>{a.summary_len}c</span>
             </div>
           </li>
         ))}

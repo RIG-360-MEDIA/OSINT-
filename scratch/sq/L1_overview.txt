@@ -1,0 +1,148 @@
+=== L1_overview: surfaced totals ===
+ surfaced_loose | surfaced_strict | suppressed | total 
+----------------+-----------------+------------+-------
+          34546 |             714 |         53 | 34599
+(1 row)
+
+=== L1a: percentiles (is_template_family=false) ===
+ percentile | p_article | p_tcoh | p_core | p_isc |  p_imp  
+------------+-----------+--------+--------+-------+---------
+       10.0 |         1 |  0.000 |  0.000 |     1 |   1.000
+       25.0 |         1 |  0.667 |  0.000 |     1 |   1.000
+       50.0 |         1 |  1.000 |  1.000 |     1 |   1.000
+       75.0 |         1 |  1.000 |  1.000 |     1 |   1.000
+       90.0 |         1 |  1.000 |  1.000 |     1 |   1.000
+       95.0 |         2 |  1.000 |  1.000 |     1 |   1.000
+       99.0 |        32 |  1.000 |  1.000 |    16 |  16.000
+      100.0 |      4310 |  1.000 |  1.000 |   233 | 233.000
+(8 rows)
+
+=== L1a: histograms (article_count, title_cohesion, entity_core_cov, isc) ===
+       sig       | bucket  | count 
+-----------------+---------+-------
+ article_count   | 0-10    | 34004
+ article_count   | 100-200 |    43
+ article_count   | 10-25   |   124
+ article_count   | 200-500 |     6
+ article_count   | 25-50   |   224
+ article_count   | 500+    |     5
+ article_count   | 50-100  |   140
+ entity_core_cov | 0.0-0.2 | 12086
+ entity_core_cov | 0.2-0.4 |    70
+ entity_core_cov | 0.4-0.6 |   573
+ entity_core_cov | 0.6-0.8 |   304
+ entity_core_cov | 0.8-1.0 | 21513
+ isc             | 1       | 32966
+ isc             | 11-25   |   423
+ isc             | 2       |   866
+ isc             | 25+     |   105
+ isc             | 3-5     |   170
+ isc             | 6-10    |    16
+ title_coh       | 0.0-0.1 |  7470
+ title_coh       | 0.1-0.2 |   131
+ title_coh       | 0.2-0.3 |   158
+ title_coh       | 0.3-0.4 |   197
+ title_coh       | 0.4-0.5 |    77
+ title_coh       | 0.5+    | 26513
+(24 rows)
+
+=== L1b: joint count grid (article_count > X AND title_cohesion < Y) ===
+  x  |  y  | count 
+-----+-----+-------
+  50 | 0.2 |    66
+  50 | 0.3 |   109
+  50 | 0.4 |   142
+ 100 | 0.2 |    21
+ 100 | 0.3 |    29
+ 100 | 0.4 |    41
+ 150 | 0.2 |     8
+ 150 | 0.3 |    11
+ 150 | 0.4 |    13
+(9 rows)
+
+=== L1c: top_entity_share buckets × article_count buckets ===
+ share_bucket | art_bucket |   n   
+--------------+------------+-------
+ 0.0-0.1      | a:10-50    |     1
+ 0.1-0.2      | a:0-10     |     4
+ 0.1-0.2      | a:10-50    |     3
+ 0.2-0.3      | a:0-10     |    13
+ 0.2-0.3      | a:10-50    |     2
+ 0.3-0.4      | a:0-10     |    52
+ 0.3-0.4      | a:150-500  |     1
+ 0.3-0.4      | a:50-150   |     1
+ 0.4-0.5      | a:0-10     |     6
+ 0.4-0.5      | a:10-50    |    44
+ 0.4-0.5      | a:150-500  |     4
+ 0.4-0.5      | a:500+     |     2
+ 0.4-0.5      | a:50-150   |    31
+ 0.5+         | a:0-10     | 21955
+ 0.5+         | a:10-50    |   298
+ 0.5+         | a:150-500  |     8
+ 0.5+         | a:500+     |     3
+ 0.5+         | a:50-150   |   144
+(18 rows)
+
+=== L1d: top 30 by article_count DESC (is_template_family=false) ===
+               story_id               | article_count | tcoh | core |                    top_ent                    | tshare | span_hours | subject_country |                       rt                       
+--------------------------------------+---------------+------+------+-----------------------------------------------+--------+------------+-----------------+------------------------------------------------
+ b6f91d2b-4838-4845-90c2-0f6be08595fc |          4310 | 0.10 | 0.72 | iran                                          |   0.72 |     1095.1 | IN              | Has the US-Iran ceasefire reset the clock on W
+ 76c64c8e-8d66-4b1a-8470-082d46795912 |          1601 | 0.13 | 0.57 | donald trump                                  |   0.57 |     1094.3 | US              | What to know about the primary elections in th
+ 0820fa58-450d-45dc-bf65-86dd082d268a |          1534 | 0.07 | 0.55 | israel                                        |   0.55 |     1095.1 | XX              | Live: Trump says Israel and Lebanon have agree
+ 4ded16a6-a158-434e-af08-6afc152c9741 |           630 | 0.11 | 0.46 | donald trump                                  |   0.46 |     1071.7 | IN              | From agave syrup to raw materials: EU, Mexico 
+ bd04c18c-1145-4d3a-b9be-33641ad4d79f |           522 | 0.44 | 0.43 | mv hondius                                    |   0.43 |      684.8 | ES              | Two dead after respiratory illness outbreak on
+ fc53f9d5-2a07-48d6-afa3-54179ac4de37 |           444 | 0.62 | 0.61 | mick price                                    |   0.61 |     1082.3 | IN              | Coal India Share Price Live Updates: Coal Indi
+ 4c3c8bb2-6865-493c-8171-230746c0bac4 |           330 | 0.35 | 0.37 | nancy guthrie                                 |   0.37 |     1082.2 | US              | 'Where is Savannah?': Nancy Guthrie case takes
+ 90bb790f-b540-4dc6-9285-ba7397414cfe |           272 | 0.51 | 0.51 | twisha sharma                                 |   0.51 |      736.8 | IN              | Family Satisfied With Supreme Court’s Suo Motu
+ c6e17224-c1dd-4167-8c36-40a5502643e5 |           229 | 0.35 | 0.57 | kerala                                        |   0.57 |      796.8 | IN              | No cat in treasury, Kerala in good position fi
+ 2fc127da-f3dd-475f-ade0-8b096c6e7ea5 |           210 | 0.16 | 0.62 | cuba                                          |   0.62 |     1079.7 | CU              | US charges against Raul Castro have no legal b
+ 7c658602-b664-46e4-b094-87fafa60b069 |           208 | 0.05 | 0.47 | all progressives congress national leadership |   0.47 |     1092.2 | NG              | Six Ondo South LGs back Kekemeke for APC senat
+ e4687ac3-bfb8-4e71-a966-71de03ecc62a |           192 | 0.26 | 0.46 | elon musk                                     |   0.46 |     1081.8 | US              | Former OpenAI board member says Elon Musk offe
+ be9439d5-53c6-41ea-aa46-6ba3f6ecd6ec |           189 | 0.58 | 0.65 | italy                                         |   0.65 |      668.8 | IT              | Brock Lesnar Announced For Surprising Appearan
+ 7b718aeb-bb26-40d5-ac4b-af2d0260fedd |           171 | 0.23 | 0.50 | nifty                                         |   0.50 |     1082.3 | IN              | Gainers &amp; Losers: Tech Mahindra, Vedanta a
+ a55bc62c-bad9-4b24-97ef-e52e284030f4 |           169 | 0.24 | 0.63 | nifty                                         |   0.63 |     1093.0 | IN              | Anand James’ top picks: Why Time Techno and Sh
+ 224ee8d1-aa91-40bd-82b0-2f51e3b91a49 |           165 | 0.06 | 0.46 | nigeria                                       |   0.46 |     1084.5 | NG              | Party primaries and accountability, By Reuben 
+ c0a31ab7-98b6-4e9a-a6f8-7d6d311bab94 |           165 | 0.10 | 0.46 | nigeria                                       |   0.46 |     1094.2 | NG              | Accord faults deregistration calls, insists on
+ 1e6d82e2-ed22-4881-aa96-0c1c575348ba |           164 | 0.45 | 0.76 | south africa                                  |   0.76 |      901.5 | ZA              | Malema criticises Ghana’s evacuation of citize
+ bf9bb0c7-6a3f-493b-b0f4-4c21fc3ae04d |           148 | 0.07 | 0.47 | bola tinubu                                   |   0.47 |      927.1 | NG              | Nigeria will soon overcome security challenges
+ e141a04c-53a7-4f01-8c56-d2fa0b6df234 |           146 | 0.36 | 0.49 | suvendu adhikari                              |   0.49 |     1069.9 | IN              | Suvendu Adhikari announces ‘detect, delete and
+ 6f6428a5-3865-4190-a363-ebeb38dcf827 |           141 | 0.36 | 0.45 | east bengal football club                     |   0.45 |     1074.4 | IN              | ISL 2025-26 — Sportstar’s team of the season f
+ 1b18981a-21d3-4c15-939a-d51ff4b73d73 |           140 | 0.16 | 0.56 | nifty                                         |   0.56 |     1093.1 | IN              | Indian markets seen weak at open amid Iran-US 
+ ac9cdb1f-2c97-457d-b96e-40805939f0a7 |           135 | 0.49 | 0.46 | gujarat                                       |   0.46 |     1046.8 | IN              | ipl 2026 csk crashes out after losing to gujar
+ b9c5cc3f-6691-40b0-b8ae-bcdc5e0707b5 |           134 | 0.17 | 0.47 | all india trinamool congress                  |   0.47 |     1045.5 | IN              | TMC Reports Attack on Youth Wing Office in Bah
+ 12704af6-152e-4c05-b97b-74f491bea220 |           127 | 0.53 | 0.72 | chennai super kings                           |   0.72 |     1076.4 | IN              | Good news for CSK, MS Dhoni is all set to play
+ 87303a45-6410-48da-85da-a955d4404e28 |           126 | 0.11 | 0.57 | france                                        |   0.57 |      728.2 | KE              | Macron tours East Africa amid push to redefine
+ fc9f6e48-4a0d-483d-90b0-aaa4d1ee003d |           124 | 0.39 | 0.50 | vaibhav sooryavanshi                          |   0.50 |      111.3 | IN              | Vaibhav Sooryavanshi enjoys IPL 2026 final wit
+ 8a4b3ef3-c79a-4179-a0f4-47c800498132 |           121 | 0.33 | 0.53 | kolkata knight riders                         |   0.53 |     1081.0 | IN              | DC vs KKR IPL 2026: Will Sameer Rizvi Play In 
+ 2ae6bbf0-6146-405b-8d61-95d50c8a308d |           120 | 0.43 | 0.78 | royal challengers bengaluru                   |   0.78 |      910.1 | IN              | 'We asked ourselves a question last year ... '
+ c53947cd-1b0f-4080-9445-b6ae47402af7 |           119 | 0.18 | 0.61 | africa                                        |   0.61 |     1081.8 | NG              | Rwanda: Bal Innovation Summit Highlights Afric
+(30 rows)
+
+=== L1e: language profile ===
+     cls     |   n   | avg_art | med_art | avg_tcoh | avg_lang_count 
+-------------+-------+---------+---------+----------+----------------
+ en_only     | 24229 |     1.2 |     1.0 |    0.985 |           1.00
+ vernac_only |  9580 |     1.0 |     1.0 |    0.229 |           1.01
+ multi       |   737 |    46.5 |    27.0 |    0.385 |           3.61
+(3 rows)
+
+=== L1e: language_count distribution (multi only) ===
+ lang_count |   n   
+------------+-------
+          1 | 33733
+          2 |   420
+          3 |   114
+          4 |    82
+          5 |    68
+          6 |    54
+          7 |    35
+          8 |    13
+          9 |    10
+         10 |     9
+         11 |     4
+         12 |     1
+         14 |     1
+         20 |     1
+         22 |     1
+(15 rows)
+

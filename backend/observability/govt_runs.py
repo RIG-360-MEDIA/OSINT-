@@ -62,7 +62,9 @@ async def finish_collection_run(
 
 async def update_source_health(db, *, source_id: str, success: bool) -> None:
     """Mirror the RSS pattern: bump health on success, decrement on error,
-    auto-disable after 10 consecutive failures."""
+    auto-disable after 25 consecutive failures (2026-05-27: raised from 10,
+    and health floor raised 0.0 → 0.1 so circuit breaker doesn't lock a
+    source out permanently after a transient outage)."""
     if success:
         await db.execute(text("""
             UPDATE govt_document_sources
@@ -74,13 +76,13 @@ async def update_source_health(db, *, source_id: str, success: bool) -> None:
     else:
         row = (await db.execute(text("""
             UPDATE govt_document_sources
-            SET health_score = GREATEST(health_score - 0.2, 0.0),
+            SET health_score = GREATEST(health_score - 0.2, 0.1),
                 consecutive_failures = consecutive_failures + 1,
                 last_scraped_at = NOW()
             WHERE id = CAST(:sid AS uuid)
             RETURNING name, consecutive_failures
         """), {"sid": source_id})).fetchone()
-        if row and row.consecutive_failures >= 10:
+        if row and row.consecutive_failures >= 25:
             await db.execute(text("""
                 UPDATE govt_document_sources
                 SET is_active = FALSE

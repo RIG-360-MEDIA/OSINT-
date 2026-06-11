@@ -5,12 +5,19 @@ import { useState } from 'react'
 
 import { observeApi, type AuditQueue as AuditQueueT, type Verdict } from '@/lib/observe-client'
 import { useObservePoll } from '../hooks/useObservePoll'
+import styles from '../observe.module.css'
 import { Panel } from './Panel'
 
-const VERDICTS: Array<{ k: Verdict; label: string; tone: string }> = [
-  { k: 'correct', label: '✓', tone: 'bg-emerald-600' },
-  { k: 'wrong', label: '✗', tone: 'bg-red-600' },
-  { k: 'unsure', label: '?', tone: 'bg-neutral-500' },
+const FLAG_LABEL: Record<string, { label: string; explain: string }> = {
+  placeholder_subject:        { label: 'Hallucinated subject',    explain: 'LLM wrote literal "article" instead of the real subject.' },
+  is_future_contradicts_date: { label: 'is_future but past date', explain: 'Flagged as future but extracted event date is in the past.' },
+  lang_mistag_telugu:         { label: 'EN-tagged + Telugu chars',explain: 'language_detected=en but title has Telugu characters.' },
+}
+
+const VERDICTS: Array<{ k: Verdict; emoji: string; label: string; cls: string }> = [
+  { k: 'correct', emoji: '✓', label: 'Correct', cls: styles.verdictCorrect },
+  { k: 'wrong',   emoji: '✗', label: 'Wrong',   cls: styles.verdictWrong   },
+  { k: 'unsure',  emoji: '?', label: 'Unsure',  cls: styles.verdictUnsure  },
 ]
 
 export function AuditQueue() {
@@ -28,10 +35,7 @@ export function AuditQueue() {
     setLastError(null)
     try {
       await observeApi.auditDecision({
-        article_id: aid,
-        field_name: flag,
-        extraction_version: 3,
-        verdict,
+        article_id: aid, field_name: flag, extraction_version: 3, verdict,
       })
       await qc.invalidateQueries({ queryKey: ['audit-queue'] })
     } catch (e) {
@@ -43,46 +47,52 @@ export function AuditQueue() {
 
   return (
     <Panel
-      title="Audit queue"
-      subtitle={data ? `${data.queue.length} flagged for review` : ''}
+      title="Audit Queue"
+      subtitle="Articles flagged by automated checks — mark Correct / Wrong / Unsure"
+      help="Marked items leave the queue."
+      status={!data ? null : data.queue.length > 20 ? 'warn' : 'ok'}
       loading={isLoading}
       error={error ?? lastError}
+      span2
     >
-      <ul className="space-y-1 text-xs max-h-80 overflow-y-auto" data-testid="audit-queue-list">
-        {data?.queue.map((r) => {
-          const id = r.aid + ':' + r.flag
-          return (
-            <li key={id} className="border-b border-neutral-200/60 py-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate" title={r.title}>
-                  {r.title || '(no title)'}
-                </span>
-                <span className="flex gap-1">
+      {data?.queue.length === 0 ? (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyEmoji}>✨</div>
+          <div className={styles.emptyText}>Queue is empty — nothing flagged right now.</div>
+        </div>
+      ) : (
+        <ul className={styles.queueList} data-testid="audit-queue-list">
+          {data?.queue.map((r) => {
+            const id = r.aid + ':' + r.flag
+            const meta = FLAG_LABEL[r.flag] ?? { label: r.flag, explain: '' }
+            return (
+              <li key={id} className={`${styles.queueItem} ${r.existing_verdict ? styles.decided : ''}`}>
+                <div className={styles.queueBody}>
+                  <p className={styles.queueTitle} title={r.title}>{r.title || '(no title)'}</p>
+                  <div className={styles.queueMeta}>
+                    <span className={styles.flagChip} title={meta.explain}>{meta.label}</span>
+                    <span>{r.source}</span>
+                    {r.hint && <span className={styles.queueHint}>“{r.hint}”</span>}
+                  </div>
+                </div>
+                <div className={styles.verdictRow}>
                   {VERDICTS.map((v) => (
                     <button
                       key={v.k}
                       onClick={() => decide(r.aid, r.flag, v.k)}
                       disabled={pendingId === id}
-                      className={`rounded px-1.5 py-0.5 text-white ${v.tone} ${r.existing_verdict === v.k ? 'ring-2 ring-yellow-400' : ''} ${pendingId === id ? 'opacity-50' : ''}`}
-                      data-testid={`verdict-${v.k}`}
-                      aria-label={`mark ${v.k}`}
+                      title={v.label}
+                      className={`${styles.verdict} ${v.cls} ${r.existing_verdict === v.k ? styles.verdictActive : ''}`}
                     >
-                      {v.label}
+                      {v.emoji}
                     </button>
                   ))}
-                </span>
-              </div>
-              <div className="flex justify-between text-[10px] text-neutral-500">
-                <span>
-                  <span className="rounded bg-amber-100 px-1 text-amber-800">{r.flag}</span> ·{' '}
-                  {r.source}
-                </span>
-                <span>{r.hint}</span>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </Panel>
   )
 }

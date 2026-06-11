@@ -3,7 +3,9 @@
     "allow": [
       "Bash(docker exec rig-postgres psql -U rig -d rig -c 'SELECT:*)",
       "Bash(docker exec *)",
-      "WebSearch"
+      "WebSearch",
+      "Read(//c/Users/Dell/.claude/plans/**)",
+      "Bash(mkdir -p \"C:/Users/Dell/.claude/plans/\")"
     ]
   }
 }

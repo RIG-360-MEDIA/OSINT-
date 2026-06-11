@@ -1,0 +1,747 @@
+ Palla Rajeshwar Reddy | Pallla Rajeshwar Reddy | 0.955 | person
+ Mining & Allied Machinery Corporation Limited | Mining and Allied Machinery Corporation Limited | 0.933 | organization
+ Suresh Kumar | S. Suresh Kumar | 0.929 | person
+ Indian National Congress | Indian National Congress (INC) | 0.926 | person
+ Pawan Kalyan | K. Pawan Kalyan | 0.923 | person
+ Israeli Ministry of Foreign Affairs | Ministry of Foreign Affairs Israel | 0.919 | organization
+ Department of Homeland Security | US Department of Homeland Security | 0.914 | organization
+ Jyotiraditya M. Scindia | Jyotiraditya Scindia | 0.913 | person
+ Ministry of Commerce and Industry | Ministry of Commerce and Industry (India) | 0.912 | organization
+ Indian Meteorological Department | India Meteorological Department | 0.912 | organization
+ Michael A. Goldstein | Michael Goldstein | 0.900 | person
+ Tedros Adhanom Ghebreyesus | Dr Tedros Adhanom Ghebreyesus | 0.900 | person
+ N Uttam Kumar Reddy | Uttam Kumar Reddy | 0.900 | person
+ N. Uttam Kumar Reddy | Uttam Kumar Reddy | 0.900 | person
+ Mahesh Kumar Goud | B. Mahesh Kumar Goud | 0.900 | person
+ Lebanese Ministry of Health | Lebanese Health Ministry | 0.893 | organization
+ Ponguleti Srinivasa Reddy | Ponguleti Srinivas Reddy | 0.889 | person
+ Fatehgarh Sahib | Fatehgarh Sahib (SC) | 0.889 | person
+ Kerala Congress (M) | Kerala Congress | 0.889 | person
+ Nandamuri Taraka Rama Rao | Nandamuri Taraka Rama Rao Jr. | 0.889 | person
+ K Kavitha | Kavitha | 0.889 | person
+ Elected in by-election in 2020 | re elected in 2020 by-election. | 0.885 | person
+ Dadra and Nagar Haveli | Dadra and Nagar Haveli (ST) | 0.885 | location
+ Jagadish Reddy | G. Jagadish Reddy | 0.882 | person
+ Department of Justice | US Department of Justice | 0.880 | organization
+ Dr Johnson Pandit Asiama | Johnson Pandit Asiama | 0.880 | person
+ V. Srinivas Goud | Srinivas Goud | 0.875 | person
+ V Srinivas Goud | Srinivas Goud | 0.875 | person
+ Israel Defense Forces | Israeli Defense Forces | 0.875 | organization
+ Punya Salila Srivastava | Puny Salila Srivastava | 0.875 | person
+ Ministry of Foreign Affairs | UAE Ministry of Foreign Affairs | 0.875 | organization
+ Ramakrishna Rao | K. Ramakrishna Rao | 0.875 | person
+ Telangana Government | Government of Telangana | 0.875 | organization
+ Johnson Asiedu Nketia | Johnson Asiedu Nketiah | 0.875 | person
+ V. Sunil Kumar | V. R. Sunil Kumar | 0.875 | person
+ Rana Randhir Singh | Randhir Singh | 0.875 | person
+ Nuclear Power Corporation of India (NPCIL) | Nuclear Power Corporation of India | 0.875 | organization
+ Edward Maynard Des Champs Chamier | Sir Edward Maynard Des Champs Chamier | 0.875 | person
+ Deputy Leader of the Opposition | Deputy Leader of Opposition | 0.871 | person
+ Duddila Sridhar Babu | Duddilla Sridhar Babu | 0.870 | person
+ Government of Pakistan | Pakistan Government | 0.870 | organization
+ Northern Angami II (ST) | Northern Angami I (ST) | 0.870 | person
+ Rajeev Kumar Rai | Rajeev Kumar | 0.867 | person
+ Satish Kumar | Satish Kumar Sah | 0.867 | person
+ P. Nandakumar | A. P. Nandakumar | 0.867 | person
+ Joseph Vijay | C. Joseph Vijay | 0.867 | person
+ C Joseph Vijay | Joseph Vijay | 0.867 | person
+ Won in November 2024 bypoll | Won in November 2025 Bypoll | 0.867 | person
+ Donald J. Trump | Donald Trump | 0.867 | person
+ Sanjay Kumar | M. Sanjay Kumar | 0.867 | person
+ Shahjahanpur | Shahjahanpur (SC) | 0.867 | location
+ Sir Keir Starmer | Keir Starmer | 0.867 | person
+ Pakistan Government | Pakistani government | 0.864 | organization
+ Government officials | Government Official | 0.864 | role
+ Department of Justice | Justice Department | 0.864 | organization
+ Vice President of the United States | President of the United States | 0.861 | role
+ A Revanth Reddy | Revanth Reddy | 0.857 | person
+ India Today | India Today TV | 0.857 | organization
+ Mohammed Amin Adam | Dr Mohammed Amin Adam | 0.857 | person
+ Ministry of Commerce | Commerce Ministry | 0.857 | organization
+ Tuensang Sadar II (ST) | Tuensang Sadar I (ST) | 0.857 | person
+ V. Sunil Kumar | Sunil Kumar | 0.857 | person
+ Zee Entertainment Enterprises Ltd | Zee Entertainment Enterprises | 0.857 | organization
+ John C. Phelan | John Phelan | 0.857 | person
+ Abdul Samad | P. Abdul Samad | 0.857 | person
+ Gautam Buddha Nagar | Gautam Buddh Nagar | 0.857 | location
+ A. Revanth Reddy | Revanth Reddy | 0.857 | person
+ K. Revanth Reddy | Revanth Reddy | 0.857 | person
+ Volodymyr Zelensky | Volodymyr Zelenskyy | 0.857 | person
+ Pakistan Muslim League (Q) | Pakistan Muslim League (N) | 0.852 | organization
+ Foreign, Commonwealth and Development Office | UK Foreign, Commonwealth & Development Office | 0.851 | organization
+ south of Garo Hills | South Garo Hills | 0.850 | location
+ Punjab and Sind Bank | Punjab & Sind Bank | 0.850 | organization
+ Dr. Papa Kwesi Nduom | Papa Kwesi Nduom | 0.850 | person
+ YS Jagan Mohan Reddy | Jagan Mohan Reddy | 0.850 | person
+ North West Delhi | North West Delhi (SC) | 0.850 | location
+ President of the Philippines | Vice President of the Philippines | 0.848 | role
+ Ministry of Foreign Affairs | Thai Ministry of Foreign Affairs | 0.848 | organization
+ Ministry of Foreign Affairs | Ministry of Foreign Affairs (Korea) | 0.848 | organization
+ Ministry of Foreign Affairs | Ministry of Foreign Affairs (Iran) | 0.848 | organization
+ T Harish Rao | Harish Rao | 0.846 | person
+ Department of Justice | U.S. Department of Justice | 0.846 | organization
+ T. Harish Rao | Harish Rao | 0.846 | person
+ Samastipur (SC) | Samastipur | 0.846 | location
+ Income Tax Department | Income Tax Department (India) | 0.846 | organization
+ Sir Arthur Trevor Harries | Arthur Trevor Harries | 0.846 | person
+ Hindustan Photo Films Manufacturing Company Limited | Hindustan Photo Films Manufacturing Company | 0.846 | organization
+ Tennis Federation of India | Table Tennis Federation of India | 0.844 | organization
+ Iranian officials | Iranian official | 0.842 | role
+ Bhatti Vikramarka | Bhatti Vikramark | 0.842 | person
+ Purba Bardhaman | Bardhaman Purba (SC) | 0.842 | location
+ Government of Ghana | Ghana government | 0.842 | organization
+ Shiva Pratap Shukla | Shiv Pratap Shukla | 0.842 | person
+ Sultan bin Ahmed Al Jaber | Sultan Ahmed Al Jaber | 0.840 | person
+ Elected in by-election in 2020 | Elected in 2024 by-election | 0.840 | person
+ 19th CJ of Madhya Pradesh HC | 9th CJ of Madhya Pradesh HC | 0.839 | person
+ Visakhapatnam , Andhrapradesh | Visakhapatnam , Andhra Pradesh | 0.839 | organization
+ 1st CJ of Madhya Pradesh HC | 21st CJ of Madhya Pradesh HC | 0.839 | person
+ Justice Satish Kumar Agnihotri | Justice Satish Kumar Agnihotri (acting) | 0.838 | person
+ International Court of Justice | International Court of Justice (location) | 0.838 | organization
+ Police officials | Police official | 0.833 | role
+ Chief Minister | Dy Chief Minister | 0.833 | person
+ Economic Times | The Economic Times | 0.833 | organization
+ Sajjad Gani Lone | Sajad Gani Lone | 0.833 | person
+ K. Chandrashekar Rao | K. Chandrashekar Rao ( BRS ) | 0.833 | person
+ Leader of Opposition | Leader of the Opposition | 0.833 | person
+ K. K. S. S. R. Ramachandran | K. Ramachandran | 0.833 | person
+ K. K. S. S. R. Ramachandran | K. K. Ramachandran | 0.833 | person
+ Intelligence Bureau | Intelligence Bureau (India) | 0.833 | organization
+ B. N. Sinha | A. B. N. Sinha | 0.833 | person
+ B. N. Singh | B. N. P. Singh | 0.833 | person
+ B. N. P. Singh | B. P. Singh | 0.833 | person
+ 9 January 1936 – 1943 | 9 January 1936– | 0.833 | person
+ Chamarajanagar | Chamarajanagar (SC) | 0.833 | location
+ UAE Ministry of Defence | Ministry of Defence | 0.833 | organization
+ Chhota Udaipur (ST) | Chhota Udaipur | 0.833 | location
+ Congress leaders | Congress leader | 0.833 | role
+ industry source | industry sources | 0.833 | role
+ The New York Times | New York Times | 0.833 | organization
+ The Wall Street Journal | Wall Street Journal | 0.833 | organization
+ Ministry of National Defense | Ministry of National Defense (Korea) | 0.829 | organization
+ Ministry of Defense of Russia | Russia’s Defense Ministry | 0.828 | organization
+ Ministry of Defense of Russia | Russia's Defense Ministry | 0.828 | organization
+ Jindal Steel and Power | Jindal Steel & Power | 0.826 | organization
+ Miniratna Category - l | Miniratna Category - I | 0.826 | organization
+ Kolusu Parthasarathy | Kolusu Parthasarathi | 0.826 | person
+ John Douglas Young | Sir John Douglas Young | 0.826 | person
+ Churachandpur (ST) | Churachandpur | 0.824 | location
+ Ambedkar Nagar (SC) | Ambedkar Nagar | 0.824 | location
+ Jagatsinghpur | Jagatsinghpur (SC) | 0.824 | location
+ International Atomic Energy Agency | International Energy Agency | 0.824 | organization
+ Ministry of Foreign Affairs | Dutch Ministry of Foreign Affairs | 0.824 | organization
+ Rukmini Vasant | Rukmini Vasanth | 0.824 | person
+ International | International (CE) | 0.824 | location
+ Ministry of Foreign Affairs | Saudi Ministry of Foreign Affairs | 0.824 | organization
+ Ministry of Foreign Affairs | Ministry of Foreign Affairs of Egypt | 0.824 | organization
+ 13th Assam Assembly | 13th Assembly | 0.824 | person
+ Dr. VK Vijayakumar | VK Vijayakumar | 0.824 | person
+ Donald Trump Jr. | Donald J. Trump | 0.824 | person
+ R. Radhakrishnan | K. Radhakrishnan | 0.824 | person
+ Security sources | security source | 0.824 | role
+ International Labour Organisation | International Labour Organization | 0.824 | organization
+ Ministry of Foreign Affairs | Ministry of Foreign Affairs of Japan | 0.824 | organization
+ Ministry of Foreign Affairs | Ministry of Foreign Affairs of China | 0.824 | organization
+ Directorate-General for External Security | Directorate-General for Internal Security | 0.822 | organization
+ U.S. Department of Justice | US Department of Justice | 0.821 | organization
+ Israeli foreign ministry | Israel's Foreign Ministry | 0.821 | organization
+ Kinjarapu Rammohan Naidu | Kinjarapu Ram Mohan Naidu | 0.821 | person
+ SBI Life Insurance Company Limited | SBI Life Insurance Company | 0.818 | organization
+ Jose Manuel Albares | José Manuel Albares | 0.818 | person
+ S. Ali Ahmad | Ahmad Ali | 0.818 | person
+ R. Gandhi | M. R. Gandhi | 0.818 | person
+ B. P. Harish | Harish P | 0.818 | person
+ Jupally Krishna Rao | Jupalli Krishna Rao | 0.818 | person
+ Somireddy Chandra Mohan Reddy | Somireddy Chandramohan Reddy | 0.815 | person
+ President of Colombia | Vice President of Colombia | 0.815 | role
+ Pemmasani Chandrasekhar | Pemmasani Chandra Sekhar | 0.815 | person
+ Devendra Pratap Singh | Raja Devendra Pratap Singh | 0.815 | person
+ Pemmasani Chandrasekhar | Chandra Sekhar Pemmasani | 0.815 | person
+ Vice President of Indonesia | President of Indonesia | 0.815 | role
+ Chancellor of Germany | Vice-Chancellor of Germany | 0.815 | role
+ Shyamnandan Prasad Singh | Shyam Nandan Prasad Singh | 0.815 | person
+ President of Argentina | Vice President of Argentina | 0.815 | role
+ 19th CJ of Madhya Pradesh HC | 11th CJ of Madhya Pradesh HC | 0.813 | person
+ Donald Trump Jr. | Donald Trump | 0.813 | person
+ Israel Police | Israeli police | 0.813 | organization
+ Nagarkurnool (SC) | Nagarkurnool | 0.813 | location
+ R. Vaithilingam | V. Vaithilingam | 0.813 | person
+ C. V. Shanmugam | C Ve Shanmugam | 0.813 | person
+ Gideon Boako | Dr Gideon Boako | 0.813 | person
+ Meteorological Department | India Meteorological Department | 0.813 | organization
+ C.V. Shanmugam | C Ve Shanmugam | 0.813 | person
+ Tunji Alausa | Dr. Tunji Alausa | 0.813 | person
+ Justice Laxmi Kanta Mohapatra | Justice Laxmi Kanta Mohapatra (acting) | 0.811 | person
+ General Insurance Corporation | General Insurance Corporation of India | 0.811 | organization
+ Foreign Minister | UAE Foreign Minister | 0.810 | role
+ WTO Director-General | Director General | 0.810 | role
+ New Democratic Party | Democratic Party | 0.810 | organization
+ Y.S. Jagan Mohan Reddy | Jagan Mohan Reddy | 0.810 | person
+ Won in 2023 bypoll | Won in 2025 bypoll | 0.810 | person
+ Y. S. Jagan Mohan Reddy | Jagan Mohan Reddy | 0.810 | person
+ Director General | WHO Director-General | 0.810 | role
+ Abdulaziz bin Salman | Salman bin Abdulaziz Al Saud | 0.808 | person
+ Vice President of Türkiye | President of Türkiye | 0.808 | role
+ Vice President of Nigeria | President of Nigeria | 0.808 | role
+ Vice President of the UAE | President of the UAE | 0.808 | role
+ House of Representatives | House of Representatives (Egypt) | 0.806 | organization
+ 7th CJ of Madhya Pradesh HC | 9th CJ of Madhya Pradesh HC | 0.806 | person
+ Communist Party of India | Communist Party of India (Marxist) | 0.806 | person
+ Union Ministry of Home Affairs | Ministry of Home Affairs | 0.806 | organization
+ Ministry of Home Affairs (India) | Ministry of Home Affairs | 0.806 | organization
+ House of Representatives (Japan) | House of Representatives | 0.806 | organization
+ Income Tax Appellate Tribunal | Mumbai Income Tax Appellate Tribunal | 0.806 | organization
+ Income Tax Appellate Tribunal | Income Tax Appellate Tribunal, Mumbai | 0.806 | organization
+ Electronics Corporation of India | Electronics Corporation of India Limited | 0.805 | organization
+ Tata Motors | Tata Motors PV | 0.800 | organization
+ Justice BV Nagarathna | Justice B.V. Nagarathna | 0.800 | person
+ Power Grid Corporation of India Limited | Power Grid Corporation of India | 0.800 | organization
+ Ministry of Foreign Affairs | Polish Ministry of Foreign Affairs | 0.800 | organization
+ Ministry of Foreign Affairs | Mexican Ministry of Foreign Affairs | 0.800 | organization
+ Ministry of Defense of Russia | Ministry of Defence of Russia | 0.800 | organization
+ Ministry of Justice (Japan) | Ministry of Justice | 0.800 | organization
+ K. Ashok Kumar | N. Ashok Kumar | 0.800 | person
+ Ministry of Foreign Affairs | Ministry of Foreign Affairs Israel | 0.800 | organization
+ Mahabubabad (ST) | Mahabubabad | 0.800 | location
+ C. R. Patil | C. C. Patil | 0.800 | person
+ Ministry of Defence | Thai Ministry of Defence | 0.800 | organization
+ Raman Singh | Dr. Raman Singh | 0.800 | person
+ Solapur (SC) | Solapur | 0.800 | location
+ Nikolai Patrushev | Nikolay Patrushev | 0.800 | person
+ M. Panneerselvam | M. R. K. Panneerselvam | 0.800 | person
+ CM Revanth Reddy | Revanth Reddy | 0.800 | person
+ Vice President of Brazil | President of Brazil | 0.800 | role
+ Nabarangpur | Nabarangpur (ST) | 0.800 | location
+ Ministry of Finance | Thai Ministry of Finance | 0.800 | organization
+ Thummala Nageswara Rao | Tummala Nageswara Rao | 0.800 | person
+ Sitapur (ST) | Sitapur | 0.800 | location
+ PV Sunil Kumar | Sunil Kumar | 0.800 | person
+ Dr Neiphiu Rio | Neiphiu Rio | 0.800 | person
+ Ministry of Foreign Affairs of Russia | Ministry of Foreign Affairs | 0.800 | organization
+ Dutch Ministry of Defence | Ministry of Defence | 0.800 | organization
+ Adi Srinivas | Aadi Srinivas | 0.800 | person
+ Life Insurance Corporation of India | Life Insurance Corporation | 0.794 | organization
+ Justice Narendra Kumar Jain | Justice Narendra Kumar Jain (acting) | 0.794 | person
+ Justice Rakesh Ranjan Prasad (acting) | Justice Rakesh Ranjan Prasad | 0.794 | person
+ Chief of the General Staff | Chief of the General Staff (Türkiye) | 0.794 | role
+ Russian defence ministry | Ministry of Defence of Russia | 0.793 | organization
+ Security Council of Russia | Russian Security Council | 0.793 | organization
+ World Health Organization | World Health Organisation | 0.793 | organization
+ Kongunadu Makkal Desia Katchi | Kongunadu Makkal Katchi | 0.793 | organization
+ AU Small Finance Bank | Fino Small Finance Bank | 0.792 | organization
+ Vice President of India | President of India | 0.792 | role
+ Satish Chandra | Satish Chandra Rai | 0.789 | person
+ Ashwini Vaishnaw | Ashwini Vaishnav | 0.789 | person
+ Shipping Corporation of India | Shipping Corporation of India Limited | 0.789 | organization
+ DCP Anthony Placid | Anthony Placid | 0.789 | person
+ Jitendra Kumar Ray | Jitendra Kumar | 0.789 | person
+ YSR Congress Party | Congress Party | 0.789 | organization
+ Channel 13 (Israel) | Channel 12 (Israel) | 0.789 | organization
+ Bandi Sai Bhagirath | Bandi Bhagirath | 0.789 | person
+ 23rd CJ of Himachal Pradesh HC | 2nd CJ of Himachal Pradesh HC | 0.788 | person
+ Jitendra Kumar Maheshwari | Justice Jitendra Kumar Maheshwari | 0.788 | person
+ 20th CJ of Himachal Pradesh HC | 2nd CJ of Himachal Pradesh HC | 0.788 | person
+ Indian Meteorological Department | Meteorological Department | 0.788 | organization
+ Hoshiarpur | Hoshiarpur (SC) | 0.786 | location
+ Chandrapur | Chandrapur (SC) | 0.786 | location
+ Viluppuram (SC) | Viluppuram | 0.786 | location
+ US officials | US official | 0.786 | role
+ South Korean government | Government of South Korea | 0.786 | organization
+ Adhav Arjuna | Aadhav Arjuna | 0.786 | person
+ Jugal Kishore Mohanty | Justice Jugal Kishore Mohanty | 0.786 | person
+ Mohammad Jamil Ur Rehman | Mohammad Jamil Ur Rahman | 0.786 | person
+ M. Sivasankar | S. S. Sivasankar | 0.786 | person
+ Koonamneni Sambasiva Rao | Koonaneneni Sambasiva Rao | 0.786 | person
+ Container Corporation of India Limited | Container Corporation of India | 0.784 | organization
+ Chief Cabinet Secretary | Cabinet Secretary | 0.783 | role
+ Himanta Biswa Sarma | Himanta Biswa Sharma | 0.783 | person
+ K. Chandrashekar Rao | K Chandrashekhar Rao | 0.783 | person
+ Randeep Surjewala | Randeep Singh Surjewala | 0.783 | person
+ Y.S. Jagan Mohan Reddy | YS Jagan Mohan Reddy | 0.783 | person
+ YS Jagan Mohan Reddy | Y. S. Jagan Mohan Reddy | 0.783 | person
+ Channels Television | TN (television channel) | 0.783 | organization
+ 11th CJ of Madhya Pradesh HC | 9th CJ of Madhya Pradesh HC | 0.781 | person
+ 19th CJ of Madhya Pradesh HC | 7th CJ of Madhya Pradesh HC | 0.781 | person
+ 11th CJ of Madhya Pradesh HC | 1st CJ of Madhya Pradesh HC | 0.781 | person
+ Justice Sunil Kumar Sinha (acting) | Justice Sunil Kumar Sinha | 0.781 | person
+ 19th CJ of Madhya Pradesh HC | 1st CJ of Madhya Pradesh HC | 0.781 | person
+ 7th CJ of Madhya Pradesh HC | 11th CJ of Madhya Pradesh HC | 0.781 | person
+ National Mineral Development Corporation | J & K Mineral Development Corporation | 0.780 | organization
+ Member of Parliament | Member of Parliament (India) | 0.778 | role
+ Luiz In1cio Lula da Silva | Luiz Inácio Lula da Silva | 0.778 | person
+ 38th CJ of Allahabad HC | 35th CJ of Allahabad HC | 0.778 | location
+ Italian Ministry of Foreign Affairs | Ministry of Foreign Affairs | 0.778 | organization
+ R. Siva | P. R. Siva | 0.778 | person
+ Ministry of Foreign Affairs | Ministry of Foreign Affairs (Türkiye) | 0.778 | organization
+ Ministry of Foreign Affairs | Israeli Ministry of Foreign Affairs | 0.778 | organization
+ B. Srinivasa Rao | M. Srinivasa Rao | 0.778 | person
+ Prabhat Kumar Jha | Prabhat Kumar | 0.778 | person
+ Narayan Patel | Jai Narayan Patel | 0.778 | person
+ M. Panneerselvam | O. Panneerselvam | 0.778 | person
+ Ministry of Economy, Trade and Industry | Ministry of Trade and Industry | 0.778 | organization
+ 1 year, 344 days | 1 year, 349 days | 0.778 | person
+ Ministry of Foreign Affairs of Ukraine | Ministry of Foreign Affairs | 0.778 | organization
+ Telangana Government | Telangana State Government | 0.778 | organization
+ 20th CJ of Karnataka HC | 25th CJ of Karnataka HC | 0.778 | person
+ 20th CJ of Karnataka HC | 30th CJ of Karnataka HC | 0.778 | person
+ Ministry of Railways | Ministry of Railways (India) | 0.778 | organization
+ C. N. Balakrishna | H. C. Balakrishna | 0.778 | person
+ Bandi Bageerath | Bandi Sai Bageerath | 0.778 | person
+ Ajay Kumar Kushwaha | Ajay Kushwaha | 0.778 | person
+ Abhishek Singh | Abhishek Singhvi | 0.778 | person
+ Luiz Inacio Lula da Silva | Luiz Inácio Lula da Silva | 0.778 | person
+ Luiz Inacio Lula da Silva | Luiz In1cio Lula da Silva | 0.778 | person
+ Justice Repusudan Dayal | Justice Repusudan Dayal (acting) | 0.774 | person
+ Japan Self-Defense Forces | Japan Air Self-Defense Force | 0.774 | organization
+ Deputy Leader of the Opposition | Leader of the Opposition | 0.774 | person
+ Sabita Indra Reddy | Sabitha Indra Reddy | 0.773 | person
+ Kerala Congress (M) | Kerala Congress (Mani) | 0.773 | person
+ Abhishek Manu Singhvi | Abhishek Singhvi | 0.773 | person
+ Volodymyr Zelenskiy | Volodymyr Zelensky | 0.773 | person
+ South West Garo Hills | South Garo Hills | 0.773 | location
+ 23rd CJ of Delhi HC | 3rd CJ of Delhi HC | 0.773 | location
+ BC Janardhan Reddy | B.C. Janardhan Reddy | 0.773 | person
+ Singareni Collieries Company Limited | Singareni Collieries Company | 0.771 | organization
+ Ministry of Finance of Japan | Ministry of Finance | 0.769 | organization
+ Petitioners | Petitioner | 0.769 | role
+ Ministry of Defence | Ministry of Defence (India) | 0.769 | organization
+ Democrats | Democrats 66 | 0.769 | organization
+ Ministry of Defence | Ministry of Defence (Egypt) | 0.769 | organization
+ Indonesian government | Government of Indonesia | 0.769 | organization
+ Contractor | Contractors | 0.769 | role
+ Bishnupur | Bishnupur (SC) | 0.769 | location
+ Bharatpur | Bharatpur (SC) | 0.769 | location
+ Bhagwan Singh Kushwaha | Bhagvan Singh Kushwaha | 0.769 | person
+ Bhuvaneshwar Prasad | Bhuvaneshwar Prasad Pandey | 0.769 | person
+ Bhuvaneshwar Prasad | Bhuvaneshwar Prasad Sinha | 0.769 | person
+ Buchireddy Sudershan Reddy | Buchireddy Sudarshan Reddy | 0.769 | person
+ Ministry of Finance | Ministry of Finance (India) | 0.769 | organization
+ Ministry of Finance | Dutch Ministry of Finance | 0.769 | organization
+ Vikarabad (SC) | Vikarabad | 0.769 | location
+ Ram Singh | Raja Ram Singh | 0.769 | person
+ Italian Ministry of Foreign Affairs | Ministry of Foreign Affairs (Iran) | 0.769 | organization
+ Alirajpur (ST) | Alirajpur | 0.769 | location
+ Balrampur (SC) | Balrampur | 0.769 | location
+ Airports Authority of India | Sports Authority of India | 0.767 | organization
+ Aizawl North 3 | Aizawl North 2 | 0.765 | person
+ Aizawl South 1 | Aizawl South 3 | 0.765 | person
+ Aizawl South 2 | Aizawl South 1 | 0.765 | person
+ Aizawl South 2 | Aizawl South 3 | 0.765 | person
+ Aizawl North 3 | Aizawl North 1 | 0.765 | person
+ M. Senthilkumar | R. Senthilkumar | 0.765 | person
+ Ali Mohammad Dar | Ali Mohammad | 0.765 | person
+ Sudhakar Panditrao Kurdukar | Justice Sudhakar Panditrao Kurdukar | 0.765 | person
+ 23rd CJ of Himachal Pradesh HC | 20th CJ of Himachal Pradesh HC | 0.765 | person
+ B. Jeevan Reddy | T. Jeevan Reddy | 0.765 | person
+ Tyre Corporation of India Limited | Tyre Corporation of India | 0.765 | organization
+ Abdul Rashid | Sir Abdul Rashid | 0.765 | person
+ Sanjay Kumar | Sanjay Kumar Seth | 0.765 | person
+ Sanjay Kumar | Sanjay Kumar Jha | 0.765 | person
+ Kokrajhar (ST) | Kokrajhar East (ST) | 0.765 | person
+ Kokrajhar (ST) | Kokrajhar West (ST) | 0.765 | person
+ B. Jeevan Reddy | T Jeevan Reddy | 0.765 | person
+ M. Jeevan Reddy | T Jeevan Reddy | 0.765 | person
+ B. Jeevan Reddy | M. Jeevan Reddy | 0.765 | person
+ K. K. Ramachandran | T. Ramachandran | 0.765 | person
+ Power Finance Corporation Limited | Power Finance Corporation | 0.765 | organization
+ Sergey Sobyanin | Sergei Sobyanin | 0.765 | person
+ Buchi Babu Sana | Buchibabu Sana | 0.765 | person
+ M. Jeevan Reddy | T. Jeevan Reddy | 0.765 | person
+ K. Ramachandran | T. Ramachandran | 0.765 | person
+ King Charles III | King Charles | 0.765 | person
+ Esmaeil Baghaei | Esmail Baghaei | 0.765 | person
+ Aizawl North 1 | Aizawl North 2 | 0.765 | person
+ Ministry of Foreign Affairs of Japan | Ministry of Foreign Affairs (Iran) | 0.763 | organization
+ Varun Chakravarthy | Varun Chakaravarthy | 0.762 | person
+ Uttham Kumar Reddy | Uttam Kumar Reddy | 0.762 | person
+ Krishna Byre Gowda | Krishna Byregowda | 0.762 | person
+ Shubhendu Adhikari | Shubendu Adhikari | 0.762 | person
+ Ramnarayan Mandal | Ram Narayan Mandal | 0.762 | person
+ Praja Socialist Party | Socialist Party | 0.762 | organization
+ Kerala Congress (Mani) | Kerala Congress | 0.762 | person
+ U.S. Central Command | US Central Command | 0.762 | organization
+ Sultan Al Jaber | Sultan Ahmed Al Jaber | 0.762 | person
+ Osun State Government | Ogun State Government | 0.760 | organization
+ Senior police officer | Senior Police Official | 0.760 | role
+ Government of Pakistan | Pakistani government | 0.760 | organization
+ Justice Department | US Department of Justice | 0.760 | organization
+ Fino Small Finance Bank | Slice Small Finance Bank | 0.760 | organization
+ General Secretary of the Communist Party of China | General Secretary of the Communist Party of Vietnam | 0.759 | role
+ Vice President of India | Vice President of Indonesia | 0.759 | role
+ Balochistan Liberation Army | Baloch Liberation Army | 0.759 | organization
+ Ondo State Police Command | Edo State Police Command | 0.759 | organization
+ 23rd CJ of Madhya Pradesh HC | 21st CJ of Madhya Pradesh HC | 0.758 | person
+ Justice Gurmeet Singh Sandhawalia | Gurmeet Singh Sandhawalia | 0.758 | person
+ 22nd CJ of Madhya Pradesh HC | 21st CJ of Madhya Pradesh HC | 0.758 | person
+ 1st CJ of Himachal Pradesh HC | 2nd CJ of Himachal Pradesh HC | 0.758 | person
+ House of Representatives (Nigeria) | House of Representatives | 0.758 | organization
+ Steel Authority of India | Steel Authority of India Limited | 0.758 | organization
+ 22nd CJ of Madhya Pradesh HC | 23rd CJ of Madhya Pradesh HC | 0.758 | person
+ UAE Ministry of Foreign Affairs | Thai Ministry of Foreign Affairs | 0.757 | organization
+ Ministry of Foreign Affairs | Lebanese Ministry of Foreign Affairs | 0.757 | organization
+ UAE Ministry of Foreign Affairs | Ministry of Foreign Affairs (Iran) | 0.757 | organization
+ Ministry of Foreign Affairs | Argentine Ministry of Foreign Affairs | 0.757 | organization
+ UAE Ministry of Foreign Affairs | Ministry of Foreign Affairs (Korea) | 0.757 | organization
+ Nalgonda , Yadadri Bhuvanagiri | Nalgonda , Suryapet , Yadadri Bhuvanagiri | 0.757 | constituency
+ Peoples Democratic Party (Nigeria) | Peoples Democratic Party | 0.750 | organization
+ Social Democratic Party (Nigeria) | Social Democratic Party | 0.750 | organization
+ Economist | economists | 0.750 | role
+ Tonk–Sawai Madhopur | Sawai Madhopur | 0.750 | location
+ Adilabad (ST) | Adilabad | 0.750 | location
+ Vijay Kumar | B. N. Vijay Kumar | 0.750 | person
+ Member of Parliament | Member of Parliament (Canada) | 0.750 | role
+ 34th CJ of Madras HC | 37th CJ of Madras HC | 0.750 | person
+ 34th CJ of Madras HC | 39th CJ of Madras HC | 0.750 | person
+ 35th CJ of Madras HC | 34th CJ of Madras HC | 0.750 | person
+ 35th CJ of Madras HC | 37th CJ of Madras HC | 0.750 | person
+ 35th CJ of Madras HC | 39th CJ of Madras HC | 0.750 | person
+ 39th CJ of Madras HC | 37th CJ of Madras HC | 0.750 | person
+ Sbastien Lecornu | Sebastien Lecornu | 0.750 | person
+ China's Ministry of Commerce | Ministry of Commerce | 0.750 | organization
+ Mark Rowley | Sir Mark Rowley | 0.750 | person
+ Labour MP | Labour MPs | 0.750 | role
+ 45th CJ of Bombay HC | 48th CJ of Bombay HC | 0.750 | person
+ Domestic | Domestic (CE) | 0.750 | location
+ NA-127 Lahore | NA-122 Lahore | 0.750 | constituency
+ 7th CJ of Madhya Pradesh HC | 1st CJ of Madhya Pradesh HC | 0.750 | person
+ V. R. Sunil Kumar | Sunil Kumar | 0.750 | person
+ R.S. Praveen Kumar | RS Praveen Kumar | 0.750 | person
+ 9th CJ of Madhya Pradesh HC | 1st CJ of Madhya Pradesh HC | 0.750 | person
+ E. T. Muhammed Basheer | E. T. Mohammed Basheer | 0.750 | person
+ 9th CJ of Uttarakhand HC | 2nd CJ of Uttarakhand HC | 0.750 | person
+ Ajay Arjun Singh | Arjun Singh | 0.750 | person
+ Aizawl East 1 | Aizawl East 2 | 0.750 | person
+ Aizawl West 1 | Aizawl West 3 | 0.750 | person
+ Aizawl West 2 | Aizawl West 1 | 0.750 | person
+ Aizawl West 2 | Aizawl West 3 | 0.750 | person
+ Union Bank of India | Union of India | 0.750 | organization
+ A. Revanth Reddy | K. Revanth Reddy | 0.750 | person
+ Kanwar Singh Tanwar | Kartar Singh Tanwar | 0.750 | person
+ Shivraj Singh Chouhan | Shivraj Singh Chauhan | 0.750 | person
+ Shiavax Jal Vazifdar | Justice Shiavax Jal Vazifdar | 0.750 | person
+ Barinder Kumar Goyal | Barinder Kumar Goyal Vakeel | 0.750 | person
+ Satya Kumar Yadav | Satyakumar Yadav | 0.750 | person
+ Satish Chandra Mishra | Satish Chandra | 0.750 | person
+ Vivek Venkataswami | Vivek Venkatswami | 0.750 | person
+ Koonamneni Sambasiva Rao | Kunamneni Sambasiva Rao | 0.750 | person
+ Chandrakant Patil | Chandrakant Nimba Patil | 0.750 | person
+ Sharjeel Inam Memon | Sharjeel Memon | 0.750 | person
+ K. Revanth Reddy | A Revanth Reddy | 0.750 | person
+ WTO Director-General | WHO Director-General | 0.750 | role
+ Reliance Industrial Infrastructure | Reliance Infrastructure | 0.750 | organization
+ Revanth Reddy ( INC ) | Revanth Reddy | 0.750 | person
+ Bhuvneshwar Kumar | Bhuvaneshwar Kumar | 0.750 | person
+ Elected in 2024 by-election | re elected in 2020 by-election. | 0.750 | person
+ Andrii Sybiha | Andriy Sybiha | 0.750 | person
+ Ghanaian government | Ghana government | 0.750 | organization
+ Jagdish Singh Khehar | Justice Jagdish Singh Khehar | 0.750 | person
+ Department of Atomic Energy | Department of Energy | 0.750 | organization
+ Rabiu Musa Kwankwaso | Rabiu Kwankwaso | 0.750 | person
+ M. Prabhakaran | A. Prabhakaran | 0.750 | person
+ Cycle Corporation of India Limited | National Bicycle Corporation of India Limited | 0.750 | organization
+ Recep Tayyip Erdogan | Recep Tayyip Erdoğan | 0.750 | person
+ Sébastien Lecornu | Sbastien Lecornu | 0.750 | person
+ Gujarat Mineral Development Corporation | J & K Mineral Development Corporation | 0.744 | organization
+ Ministry of Foreign Affairs (Iran) | Ministry of Foreign Affairs Israel | 0.744 | organization
+ Ministry of Foreign Affairs of Ukraine | UAE Ministry of Foreign Affairs | 0.744 | organization
+ Ministry of Foreign Affairs (Iran) | Mexican Ministry of Foreign Affairs | 0.744 | organization
+ Income Tax Appellate Tribunal Hyderabad | Income Tax Appellate Tribunal | 0.744 | organization
+ Ministry of National Defense | Colombian Ministry of National Defense | 0.744 | organization
+ Cycle Corporation of India Limited | Tyre Corporation of India Limited | 0.744 | organization
+ Pakistan Meteorological Department | Meteorological Department | 0.743 | organization
+ Surjit Singh Sandhawalia | Justice Surjit Singh Sandhawalia | 0.742 | person
+ Government of Nagaland | Federal Government of Nagaland | 0.742 | organization
+ Chief of Defence Staff | Chief of Defence Staff (Nigeria) | 0.742 | role
+ Justice Krishna Murari Agarwal | Krishna Murari Agarwal | 0.742 | person
+ Justice Krishna Murari Agarwal | Justice Krishna Murari | 0.742 | person
+ Indian Oil Corporation | Indian Oil Corporation Limited | 0.742 | organization
+ Vakiti Sunitha Laxma Reddy | Sunitha Laxma Reddy | 0.741 | person
+ 2nd CJ of Rajasthan HC | 28th CJ of Rajasthan HC | 0.741 | person
+ senior government official | Government Official | 0.741 | role
+ Central Government of India | Government of India | 0.741 | organization
+ Deputy Leader of the House | Leader of the House | 0.741 | person
+ Died on 20 February 2022 | Died on 1 February 2025 | 0.741 | person
+ Ministry of Defence of Russia | Ministry of Defence | 0.741 | organization
+ Ministry of Finance | Ministry of Finance of Russia | 0.741 | organization
+ Ministry of Finance | Ministry of Finance (Brazil) | 0.741 | organization
+ Ministry of Finance | Spanish Ministry of Finance | 0.741 | organization
+ Leader of Opposition | Deputy Leader of Opposition | 0.741 | person
+ Ministry of Defence (Brazil) | Ministry of Defence | 0.741 | organization
+ Polish Ministry of Finance | Ministry of Finance | 0.741 | organization
+ Spanish Ministry of Defence | Ministry of Defence | 0.741 | organization
+ House of Commons of Canada | House of Commons | 0.739 | organization
+ Bengaluru , Mumbai | Bengaluru , Delhi , Mumbai | 0.739 | organization
+ Department of State | U.S. State Department | 0.739 | organization
+ Bhatti Vikramark | Mallu Bhatti Vikramark | 0.739 | person
+ Datti Baba-Ahmed | Yusuf Datti Baba-Ahmed | 0.739 | person
+ Government of Israel | Israeli government | 0.739 | organization
+ West Khasi Hills | South West Khasi Hills | 0.739 | location
+ Democratic Party (Italy) | Democratic Party | 0.739 | organization
+ 26th CJ of Orissa HC | 29th CJ of Orissa HC | 0.739 | person
+ 26th CJ of Delhi HC | 20th CJ of Delhi HC | 0.739 | location
+ Rajendrasinh Parmar | Gajendrasinh Parmar | 0.739 | person
+ Ukrainian Armed Forces | Ukrainian forces | 0.739 | organization
+ 19th CJ of Delhi HC | 18th CJ of Delhi HC | 0.739 | location
+ Volodymyr Zelenskiy | Volodymyr Zelenskyy | 0.739 | person
+ Russian government | Government of Russia | 0.739 | organization
+ Dhaniklal Mandal | Dhanik Lal Mandal | 0.737 | person
+ G. C. Chandrasekhar | B. Chandrasekhar | 0.737 | person
+ Ministry of Foreign Affairs (Korea) | Thai Ministry of Foreign Affairs | 0.737 | organization
+ Mithlesh Tiwari | Mithilesh Tiwari | 0.737 | person
+ UAE Ministry of Foreign Affairs | Ministry of Foreign Affairs of China | 0.737 | organization
+ Ghulam Ahmad Mir | Gulam Ahmad Mir | 0.737 | person
+ Padi Kaushik Reddy | Kaushik Reddy | 0.737 | person
+ Ministry of Foreign Affairs | Colombian Ministry of Foreign Affairs | 0.737 | organization
+ Sai Bhagirath | Bandi Sai Bhagirath | 0.737 | person
+ West Karbi Anglong | Karbi Anglong | 0.737 | location
+ UAE Ministry of Foreign Affairs | Saudi Ministry of Foreign Affairs | 0.737 | organization
+ National Company Law Tribunal | National Company Law Appellate Tribunal | 0.737 | organization
+ C.P. Radhakrishnan | R. Radhakrishnan | 0.737 | person
+ UAE Ministry of Foreign Affairs | Ministry of Foreign Affairs of Egypt | 0.737 | organization
+ Krishna Byre Gowda | Krishna Gowda | 0.737 | person
+ C P Radhakrishnan | R. Radhakrishnan | 0.737 | person
+ Ministry of Foreign Affairs (Iran) | Thai Ministry of Foreign Affairs | 0.737 | organization
+ UAE Ministry of Foreign Affairs | Dutch Ministry of Foreign Affairs | 0.737 | organization
+ Khalilur Rahaman | Khalilur Rahman | 0.737 | person
+ Ministry of Foreign Affairs (Iran) | Ministry of Foreign Affairs (Korea) | 0.737 | organization
+ Ministry of Foreign Affairs of Japan | UAE Ministry of Foreign Affairs | 0.737 | organization
+ Toom Meena Kumari | T. Meena Kumari | 0.737 | person
+ Ponnala Prabhakar | Ponnam Prabhakar | 0.737 | person
+ Syed Abdul Nazeer | S. Abdul Nazeer | 0.737 | person
+ Ashok Kumar Rana | Ashok Kumar Rai | 0.737 | person
+ Eshwar B. Khandre | Eshwara Khandre | 0.737 | person
+ House of Representatives | House of Representatives (Thailand) | 0.735 | organization
+ 23rd CJ of Himachal Pradesh HC | 1st CJ of Himachal Pradesh HC | 0.735 | person
+ 20th CJ of Himachal Pradesh HC | 1st CJ of Himachal Pradesh HC | 0.735 | person
+ Indian Hotels Company | Indian Hotels Company Limited | 0.733 | organization
+ Ashok Singhal | Ashok Singh | 0.733 | person
+ 1948–present | 1945–present | 0.733 | organization
+ K. Sudhakaran | G. Sudhakaran | 0.733 | person
+ Ogun State Police Command | Ondo State Police Command | 0.733 | organization
+ Surya Kant | CJI Surya Kant | 0.733 | person
+ Yuri Ushakov | Yury Ushakov | 0.733 | person
+ P. Subbarayan | K. Subbarayan | 0.733 | person
+ Laxmi Kanta Mohapatra | Justice Laxmi Kanta Mohapatra | 0.733 | person
+ Washington | Washington, D.C. | 0.733 | location
+ NIT Jamshedpur | Jamshedpur | 0.733 | organization
+ Hindustan Aeronautics Limited | Hindustan Aeronautics | 0.733 | organization
+ Shillong (ST) | East Shillong (ST) | 0.733 | person
+ Ajit Singh | Ajit Singh Pal | 0.733 | person
+ T. Raja Singh | Raja Ram Singh | 0.733 | person
+ Arun Kumar | M. S. Arun Kumar | 0.733 | person
+ Tata Steel | Tata Steel BSL | 0.733 | organization
+ Manoj Tiwari | Manoj Tiwary | 0.733 | person
+ Raja Ram Singh | T Raja Singh | 0.733 | person
+ Federal Ministry of Finance (Germany) | Federal Ministry of Defence (Germany) | 0.732 | organization
+ Federal Ministry of Defence (Nigeria) | Federal Ministry of Finance (Nigeria) | 0.732 | organization
+ Fino Small Finance Bank | Jana Small Finance Bank | 0.731 | organization
+ Spanish Ministry of Health | Ministry of Health | 0.731 | organization
+ Justice K. Sreedharan | Justice Atul Sreedharan | 0.731 | person
+ Jitendra Vir Gupta | Justice Jitendra Vir Gupta | 0.731 | person
+ AU Small Finance Bank | Slice Small Finance Bank | 0.731 | organization
+ The Daily Telegraph | The Daily Telegraph (Sydney) | 0.731 | organization
+ U.S. Department of Justice | Justice Department | 0.731 | organization
+ Uganda Ministry of Health | Ministry of Health | 0.731 | organization
+ ESAF Small Finance Bank | Fino Small Finance Bank | 0.731 | organization
+ 9th CJ of Madhya Pradesh HC | 23rd CJ of Madhya Pradesh HC | 0.727 | person
+ Chandra Prakash Joshi | Prakash Chandra | 0.727 | person
+ S. B. Sinha | B. N. Sinha | 0.727 | person
+ Adampur (SC) | Adampur | 0.727 | location
+ Social Democratic Party of India | Social Democratic Party | 0.727 | organization
+ Chandra Prakash Singh | Prakash Chandra | 0.727 | person
+ K. Kamaraj | R. Kamaraj | 0.727 | person
+ 22nd CJ of Madhya Pradesh HC | 1st CJ of Madhya Pradesh HC | 0.727 | person
+ Manoj Kumar Pandey | Manoj Kumar Pandit | 0.727 | person
+ Sukumar De | Sukumar | 0.727 | person
+ Joyanta Basumatary | Jayanta Basumatary | 0.727 | person
+ S. B. Sinha | K. B. Sinha | 0.727 | person
+ 9th CJ of Madhya Pradesh HC | 21st CJ of Madhya Pradesh HC | 0.727 | person
+ Mian Altaf Ahmed Larvi | Mian Altaf Ahmed | 0.727 | person
+ 7th CJ of Madhya Pradesh HC | 23rd CJ of Madhya Pradesh HC | 0.727 | person
+ 7th CJ of Madhya Pradesh HC | 22nd CJ of Madhya Pradesh HC | 0.727 | person
+ 7th CJ of Madhya Pradesh HC | 21st CJ of Madhya Pradesh HC | 0.727 | person
+ Priyanka Chopra | Priyanka Chopra Jonas | 0.727 | person
+ Iranian government | Government of Iran | 0.727 | organization
+ Jean-Luc Melenchon | Jean-Luc Mélenchon | 0.727 | person
+ National Mineral Development Corporation | Gujarat Mineral Development Corporation | 0.727 | organization
+ Lebanese Forces | Lebanese Armed Forces | 0.727 | organization
+ Rajendra Prasad Singh | Rajendra Prasad | 0.727 | person
+ Udaipur | Udaipur (ST) | 0.727 | location
+ Rajeev Kumar Singh | Rajesh Kumar Singh | 0.727 | person
+ Pramod Kumar Sinha | Pramod Kumar Singh | 0.727 | person
+ 22nd CJ of Madhya Pradesh HC | 9th CJ of Madhya Pradesh HC | 0.727 | person
+ Prakash Chandra | Prakash Chandra Verma | 0.727 | person
+ Kerala Congress (Jacob) | Kerala Congress | 0.727 | person
+ West Garo Hills | South West Garo Hills | 0.727 | location
+ 23rd CJ of Madhya Pradesh HC | 1st CJ of Madhya Pradesh HC | 0.727 | person
+ Prakash Chandra | Chandra Prakash Lodhi | 0.727 | person
+ Pradip Kumar Barma | Pradip Kumar Varma | 0.727 | person
+ Ministry of Power | Ministry of Manpower | 0.727 | organization
+ Bijapur (SC) | Bijapur | 0.727 | location
+ Speaker of the House of Representatives (Japan) | Speaker of the House of Representatives (Nigeria) | 0.725 | role
+ Ministry of Foreign Affairs (Iran) | Israeli Ministry of Foreign Affairs | 0.725 | organization
+ Ministry of Foreign Affairs of Japan | Mexican Ministry of Foreign Affairs | 0.725 | organization
+ Ministry of Foreign Affairs (Türkiye) | Thai Ministry of Foreign Affairs | 0.725 | organization
+ Supreme Court of India | Supreme Court of Indonesia | 0.724 | organization
+ Bojjala Sudhir Reddy | Bojjala Venkata Sudhir Reddy | 0.724 | person
+ K. Harish Gowda | G. D. Harish Gowda | 0.722 | person
+ Kartikeya Sharma | Kartik Sharma | 0.722 | person
+ Mumbai North East | Mumbai North | 0.722 | person
+ Mumbai North West | Mumbai North | 0.722 | person
+ Delcy Rodriguez | Delcy Rodrguez | 0.722 | person
+ Fredrick Opoku | Frederick Opoku | 0.722 | person
+ Abhijeet Deepk | Abhijeet Deepak | 0.722 | person
+ Dharmpal Singh | Dharampal Singh | 0.722 | person
+ Jalandhar West (SC) | Jalandhar (SC) | 0.722 | person
+ Department of the Treasury (Australia) | Department of the Treasury | 0.722 | organization
+ Sanjay Kumar | Sanjay Kumar Singh | 0.722 | person
+ Nagpur South | Nagpur South West | 0.722 | location
+ Osun State Government | Oyo State Government | 0.720 | organization
+ Justice T. Vaiphei | Justice T. Vaiphei (acting) | 0.720 | person
+ Ogun State Government | Oyo State Government | 0.720 | organization
+ Chandrababu Naidu | Nara Chandrababu Naidu ( TDP ) | 0.720 | person
+ National Assembly (France) | National Assembly | 0.720 | organization
+ Dutch Ministry of Foreign Affairs | Thai Ministry of Foreign Affairs | 0.718 | organization
+ Ministry of Foreign Affairs (Iran) | Ministry of Foreign Affairs of Egypt | 0.718 | organization
+ Dutch Ministry of Foreign Affairs | Ministry of Foreign Affairs (Korea) | 0.718 | organization
+ Ministry of Foreign Affairs (Korea) | Ministry of Foreign Affairs of China | 0.718 | organization
+ Ministry of Foreign Affairs | Indonesian Ministry of Foreign Affairs | 0.718 | organization
+ Ministry of Foreign Affairs of Egypt | Ministry of Foreign Affairs (Korea) | 0.718 | organization
+ Ministry of Foreign Affairs | Vietnamese Ministry of Foreign Affairs | 0.718 | organization
+ Ministry of Foreign Affairs of Japan | Ministry of Foreign Affairs (Korea) | 0.718 | organization
+ Thai Ministry of Foreign Affairs | Ministry of Foreign Affairs of China | 0.718 | organization
+ UAE Ministry of Foreign Affairs | Ministry of Foreign Affairs Israel | 0.718 | organization
+ Ministry of Foreign Affairs of Japan | Thai Ministry of Foreign Affairs | 0.718 | organization
+ Saudi Ministry of Foreign Affairs | Thai Ministry of Foreign Affairs | 0.718 | organization
+ UAE Ministry of Foreign Affairs | Polish Ministry of Foreign Affairs | 0.718 | organization
+ Ministry of Foreign Affairs of Egypt | Thai Ministry of Foreign Affairs | 0.718 | organization
+ Ministry of Foreign Affairs of Russia | UAE Ministry of Foreign Affairs | 0.718 | organization
+ Vietnamese Ministry of Public Security | Ministry of Public Security | 0.718 | organization
+ UAE Ministry of Foreign Affairs | Mexican Ministry of Foreign Affairs | 0.718 | organization
+ Saudi Ministry of Foreign Affairs | Ministry of Foreign Affairs (Korea) | 0.718 | organization
+ Ministry of Foreign Affairs (Iran) | Ministry of Foreign Affairs of China | 0.718 | organization
+ Ministry of Foreign Affairs (Iran) | Dutch Ministry of Foreign Affairs | 0.718 | organization
+ Ministry of Foreign Affairs (Iran) | Saudi Ministry of Foreign Affairs | 0.718 | organization
+ Prakash Raj | Prakash Ram | 0.714 | person
+ Rajpur Road (SC) | Rajpur (SC) | 0.714 | location
+ 49th CJ of Allahabad HC | 38th CJ of Allahabad HC | 0.714 | location
+ 49th CJ of Allahabad HC | 35th CJ of Allahabad HC | 0.714 | location
+ 17th CJ of Allahabad HC | 49th CJ of Allahabad HC | 0.714 | location
+ 17th CJ of Allahabad HC | 38th CJ of Allahabad HC | 0.714 | location
+ 17th CJ of Allahabad HC | 35th CJ of Allahabad HC | 0.714 | location
+ Virendra Singh | Virendra Singh Lodhi | 0.714 | person
+ Virendra Kumar Yadav | Virendra Yadav | 0.714 | person
+ Uma Nath Singh | Uma Nath Singh (acting) | 0.714 | person
+ Satish Chandra | Satish Chandra Sharma | 0.714 | person
+ Rupinder Singh Kooner | Rupinder Singh | 0.714 | person
+ Ramanandan Prasad | Ram Nandan Prasad | 0.714 | person
+ Rajesh Kumar Singh | Raju Kumar Singh | 0.714 | person
+ Rajesh Agrawal | Rajesh Kumar Agrawal | 0.714 | person
+ Rajeev Kumar Singh | Raju Kumar Singh | 0.714 | person
+ Radha Krishna Patra | Justice Radha Krishna Patra | 0.714 | person
+ Justice Ranjit Singh Narula | Ranjit Singh Narula | 0.714 | person
+ Justice Bipin Chandra Verma | Bipin Chandra Verma | 0.714 | person
+ Fourteenth Assembly | Fourth Assembly | 0.714 | person
+ Daya Krishan Mahajan | Justice Daya Krishan Mahajan | 0.714 | person
+ Bhupendrabhai Patel | Bhupendra Patel | 0.714 | person
+ Anil Kumar Sharma | Sunil Kumar Sharma | 0.714 | person
+ Ajit Pal Singh Kohli | Ajit Singh Pal | 0.714 | person
+ Abhay Manohar Sapre | Justice Abhay Manohar Sapre | 0.714 | person
+ 41st CJ of Rajasthan HC | 40th CJ of Rajasthan HC | 0.714 | person
+ CJI Justice Surya Kant | Chief Justice Surya Kant | 0.714 | person
+ 28th CJ of Rajasthan HC | 40th CJ of Rajasthan HC | 0.714 | person
+ BRS activists | activists | 0.714 | role
+ Ministry of Defence | Italian Ministry of Defence | 0.714 | organization
+ Ministry of Defence | Ministry of Defence of Ukraine | 0.714 | organization
+ 25th CJ of Karnataka HC | 30th CJ of Karnataka HC | 0.714 | person
+ 25th CJ of Karnataka HC | 23rd CJ of Karnataka HC | 0.714 | person
+ 25th CJ of Karnataka HC | 13th CJ of Karnataka HC | 0.714 | person
+ 20th CJ of Karnataka HC | 23rd CJ of Karnataka HC | 0.714 | person
+ 20th CJ of Karnataka HC | 13th CJ of Karnataka HC | 0.714 | person
+ Department of State | Department of State Services | 0.714 | organization
+ 2008–2008 | 2008–2009 | 0.714 | person
+ 2002–2004 | 2002–2002 | 0.714 | person
+ 2000–2002 | 2002–2002 | 0.714 | person
+ K Shanmugam | P. Shanmugam | 0.714 | person
+ 1970–1970 | 1970–1972 | 0.714 | person
+ 1970–1970 | 1970–1971 | 0.714 | person
+ 1964–1969 | 1969–1969 | 0.714 | person
+ 16th CJ of Rajasthan HC | 40th CJ of Rajasthan HC | 0.714 | person
+ 16th CJ of Rajasthan HC | 28th CJ of Rajasthan HC | 0.714 | person
+ 13th CJ of Karnataka HC | 30th CJ of Karnataka HC | 0.714 | person
+ Swarana Kanta Sharma | Justice Swarana Kanta Sharma | 0.714 | person
+ Ministry of Foreign Affairs (Iran) | Indonesian Ministry of Foreign Affairs | 0.714 | organization
+ Triveni Structurals | Triveni Structurals Limited | 0.714 | organization
+ Reliance Industries Limited | Reliance Industries | 0.714 | organization
+ Ministry of Law and Justice | Ministry of Justice | 0.714 | organization
+ Ministry of Finance | Israeli Ministry of Finance | 0.714 | organization
+ Mahanadi Coalfields Limited | Mahanadi Coalfields | 0.714 | organization
+ JSW Steel | JSW Steel Ltd | 0.714 | organization
+ Sébastien Lecornu | Sebastien Lecornu | 0.714 | person
+ Indian National Congress (U) | Indian National Congress (Jagjivan) | 0.714 | organization
+ Satish Chandra Dubey | Satish Chandra | 0.714 | person
+ K. Sudhakaran | K. Sudhakar | 0.714 | person
+ House of Representatives (Indonesia) | House of Representatives | 0.714 | organization
+ Rio de Janeiro (state) | Rio de Janeiro | 0.714 | location
+ Hyderabad | IMD Hyderabad | 0.714 | location
+ Royal Bank of Canada | Bank of Canada | 0.714 | organization
+ Politburo of the Communist Party of Vietnam | Politburo of the Communist Party of China | 0.711 | organization
+ Ministry of Industry and Information Technology | Ministry of Electronics and Information Technology | 0.709 | organization
+ Social Democratic Party | Democratic Party | 0.708 | organization
+ Justice Ravi Shankar Jha | Ravi Shankar Jha | 0.708 | person
+ President of India | President of Indonesia | 0.708 | role
+ Ukrainian forces | Ukrainian Ground Forces | 0.708 | organization
+ Harvinder Kalyan (Speaker) | Harvinder Kalyan | 0.708 | person
+ Congress leaders | Senior Congress leaders | 0.708 | role
+ Peoples Democratic Party | Democratic Party | 0.708 | organization
+ United Democratic Party | Democratic Party | 0.708 | organization
+ Vaibhav Sooryavanshi | Vaibhav Suryavanshi | 0.708 | person
+ Senior Iranian official | Iranian official | 0.708 | role
+ Yumnam Khemchand Singh | Y Khemchand Singh | 0.708 | person
+ Governor of the Saudi Central Bank | Governor of the Central Bank of Egypt | 0.707 | role
+ Italian Ministry of Foreign Affairs | Ministry of Foreign Affairs of Japan | 0.707 | organization
+ Shravan Dasoju | Dasoju Sravan | 0.706 | person
+ K. Ashok Kumar | Ashok Kumar Rai | 0.706 | person
+ CM Revanth Reddy | A Revanth Reddy | 0.706 | person
+ T. D. Rajegowda | T.D. Raje Gowda | 0.706 | person
+ B V Nagarathna | BV Nagarathna | 0.706 | person
+ David Wuaku | David Kofi Wuaku | 0.706 | person
+ Sunil Kumar Jain | Sunil Kumar | 0.706 | person
+ CM Revanth Reddy | K. Revanth Reddy | 0.706 | person
+ Arjun Singh | Arjun Singh Raju | 0.706 | person
+ Japan Ground Self-Defense Force | Japan Self-Defense Forces | 0.706 | organization
+ D.K. Shivakumar | DK Shivakumar | 0.706 | person
+ Delhi High Court | Delhi court | 0.706 | organization
+ Jagat Singh Negi | Jagat Singh | 0.706 | person
+ 11th CJ of Madhya Pradesh HC | 23rd CJ of Madhya Pradesh HC | 0.706 | person
+ 11th CJ of Madhya Pradesh HC | 22nd CJ of Madhya Pradesh HC | 0.706 | person
+ 11th CJ of Madhya Pradesh HC | 21st CJ of Madhya Pradesh HC | 0.706 | person
+ Manoj Kumar Jain | Manoj Kumar | 0.706 | person
+ Brandenburg Gate | Brandenburg | 0.706 | location
+ North East Delhi | North Delhi | 0.706 | location
+ South West Delhi | South Delhi | 0.706 | location
+ South East Delhi | South Delhi | 0.706 | location
+ K. Ashok Kumar | Ashok Kumar Das | 0.706 | person
+ North West Delhi | North Delhi | 0.706 | location
+ Mohan Sharma | Manmohan Sharma | 0.706 | person
+ V. Sunil Kumar | PV Sunil Kumar | 0.706 | person
+ All India United Democratic Front | United Democratic Front | 0.706 | organization
+ 19th CJ of Madhya Pradesh HC | 23rd CJ of Madhya Pradesh HC | 0.706 | person
+ 19th CJ of Madhya Pradesh HC | 22nd CJ of Madhya Pradesh HC | 0.706 | person
+ 19th CJ of Madhya Pradesh HC | 21st CJ of Madhya Pradesh HC | 0.706 | person
+ Rajahmundry City | Rajahmundry | 0.706 | location
+ Chidambaram (SC) | P. Chidambaram | 0.706 | person
+ A. Revanth Reddy | CM Revanth Reddy | 0.706 | person
+ Pawan Kumar Kajal | Pawan Kumar | 0.706 | person
+ Sanjana Jadhav | Sanjay Jadhav | 0.706 | person
+ Italian Ministry of Foreign Affairs | Indonesian Ministry of Foreign Affairs | 0.705 | organization
+ Unity Small Finance Bank | Fino Small Finance Bank | 0.704 | organization
+ Senate Minority Leader | Senate Majority Leader | 0.704 | role
+ ESAF Small Finance Bank | AU Small Finance Bank | 0.704 | organization
+ AU Small Finance Bank | Jana Small Finance Bank | 0.704 | organization
+ Nagendra Singh Rathore | Nitendra Singh Rathore | 0.704 | person
+ Thenlay Tshering Bhutia | Tshering Thendup Bhutia | 0.704 | person
+ Tedros Ghebreyesus | Tedros Adhanom Ghebreyesus | 0.704 | person
+ Debi Singh Tewatia | Justice Debi Singh Tewatia | 0.704 | person
+ Topline Securities Limited | Topline Securities | 0.704 | organization
+ Justice Biswanath Somadder | Biswanath Somadder | 0.704 | person

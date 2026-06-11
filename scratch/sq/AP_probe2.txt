@@ -1,0 +1,39 @@
+name|domain|lang|tier|kind|notes|home_status|feed_path|feed_status|feed_kind
+Andhra Prabha|andhraprabha.com|te|2|rss|Eenadu group|200||0|
+Andhra Bhoomi|andhrabhoomi.net|te|2|rss|established Telugu daily|200||0|
+Suryaa|suryaa.com|te|2|rss|Telugu daily|000||0|
+Prajashakti|prajasakti.com|te|3|rss|CPI Telugu paper|403||0|
+Praja Pakshapatam|prajapakshapatham.com|te|3|rss||000||0|
+Mahaa News|mahaanews.com|te|2|rss||200||0|
+ABN Andhra Jyothi|abnandhrajyothy.com|te|1|rss||200||0|
+ABN Telugu TV|abntelugutv.com|te|2|rss||000||0|
+Sakshi TV|sakshi.tv|te|1|rss||000||0|
+Big TV Live|bigtvlive.com|te|2|rss||403||0|
+Studio N Telugu|studion.tv|te|3|rss||200||0|
+ETV Andhra Pradesh|etv.co.in|te|1|rss|ETV network|200||0|
+RTV Telugu|rtv.in|te|3|rss||200||0|
+iNews Telugu|inews.zee5.com|te|3|rss||000||0|
+CVR News|cvrnews.in|te|2|rss||000||0|
+T News Live|tnewslive.com|te|3|rss||000||0|
+Bharat Today|bharattoday.in|te|3|rss||000||0|
+V6 News|v6news.tv|te|2|rss||200||0|
+10TV News|10tvnews.in|te|3|rss||200||0|
+AP7AM|ap7am.com|te|2|rss|AP-focused|200||0|
+AP Beat|apbeat.in|en|3|rss||000||0|
+Andhra Wishesh|andhrawishesh.com|en|3|rss||000||0|
+iDream Media News|idreammedia.com|te|3|rss||200||0|
+SumanTV News|sumantv.com|te|3|rss||200||0|
+Telugu Stop|telugustop.com|te|3|rss||403||0|
+Gulte|gulte.com|en|3|rss|AP+TG news/ent|200||0|
+NTV Live|ntvlive.in|te|3|rss||000||0|
+Telugu Reporter|telugureporter.com|te|3|rss||404||0|
+Andhra Today|andhratoday.com|en|3|rss||403||0|
+Andhra Headlines|andhraheadlines.com|en|3|rss||200||0|
+Just Andhra|justandhra.com|en|3|rss||000||0|
+Times of India — Andhra Pradesh|timesofindia.indiatimes.com/city/andhra-pradesh|en|1|rss||404||0|
+Times of India — Hyderabad|timesofindia.indiatimes.com/city/hyderabad|en|1|rss||200||0|
+Times of India — Vijayawada|timesofindia.indiatimes.com/city/vijayawada|en|1|rss||200||0|
+Times of India — Visakhapatnam|timesofindia.indiatimes.com/city/visakhapatnam|en|1|rss||200||0|
+News9 Live — Telangana|news9live.com/state/telangana|en|2|rss||200|https://www.news9live.com/feedapi/state/telangana|200|auto:<rss
+News9 Live — AP|news9live.com/state/andhra-pradesh|en|2|rss||200|https://www.news9live.com/feedapi/state/andhra-pradesh|200|auto:<rss
+The Wire Telugu|telugu.thewire.in|te|2|rss||000||0|

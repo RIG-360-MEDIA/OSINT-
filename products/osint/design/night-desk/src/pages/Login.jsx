@@ -40,7 +40,7 @@ export default function Login() {
         boxShadow: '0 30px 80px rgba(0,0,0,.55)',
       }}>
         <div className="mono" style={{ letterSpacing: '0.34em', fontSize: '0.66rem', color: 'var(--faint, #8a8577)' }}>RIG · OSINT</div>
-        <h1 style={{ fontSize: '1.6rem', margin: '10px 0 4px', fontWeight: 600 }}>Night Desk</h1>
+        <h1 style={{ fontSize: '1.6rem', margin: '10px 0 4px', fontWeight: 600 }}>ROBIN-OSINT</h1>
         <p style={{ color: 'var(--faint, #8a8577)', fontSize: '0.85rem', marginBottom: 22 }}>Sign in to your situation brief.</p>
 
         <label className="mono" style={{ fontSize: '0.62rem', letterSpacing: '0.2em', color: 'var(--faint, #8a8577)' }}>EMAIL</label>

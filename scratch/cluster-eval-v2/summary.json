@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-05-20T18:55:39.844445Z",
+  "sample_size": 500,
+  "duration_seconds": 884.4,
+  "assigned": 70,
+  "spawned": 430,
+  "skipped": 0,
+  "errors": 0,
+  "llm_calls": 345,
+  "llm_skip_pct": 31.0,
+  "total_threads_touched": 430,
+  "size_distribution": {
+    "2-3": 41,
+    "1 (singleton)": 386,
+    "4-10": 2,
+    "11-50": 1
+  },
+  "source_diversity": {
+    "2-3 sources": 37,
+    "1 source": 393
+  },
+  "momentum": {
+    "stable": 418,
+    "escalating": 10,
+    "fading": 2
+  }
+}

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phase 3 Extraction Snapshots</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #f5f5f5;
+    }
+    h1 { color: #2c3e50; }
+    h2 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem; }
+    .article-card {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      margin: 1.5rem 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .article-card img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin-top: 1rem;
+      border: 1px solid #ddd;
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+    }
+    .meta strong { color: #2c3e50; }
+    .source {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .source.text { background: #d4edda; color: #155724; }
+    .source.layout { background: #cce5ff; color: #004085; }
+    .status { color: #28a745; font-weight: bold; }
+    .stats {
+      background: #e7f3ff;
+      padding: 1.5rem;
+      border-radius: 4px;
+      margin: 2rem 0;
+      border-left: 4px solid #3498db;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th { background: #ecf0f1; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>📄 Phase 3 Extraction Results — Article Snapshots</h1>
+
+  <div class="stats">
+    <h2 style="border: none; padding: 0; margin: 0 0 1rem 0;">Results Summary</h2>
+    <table>
+      <tr>
+        <th>Total Articles</th>
+        <th>Anchored</th>
+        <th>Text-matched</th>
+        <th>Layout-matched</th>
+        <th>Success Rate</th>
+      </tr>
+      <tr>
+        <td>43</td>
+        <td>38</td>
+        <td>16</td>
+        <td>6</td>
+        <td><strong style="color: #28a745;">88% ✓</strong></td>
+      </tr>
+    </table>
+    <p><strong>Status</strong>: <span class="status">✓ CONQUERED (≥80% target achieved)</span></p>
+  </div>
+
+  <h2>Sample Articles</h2>
+
+  <div class="article-card">
+    <h3>Article #0: Bombay HC strikes down ₹22,000-cr spectrum levy</h3>
+    <div class="meta">
+      <div><strong>Byline:</strong> Urvi Malaviya & Rishi Raj</div>
+      <div><strong>Source:</strong> <span class="source layout">layout</span></div>
+      <div><strong>Body length:</strong> 1,177 characters</div>
+      <div><strong>Image size:</strong> 14 KB</div>
+      <div><strong>Section:</strong> Business</div>
+      <div><strong>Status:</strong> <span class="status">✓ Correct crop</span></div>
+    </div>
+    <p><em>Layout geometry block captured the full article correctly.</em></p>
+    <img src="art_000.jpg" alt="Article snapshot: Bombay HC spectrum levy">
+  </div>
+
+  <div class="article-card">
+    <h3>Article #1: Ceasefire faces its toughest test</h3>
+    <div class="meta">
+      <div><strong>Byline:</strong> Reuters</div>
+      <div><strong>Source:</strong> <span class="source text">text-matched</span></div>
+      <div><strong>Sub-headline:</strong> Iran, Israel trade strikes for 1st time since April; Trump plea leads to a halt</div>
+      <div><strong>Body length:</strong> 691 characters</div>
+      <div><strong>Image size:</strong> 54 KB</div>
+      <div><strong>Section:</strong> International</div>
+      <div><strong>Status:</strong> <span class="status">✓ Tesseract matched headline</span></div>
+    </div>
+    <p><em>Tesseract `tel` OCR successfully matched the headline to anchor the crop box.</em></p>
+  </div>
+
+  <div class="article-card">
+    <h3>Article #3: Tata Trusts meet skips contentious flashpoints</h3>
+    <div class="meta">
+      <div><strong>Byline:</strong> Urvi Malaviya</div>
+      <div><strong>Source:</strong> <span class="source text">text-matched</span></div>
+      <div><strong>Body length:</strong> 1,022 characters</div>
+      <div><strong>Image size:</strong> 24 KB</div>
+      <div><strong>Section:</strong> Business</div>
+      <div><strong>Status:</strong> <span class="status">✓ Tesseract matched headline</span></div>
+    </div>
+    <p><em>Text anchor using Tesseract OCR + fuzzy matching with transliteration fallback.</em></p>
+  </div>
+
+  <div class="article-card">
+    <h3>Article #4: IndiGo expects FY27 growth in single digits</h3>
+    <div class="meta">
+      <div><strong>Byline:</strong> Akbar Merchant</div>
+      <div><strong>Source:</strong> <span class="source text">text-matched</span></div>
+      <div><strong>Body length:</strong> 489 characters</div>
+      <div><strong>Image size:</strong> 176 KB</div>
+      <div><strong>Section:</strong> Business</div>
+      <div><strong>Status:</strong> <span class="status">✓ Tesseract matched headline</span></div>
+    </div>
+    <p><em>Large, prominent article — Tesseract headline matching worked reliably.</em></p>
+  </div>
+
+  <div class="article-card">
+    <h3>Article #5: HDFC Bank legal review report likely in a week</h3>
+    <div class="meta">
+      <div><strong>Byline:</strong> Kshipra Petkar</div>
+      <div><strong>Source:</strong> <span class="source text">text-matched</span></div>
+      <div><strong>Body length:</strong> 804 characters</div>
+      <div><strong>Image size:</strong> 107 KB</div>
+      <div><strong>Section:</strong> Business</div>
+      <div><strong>Status:</strong> <span class="status">✓ Tesseract matched headline</span></div>
+    </div>
+    <p><em>Tesseract matched the headline accurately; crop includes full article body.</em></p>
+  </div>
+
+  <div class="article-card">
+    <h3>Article #6: AI for everything until the hefty bill comes</h3>
+    <div class="meta">
+      <div><strong>Byline:</strong> Vishal Sikka, Swarna Bapat</div>
+      <div><strong>Source:</strong> <span class="source text">text-matched</span></div>
+      <div><strong>Body length:</strong> 701 characters</div>
+      <div><strong>Image size:</strong> 370 KB</div>
+      <div><strong>Section:</strong> Opinion</div>
+      <div><strong>Status:</strong> <span class="status">✓ Tesseract matched headline</span></div>
+    </div>
+    <p><em>Large full-page article; Tesseract OCR anchored correctly despite complex layout.</em></p>
+  </div>
+
+  <h2>Phase 3 Improvements</h2>
+  <ul>
+    <li><strong>Tesseract `tel` OCR:</strong> Native Telugu newsprint training → 4× more text anchors (2→8 per paper)</li>
+    <li><strong>Transliteration matching:</strong> Romanize both headline + OCR line → pronunciation-based match when script garbles differ</li>
+    <li><strong>Reading-order block sort:</strong> Spatial order prevents mis-pairing of articles to geometry blocks</li>
+  </ul>
+
+  <h2>Technical Details</h2>
+  <pre>
+Files on Hetzner container:
+  /tmp/hybrid_out/art_000.jpg through art_044.jpg (43 total)
+  /tmp/hybrid_out/summary.json (metadata for all articles)
+
+To view:
+  ssh -i ~/.ssh/rig_hetzner root@178.105.63.154
+  docker exec rig-backend bash -c 'ls /tmp/hybrid_out/ | head -20'
+  </pre>
+
+  <footer style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #ddd; color: #666; font-size: 0.9rem;">
+    <p>Phase 3 verification completed 2026-06-09. Sakshi 90%, Andhra Jyothi 86%, aggregate 88%.</p>
+  </footer>
+</body>
+</html>

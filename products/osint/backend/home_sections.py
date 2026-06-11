@@ -25,7 +25,7 @@ from typing import Any
 
 from sqlalchemy import text
 
-from posture import POL, _BODY_PRESENT, compute_posture, principal_of
+from posture import POL, _BODY_PRESENT, compute_posture, current_mood, principal_of
 from relevance import score_relevant
 import i18n as _i18n
 
@@ -352,6 +352,21 @@ async def _top_pos_neg_stories_for(
     return out
 
 
+def _read_word(fav: float | None) -> str:
+    """The shared-coverage tone as a plain WORD instead of a bare number."""
+    if fav is None:
+        return "—"
+    if fav <= -25:
+        return "Very negative"
+    if fav <= -10:
+        return "Negative"
+    if fav < 10:
+        return "Mixed"
+    if fav < 25:
+        return "Positive"
+    return "Very positive"
+
+
 async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 8) -> dict[str, Any]:
     pid, _ = principal_of(prefs)
     states = (prefs.get("regions") or {}).get("states") or []
@@ -432,7 +447,7 @@ async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 8) -> d
             neg_lean = lean_fav is not None and lean_fav <= -15
             tone = "hostile" if (neg_lean or s["adverse_co"] >= 2) else "neutral"
             verdict = "Pressure point"
-            score = _signed(lean_fav) if (lean_fav is not None and lean_n >= 3) else "—"
+            score = _read_word(lean_fav) if (lean_fav is not None and lean_n >= 3) else "—"
             adv, irn = s["adverse_co"], s["in_reg_neg"]
             adv_co = f"{adv} story" if adv == 1 else f"{adv} stories"
             adv_adj = f"{adv} adverse story" if adv == 1 else f"{adv} adverse stories"
@@ -462,7 +477,7 @@ async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 8) -> d
             else:
                 verdict = ("Reads favourable" if tone == "supportive"
                            else "Reads adverse" if tone == "hostile" else "Mixed read")
-                score = _signed(lean_fav)
+                score = _read_word(lean_fav)
                 lean_word = ("positive" if lean_fav >= 15 else "negative" if lean_fav <= -15 else "even")
                 why = (f"In the {s['co_p']} stories where you both appear, coverage leans {lean_word} "
                        f"({_signed(lean_fav)}); {s['coverage']} total mentions"
@@ -653,6 +668,20 @@ async def build_six_feeds(db, prefs: dict[str, Any], pid: str, pname: str,
                 break
 
     # ── 6. What you're being tied to ───────────────────────────────────────
+    # Exclude noise that isn't a meaningful "tie": the principal himself, his OWN
+    # state and party (derived from prefs), and pure locations — so the feed shows
+    # the PEOPLE and RIVAL PARTIES he's being linked to, not 'Telangana'/'Hyderabad'.
+    psmeta = prefs.get("primary_subject_meta") or {}
+    own_state = (psmeta.get("state") or "").strip()
+    states = (prefs.get("regions") or {}).get("states") or []
+    own_party = (psmeta.get("party") or "").strip()
+    # Block the principal's own party under every label it travels under so a
+    # Congress CM isn't shown as "tied to" his own party.
+    _party_aliases = {"inc", "congress", "indian national congress"}
+    excl_names = {n.lower() for n in (
+        [pname, own_state, own_party] + list(states)) if n and n.strip()}
+    excl_names |= _party_aliases if (own_party.lower() in _party_aliases
+                                     or "congress" in own_party.lower()) else set()
     tied_rows = (await db.execute(text("""
         SELECT ed.canonical_name AS name, count(DISTINCT a.id) AS n
           FROM article_entity_mentions m
@@ -664,13 +693,18 @@ async def build_six_feeds(db, prefs: dict[str, Any], pid: str, pname: str,
            AND a.collected_at <= analytics.now_sim()
            AND ed.redirected_to IS NULL
            AND char_length(ed.canonical_name) >= 3
+           AND COALESCE(ed.entity_type,'') <> 'location'
+           AND lower(btrim(ed.canonical_name)) <> ALL(CAST(:excl AS text[]))
+           AND {body}
          GROUP BY ed.canonical_name
          ORDER BY n DESC
          LIMIT 7
-    """), p)).fetchall()
+    """.format(body=_BODY_PRESENT)),
+        {**p, "excl": list(excl_names) or [""]})).fetchall()
     tied_items = [{"kind": "tag", "text": r.name,
                    "sub": f"in {r.n} stories" if r.n != 1 else "in 1 story",
-                   "tone": "neu"} for r in tied_rows if (r.name or "").strip().lower() != (pname or "").strip().lower()]
+                   "tone": "neu"} for r in tied_rows
+                  if (r.name or "").strip().lower() not in excl_names]
 
     # One batched translation pass for every non-English line we'll show.
     en_map = await _i18n.ensure_en(db, to_en) if to_en else {}
@@ -680,7 +714,7 @@ async def build_six_feeds(db, prefs: dict[str, Any], pid: str, pname: str,
                 it["en"] = _trim(en_map[it["text"]], 220 if it["kind"] == "quote" else 150)
 
     feeds = [
-        {"key": "quotes",  "title": "Latest quotes about you",
+        {"key": "quotes",  "title": "Latest quotes in your coverage",
          "blurb": "What people are saying — word for word.",
          "items": quote_items, "empty": f"No quotes in the last {win}."},
         {"key": "articles", "title": "Latest articles about you",
@@ -1131,12 +1165,13 @@ async def build_home(db, prefs: dict[str, Any], *, display_name: str | None = No
     six = await build_six_feeds(db, prefs, pid, pname, posture_wh)
 
     now = (await db.execute(text("SELECT analytics.now_sim() AS n"))).scalar()
-    overall, ov_n = _overall_fav(posture)
-    sentiment = await _sentiment_series(db, pid, posture_wh, overall)
-    # Confidence from the favourability signal count (share_of_voice dropped from
-    # the Home metric set for speed).
-    conf = ("high" if ov_n >= 20 else "medium" if ov_n >= 8
-            else "low" if ov_n > 0 else "insufficient")
+    # SHARED CANONICAL MOOD — the ONE directed, intensity-weighted 3-day headline
+    # mood Home / War Room / Report must all show identically. Its `fav` drives the
+    # masthead headline number AND the Coverage Sentiment "now" figure so the two
+    # never contradict; the waveform trajectory points stay as computed below.
+    mood = await current_mood(db, pid)
+    sentiment = await _sentiment_series(db, pid, posture_wh, mood["fav"])
+    sentiment["label"] = mood["label"]
 
     parts = (pname or "").split()
     states = (prefs.get("regions") or {}).get("states") or []
@@ -1147,9 +1182,12 @@ async def build_home(db, prefs: dict[str, Any], *, display_name: str | None = No
         "last": " ".join(parts[1:]) if len(parts) > 1 else "",
         "displayName": display_name,
         "asOf": _fmt_asof(now),
-        "window": _window_label(posture_wh),
-        "overall": overall,
-        "confidence": conf,
+        # Window, headline number, adverse/favourable label + confidence all come
+        # from the shared current_mood so the masthead agrees with War Room / Report.
+        "window": mood["window_label"],
+        "overall": mood["fav"],
+        "label": mood["label"],
+        "confidence": mood["confidence"],
     }
 
     return {

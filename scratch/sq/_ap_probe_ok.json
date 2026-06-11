@@ -1,0 +1,68 @@
+[
+ {
+  "name": "Visalandhra",
+  "domain": "visalaandhra.com",
+  "lang": "te",
+  "tier": "3",
+  "kind": "rss",
+  "notes": "CPI(M) Telugu paper",
+  "home_status": "200",
+  "feed_path": "https://visalaandhra.com/feed/",
+  "feed_kind": "autodiscovered:<rss"
+ },
+ {
+  "name": "10TV",
+  "domain": "10tv.in",
+  "lang": "te",
+  "tier": "2",
+  "kind": "rss",
+  "notes": "",
+  "home_status": "200",
+  "feed_path": "https://10tv.in/rss",
+  "feed_kind": "common-path:<rss"
+ },
+ {
+  "name": "TV5 News Telugu",
+  "domain": "tv5news.in",
+  "lang": "te",
+  "tier": "2",
+  "kind": "rss",
+  "notes": "",
+  "home_status": "200",
+  "feed_path": "https://www.tv5news.in/google_feeds.xml",
+  "feed_kind": "autodiscovered:<rss"
+ },
+ {
+  "name": "Tupaki",
+  "domain": "tupaki.com",
+  "lang": "te",
+  "tier": "2",
+  "kind": "rss",
+  "notes": "popular Telugu news aggregator",
+  "home_status": "200",
+  "feed_path": "https://www.tupaki.com/google_feeds.xml",
+  "feed_kind": "autodiscovered:<rss"
+ },
+ {
+  "name": "Telugu Rajyam",
+  "domain": "telugurajyam.com",
+  "lang": "te",
+  "tier": "3",
+  "kind": "rss",
+  "notes": "",
+  "home_status": "200",
+  "feed_path": "https://telugurajyam.com/feed",
+  "feed_kind": "autodiscovered:<rss"
+ },
+ {
+  "name": "Greater Andhra",
+  "domain": "greatandhra.com",
+  "lang": "en",
+  "tier": "3",
+  "kind": "rss",
+  "notes": "mixed entertainment+news",
+  "home_status": "200",
+  "feed_path": "https://www.greatandhra.com/feed/",
+  "feed_kind": "autodiscovered:<rss"
+ }
+]

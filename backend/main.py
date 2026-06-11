@@ -22,6 +22,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.routers.admin_router import admin_router
+from backend.routers.clippings_router import clippings_router, newspapers_router
 from backend.routers.me_router import me_router
 from backend.routers.observe_router import observe_router
 from backend.routers.rbac_admin_router import rbac_admin_router
@@ -35,6 +36,8 @@ app = FastAPI(
 )
 
 app.include_router(admin_router)
+app.include_router(clippings_router)
+app.include_router(newspapers_router)
 app.include_router(me_router)
 app.include_router(rbac_admin_router)
 app.include_router(observe_router)

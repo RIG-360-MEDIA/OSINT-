@@ -1,9 +1,19 @@
 # 10 - Context From the May 2026 Session
 
-> **TL;DR.** Six critical findings from the multi-day debugging
-> session of **2026-05-13 to 2026-05-16** that future sessions need
-> to know about. Each one cost hours to discover; documenting here
-> so the next session doesn't re-discover them.
+> **TL;DR.** Critical findings from the multi-day debugging session
+> of **2026-05-13 to 2026-05-16** that future sessions need to know
+> about. Each one cost hours to discover; documenting here so the
+> next session doesn't re-discover them.
+>
+> **➡️ For the 2026-05-27/28 session lessons (D1-D26: Cerebras qwen
+> deprecation, zai-glm reasoning trap, Ollama NUM_PARALLEL reality,
+> llama.cpp ctx-per-slot trap, LMStudio attempt-then-revert, Trijya-
+> is-Windows discovery, 5 migrations shipped, 30K articles
+> processed), see [11-session-2026-05-28-learnings.md](11-session-2026-05-28-learnings.md).**
+>
+> This file (10) is a historical snapshot. Don't overwrite it with
+> newer session content — append future-session lessons as
+> `12-session-YYYY-MM-DD-learnings.md` etc.
 
 ## 1. Old Ollama install was 553MB and silently CPU-only
 

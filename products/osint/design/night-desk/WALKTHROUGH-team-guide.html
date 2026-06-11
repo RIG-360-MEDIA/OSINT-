@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ROBIN-OSINT — Team Field Guide</title>
+<style>
+  :root{
+    --ink:#1a1a22; --soft:#55525f; --faint:#8a8694;
+    --line:#e4e2ea; --paper:#ffffff; --wash:#f6f5f9;
+    --brand:#3b2f6b; --brand2:#6d5bd0; --accent:#c9a227;
+    --good:#1f7a4d; --warn:#b4571a; --bad:#a52828;
+  }
+  *{box-sizing:border-box;}
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{
+    margin:0; color:var(--ink); background:var(--paper);
+    font-family:"Segoe UI", Calibri, Arial, sans-serif;
+    font-size:11.2pt; line-height:1.5;
+  }
+  @page{ size:A4; margin:16mm 15mm 18mm; }
+  h1,h2,h3{ font-family:"Segoe UI Semibold","Segoe UI", Arial, sans-serif; color:var(--brand); line-height:1.2; }
+  p{ margin:0 0 9px; }
+  .muted{ color:var(--soft); }
+  .tiny{ font-size:9pt; color:var(--faint); }
+  a{ color:var(--brand2); text-decoration:none; }
+
+  /* ---- Cover ---- */
+  .cover{
+    height:265mm; display:flex; flex-direction:column; justify-content:center;
+    background:linear-gradient(150deg,#2a2350 0%, #3b2f6b 55%, #5847a8 100%);
+    color:#fff; padding:0 18mm; border-radius:2px; -webkit-print-color-adjust:exact;
+  }
+  .cover .kicker{ letter-spacing:.35em; font-size:10pt; color:#d9d2ff; text-transform:uppercase; }
+  .cover h1{ color:#fff; font-size:38pt; margin:14px 0 6px; }
+  .cover .sub{ font-size:15pt; color:#e9e5ff; font-weight:600; }
+  .cover .lede{ font-size:11.5pt; color:#cfc8f4; max-width:135mm; margin-top:18px; line-height:1.6; }
+  .cover .url{ margin-top:30px; font-size:12pt; color:#fff; }
+  .cover .url b{ color:var(--accent); }
+  .cover .foot{ margin-top:auto; padding-top:24px; border-top:1px solid rgba(255,255,255,.25); font-size:9.5pt; color:#c9c2ee; }
+  .pagebreak{ page-break-before:always; }
+
+  /* ---- Section headings ---- */
+  h2.sec{ font-size:18pt; margin:4px 0 2px; padding-bottom:6px; border-bottom:3px solid var(--accent); }
+  .sec-no{ color:var(--accent); font-weight:700; }
+  .intro{ color:var(--soft); margin:0 0 14px; }
+
+  /* ---- Cards ---- */
+  .card{
+    border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:0 0 12px;
+    background:var(--paper); page-break-inside:avoid;
+  }
+  .card.page{ border-left:6px solid var(--brand2); }
+  .card h3{ font-size:13.5pt; margin:0 0 2px; display:flex; align-items:center; gap:10px; }
+  .pill{ display:inline-block; font-size:8.5pt; letter-spacing:.05em; background:var(--wash); color:var(--soft);
+    border:1px solid var(--line); border-radius:20px; padding:2px 10px; font-weight:600; white-space:nowrap; }
+  .badge{ display:inline-grid; place-items:center; width:26px; height:26px; border-radius:7px;
+    background:var(--brand); color:#fff; font-size:12pt; font-weight:700; -webkit-print-color-adjust:exact; }
+  .lbl{ font-weight:700; color:var(--brand); }
+  .row{ margin:7px 0; }
+  ul{ margin:5px 0 5px; padding-left:18px; }
+  li{ margin:3px 0; }
+  .tip{ background:#fbf7e8; border:1px solid #ecdfae; border-radius:8px; padding:8px 11px; margin-top:9px; font-size:10pt; }
+  .tip b{ color:var(--warn); }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .note{ background:var(--wash); border:1px solid var(--line); border-radius:10px; padding:12px 15px; }
+
+  table{ width:100%; border-collapse:collapse; margin:8px 0 4px; font-size:10pt; }
+  th,td{ text-align:left; padding:7px 9px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:var(--wash); color:var(--brand); font-size:9.5pt; letter-spacing:.03em; }
+  .flow{ font-family:Consolas,monospace; font-size:9.5pt; color:var(--soft); background:var(--wash);
+    border:1px solid var(--line); border-radius:8px; padding:9px 12px; }
+  .foot-rule{ margin-top:18px; border-top:1px solid var(--line); padding-top:8px; }
+</style>
+</head>
+<body>
+
+<!-- ════════ COVER ════════ -->
+<section class="cover">
+  <div class="kicker">ROBIN-OSINT</div>
+  <h1>Team Field Guide</h1>
+  <div class="sub">A plain-English walkthrough of every screen</div>
+  <div class="lede">
+    ROBIN-OSINT turns a flood of news, social posts, video and government
+    documents into one calm, personalized intelligence picture. This guide shows
+    you what each screen is for, what you'll see on it, and what you can do —
+    no technical knowledge required.
+  </div>
+  <div class="url">Open it at &nbsp;<b>desk.rig360media.com</b></div>
+  <div class="foot">Working reference for the team · Keep handy when navigating the app</div>
+</section>
+
+<!-- ════════ 1. WHAT IS IT ════════ -->
+<section class="pagebreak">
+  <h2 class="sec"><span class="sec-no">1.</span> What is ROBIN-OSINT?</h2>
+  <p class="intro">The one-paragraph version, before you click anything.</p>
+
+  <div class="note">
+    <p>Think of ROBIN-OSINT as a <b>private newsroom built around one person or
+    organisation</b> — your "principal" (for example, a state government and its
+    leadership). Every day it reads thousands of news stories, social signals,
+    YouTube news clips and official documents, and boils them down into a clear
+    picture: <i>what's happening, who's under pressure, what the mood is, and what
+    to watch next.</i></p>
+    <p style="margin-bottom:0">It is <b>personalized</b>. The app focuses on the
+    people, places and topics that matter to <i>your</i> brief — so two teammates
+    looking at it may see different stories. That's by design, not a glitch.</p>
+  </div>
+
+  <div class="grid2" style="margin-top:14px">
+    <div class="card">
+      <h3>What it pulls together</h3>
+      <ul style="margin-bottom:0">
+        <li>News articles (national + regional)</li>
+        <li>Social signals (Reddit, Telegram)</li>
+        <li>Live YouTube news channels &amp; clips</li>
+        <li>Government PDFs &amp; documents</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>What it gives you</h3>
+      <ul style="margin-bottom:0">
+        <li>A daily written briefing</li>
+        <li>Threat &amp; pressure tracking</li>
+        <li>Charts, quotes and claims</li>
+        <li>A map view and a daily PDF report</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ 2. GETTING IN ════════ -->
+<section>
+  <h2 class="sec"><span class="sec-no">2.</span> Getting in &amp; finding your way</h2>
+  <p class="intro">Signing in, and the parts of the screen that never change.</p>
+
+  <div class="card">
+    <h3>Signing in</h3>
+    <ul>
+      <li>Go to <b>desk.rig360media.com</b> and enter your <b>email and password</b>.</li>
+      <li>Accounts are <b>invite-only</b> — if you don't have one, ask an admin to invite you.</li>
+      <li>First-time users complete a short <b>setup wizard</b> that tells the app who and
+        what you care about (your principal, watchlist, region, topics). This is what
+        makes your view <i>yours</i>.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>The parts that are always on screen</h3>
+    <table>
+      <tr><th style="width:32%">Where</th><th>What it is</th></tr>
+      <tr><td><b>Left menu (sidebar)</b></td><td>Jumps between the six screens. It stays
+        <b>tucked away by default</b> — click the <b>☰</b> button to open it, and it remembers your choice.</td></tr>
+      <tr><td><b>Top bar</b></td><td>A <b>light / dark theme</b> switch.</td></tr>
+      <tr><td><b>Ticker</b></td><td>A scrolling line of the latest headlines.</td></tr>
+      <tr><td><b>Web address</b></td><td>Each screen has its own link (e.g. <i>/map</i>), so
+        <b>back / forward and bookmarks work</b> like any website.</td></tr>
+    </table>
+  </div>
+
+  <div class="tip"><b>Tip —</b> Lost? The left menu always has all six screens. Open it
+    with ☰ in the top-left corner.</div>
+</section>
+
+<!-- ════════ 3. THE SIX SCREENS ════════ -->
+<section class="pagebreak">
+  <h2 class="sec"><span class="sec-no">3.</span> The six screens, one by one</h2>
+  <p class="intro">For each screen: what it's for, what you'll see, and what you can do.</p>
+
+  <!-- HOME -->
+  <div class="card page">
+    <h3><span class="badge">1</span> Home — “The Briefing” <span class="pill">your daily read</span></h3>
+    <div class="row"><span class="lbl">What it's for:</span> Your morning brief — the story of
+      the day in plain words.</div>
+    <div class="row"><span class="lbl">What you'll see:</span></div>
+    <ul>
+      <li><b>The Briefing</b> — a short written analysis: what happened, what it means, why it
+        matters, the other side, what's next, and how to play it.</li>
+      <li><b>Top Stories For You</b> — the most important stories as cards (with picture, headline,
+        mood, source and why it was picked). Ranked by importance, not at random.</li>
+      <li><b>People To Watch</b> — key figures with their latest headline and a pressure gauge.</li>
+      <li><b>The Six</b> — six big storylines worth knowing today.</li>
+    </ul>
+    <div class="row"><span class="lbl">What you can do:</span> Read top-to-bottom, click a story
+      card to open it.</div>
+  </div>
+
+  <!-- WAR ROOM -->
+  <div class="card page">
+    <h3><span class="badge">2</span> War Room — “The Crisis Desk” <span class="pill">pressure &amp; threats</span></h3>
+    <div class="row"><span class="lbl">What it's for:</span> Seeing who is being attacked or
+      criticised, how hard, and by whom.</div>
+    <div class="row"><span class="lbl">What you'll see:</span></div>
+    <ul>
+      <li><b>Threat Stack</b> — the day's negative storylines as a ranked list, each with a
+        severity badge, a short summary, and who's behind it.</li>
+      <li><b>The Field</b> — three simple panels: <b>Momentum</b> (how much each figure is being
+        talked about, with the negative share in red), <b>Attack Map</b> (which rivals are pushing
+        which topics), and <b>Alliances</b> (friendly vs hostile outlets).</li>
+    </ul>
+    <div class="row"><span class="lbl">What you can do:</span> Scan the top of the stack first —
+      that's the loudest pressure right now.</div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div class="card page">
+    <h3><span class="badge">3</span> Analytics — “The Instrument Panel” <span class="pill">the numbers</span></h3>
+    <div class="row"><span class="lbl">What it's for:</span> The measured view — charts and counts,
+      no opinion.</div>
+    <div class="row"><span class="lbl">What you'll see:</span></div>
+    <ul>
+      <li><b>The Big Picture</b> — how much coverage there is over time, the top topics, and the
+        overall mood (supportive / neutral / hostile).</li>
+      <li><b>Who &amp; Where</b> — which people are getting the most attention, and where.</li>
+      <li><b>The Detail</b> — notable quotes, claims, key numbers, and a wall of real article images.</li>
+    </ul>
+    <div class="row"><span class="lbl">What you can do:</span> Use it to back up the Briefing with
+      hard figures.</div>
+  </div>
+
+  <!-- DOSSIER -->
+  <div class="card page">
+    <h3><span class="badge">4</span> Dossier — “Entity Files” <span class="pill">deep dive on a person/org</span></h3>
+    <div class="row"><span class="lbl">What it's for:</span> A full file on any person or organisation
+      you track.</div>
+    <div class="row"><span class="lbl">What you'll see:</span> Search the list on the left, pick a name,
+      and the file opens on the right — their coverage trend, how supportive vs critical the mood is,
+      their share of attention, top topics, their quotes, claims about them, who they're mentioned
+      alongside, English vs Telugu reach, and a timeline.</div>
+    <div class="row"><span class="lbl">What you can do:</span> Search by name, filter people vs
+      organisations, and “load more” to read their full story history.</div>
+    <div class="tip"><b>Note —</b> You can only open files for your own principal and watchlist —
+      that keeps everyone's view focused.</div>
+  </div>
+
+  <!-- MAP -->
+  <div class="card page">
+    <h3><span class="badge">5</span> Map — “The Theatre” <span class="pill">the geographic view</span></h3>
+    <div class="row"><span class="lbl">What it's for:</span> Seeing where the news is happening on a
+      real map.</div>
+    <div class="row"><span class="lbl">What you'll see:</span></div>
+    <ul>
+      <li>A <b>Mine</b> view that zooms into <b>your region</b>, coloured by mood per district —
+        click a district to read its stories.</li>
+      <li>A <b>Global</b> view showing the whole world coloured by how much coverage each country is
+        getting — click a country to drill in.</li>
+      <li><b>Live layers</b> — wildfire / natural-event hotspots and conflict points.</li>
+      <li><b>Live Channels</b> — up to six YouTube news streams playing live, below the map.</li>
+    </ul>
+    <div class="row"><span class="lbl">What you can do:</span> Switch <b>Mine ↔ Global</b>, click any
+      area to drill in, and pan / zoom the map.</div>
+  </div>
+
+  <!-- DISPATCH -->
+  <div class="card page">
+    <h3><span class="badge">6</span> Dispatch — “The Daily Report” <span class="pill">download &amp; email</span></h3>
+    <div class="row"><span class="lbl">What it's for:</span> Getting today's full intelligence report
+      as a polished PDF.</div>
+    <div class="row"><span class="lbl">What you'll see:</span> A preview of the report, plus two buttons.</div>
+    <div class="row"><span class="lbl">What you can do:</span> <b>Download PDF</b> to save a fully
+      formatted report (sections, key numbers, and top stories with pictures), or <b>Email me</b> to
+      send it to your inbox.</div>
+    <div class="tip"><b>Good to know —</b> You also receive this report <b>automatically by email
+      every morning</b> — no clicks needed.</div>
+  </div>
+</section>
+
+<!-- ════════ 4. WHY DIFFERENT ════════ -->
+<section class="pagebreak">
+  <h2 class="sec"><span class="sec-no">4.</span> Why your screen differs from a colleague's</h2>
+  <p class="intro">The single most common question — answered in plain terms.</p>
+
+  <div class="note">
+    <p>During setup, you told the app <b>who and what you care about</b>: your principal, the
+    people and organisations on your <b>watchlist</b>, your <b>region</b>, and your <b>topics</b>.</p>
+    <p>The app then builds your whole picture out of <b>only the stories connected to those choices</b>.
+    So a teammate focused on a different leader, region or set of topics will genuinely see different
+    headlines, charts and maps. There is no single “global feed” — every screen is tuned to <i>your</i> brief.</p>
+    <p style="margin-bottom:0" class="muted">If your view ever looks wrong, it usually means your
+    setup choices need a tweak — ask an admin to review your preferences.</p>
+  </div>
+
+  <div class="flow" style="margin-top:14px">
+    Your setup choices  →  the app gathers only matching stories  →  every screen reflects that focus
+  </div>
+</section>
+
+<!-- ════════ 5. WORDS YOU'LL HEAR ════════ -->
+<section>
+  <h2 class="sec"><span class="sec-no">5.</span> Words you'll hear</h2>
+  <p class="intro">A tiny glossary — no jargon.</p>
+  <table>
+    <tr><th style="width:26%">Word</th><th>Plain meaning</th></tr>
+    <tr><td><b>Principal</b></td><td>The main person or organisation your desk is built around.</td></tr>
+    <tr><td><b>Watchlist</b></td><td>The people and organisations you track. They decide which stories appear.</td></tr>
+    <tr><td><b>Mood / stance</b></td><td>Whether coverage is supportive, neutral, or hostile.</td></tr>
+    <tr><td><b>Coverage</b></td><td>How much the news is talking about something.</td></tr>
+    <tr><td><b>Dossier</b></td><td>A complete file on one person or organisation.</td></tr>
+    <tr><td><b>Brief / Dispatch</b></td><td>The daily written summary (Brief) and its downloadable PDF (Dispatch).</td></tr>
+  </table>
+</section>
+
+<!-- ════════ 6. GOOD TO KNOW ════════ -->
+<section>
+  <h2 class="sec"><span class="sec-no">6.</span> Good to know</h2>
+  <p class="intro">A few honest notes so nothing surprises you.</p>
+  <div class="card">
+    <ul style="margin:2px 0">
+      <li><b>The big picture changes slowly.</b> The app summarises over several days, so the headline
+        view can look steady from hour to hour even though new stories are arriving constantly.</li>
+      <li><b>Some YouTube clips lag.</b> Videos with captions are read instantly; videos without
+        captions can take longer to appear.</li>
+      <li><b>Twitter / X is hidden for now.</b> It's being collected in the background but isn't shown
+        on screen yet.</li>
+      <li><b>Everything is read-only and personalized.</b> You can't accidentally change shared data —
+        you're always looking at your own tuned view.</li>
+    </ul>
+  </div>
+
+  <div class="foot-rule tiny">
+    ROBIN-OSINT · Team Field Guide · Open at desk.rig360media.com ·
+    For account or preference changes, contact an admin.
+  </div>
+</section>
+
+</body>
+</html>

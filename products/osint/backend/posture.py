@@ -151,6 +151,43 @@ async def _q(db, sql: str, **p) -> list:
     return (await db.execute(text(sql), p)).fetchall()
 
 
+async def current_mood(db, pid: str, wh: int = 72) -> dict[str, Any]:
+    """Canonical "how is the principal doing right now" — the ONE shared headline mood
+    used identically by Home masthead, War Room, and the Report so they never contradict.
+    Directed (actor_entity_id = pid = stance TARGET), intensity-weighted favourability
+    over the last `wh` hours (default 72h / 3 days). Body-presence guarded."""
+    r = (await _q(db, f"""
+      WITH pa AS (SELECT DISTINCT a.id
+                    FROM article_entity_mentions m JOIN articles a ON a.id=m.article_id
+                   WHERE m.entity_id = CAST(:pid AS uuid)
+                     AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+                     AND {_BODY_PRESENT})
+      SELECT round(100*avg(lean))::int fav,
+             count(*) FILTER (WHERE lean >= 0.1)  pos,
+             count(*) FILTER (WHERE lean <= -0.1) neg,
+             count(*) FILTER (WHERE lean > -0.1 AND lean < 0.1) neu
+        FROM (SELECT pa.id,
+                     (SELECT avg(({POL}) * st.intensity) FROM article_stances st
+                       WHERE st.article_id = pa.id AND st.actor_entity_id = CAST(:pid AS uuid)) lean
+                FROM pa) x
+       WHERE lean IS NOT NULL
+    """, pid=pid, wh=wh))
+    row = r[0] if r else None
+    fav = int(row.fav) if (row and row.fav is not None) else 0
+    pos, neu, neg = (int(row.pos), int(row.neu), int(row.neg)) if row else (0, 0, 0)
+    if fav > 8:
+        word, tone, label = "broadly positive", "pos", "Favourable"
+    elif fav < -8:
+        word, tone, label = "broadly negative", "neg", "Adverse"
+    else:
+        word, tone, label = "mixed", None, "Mixed"
+    days = max(1, round(wh / 24))
+    return {"fav": fav, "pos": pos, "neu": neu, "neg": neg, "n": pos + neu + neg,
+            "word": word, "tone": tone, "label": label,
+            "window_hours": wh, "window_label": f"last {days} day{'s' if days != 1 else ''}",
+            "confidence": confidence(pos + neu + neg)}
+
+
 # ───────────────────────── metrics ─────────────────────────
 
 async def outlet_favourability(db, pid: str, wh: int) -> dict[str, Any]:

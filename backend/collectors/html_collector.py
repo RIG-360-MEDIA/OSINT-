@@ -104,20 +104,21 @@ class HTMLCollector:
                     row_result = await conn.fetchrow(
                         """
                         UPDATE sources
-                        SET health_score = GREATEST(health_score - 0.2, 0.0),
+                        SET health_score = GREATEST(health_score - 0.2, 0.1),
                             consecutive_failures = consecutive_failures + 1
                         WHERE id = $1::uuid
                         RETURNING name, consecutive_failures
                         """,
                         str(source["id"]),
                     )
-                    if row_result and row_result["consecutive_failures"] >= 10:
+                    # 2026-05-27: auto-disable threshold raised 10 → 25
+                    if row_result and row_result["consecutive_failures"] >= 25:
                         await conn.execute(
                             "UPDATE sources SET is_active = FALSE WHERE id = $1::uuid",
                             str(source["id"]),
                         )
                         logger.warning(
-                            "Source '%s' auto-disabled after 10 failures",
+                            "Source '%s' auto-disabled after 25 failures",
                             source["name"],
                         )
         finally:
@@ -193,28 +194,55 @@ class HTMLCollector:
                     )
 
                     title = url.split("/")[-1].replace("-", " ").replace("_", " ")[:200]
-                    try:
-                        result = await conn.execute(
-                            """
-                            INSERT INTO articles (
-                                source_id, url, url_hash, title,
-                                lead_text_original, full_text_scraped,
-                                collected_at, content_type, source_tier,
-                                thumbnail_url, author_name, nlp_processed
-                            ) VALUES (
-                                $1::uuid, $2, $3, $4,
-                                $5, $6,
-                                NOW(), 'article', $7,
-                                $8, $9, FALSE
-                            )
-                            ON CONFLICT (url_hash) DO NOTHING
-                            """,
+                    _INSERT_SQL = """
+                        INSERT INTO articles (
                             source_id, url, url_hash, title,
-                            lead_text, full_text,
-                            source_tier, thumbnail, author,
+                            lead_text_original, full_text_scraped,
+                            collected_at, content_type, source_tier,
+                            thumbnail_url, author_name, nlp_processed
+                        ) VALUES (
+                            $1::uuid, $2, $3, $4,
+                            $5, $6,
+                            NOW(), 'article', $7,
+                            $8, $9, FALSE
                         )
+                        ON CONFLICT (url_hash) DO NOTHING
+                    """
+                    _insert_args = (
+                        source_id, url, url_hash, title,
+                        lead_text, full_text,
+                        source_tier, thumbnail, author,
+                    )
+                    try:
+                        result = await conn.execute(_INSERT_SQL, *_insert_args)
                         if result.endswith(" 1"):
                             inserted += 1
+                    except (
+                        asyncpg.exceptions.InterfaceError,
+                        asyncpg.exceptions.ConnectionDoesNotExistError,
+                    ) as exc:
+                        # Stale conn (Postgres restart / idle timeout) — retry
+                        # once with a fresh connection. Added 2026-06-05 after
+                        # the Postgres-restart cascade.
+                        logger.warning(
+                            "Stale DB conn — reconnecting to retry insert "
+                            "for %s: %s", url, exc,
+                        )
+                        try:
+                            fresh = await asyncpg.connect(DATABASE_URL)
+                            try:
+                                result = await fresh.execute(
+                                    _INSERT_SQL, *_insert_args,
+                                )
+                                if result.endswith(" 1"):
+                                    inserted += 1
+                            finally:
+                                await fresh.close()
+                        except Exception as exc2:
+                            logger.error(
+                                "DB insert failed (after reconnect) for %s: %s",
+                                url, exc2,
+                            )
                     except Exception as exc:
                         logger.error("DB insert failed for %s: %s", url, exc)
 

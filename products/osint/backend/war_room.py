@@ -11,7 +11,7 @@ from typing import Any
 
 from sqlalchemy import text
 
-from posture import POL, _BODY_PRESENT, compute_posture, principal_of
+from posture import POL, _BODY_PRESENT, compute_posture, current_mood, principal_of
 from llm_synth import synthesize_paragraph
 import i18n
 
@@ -23,6 +23,34 @@ _POSTURE = {"weighted_pressure", "counter_speed", "attack_origination", "target_
 
 def _day(dt) -> str:
     return f"{dt.day} {_MONTHS[dt.month]}" if dt else ""
+
+
+def _lead_summary(cables: list[dict[str, Any]], pname: str, neg_stories: int,
+                  trend_label: str, origin: str, days: int) -> str:
+    """Plain-language situation read, composed from the real cable list + station
+    fields. 3-5 grounded sentences, no invented numbers. `days` is the crisis
+    window length (WH//24) so the prose can't lie if WH changes."""
+    name = pname or "The principal"
+    if not cables:
+        return (f"{name} is facing no concentrated adverse storyline in this {days}-day window — "
+                f"the board is quiet. Coverage is {neg_stories} negative stories over the period. "
+                f"Keep watching; nothing has clustered into a sustained attack yet.")
+    top = cables[0]
+    n = int(top.get("src") or 0)
+    outlets = int(top["facets"].get("outlets") or 0)
+    topic = top["facets"].get("what", "an issue")
+    trend_word = {"WORSENING": "worsening", "EASING": "easing",
+                  "STEADY": "holding steady"}.get(trend_label, "mixed")
+    sentences = [
+        f"{name} is facing {len(cables)} adverse storyline(s) this window.",
+        (f"The sharpest is “{topic}” — {n} critical piece(s)"
+         + (f" across {outlets} outlet(s)" if outlets else "")
+         + (f", originating with {origin}." if origin else ".")),
+        f"Coverage is {trend_word}, with {neg_stories} negative stories over {days} days.",
+    ]
+    if len(cables) > 1:
+        sentences.append(f"Also watch “{cables[1]['facets'].get('what', 'a second line')}”.")
+    return " ".join(sentences)
 
 
 def _sev(n: int, neg: float) -> str:
@@ -46,7 +74,7 @@ async def _threat_cables(db, pid: str, wh: int) -> list[dict[str, Any]]:
             FROM article_entity_mentions m
             JOIN articles a ON a.id = m.article_id
             JOIN sources s ON s.id = a.source_id
-            JOIN article_stances st ON st.article_id = a.id
+            JOIN article_stances st ON st.article_id = a.id AND st.actor_entity_id = CAST(:pid AS uuid)
            WHERE m.entity_id = CAST(:pid AS uuid)
              AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
              AND {_BODY_PRESENT}
@@ -77,6 +105,7 @@ async def _threat_cables(db, pid: str, wh: int) -> list[dict[str, Any]]:
             "claim": r.rep, "rep_id": r.rep_id, "rep_lang": r.rep_lang,
             "who": r.origin, "date": _day(r.latest), "origin": r.origin,
             "facets": {"what": topic.title(), "hurts": f"{n} pieces, {int(r.outlets)} outlets",
+                       "outlets": int(r.outlets),
                        "acts": "Contest in your warmest outlet" if neg >= 0.4 else "Monitor",
                        "hits": list(r.hits or [])},
         })
@@ -167,15 +196,15 @@ async def _bloc(db, person_ids: list[str], wh: int) -> dict[str, Any]:
 
 async def _ammunition(db, pid: str, wh: int) -> list[dict[str, Any]]:
     rows = (await db.execute(text(f"""
-        SELECT a.title FROM article_entity_mentions m
-          JOIN articles a ON a.id = m.article_id JOIN article_stances st ON st.article_id = a.id
+        SELECT a.title, a.url FROM article_entity_mentions m
+          JOIN articles a ON a.id = m.article_id JOIN article_stances st ON st.article_id = a.id AND st.actor_entity_id = CAST(:pid AS uuid)
          WHERE m.entity_id = CAST(:pid AS uuid)
            AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
            AND {_BODY_PRESENT}
-         GROUP BY a.id, a.title HAVING avg(CASE WHEN ({POL}) > 0 THEN 1 WHEN ({POL}) < 0 THEN -1 ELSE 0 END) > 0.3
-         ORDER BY max(a.collected_at) DESC LIMIT 4
+         GROUP BY a.id, a.title, a.url HAVING avg(CASE WHEN ({POL}) > 0 THEN 1 WHEN ({POL}) < 0 THEN -1 ELSE 0 END) > 0.3
+         ORDER BY max(a.collected_at) DESC LIMIT 8
     """), {"pid": pid, "wh": wh})).fetchall()
-    items = [{"text": r.title} for r in rows]
+    items = [{"text": r.title, "url": r.url} for r in rows]
     await i18n.attach_en(db, items, "text")
     return items
 
@@ -185,20 +214,21 @@ async def _intercepts(db, pid: str, person_ids: list[str], wh: int) -> list[dict
     negative stance — i.e. opposition on record where it touches you."""
     rows = (await db.execute(text(f"""
         SELECT q.quote_text q, NULLIF(q.quote_text_en,'') qen, ed.canonical_name who,
-               s.name src, COALESCE(s.source_tier,3) tier
+               s.name src, COALESCE(s.source_tier,3) tier, a.url
           FROM article_quotes q
           JOIN articles a ON a.id = q.article_id
           JOIN sources s ON s.id = a.source_id
           JOIN entity_dictionary ed ON ed.id = q.speaker_entity_id
          WHERE q.speaker_entity_id = ANY(CAST(:ids AS uuid[]))
+           AND q.speaker_entity_id <> CAST(:pid AS uuid)
            AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
            AND length(COALESCE(q.quote_text_en, q.quote_text)) BETWEEN 24 AND 240
            AND EXISTS (SELECT 1 FROM article_entity_mentions pm WHERE pm.article_id = a.id AND pm.entity_id = CAST(:pid AS uuid))
-           AND EXISTS (SELECT 1 FROM article_stances st WHERE st.article_id = a.id AND ({POL}) < 0)
-         ORDER BY a.collected_at DESC LIMIT 3
+           AND EXISTS (SELECT 1 FROM article_stances st WHERE st.article_id = a.id AND st.actor_entity_id = CAST(:pid AS uuid) AND ({POL}) < 0)
+         ORDER BY a.collected_at DESC LIMIT 6
     """), {"ids": person_ids, "pid": pid, "wh": wh})).fetchall()
     out = [{"quote": r.q, "quote_en": (r.qen if (r.qen and r.qen != r.q) else None),
-            "who": r.who, "role": "watchlist", "tier": f"T{r.tier}", "src": r.src} for r in rows]
+            "who": r.who, "role": "watchlist", "tier": f"T{r.tier}", "src": r.src, "url": r.url} for r in rows]
     await i18n.attach_en(db, out, "quote")
     return out
 
@@ -215,17 +245,25 @@ async def build_war_room(db, prefs: dict[str, Any]) -> dict[str, Any]:
     wp = M.get("weighted_pressure", {})
     ao = M.get("attack_origination", {}).get("origin") or {}
     th = M.get("target_heat", {}).get("items", [])
-    cs = M.get("counter_speed", {})
-
     cables = await _threat_cables(db, pid, WH)
-    momentum = await _momentum(db, pid, person_ids, WH)
-    attackmap = await _attackmap(db, pid, person_ids, WH)
-    bloc = await _bloc(db, person_ids, WH)
     ammo = await _ammunition(db, pid, WH)
     intercepts = await _intercepts(db, pid, person_ids, WH)
 
+    # shared canonical 3-day headline mood — the ONE directed, intensity-weighted
+    # read that Home, War Room and the Report all show identically. Distinct from
+    # the 21-day crisis stats below (different window: 'last 3 days' vs 21-DAY).
+    mood = await current_mood(db, pid)
+
     now = (await db.execute(text("SELECT analytics.now_sim() AS n"))).scalar()
     critical = sum(1 for c in cables if c["sev"] == "CRITICAL")
+
+    # mood trend toward the principal (directed-stance slope) → a plain word for the stat bar
+    _dir = M.get("stance_trajectory", {}).get("direction")
+    trend_label, trend_tone = {
+        "cooling": ("WORSENING", "neg"),
+        "warming": ("EASING", "pos"),
+        "flat": ("STEADY", None),
+    }.get(_dir, ("—", None))
 
     # crisis lead from the worst cable / attack origin
     lead_cable = cables[0] if cables else None
@@ -241,6 +279,9 @@ async def build_war_room(db, prefs: dict[str, Any]) -> dict[str, Any]:
         "metric": {"label": "Threat lead", "value": (lead_cable["score"] if lead_cable else "—"),
                    "n": (lead_cable["src"] if lead_cable else 0), "confidence": wp.get("confidence", "low")},
     }
+    lead["summary"] = _lead_summary(
+        cables, pname, wp.get("negative_signals", 0), trend_label,
+        (ao.get("outlet") or lead_cable["origin"]) if lead_cable else "", WH // 24)
 
     # pre-draft counter (LLM, gated) for the lead cable
     predraft_en = None
@@ -268,32 +309,21 @@ async def build_war_room(db, prefs: dict[str, Any]) -> dict[str, Any]:
                    "confidence": M.get("target_heat", {}).get("confidence", "low")},
     }
 
-    # allegiance roster: watched persons by their co-coverage lean (reuse friend/foe at outlet level for now)
-    fff = M.get("friend_foe_fence", {})
-    roster = {
-        "against": [o["outlet"] for o in fff.get("hostile", [])][:8],
-        "neutral": [o["outlet"] for o in fff.get("fence", [])][:8],
-        "forNote": (f"{len(fff.get('ally', []))} outlets lean to you — see Who To Call."),
-    }
-
     return {
         "personalized": True,
         "station": {
             "desk": pname,
-            "open": len(cables),
-            "critical": critical,
-            "pressure": round(wp.get("pressure", 0)),
-            "pressureNote": f"{wp.get('negative_signals', 0)} negative signals",
-            "counterSpeed": (cs.get("label") or cs.get("median_hours") or "—"),
+            "mood": mood,
+            "activeAttacks": len(cables),
+            "serious": critical,
+            "negStories": wp.get("negative_signals", 0),
+            "trendLabel": trend_label,
+            "trendTone": trend_tone,
             "asOf": f"AS OF {_day(now)} {now.year if now else ''}",
             "window": "21-DAY WINDOW",
         },
         "lead": lead,
         "cables": cables,
         "arsenal": arsenal,
-        "momentum": {"items": momentum, "note": "Volume + negativity per watched figure, this window."},
-        "attackmap": attackmap,
-        "bloc": bloc,
-        "roster": roster,
         "counterattack": counterattack,
     }

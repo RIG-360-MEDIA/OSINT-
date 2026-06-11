@@ -78,7 +78,7 @@ async def build_roster(db, prefs: dict[str, Any]) -> dict[str, Any]:
                count(*) FILTER (WHERE ({POL}) < 0) crit
           FROM article_entity_mentions m
           JOIN articles a ON a.id = m.article_id
-          JOIN article_stances st ON st.article_id = m.article_id
+          JOIN article_stances st ON st.article_id = m.article_id AND st.actor_entity_id = m.entity_id
          WHERE m.entity_id = ANY(CAST(:ids AS uuid[]))
            AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
          GROUP BY 1
@@ -94,11 +94,14 @@ async def build_roster(db, prefs: dict[str, Any]) -> dict[str, Any]:
         s = lean.get(m["id"])
         sup, crit = (int(s.sup), int(s.crit)) if s else (0, 0)
         role = " · ".join([x for x in [(m.get("party") or "").strip(), (m.get("state") or "").strip()] if x])
+        # Flag the principal by id (not the insert-guard) so they pin first even
+        # when they're also in the watchlist meta.
+        is_principal = bool(pid) and m["id"] == pid
         roster.append({
             "id": m["id"], "name": m["name"], "type": _ui_type(m.get("type")),
-            "role": ("★ your principal" if m.get("principal") else (role or m.get("type") or "watched")),
+            "role": ("★ your principal" if is_principal else (role or m.get("type") or "watched")),
             "align": _align(sup, crit), "mentions": counts.get(m["id"], 0),
-            "img": imgs.get(m["id"]), "principal": bool(m.get("principal")),
+            "img": imgs.get(m["id"]), "principal": is_principal,
         })
     # principal pinned first, then by mention volume
     roster.sort(key=lambda x: (not x.get("principal"), -x["mentions"]))
@@ -117,6 +120,12 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
     if not ident:
         return {"found": False}
 
+    img = (await db.execute(text("""
+        SELECT image_url FROM analytics.entity_image
+         WHERE entity_id = CAST(:eid AS uuid) AND ok AND image_url IS NOT NULL
+         LIMIT 1
+    """), {"eid": eid})).scalar()
+
     mentions = (await db.execute(text("""
         SELECT count(DISTINCT article_id) n FROM article_entity_mentions WHERE entity_id = CAST(:eid AS uuid)
     """), {"eid": eid})).scalar() or 0
@@ -133,7 +142,7 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
                count(*) FILTER (WHERE ({POL}) = 0) neu
           FROM article_entity_mentions m
           JOIN articles a ON a.id = m.article_id
-          JOIN article_stances st ON st.article_id = m.article_id
+          JOIN article_stances st ON st.article_id = m.article_id AND st.actor_entity_id = CAST(:eid AS uuid)
          WHERE m.entity_id = CAST(:eid AS uuid)
            AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
     """), p)).fetchone()
@@ -162,7 +171,7 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
          GROUP BY 1 ORDER BY 2 DESC LIMIT 6
     """), p)).fetchall()]
 
-    pulse = [int(r.n) for r in (await db.execute(text("""
+    pulse = [int(r.n) for r in (await db.execute(text(f"""
         SELECT d::date, COALESCE(c.n, 0) n FROM generate_series(
                  (analytics.now_sim() - make_interval(days => :days))::date,
                  analytics.now_sim()::date, '1 day') d
@@ -171,6 +180,7 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
               FROM article_entity_mentions m JOIN articles a ON a.id = m.article_id
              WHERE m.entity_id = CAST(:eid AS uuid)
                AND a.collected_at >= analytics.now_sim() - make_interval(days => :days)
+               AND {_BODY_PRESENT}
              GROUP BY 1) c ON c.dd = d::date
          ORDER BY d
     """), {"eid": eid, "days": PULSE_DAYS})).fetchall()]
@@ -213,9 +223,10 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
     outlets = [{"name": r.nm, "pos": int(r.pos), "neg": int(r.neg)} for r in (await db.execute(text(f"""
         SELECT s.name nm, count(*) FILTER (WHERE ({POL}) > 0) pos, count(*) FILTER (WHERE ({POL}) < 0) neg
           FROM article_entity_mentions m JOIN articles a ON a.id = m.article_id
-          JOIN sources s ON s.id = a.source_id JOIN article_stances st ON st.article_id = a.id
+          JOIN sources s ON s.id = a.source_id JOIN article_stances st ON st.article_id = a.id AND st.actor_entity_id = CAST(:eid AS uuid)
          WHERE m.entity_id = CAST(:eid AS uuid)
            AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
+           AND {_BODY_PRESENT}
          GROUP BY s.name HAVING count(*) >= 3 ORDER BY count(*) DESC LIMIT 6
     """), p)).fetchall()]
 
@@ -227,10 +238,15 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
          GROUP BY 1
     """), {"eid": eid, "wh": STATS_WH})).fetchall()}
 
-    timeline = [{"date": str(r.d), "what": (r.what or "")[:120]} for r in (await db.execute(text("""
-        SELECT COALESCE(e.effective_event_date, e.event_date) d, e.event_description what
+    timeline = [{"date": str(r.d), "what": (r.what or "")[:120],
+                 "url": r.url, "src": r.src, "article_id": str(r.aid) if r.aid else None}
+                for r in (await db.execute(text("""
+        SELECT COALESCE(e.effective_event_date, e.event_date) d, e.event_description what,
+               a.id aid, a.url url, s.name src
           FROM article_events e
           JOIN article_entity_mentions m ON m.article_id = e.article_id
+          JOIN articles a ON a.id = e.article_id
+          JOIN sources s ON s.id = a.source_id
          WHERE m.entity_id = CAST(:eid AS uuid)
            AND COALESCE(e.effective_event_date, e.event_date) IS NOT NULL
            AND e.event_description IS NOT NULL
@@ -248,7 +264,7 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
         SELECT a.title, EXTRACT(EPOCH FROM (analytics.now_sim() - a.collected_at)) / 3600.0 age_h,
                s.name src,
                (SELECT round(avg(({POL}) * st.intensity)::numeric, 2)
-                  FROM article_stances st WHERE st.article_id = a.id) lean
+                  FROM article_stances st WHERE st.article_id = a.id AND st.actor_entity_id = CAST(:eid AS uuid)) lean
           FROM article_entity_mentions m JOIN articles a ON a.id = m.article_id
           JOIN sources s ON s.id = a.source_id
          WHERE m.entity_id = CAST(:eid AS uuid)
@@ -314,6 +330,7 @@ async def build_entity_file(db, eid: str, prefs: dict[str, Any]) -> dict[str, An
     return {
         "found": True,
         "id": eid, "name": name, "type": _ui_type(ident.entity_type),
+        "img": img,
         "party": ident.party, "state": ident.state,
         "aliases": list(ident.aliases or [])[:6],
         "tiles": {"mentions": int(mentions), "quotes": int(n_quotes), "claims": int(n_claims), "net": net},
@@ -335,7 +352,7 @@ async def entity_articles(db, eid: str, cursor: str | None, limit: int) -> dict[
         SELECT a.id::text id, a.title, s.name src, a.url, a.thumbnail_url,
                a.collected_at, a.published_at, a.language_iso, a.topic_category,
                (SELECT round(avg(({POL}) * st.intensity)::numeric, 2)
-                  FROM article_stances st WHERE st.article_id = a.id) AS lean
+                  FROM article_stances st WHERE st.article_id = a.id AND st.actor_entity_id = CAST(:eid AS uuid)) AS lean
           FROM article_entity_mentions m
           JOIN articles a ON a.id = m.article_id
           JOIN sources s ON s.id = a.source_id

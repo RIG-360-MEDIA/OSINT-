@@ -27,6 +27,14 @@ from backend.observability.article_quality import (
     story_pulse,
 )
 from backend.observability.audit_queue import audit_queue, record_decision
+from backend.observability.overview_helpers import (
+    article_types,
+    breaking_now,
+    corpus_overview,
+    pipeline_health,
+    top_speakers,
+    trending_entities,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +134,53 @@ async def get_audit_queue(
 ) -> dict:
     async with get_db() as db:
         return await audit_queue(db, limit=limit)
+
+
+# ── New v2 panels: overview + pipeline + trending ───────────────────────────
+
+@observe_router.get("/corpus-overview")
+async def get_corpus_overview(_p: dict = Depends(require_super_admin)) -> dict:
+    async with get_db() as db:
+        return await corpus_overview(db)
+
+
+@observe_router.get("/pipeline-health")
+async def get_pipeline_health(_p: dict = Depends(require_super_admin)) -> dict:
+    async with get_db() as db:
+        return await pipeline_health(db)
+
+
+@observe_router.get("/trending")
+async def get_trending(
+    limit: int = Query(25, ge=1, le=100),
+    _p: dict = Depends(require_super_admin),
+) -> dict:
+    async with get_db() as db:
+        return await trending_entities(db, limit=limit)
+
+
+@observe_router.get("/breaking-now")
+async def get_breaking_now(
+    limit: int = Query(12, ge=1, le=50),
+    _p: dict = Depends(require_super_admin),
+) -> dict:
+    async with get_db() as db:
+        return await breaking_now(db, limit=limit)
+
+
+@observe_router.get("/top-speakers")
+async def get_top_speakers(
+    limit: int = Query(15, ge=1, le=50),
+    _p: dict = Depends(require_super_admin),
+) -> dict:
+    async with get_db() as db:
+        return await top_speakers(db, limit=limit)
+
+
+@observe_router.get("/article-types")
+async def get_article_types(_p: dict = Depends(require_super_admin)) -> dict:
+    async with get_db() as db:
+        return await article_types(db)
 
 
 @observe_router.post("/audit-decision")

@@ -1,0 +1,65 @@
+=== TOTAL entity_dictionary rows ===
+ total | persons | orgs 
+-------+---------+------
+ 17098 |    9337 | 3751
+(1 row)
+
+=== TITLED-PREFIX scan: canonical_name starting with an honorific/title ===
+                                                                                            pattern                                                                                             | matches 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+---------
+ ^(A|An|The)\s+[A-Z]                                                                                                                                                                            |      50
+ ^(Chief Minister|Deputy Chief Minister|Prime Minister|Deputy Prime Minister|President|Vice President|Minister|Senator|Justice|Governor|Mayor|Honourable|Honorable|Hon\.|Speaker|MP|MLA|MLC)\s+ |     263
+ ^(Sri|Shri|Smt|Sm|Dr|Mr|Mrs|Ms|Prof|Captain|Col|Gen|Lt|Maj|Adv|Engr)\.?\s+                                                                                                                     |      60
+(3 rows)
+
+=== HIGH-VALUE DUPES: titled variant exists AND bare name also exists ===
+ dupe_pairs | unique_real_entities_with_titled_dupes | titled_dupe_rows_to_merge 
+------------+----------------------------------------+---------------------------
+         60 |                                     57 |                        60
+(1 row)
+
+=== TOP-20 dupes by combined mention volume ===
+            bare            |            titled             | bare_mentions | titled_mentions 
+----------------------------+-------------------------------+---------------+-----------------
+ Revanth Reddy              | Chief Minister Revanth Reddy  |           143 |             323
+ Revanth Reddy              | A Revanth Reddy               |           143 |             250
+ Neiphiu Rio                | Dr Neiphiu Rio                |           313 |              22
+ New York Times             | The New York Times            |            50 |             272
+ Revanth Reddy              | CM Revanth Reddy              |           143 |              97
+ Wall Street Journal        | The Wall Street Journal       |            49 |             114
+ Tedros Adhanom Ghebreyesus | Dr Tedros Adhanom Ghebreyesus |           152 |               8
+ Independent                | The Independent               |             1 |             159
+ Revanth Reddy              | A. Revanth Reddy              |           143 |               0
+ Economic Times             | The Economic Times            |            32 |              38
+ Swarana Kanta Sharma       | Justice Swarana Kanta Sharma  |            44 |               0
+ Economist                  | The Economist                 |             0 |              43
+ Johnson Pandit Asiama      | Dr Johnson Pandit Asiama      |            28 |              13
+ Mohammed Amin Adam         | Dr Mohammed Amin Adam         |            18 |              18
+ Tunji Alausa               | Dr. Tunji Alausa              |            34 |               1
+ Gideon Boako               | Dr Gideon Boako               |            16 |              18
+ Sheel Nagu                 | Justice Sheel Nagu            |            19 |               0
+ Papa Kwesi Nduom           | Dr. Papa Kwesi Nduom          |             6 |               6
+ VK Vijayakumar             | Dr. VK Vijayakumar            |             0 |               7
+ Sanjay Karol               | Justice Sanjay Karol          |             5 |               0
+(20 rows)
+
+=== TRIGRAM-FUZZY candidates (edit-distance variants, persons only, mention>=20) — sample 15 ===
+            a             |            b             | sim 
+--------------------------+--------------------------+-----
+ Vijay Thalapathy         | Thalapathy Vijay         |   1
+ Emmanuel Victor Smith    | Victor Emmanuel Smith    |   1
+ G Kishan Reddy           | G. Kishan Reddy          |   1
+ Kwame Governs Agbodza    | Governs Kwame Agbodza    |   1
+ Abbas Tajudeen           | Tajudeen Abbas           |   1
+ Harish Parvathaneni      | Parvathaneni Harish      |   1
+ Chandra Sekhar Pemmasani | Pemmasani Chandra Sekhar |   1
+ C Joseph Vijay           | C. Joseph Vijay          |   1
+ B. Y. Raghavendra        | B.Y. Raghavendra         |   1
+ Thol. Thirumavalavan     | Thol Thirumavalavan      |   1
+ K.C. Venugopal           | K. C. Venugopal          |   1
+ S.S. Rajamouli           | S. S. Rajamouli          |   1
+ C. V. Shanmugam          | C.V. Shanmugam           |   1
+ T.R. Baalu               | T. R. Baalu              |   1
+ M. Veerapandian          | M Veerapandian           |   1
+(15 rows)
+

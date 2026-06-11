@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Reveal } from '../lib/ui';
 import { Sparkline, RankBars } from '../lib/charts';
 import { authFetch } from '../lib/supabase';
+import Sources from '../components/Sources';
 
 const TYPES = ['all', 'person', 'org', 'place'];
 const ALIGN_DOT = { against: 'hostile', for: 'supportive', neutral: 'neutral' };
@@ -12,18 +13,26 @@ const ageOf = (iso) => {
   if (d < 1) return 'now'; if (d < 24) return `${Math.floor(d)}h`; return `${Math.floor(d / 24)}d`;
 };
 
-function Portrait({ ent }) {
-  const [ok, setOk] = useState(!!ent.img);
+function Portrait({ ent, img }) {
+  const src = img || ent.img;
+  const [ok, setOk] = useState(!!src);
+  useEffect(() => { setOk(!!src); }, [src]);
   return (
     <div className={'df-portrait a-' + ent.align}>
-      {ok ? <img src={ent.img} alt="" onError={() => setOk(false)} />
+      {ok ? <img src={src} alt="" style={{ objectFit: 'cover' }} onError={() => setOk(false)} />
           : <div className="df-redacted"><span>{initials(ent.name)}</span><em>NO IMAGE</em></div>}
       <span className="df-stripe">{ent.align}</span>
     </div>
   );
 }
-function Tile({ k, v, tone }) {
-  return <div className="df-tile"><div className="df-tk">{k}</div><div className={'df-tv' + (tone ? ' ' + tone : '')}>{v}</div></div>;
+function Tile({ k, v, tone, win }) {
+  return (
+    <div className="df-tile">
+      <div className="df-tk">{k}</div>
+      <div className={'df-tv' + (tone ? ' ' + tone : '')}>{v}</div>
+      {win && <div className="df-twin" style={{ fontSize: '0.62rem', letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.5, marginTop: 2 }}>{win}</div>}
+    </div>
+  );
 }
 function FPanel({ title, sub, source, children, span }) {
   return (
@@ -90,7 +99,8 @@ export default function Dossier() {
         if (cancelled) return;
         const list = r.roster || [];
         setRoster(list);
-        setSel((cur) => cur || (list[0] && list[0].id) || null);
+        const principal = list.find((e) => e.principal === true) || list[0];
+        setSel((cur) => cur || (principal && principal.id) || null);
         setStatus({ loading: false, error: null });
       } catch (e) { if (!cancelled) setStatus({ loading: false, error: String(e?.message || e) }); }
     })();
@@ -157,7 +167,7 @@ export default function Dossier() {
 
         <Reveal key={sel} className="df-open" y={10}>
           <div className="df-id">
-            <Portrait ent={ent} />
+            <Portrait ent={ent} img={file && file.found ? file.img : null} />
             <div className="df-idtext">
               <div className="df-class">WATCHLIST · {(ent.align || '').toUpperCase()}</div>
               <h2 className="df-name">{ent.name}</h2>
@@ -166,11 +176,17 @@ export default function Dossier() {
                 <div className="df-aka">{file.aliases.map((a) => <span key={a}>{a}</span>)}</div>)}
               {file && file.found && (
                 <div className="df-tiles">
-                  <Tile k="MENTIONS" v={(file.tiles.mentions || 0).toLocaleString()} />
-                  <Tile k="QUOTES BY" v={file.tiles.quotes} />
-                  <Tile k="CLAIMS" v={file.tiles.claims} />
-                  <Tile k="NET STANCE" v={(file.tiles.net > 0 ? '+' : '') + file.tiles.net} tone={file.tiles.net < 0 ? 'neg' : file.tiles.net > 0 ? 'pos' : ''} />
+                  <Tile k="MENTIONS" v={(file.tiles.mentions || 0).toLocaleString()} win="all-time" />
+                  <Tile k="QUOTES BY" v={file.tiles.quotes} win="all-time" />
+                  <Tile k="CLAIMS" v={file.tiles.claims} win="all-time" />
+                  <Tile k="NET STANCE" v={(file.tiles.net > 0 ? '+' : '') + file.tiles.net} tone={file.tiles.net < 0 ? 'neg' : file.tiles.net > 0 ? 'pos' : ''} win="90 days" />
                 </div>)}
+              {file && file.found && (
+                <div className="df-winnote" style={{ fontSize: '0.66rem', color: 'var(--faint)', marginTop: 8, lineHeight: 1.4 }}>
+                  MENTIONS · QUOTES BY · CLAIMS are all-time totals. NET STANCE, Standing &amp; Share of voice cover the last 90 days; Pulse covers the last 21 days. Lifetime totals are not comparable to the windowed stance.
+                </div>)}
+              {file && file.found && (
+                <Sources kind="entity" value={file.id} label="all sources" />)}
             </div>
           </div>
 
@@ -180,25 +196,26 @@ export default function Dossier() {
 
           {file && file.found && (
             <div className="df-grid">
-              <FPanel title="Pulse" sub="mentions / day" source="article_entity_mentions">
+              <FPanel title="Pulse" sub="mentions / day · last 21 days" source="article_entity_mentions">
                 <Sparkline data={file.pulse} color="cool" w={300} h={48} />
               </FPanel>
-              <FPanel title="Standing" sub="for vs against" source="article_stances">
+              <FPanel title="Standing" sub="for vs against · last 90 days" source="article_stances">
                 <Stance sup={file.standing.sup} neu={file.standing.neu} crit={file.standing.crit} />
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                  <Sources kind="entity" value={file.id} bucket="supportive" label="supportive" />
+                  <Sources kind="entity" value={file.id} bucket="critical" label="critical" />
+                  <Sources kind="entity" value={file.id} bucket="neutral" label="neutral" />
+                </div>
               </FPanel>
               {file.sov.length > 0 && (
-                <FPanel title="Share of voice" sub="vs peers" source="article_entity_mentions"><RankBars items={file.sov} /></FPanel>)}
+                <FPanel title="Share of voice" sub="vs peers · last 90 days" source="article_entity_mentions"><RankBars items={file.sov} /></FPanel>)}
               {file.issues.length > 0 && (
                 <FPanel title="Issue footprint" sub="topics they ride" source="topic_category"><RankBars items={file.issues} /></FPanel>)}
               {file.quotes.length > 0 && (
                 <FPanel title="In their words" sub="quotes by them" source="article_quotes">
                   <div className="df-quotes">{file.quotes.map((qq, i) => (
                     <div key={i} className="df-quote"><p>“{qq.q}”</p>{qq.q_en && <div className="en-gloss"><b>EN</b>{qq.q_en}</div>}<span>{qq.src} · {qq.date}</span></div>))}</div>
-                </FPanel>)}
-              {file.claims.length > 0 && (
-                <FPanel title="The ledger" sub="claims about them" source="article_claims">
-                  <div className="df-claims">{file.claims.map((cc, i) => (
-                    <div key={i} className="df-cl"><span className="df-clp">{cc.pred}</span><p>{cc.text}</p>{cc.text_en && <div className="en-gloss"><b>EN</b>{cc.text_en}</div>}<span className="df-cls">{cc.src}</span></div>))}</div>
+                  <Sources kind="entity" value={file.id} label="where they’re quoted" />
                 </FPanel>)}
               {file.network.length > 0 && (
                 <FPanel title="Network" sub="who they move with" source="entity co-mention">
@@ -216,7 +233,13 @@ export default function Dossier() {
               {file.timeline.length > 0 && (
                 <FPanel title="Timeline" sub="events" source="article_events" span>
                   <div className="df-timeline">{file.timeline.map((t, i) => (
-                    <div key={i} className="df-tl"><span className="df-tld">{t.date}</span><span className="df-tlw">{t.what}{t.what_en && <span className="en-gloss"><b>EN</b>{t.what_en}</span>}</span></div>))}</div>
+                    <div key={i} className="df-tl"><span className="df-tld">{t.date}</span><span className="df-tlw">
+                      {t.url
+                        ? <a href={t.url} target="_blank" rel="noreferrer noopener" style={{ color: 'inherit' }}>{t.what}</a>
+                        : t.what}
+                      {t.what_en && <span className="en-gloss"><b>EN</b>{t.what_en}</span>}
+                      {t.src && <span className="df-tlsrc" style={{ display: 'block', fontSize: '0.78em', opacity: 0.6, marginTop: 2 }}>{t.src}</span>}
+                    </span></div>))}</div>
                 </FPanel>)}
 
               {/* LIVE WHOLE-CORPUS COVERAGE FEED — newest first, paginated */}

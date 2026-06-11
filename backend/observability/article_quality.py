@@ -129,6 +129,16 @@ async def quality_monitor(db) -> dict[str, Any]:
         except Exception:
             pass
 
+    # Latest new-vs-baseline comparison (T14)
+    cmps = sorted(q_dir.glob("new-vs-baseline-*.json")) if q_dir.exists() else []
+    if cmps:
+        try:
+            cmp_data = json.loads(cmps[-1].read_text(encoding="utf-8"))
+            cmp_data["source_file"] = cmps[-1].name
+            out["new_article_compare"] = cmp_data
+        except Exception:
+            pass
+
     # Live cliffs
     cliffs = (await db.execute(text("""
         SELECT
@@ -197,6 +207,7 @@ async def story_pulse(db, limit: int = 30) -> dict[str, Any]:
                ec.canonical_event_type,
                ec.article_count, ec.source_count,
                ec.last_updated_at,
+               ec.importance_score,
                (SELECT COUNT(*) FROM article_events ae
                  JOIN articles a ON a.id = ae.article_id
                  WHERE ae.event_cluster_id = ec.id
@@ -204,7 +215,8 @@ async def story_pulse(db, limit: int = 30) -> dict[str, Any]:
           FROM event_clusters ec
          WHERE ec.is_active
            AND ec.source_count >= 2
-         ORDER BY ec.last_updated_at DESC NULLS LAST
+         ORDER BY ec.importance_score DESC NULLS LAST,
+                  ec.last_updated_at DESC NULLS LAST
          LIMIT :lim
     """), {"lim": int(limit)})).fetchall()
     return {
@@ -215,6 +227,7 @@ async def story_pulse(db, limit: int = 30) -> dict[str, Any]:
              "article_count": int(r.article_count or 0),
              "source_count": int(r.source_count or 0),
              "new_24h": int(r.new_24h or 0),
+             "importance": round(float(r.importance_score), 1) if r.importance_score is not None else None,
              "last_updated": r.last_updated_at.isoformat() if r.last_updated_at else None}
             for r in rows
         ]

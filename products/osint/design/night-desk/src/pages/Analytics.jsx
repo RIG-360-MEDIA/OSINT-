@@ -1,9 +1,32 @@
 import { useState, useEffect } from 'react';
 import { Reveal } from '../lib/ui';
 import { AreaTrend, Donut, Sparkline, RankBars, LeanBars, StackBar, GroupBars } from '../lib/charts';
-import Verify from '../components/Verify';
 import { authFetch } from '../lib/supabase';
 import LiveStamp from '../components/LiveStamp';
+import Sources from '../components/Sources';
+
+/* Receipts row: surfaces the real stories behind specific analytics cards. */
+function CardSources({ m }) {
+  if (m.id === 'forvsagainst') {
+    return (
+      <div className="dash-foot" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        <Sources kind="supportive" label="Supportive" />
+        <Sources kind="neutral" label="Neutral" />
+        <Sources kind="negative" label="Critical" />
+      </div>
+    );
+  }
+  if (m.id === 'outletlean') {
+    const items = (m.data && m.data.items) || [];
+    if (!items.length) return null;
+    return (
+      <div className="dash-foot" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        {items.map((o) => <Sources key={o.label} kind="outlet" value={o.label} label={o.label} />)}
+      </div>
+    );
+  }
+  return null;
+}
 
 const TONE = { gold: 'var(--gold)', cool: 'var(--cool)', supportive: 'var(--supportive)', hostile: 'var(--hostile)', muted: 'var(--muted)' };
 const BANDS = ['THE BIG PICTURE', 'WHO & WHERE', 'THE DETAIL'];
@@ -39,14 +62,20 @@ const DonutBlock = ({ d }) => (
   </div>
 );
 const EventCal = ({ items }) => (
-  <div className="eventcal">{items.map((e, i) => (
-    <div className="dec" key={i}><span className="dec-d">{e.date}</span><span className="dec-l">{e.label}{e.label_en && <span className="en-gloss"><b>EN</b>{e.label_en}</span>}</span><span className="dec-t">{e.type}</span></div>
-  ))}</div>
+  <div className="eventcal">{items.map((e, i) => {
+    const row = <><span className="dec-d">{e.date}</span><span className="dec-l">{e.label}{e.label_en && <span className="en-gloss"><b>EN</b>{e.label_en}</span>}</span><span className="dec-t">{e.type}</span></>;
+    return e.url
+      ? <a className="dec" key={i} href={e.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>{row}</a>
+      : <div className="dec" key={i}>{row}</div>;
+  })}</div>
 );
 const QuotesBlock = ({ items }) => (
-  <div className="qblock">{items.map((q, i) => (
-    <div className="dqb" key={i}><p className="dqb-q">“{q.q}”</p>{q.q_en && <div className="en-gloss"><b>EN</b>{q.q_en}</div>}<div className="dqb-m"><b>{q.who}</b> · {q.role}<span>{q.src}</span></div></div>
-  ))}</div>
+  <div className="qblock">{items.map((q, i) => {
+    const row = <><p className="dqb-q">“{q.q}”</p>{q.q_en && <div className="en-gloss"><b>EN</b>{q.q_en}</div>}<div className="dqb-m"><b>{q.who}</b> · {q.role}<span>{q.src}</span></div></>;
+    return q.url
+      ? <a className="dqb" key={i} href={q.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer', display: 'block' }}>{row}</a>
+      : <div className="dqb" key={i}>{row}</div>;
+  })}</div>
 );
 const ClaimsBlock = ({ items }) => (
   <div className="cblock">{items.map((c, i) => (
@@ -78,7 +107,7 @@ const ImagesBlock = ({ items }) => (
 function Viz({ m }) {
   const d = m.data;
   switch (m.viz) {
-    case 'area': return <><AreaTrend data={d.series} color="cool" h={118} /><div className="dash-note">{d.note}</div></>;
+    case 'area': return <><AreaTrend data={d.series} labels={d.labels} color="cool" h={118} /><div className="dash-note">{d.note}</div></>;
     case 'rank': return <RankBars items={d.items} color={m.id === 'tone' ? 'gold' : 'cool'} />;
     case 'smallmult': return <SmallMult rows={d.rows} />;
     case 'stack': return <StackBar segments={d.segments} />;
@@ -95,7 +124,7 @@ function Viz({ m }) {
   }
 }
 
-function DashCard({ m, onExplain }) {
+function DashCard({ m }) {
   return (
     <div className="panel dash-card">
       <div className="dash-head">
@@ -103,17 +132,16 @@ function DashCard({ m, onExplain }) {
           <div className="dash-name">{m.name}</div>
           <div className="dash-sub">{m.sub}</div>
         </div>
-        <button className="dash-explain" onClick={() => onExplain(m.metric)} title="Definition, formula, source rows">ⓘ explain</button>
       </div>
       <div className="dash-viz"><Viz m={m} /></div>
       <div className="dash-src">{m.source} · n={m.metric.n.toLocaleString()}</div>
       {m.data.foot && <div className="dash-foot">{m.data.foot}</div>}
+      <CardSources m={m} />
     </div>
   );
 }
 
 export default function Analytics() {
-  const [vm, setVm] = useState(null);
   const [data, setData] = useState(null);
   const [status, setStatus] = useState({ loading: true, error: null });
   const [loadedAt, setLoadedAt] = useState(null);
@@ -148,7 +176,7 @@ export default function Analytics() {
           <LiveStamp at={loadedAt} />
         </div>
         <h1 className="h-sec" style={{ marginTop: 6 }}>Analytics</h1>
-        <div className="sub" style={{ maxWidth: 620 }}>Twenty reads on your coverage — pure data, no AI. Every card carries its source, and an <b style={{ color: 'var(--cool)' }}>ⓘ explain</b> that opens the definition, formula, source tables and the rows behind the number.</div>
+        <div className="sub" style={{ maxWidth: 620 }}>Twenty reads on your coverage — pure data, no AI. Every card carries its source.</div>
         <div className="dash-kpis">
           <span><b>{DASH.base}</b> articles</span><span className="sep" />
           <span>{DASH.window}</span><span className="sep" />
@@ -162,14 +190,12 @@ export default function Analytics() {
           <div className="dash-grid">
             {MODULES.filter((m) => m.band === band).map((m, i) => (
               <Reveal key={m.id} className={m.span === 2 ? 'span2' : ''} y={12} delay={0.02 + i * 0.03}>
-                <DashCard m={m} onExplain={setVm} />
+                <DashCard m={m} />
               </Reveal>
             ))}
           </div>
         </section>
       ))}
-
-      <Verify metric={vm} onClose={() => setVm(null)} />
     </div>
   );
 }

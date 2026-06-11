@@ -1,0 +1,85 @@
+=== R1a CLASSIFY: per-article fingerprint of 41 cruise->Andaman attributions ===
+ a_body | ani_body | ani_byl | n  
+--------+----------+---------+----
+ f      | f        | f       | 41
+(1 row)
+
+
+=== R1b SAMPLE 18 rows: trigger token + title ===
+ a_body |              trig               |      byline      |                     title                      
+--------+---------------------------------+------------------+------------------------------------------------
+ f      | andaman and nicobar islands:1.0 | Abubakar Ibrahim | Cruise ship with hantavirus outbreak to sail t
+ f      | andaman and nicobar islands:1.0 |                  | Canary Islands leader doesn't want hantavirus-
+ f      | andaman and nicobar islands:1.0 | Marc Shoffman    | The best cruises for exploring the Greek islan
+ f      | andaman and nicobar islands:1.0 |                  | Spain prepares for evacuations as hantavirus-h
+ f      | andaman and nicobar islands:1.0 |                  | Spain confirms it will receive hantavirus-hit 
+ f      | andaman and nicobar islands:0.6 |                  | Cruise ship in deadly virus outbreak denied pe
+ f      | andaman and nicobar islands:0.8 | Bart H. Meijer,  | Canary Islands doesn’t want hantavirus-hit cru
+ f      | andaman and nicobar islands:1.0 |                  | Passengers evacuated from hantavirus-hit cruis
+ f      | andaman and nicobar islands:1.0 | Ian Aikman       | Cruise ship with hantavirus outbreak to sail t
+ f      | andaman and nicobar islands:1.0 |                  | Spain readies for evacuations as hantavirus-hi
+ f      | andaman and nicobar islands:0.6 |                  | Five hantavirus cases confirmed on ship as it 
+ f      | andaman and nicobar islands:0.8 | Kate Hairsine    | Hantavirus: Canary Islands objects to docking 
+ f      | andaman and nicobar islands:1.0 | AfricaNews       | Cape Verde prepares to help virus-hit cruise s
+ f      | andaman and nicobar islands:1.0 | Sudeep Singh Raw | Hantavirus Outbreak: Why Are People in Tenerif
+ f      | andaman and nicobar islands:1.0 |                  | Hantavirus figures updated - as cruise ship at
+ f      | andaman and nicobar islands:0.6 |                  | Cruise ship dealing with hantavirus outbreak a
+ f      | andaman and nicobar islands:0.6 |                  | Spain readies for evacuations as a hantavirus-
+ f      | andaman and nicobar islands:1.0 | Tosin Oyediran   | Canary Islands brace for arrival of Hantavirus
+(18 rows)
+
+
+=== R1c hypothesis test: does the cruise article have "ani" entity OR "asian news" byline? ===
+ has_ani_entity | has_andaman_entity | byline_is_ani | total 
+----------------+--------------------+---------------+-------
+              0 |                 41 |             0 |    41
+(1 row)
+
+
+=== R2 SIZE residual: rank entities by title+lead-miss rate (proxy upper-bound) ===
+         canonical_name         | entity_type  | attrib | miss | miss_pct 
+--------------------------------+--------------+--------+------+----------
+ Donald J. Trump                | person       |   7483 | 7446 |     99.5
+ Russia and China               | location     |   7164 | 7059 |     98.5
+ All India Trinamool Congress   | person       |   4426 | 4351 |     98.3
+ New Delhi                      | location     |   6163 | 3763 |     61.1
+ Theresa May                    | person       |   3539 | 3539 |    100.0
+ Washington, D.C.               | location     |   3215 | 3126 |     97.2
+ United Spirits                 | organization |   2864 | 2864 |    100.0
+ Amarish Der                    | person       |   2568 | 2568 |    100.0
+ Bharatiya Janata Party         | person       |   3289 | 2565 |     78.0
+ Bengaluru Police               | organization |   2483 | 2462 |     99.2
+ Royal Australian Navy          | organization |   2386 | 2378 |     99.7
+ Office for National Statistics | organization |   2369 | 2363 |     99.7
+ World Health Organization      | organization |   2513 | 2279 |     90.7
+ Simon Case                     | person       |   2133 | 2133 |    100.0
+ Shantaram More                 | person       |   2088 | 2088 |    100.0
+ National Electoral Institute   | organization |   2048 | 2048 |    100.0
+ Armed Forces Tribunal          | organization |   1995 | 1993 |     99.9
+ Denver International Airport   | location     |   1965 | 1959 |     99.7
+ Ted Turner                     | person       |   1875 | 1821 |     97.1
+ Raipur City West               | location     |   1813 | 1813 |    100.0
+ Twelfth Assembly               | person       |   1799 | 1799 |    100.0
+ European countries             | location     |   1841 | 1756 |     95.4
+ Chief Minister                 | person       |   2238 | 1747 |     78.1
+ Ian Bishop                     | person       |   1747 | 1739 |     99.5
+ Lin Jian                       | person       |   1705 | 1698 |     99.6
+(25 rows)
+
+
+=== R3 CLUSTERING spot-check ===
+              cruise_sid              | genuine_andaman_in_cruise | genuine_andaman_articles_total 
+--------------------------------------+---------------------------+--------------------------------
+ bd04c18c-1145-4d3a-b9be-33641ad4d79f |                         0 |                            112
+(1 row)
+
+=== R3b: which clusters do the 41 cruise-attributed Andaman articles ACTUALLY sit in? ===
+               story_id               |                   rt                   | article_count | attrib_in_cluster 
+--------------------------------------+----------------------------------------+---------------+-------------------
+ bd04c18c-1145-4d3a-b9be-33641ad4d79f | Two dead after respiratory illness out |           522 |                32
+ 07a7309e-bc42-4170-8139-8c27d1576626 | The best cruises for exploring the Gre |             1 |                 1
+ 18c09295-3727-4419-9275-f47d29900c19 | Spain readies for evacuations as a han |             1 |                 1
+ 43506398-75c9-4896-9466-72a951d79221 | Cruise ship in deadly virus outbreak d |             1 |                 1
+ 8639a129-983c-4151-b644-cad155d04a79 | Hantavirus-stricken Cruise Ship Arrive |             1 |                 1
+(5 rows)
+

@@ -1,0 +1,3245 @@
+[
+  {
+    "id": "35721134-9925-44a7-be1c-a687e350f4f3",
+    "desc": "MI vs KKR IPL match at Eden Gardens",
+    "actors": [
+      "KKR",
+      "Kolkata Knight Riders",
+      "Mumbai Indians"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-20",
+    "article_count": 15,
+    "source_count": 5,
+    "confidence_score": 0.9351907968521118
+  },
+  {
+    "id": "32a1fb1b-042b-4b69-a6bc-828b0c7ee7a2",
+    "desc": "Putin's visit to China begins",
+    "actors": [
+      "Vladimir Putin",
+      "Xi Jinping"
+    ],
+    "etype": "meeting",
+    "d": "2024-05-19",
+    "article_count": 13,
+    "source_count": 3,
+    "confidence_score": 0.933740496635437
+  },
+  {
+    "id": "c35746b9-ba02-49b3-b8be-f06c45ea1383",
+    "desc": "Kentucky 4th district primary election",
+    "actors": [
+      "Donald Trump",
+      "Ed Gallerin",
+      "Ed Gallrein",
+      "Thomas Massie"
+    ],
+    "etype": "election",
+    "d": "2024-05-21",
+    "article_count": 11,
+    "source_count": 6,
+    "confidence_score": 0.9422571659088135
+  },
+  {
+    "id": "3a456c22-6c3e-4a86-aadf-d292b9ddbba3",
+    "desc": "Kylie Minogue's cancer returned",
+    "actors": [
+      "Kylie Minogue"
+    ],
+    "etype": "medical_event",
+    "d": "2021-01-01",
+    "article_count": 9,
+    "source_count": 4,
+    "confidence_score": 0.9493051767349243
+  },
+  {
+    "id": "e496c1fc-19a4-48ae-9640-11f7dbad0971",
+    "desc": "Twisha Sharma reported dead",
+    "actors": [
+      "Twisha Sharma"
+    ],
+    "etype": "accident",
+    "d": "2026-05-12",
+    "article_count": 8,
+    "source_count": 5,
+    "confidence_score": 0.9336305856704712
+  },
+  {
+    "id": "6719e7fd-10d1-4ef7-b1c9-280bfb54642d",
+    "desc": "CSK vs Gujarat Titans (must-win)",
+    "actors": [
+      "Chennai Super Kings",
+      "Gujarat Titans"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-21",
+    "article_count": 8,
+    "source_count": 4,
+    "confidence_score": 0.9001036882400513
+  },
+  {
+    "id": "7b093d48-7814-4d6b-9b03-8a74db8a6266",
+    "desc": "Farmers protest delays in maize unloading at Thorrur PACS warehouse",
+    "actors": [
+      "Farmers"
+    ],
+    "etype": "protest",
+    "d": "2024-05-19",
+    "article_count": 8,
+    "source_count": 1,
+    "confidence_score": 0.862683892250061
+  },
+  {
+    "id": "307649f7-2f49-4c69-97a5-4fc8ffc0d96e",
+    "desc": "Russia's invasion of Ukraine begins",
+    "actors": [
+      "Russia",
+      "Ukraine"
+    ],
+    "etype": "accident",
+    "d": "2022-02-24",
+    "article_count": 8,
+    "source_count": 7,
+    "confidence_score": 0.9441573619842529
+  },
+  {
+    "id": "81f6a08f-698b-4fe6-b57b-1f02199fbac0",
+    "desc": "Rajasthan Royals chase 221 runs vs Lucknow",
+    "actors": [
+      "Lucknow Super Giants",
+      "Rajasthan Royals",
+      "Vaibhav Sooryavanshi"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-19",
+    "article_count": 8,
+    "source_count": 5,
+    "confidence_score": 0.8642611503601074
+  },
+  {
+    "id": "0ea7ce48-f3d7-4c47-9862-ad2a3d92b3e2",
+    "desc": "Rajasthan vs Lucknow IPL match in Jaipur",
+    "actors": [
+      "Lucknow Super Giants",
+      "Rajasthan Royals",
+      "Rishabh Pant"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-19",
+    "article_count": 8,
+    "source_count": 4,
+    "confidence_score": 0.9219392538070679
+  },
+  {
+    "id": "53e1f59a-c1c1-4c21-90fb-4f19d0b67cd7",
+    "desc": "Ceasefire agreed in US-Iran conflict",
+    "actors": [
+      "Iran",
+      "Israel",
+      "Pakistan",
+      "United States"
+    ],
+    "etype": "announcement",
+    "d": "2024-04-08",
+    "article_count": 7,
+    "source_count": 5,
+    "confidence_score": 0.8694679737091064
+  },
+  {
+    "id": "48ee84c3-5a12-4cd5-b522-907f687140dd",
+    "desc": "Hearing scheduled and order issued",
+    "actors": [
+      "Registrar of Companies, Patna"
+    ],
+    "etype": "meeting",
+    "d": "2026-05-19",
+    "article_count": 7,
+    "source_count": 1,
+    "confidence_score": 0.935835599899292
+  },
+  {
+    "id": "22ca023f-eb1b-4152-bb1a-a448c771291b",
+    "desc": "Notice for adjudication issued",
+    "actors": [
+      "Registrar of Companies, Patna"
+    ],
+    "etype": "notice",
+    "d": "2026-03-13",
+    "article_count": 7,
+    "source_count": 1,
+    "confidence_score": 0.9979586601257324
+  },
+  {
+    "id": "c79f3359-528e-4255-84f5-01615d3facbd",
+    "desc": "Russia's full-scale invasion of Ukraine",
+    "actors": [
+      "Russia"
+    ],
+    "etype": "accident",
+    "d": "2022-02-24",
+    "article_count": 7,
+    "source_count": 6,
+    "confidence_score": 0.9715625047683716
+  },
+  {
+    "id": "ea79e87a-a6ef-41e4-94f6-d3e5df9c2cfd",
+    "desc": "Premier League match between Bournemouth and Manchester City",
+    "actors": [
+      "Arsenal",
+      "Bournemouth",
+      "Manchester City"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-19",
+    "article_count": 7,
+    "source_count": 3,
+    "confidence_score": 0.9420166015625
+  },
+  {
+    "id": "3b2977e4-09a9-436e-864c-4d2f64a5934f",
+    "desc": "Global release of film 'Peddi'",
+    "actors": [
+      "Buchi Babu",
+      "Buchibabu Sana",
+      "Janhvi Kapoor",
+      "Ram Charan"
+    ],
+    "etype": "release",
+    "d": "2024-06-04",
+    "article_count": 6,
+    "source_count": 4,
+    "confidence_score": 0.9203125238418579
+  },
+  {
+    "id": "a412915c-96ee-4e04-bc0e-f7798432c507",
+    "desc": "Global theatrical release of film 'Peddi'",
+    "actors": [
+      "Buchi Babu Sana",
+      "Buchibabu",
+      "Divyendu Sharma",
+      "Janhvi Kapoor",
+      "Ram Charan",
+      "Venkata Satish Kilaru"
+    ],
+    "etype": "release",
+    "d": "2024-06-04",
+    "article_count": 6,
+    "source_count": 5,
+    "confidence_score": 0.9515625238418579
+  },
+  {
+    "id": "6f61a475-ea01-4d13-b2b8-173726d6e1fb",
+    "desc": "Release of action film 'Dragon'",
+    "actors": [
+      "Jr NTR",
+      "Kosaraju Harikrishna",
+      "NTR",
+      "Nandamuri Kalyan Ram",
+      "Naveen Yerneni",
+      "Prashanth Neel",
+      "Y. Ravi Shankar"
+    ],
+    "etype": "release",
+    "d": "2027-06-11",
+    "article_count": 6,
+    "source_count": 4,
+    "confidence_score": 0.9515625238418579
+  },
+  {
+    "id": "f365f08d-3186-4925-829a-37b0f58e827f",
+    "desc": "Manchester City draw 1-1 at Bournemouth, confirming Arsenal as champions",
+    "actors": [
+      "AFC Bournemouth",
+      "Arsenal",
+      "Bournemouth",
+      "Manchester City"
+    ],
+    "etype": "sports_result",
+    "d": "2024-05-21",
+    "article_count": 6,
+    "source_count": 5,
+    "confidence_score": 0.9398137331008911
+  },
+  {
+    "id": "cfede17d-6180-434c-95b6-f1d48f10e6ed",
+    "desc": "US-Israel military operation against Iran",
+    "actors": [
+      "Israel",
+      "US",
+      "United States"
+    ],
+    "etype": "other",
+    "d": "2024-02-28",
+    "article_count": 6,
+    "source_count": 4,
+    "confidence_score": 0.9159585237503052
+  },
+  {
+    "id": "47dc12d4-67ac-4176-96aa-1153565c631d",
+    "desc": "Hamas attacks southern Israel",
+    "actors": [
+      "Hamas",
+      "Israel"
+    ],
+    "etype": "accident",
+    "d": "2023-10-07",
+    "article_count": 6,
+    "source_count": 4,
+    "confidence_score": 0.9623230695724487
+  },
+  {
+    "id": "72a846e4-24e3-4893-b831-b1160bd76d41",
+    "desc": "Mikel Arteta appointed Arsenal manager",
+    "actors": [
+      "Arsenal",
+      "Mikel Arteta"
+    ],
+    "etype": "announcement",
+    "d": "2019-12-20",
+    "article_count": 6,
+    "source_count": 5,
+    "confidence_score": 0.9924644231796265
+  },
+  {
+    "id": "664914a8-c0f1-4424-9d4d-c7f786d00f45",
+    "desc": "Medical shops in Hyderabad to shut down for a one-day protest.",
+    "actors": [
+      "All India Organisation of Chemists and Druggists",
+      "Hyderabad Chemist and Druggist Association",
+      "Telangana Chemists and Druggists Association"
+    ],
+    "etype": "protest",
+    "d": "2024-05-20",
+    "article_count": 6,
+    "source_count": 4,
+    "confidence_score": 0.9242187142372131
+  },
+  {
+    "id": "904935f5-1582-489c-bd04-da7d02a9cad6",
+    "desc": "Kylie Minogue's first breast cancer diagnosis",
+    "actors": [
+      "Kylie Minogue"
+    ],
+    "etype": "announcement",
+    "d": "2005-01-01",
+    "article_count": 6,
+    "source_count": 3,
+    "confidence_score": 0.9640248417854309
+  },
+  {
+    "id": "fd04788b-9b58-48dd-877f-e309acdc58f2",
+    "desc": "US and Israeli strikes on Iran began",
+    "actors": [
+      "Iran",
+      "Israel",
+      "United States"
+    ],
+    "etype": "accident",
+    "d": "2024-02-28",
+    "article_count": 6,
+    "source_count": 4,
+    "confidence_score": 0.8804157972335815
+  },
+  {
+    "id": "bdb92d3c-e403-4b44-b8de-2dc54506555a",
+    "desc": "US-Iran talks in Islamabad",
+    "actors": [
+      "Iran",
+      "United States"
+    ],
+    "etype": "meeting",
+    "d": "2024-04-11",
+    "article_count": 5,
+    "source_count": 2,
+    "confidence_score": 0.8724962472915649
+  },
+  {
+    "id": "ebecb085-b297-4e7a-93b4-9180db97db44",
+    "desc": "Shootdown of Brothers to the Rescue planes",
+    "actors": [
+      "Cuban military",
+      "Raul Castro",
+      "Ra\u00fal Castro"
+    ],
+    "etype": "accident",
+    "d": "1996-02-24",
+    "article_count": 5,
+    "source_count": 4,
+    "confidence_score": 0.9556561708450317
+  },
+  {
+    "id": "b28c58c3-86cc-4c93-9557-063158dc8765",
+    "desc": "UEFA Europa League final between Aston Villa and Freiburg",
+    "actors": [
+      "Aston Villa",
+      "Freiburg"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-20",
+    "article_count": 5,
+    "source_count": 2,
+    "confidence_score": 0.8683074712753296
+  },
+  {
+    "id": "43f1254a-8424-414e-89e8-3b42ef29ab00",
+    "desc": "Release of 'Padam Padam' and album Tension",
+    "actors": [
+      "Kylie Minogue"
+    ],
+    "etype": "release",
+    "d": "2023-01-01",
+    "article_count": 5,
+    "source_count": 2,
+    "confidence_score": 0.959409236907959
+  },
+  {
+    "id": "1d1d9629-3e16-4965-9179-748872a94df2",
+    "desc": "Start of 2026 FIFA World Cup matches in Dallas",
+    "actors": [
+      "Canada",
+      "FIFA",
+      "Mexico",
+      "Prasar Bharati",
+      "United States"
+    ],
+    "etype": "sports_result",
+    "d": "2026-06-11",
+    "article_count": 5,
+    "source_count": 4,
+    "confidence_score": 0.9406249523162842
+  },
+  {
+    "id": "db8170f6-854c-460a-be99-2950e4958159",
+    "desc": "Nationwide bandh by AIOCD",
+    "actors": [
+      "A.P. Chemists and Druggists Association",
+      "All India Organisation of Chemists and Druggists",
+      "Andhra Pradesh Chemists and Druggists Association",
+      "Shivamogga District Chemists and Druggists Association",
+      "Tirupati District Chemists and Druggists Association"
+    ],
+    "etype": "protest",
+    "d": "2026-05-20",
+    "article_count": 5,
+    "source_count": 3,
+    "confidence_score": 0.9329637289047241
+  },
+  {
+    "id": "012ed6f8-adbd-4e04-9040-10c4a08a4329",
+    "desc": "Modi meets Meloni for dinner in Rome",
+    "actors": [
+      "Giorgia Meloni",
+      "Narendra Modi"
+    ],
+    "etype": "meeting",
+    "d": "2026-05-20",
+    "article_count": 5,
+    "source_count": 3,
+    "confidence_score": 0.8953726291656494
+  },
+  {
+    "id": "81bdbd96-f1ad-4e07-8a05-ce9d88f931c6",
+    "desc": "Trump-Xi summit concludes in Beijing",
+    "actors": [
+      "Donald Trump",
+      "Xi Jinping"
+    ],
+    "etype": "meeting",
+    "d": "2026-05-15",
+    "article_count": 5,
+    "source_count": 3,
+    "confidence_score": 0.8648586869239807
+  },
+  {
+    "id": "292dbe88-2411-4597-9e09-1f9840eac5cd",
+    "desc": "LSG scores 220/5 vs RR in IPL match",
+    "actors": [
+      "Lucknow Super Giants",
+      "Rajasthan Royals",
+      "Vaibhav Sooryavanshi",
+      "Vaibhav Suryavanshi"
+    ],
+    "etype": "sports_result",
+    "d": "2026-04-15",
+    "article_count": 5,
+    "source_count": 3,
+    "confidence_score": 0.9484755992889404
+  },
+  {
+    "id": "29944948-7999-4196-b4bb-ce05a925e15b",
+    "desc": "Modi and Meloni meet at COP28 in Dubai",
+    "actors": [
+      "Giorgia Meloni",
+      "Narendra Modi"
+    ],
+    "etype": "meeting",
+    "d": "2023-11-30",
+    "article_count": 5,
+    "source_count": 4,
+    "confidence_score": 0.8640553951263428
+  },
+  {
+    "id": "8a2147eb-5ccd-43c3-bbfc-96983c15bc99",
+    "desc": "Groundbreaking for industries in Future City Industrial Park",
+    "actors": [
+      "Revanth Reddy"
+    ],
+    "etype": "announcement",
+    "d": "2024-06-01",
+    "article_count": 4,
+    "source_count": 2,
+    "confidence_score": 0.9009225368499756
+  },
+  {
+    "id": "5a200dc8-af06-45ab-b354-c20671a1add9",
+    "desc": "USD/INR swap auction",
+    "actors": [
+      "Reserve Bank of India"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-26",
+    "article_count": 4,
+    "source_count": 2,
+    "confidence_score": 0.9505841732025146
+  },
+  {
+    "id": "97000cef-a1b0-4b85-aa69-d947498fa9a1",
+    "desc": "One-off Test match begins",
+    "actors": [
+      "Afghanistan",
+      "India"
+    ],
+    "etype": "sports_result",
+    "d": "2026-06-06",
+    "article_count": 4,
+    "source_count": 2,
+    "confidence_score": 0.92730712890625
+  },
+  {
+    "id": "0a0f1589-43a3-4214-943f-d65e1c16616d",
+    "desc": "Rajasthan Royals vs Mumbai Indians",
+    "actors": [
+      "Mumbai Indians",
+      "Rajasthan Royals"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-24",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.837031364440918
+  },
+  {
+    "id": "0391803e-86cb-40cc-a662-88b5e95e650f",
+    "desc": "Nvidia expected to report Q1 earnings",
+    "actors": [
+      "Nvidia"
+    ],
+    "etype": "release",
+    "d": "2024-05-22",
+    "article_count": 4,
+    "source_count": 2,
+    "confidence_score": 0.9705357551574707
+  },
+  {
+    "id": "88c33b00-60bc-4318-af8d-1c9da1fc8164",
+    "desc": "Oath-taking ceremony for 23 new Ministers",
+    "actors": [
+      "C. Joseph Vijay",
+      "Rajendra Vishwanath Arlekar",
+      "Tamil Nadu Government"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-21",
+    "article_count": 4,
+    "source_count": 1,
+    "confidence_score": 0.8127378225326538
+  },
+  {
+    "id": "a1c6a4b1-127f-4abd-9fa9-93101a0147be",
+    "desc": "IMD issues orange alert for severe heat in Delhi-NCR and northern states",
+    "actors": [
+      "India Meteorological Department"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-20",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.864208459854126
+  },
+  {
+    "id": "68ebd353-a1b8-42c9-8c4b-682b19fd157d",
+    "desc": "Amendments published in Official Gazette",
+    "actors": [
+      "Insolvency and Bankruptcy Board of India"
+    ],
+    "etype": "release",
+    "d": "2026-05-19",
+    "article_count": 4,
+    "source_count": 1,
+    "confidence_score": 0.9413352012634277
+  },
+  {
+    "id": "7657a90f-7fae-4e89-bd85-7650f20cc9fd",
+    "desc": "Bilateral trade reaches $228 billion",
+    "actors": [
+      "China",
+      "Russia"
+    ],
+    "etype": "market_event",
+    "d": "2025-12-31",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.9491066932678223
+  },
+  {
+    "id": "db53de25-f102-4d74-be8a-a57a805e8355",
+    "desc": "Strike on Mahmoud Ahmadinejad's residence",
+    "actors": [
+      "Israel",
+      "United States"
+    ],
+    "etype": "accident",
+    "d": "2024-02-28",
+    "article_count": 4,
+    "source_count": 2,
+    "confidence_score": 0.7846590876579285
+  },
+  {
+    "id": "82be7958-a97e-43f2-bc7b-8b1fcaa4157c",
+    "desc": "Duleep Trophy begins in Bengaluru",
+    "actors": [
+      "BCCI"
+    ],
+    "etype": "release",
+    "d": "2026-08-23",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.9779970049858093
+  },
+  {
+    "id": "9f8e41ea-06a0-4627-a060-bb31a7fdff32",
+    "desc": "3rd India-Nordic Summit participation",
+    "actors": [
+      "Narendra Modi",
+      "Nordic leaders"
+    ],
+    "etype": "meeting",
+    "d": "2026-05-18",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.9306249618530273
+  },
+  {
+    "id": "0c35df15-7fc5-457e-8074-dfdfcd8046e3",
+    "desc": "Arsenal win 2003-04 Premier League",
+    "actors": [
+      "Arsenal"
+    ],
+    "etype": "sports_result",
+    "d": "2004-05-15",
+    "article_count": 4,
+    "source_count": 2,
+    "confidence_score": 0.9348629713058472
+  },
+  {
+    "id": "ec8683f4-7a65-44f1-af9b-bc9b0127711d",
+    "desc": "US DOJ announces indictment of Ra\u00fal Castro",
+    "actors": [
+      "Ra\u00fal Castro",
+      "Todd Blanche",
+      "US Department of Justice",
+      "United States"
+    ],
+    "etype": "announcement",
+    "d": "2025-04-02",
+    "article_count": 4,
+    "source_count": 2,
+    "confidence_score": 0.9562499523162842
+  },
+  {
+    "id": "7c06bf2f-5836-4222-b7b2-8731d6d8a90c",
+    "desc": "US-Iran ceasefire agreement announced",
+    "actors": [
+      "Iran",
+      "Israel",
+      "United States"
+    ],
+    "etype": "announcement",
+    "d": "2026-04-08",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.9090349674224854
+  },
+  {
+    "id": "b4919900-5092-4473-a570-09412dc64a16",
+    "desc": "Xi Jinping meets Vladimir Putin in Beijing",
+    "actors": [
+      "Vladimir Putin",
+      "Xi Jinping"
+    ],
+    "etype": "meeting",
+    "d": "2026-05-20",
+    "article_count": 4,
+    "source_count": 2,
+    "confidence_score": 0.821710467338562
+  },
+  {
+    "id": "a703dbf1-ff95-47a6-8357-7c82516bdee0",
+    "desc": "Twisha Sharma found dead in Bhopal",
+    "actors": [
+      "Twisha Sharma"
+    ],
+    "etype": "accident",
+    "d": "2025-05-12",
+    "article_count": 4,
+    "source_count": 2,
+    "confidence_score": 0.9483673572540283
+  },
+  {
+    "id": "70f53839-7100-4472-8190-4071b60dda57",
+    "desc": "RR chased 221 vs LSG in IPL 2026",
+    "actors": [
+      "Lucknow Super Giants",
+      "Rajasthan Royals",
+      "Vaibhav Suryavanshi"
+    ],
+    "etype": "sports_result",
+    "d": "2026-04-07",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.8590903282165527
+  },
+  {
+    "id": "94059679-c680-48b3-a37e-90362b6bab00",
+    "desc": "Joint statement issued after Russia-China talks",
+    "actors": [
+      "China",
+      "Russia"
+    ],
+    "etype": "statement",
+    "d": "2024-05-20",
+    "article_count": 4,
+    "source_count": 1,
+    "confidence_score": 0.8910290002822876
+  },
+  {
+    "id": "b7e7473c-c425-4afe-acf8-eefb43872fd6",
+    "desc": "Opening of cross-cultural education years",
+    "actors": [
+      "Vladimir Putin",
+      "Xi Jinping"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-19",
+    "article_count": 4,
+    "source_count": 1,
+    "confidence_score": 0.7573795318603516
+  },
+  {
+    "id": "9aa9e44a-8a2d-4d66-9766-ee1c95b7e76a",
+    "desc": "CM Naidu to attend Matsyakarula Sevalo programme",
+    "actors": [
+      "N. Chandrababu Naidu",
+      "T. Venkamma",
+      "Thanamgari Babu"
+    ],
+    "etype": "event",
+    "d": "2026-05-19",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.918749988079071
+  },
+  {
+    "id": "318d715d-6643-4cb7-93dd-89ce9a20d640",
+    "desc": "Quad foreign ministers meeting in New Delhi",
+    "actors": [
+      "Australian officials",
+      "Indian officials",
+      "Japanese officials",
+      "Marco Rubio",
+      "Motegi Toshimitsu",
+      "Penny Wong",
+      "S Jaishankar",
+      "S. Jaishankar"
+    ],
+    "etype": "meeting",
+    "d": "2024-05-26",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.9197844862937927
+  },
+  {
+    "id": "c298d2d9-20df-4f99-acde-3aa239049694",
+    "desc": "Google I/O developer conference keynote",
+    "actors": [
+      "Google",
+      "Sundar Pichai"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-14",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.9562499523162842
+  },
+  {
+    "id": "6fba0a2c-fbe1-4217-91fc-6a1e70f83ce0",
+    "desc": "World Cup 2026 opener in Mexico City",
+    "actors": [
+      "FIFA",
+      "Mexico national team",
+      "South Africa national team"
+    ],
+    "etype": "release",
+    "d": "2026-06-11",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.9562499523162842
+  },
+  {
+    "id": "aa0d45f2-920c-4d38-873d-b2b376fb1da1",
+    "desc": "Jury verdict in Musk's lawsuit against OpenAI",
+    "actors": [
+      "Elon Musk",
+      "Greg Brockman",
+      "OpenAI",
+      "Sam Altman"
+    ],
+    "etype": "legal",
+    "d": "2024-07-15",
+    "article_count": 4,
+    "source_count": 3,
+    "confidence_score": 0.8963391184806824
+  },
+  {
+    "id": "ce138ee5-73e7-4a29-aac3-a7a11c7cf9b7",
+    "desc": "Digital release of 'Dhurandhar 2' on Jio Hotstar in India",
+    "actors": [
+      "Aditya Dhar",
+      "Aditya Dharm",
+      "Ranveer Singh"
+    ],
+    "etype": "release",
+    "d": "2024-06-04",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.9541666507720947
+  },
+  {
+    "id": "13e0cda0-03d4-4103-8980-8d09b8ae88af",
+    "desc": "Aston Villa defeats Freiburg 3-0 in Europa League final",
+    "actors": [
+      "Aston Villa",
+      "Freiburg",
+      "SC Freiburg"
+    ],
+    "etype": "sports_result",
+    "d": "2024-05-23",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9437500238418579
+  },
+  {
+    "id": "a0c43576-d302-425d-879f-700ed3594a88",
+    "desc": "Tenuous ceasefire in US\u2013Iran conflict",
+    "actors": [
+      "Iran",
+      "United States"
+    ],
+    "etype": "other",
+    "d": "2024-04-08",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9478658437728882
+  },
+  {
+    "id": "b302c338-69fe-4942-8bea-8350e07e22d9",
+    "desc": "Start of FIFA World Cup 2026",
+    "actors": [
+      "FIFA"
+    ],
+    "etype": "release",
+    "d": "2026-06-11",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.7124999761581421
+  },
+  {
+    "id": "b317293b-e17a-4b15-bd35-1d3fd65c5240",
+    "desc": "US-Iran ceasefire declared",
+    "actors": [
+      "Iran",
+      "United States"
+    ],
+    "etype": "statement",
+    "d": "2024-04-07",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.816704511642456
+  },
+  {
+    "id": "c82acc1b-83c1-4ece-907f-a4f9c614c183",
+    "desc": "RBI's proposed phone restriction rules for loan defaults to take effect",
+    "actors": [
+      "Reserve Bank of India"
+    ],
+    "etype": "announcement",
+    "d": "2026-10-01",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.6835119128227234
+  },
+  {
+    "id": "5200261f-eb86-45c8-9cfb-7a1244aae25e",
+    "desc": "Abhijeet Dipke launches satirical party on X",
+    "actors": [
+      "Abhijeet Dipke"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-16",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9344360828399658
+  },
+  {
+    "id": "526c13ec-6e5b-44cc-876c-abd502ad09b0",
+    "desc": "Cabinet meeting at Yadadri temple",
+    "actors": [
+      "KTR",
+      "Revanth Reddy",
+      "Revanth Reddy government"
+    ],
+    "etype": "meeting",
+    "d": "2024-05-23",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.7875000238418579
+  },
+  {
+    "id": "0293847a-313f-48ae-9787-513f7bcb3751",
+    "desc": "Launch of film #Mega158 in Hyderabad",
+    "actors": [
+      "Bandla Ganesh",
+      "Bobby",
+      "Chiranjeevi",
+      "Nagababu",
+      "Pawan Kalyan",
+      "Venkat K. Narayana"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-21",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.8763784170150757
+  },
+  {
+    "id": "59bda206-f310-4e12-8276-94ee3d91c31a",
+    "desc": "Iran-US war erupted",
+    "actors": [
+      "Iran",
+      "Israel",
+      "United States"
+    ],
+    "etype": "accident",
+    "d": "2026-02-28",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.9257142543792725
+  },
+  {
+    "id": "352e8100-6710-4dff-a5c2-3c2acb4034bb",
+    "desc": "Foreign tour concludes",
+    "actors": [
+      "Narendra Modi"
+    ],
+    "etype": "statement",
+    "d": "2024-05-20",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.699999988079071
+  },
+  {
+    "id": "bbfb415a-6bd8-4938-90eb-86b87c8bcc4c",
+    "desc": "Theatrical release of 'Drishyam 3'",
+    "actors": [
+      "Jeethu Joseph",
+      "Mohanlal"
+    ],
+    "etype": "release",
+    "d": "2026-05-21",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9550315141677856
+  },
+  {
+    "id": "52151025-c209-4c9d-bc30-618c90634cab",
+    "desc": "Heatwave conditions expected to persist in Delhi and MP",
+    "actors": [
+      "India Meteorological Department"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-26",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.8222916722297668
+  },
+  {
+    "id": "0d74438a-e7af-49ef-9678-f326be702d90",
+    "desc": "Launch event of Chiranjeevi's 158th film",
+    "actors": [
+      "Bobby Kolli",
+      "Chiranjeevi",
+      "K. S. Ravindra",
+      "K. Venkat Narayana",
+      "Nagababu",
+      "Pawan Kalyan"
+    ],
+    "etype": "announcement",
+    "d": "2024-07-14",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9312499761581421
+  },
+  {
+    "id": "a60f9f03-e226-4dfa-9160-4f757805e3ed",
+    "desc": "MI vs RR match in Mumbai",
+    "actors": [
+      "Mumbai Indians",
+      "Rajasthan Royals"
+    ],
+    "etype": "meeting",
+    "d": "2026-05-24",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9624999761581421
+  },
+  {
+    "id": "a28fcee3-dec5-4e84-abb9-cb8da34de1f8",
+    "desc": "Inauguration of SAEL solar power plant",
+    "actors": [
+      "N. Chandrababu Naidu",
+      "Nara Lokesh"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-22",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9312499761581421
+  },
+  {
+    "id": "9060cc60-29b6-4ba8-bfb0-6f521bb66170",
+    "desc": "G20 summit meeting in Brazil",
+    "actors": [
+      "Giorgia Meloni",
+      "Narendra Modi"
+    ],
+    "etype": "meeting",
+    "d": "2023-09-09",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9212185144424438
+  },
+  {
+    "id": "6b292e3b-adb7-45e7-8d10-cb59f2ad9b1a",
+    "desc": "Dhoni skips Ahmedabad tour",
+    "actors": [
+      "MS Dhoni"
+    ],
+    "etype": "statement",
+    "d": "2026-05-21",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9212980270385742
+  },
+  {
+    "id": "070f93e6-7df0-414e-a808-8d63e1719866",
+    "desc": "Three-day cab and auto strike begins in Delhi-NCR",
+    "actors": [
+      "AIMTC",
+      "All India Motor Transport Congress",
+      "Chalak Shakti Union"
+    ],
+    "etype": "protest",
+    "d": "2024-05-21",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.8045930862426758
+  },
+  {
+    "id": "7a61656c-9f49-4db0-b240-49e7b4516eca",
+    "desc": "Severe turbulence strikes SQ321",
+    "actors": [
+      "Singapore Airlines",
+      "crew",
+      "flight crew",
+      "passengers"
+    ],
+    "etype": "accident",
+    "d": "2024-05-21",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9624999761581421
+  },
+  {
+    "id": "e34c5e2f-8ac1-4848-9227-8159809af01f",
+    "desc": "Unity Cup final and third-place match",
+    "actors": [
+      "India",
+      "Jamaica",
+      "Nigeria",
+      "Nigeria Super Eagles",
+      "Zimbabwe"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-30",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.8127272725105286
+  },
+  {
+    "id": "b2765b71-f149-4885-9aa9-82a3a1c5dd29",
+    "desc": "Nigeria vs Zimbabwe at Unity Cup",
+    "actors": [
+      "Nigeria",
+      "Nigeria Super Eagles",
+      "Zimbabwe"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-26",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.9037989974021912
+  },
+  {
+    "id": "34e0cecc-0180-42f6-806f-6d2b387ec442",
+    "desc": "Release of Ghana's Q1-Q4 economic data",
+    "actors": [
+      "Bank of Ghana"
+    ],
+    "etype": "release",
+    "d": "2026-04-30",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.8806511759757996
+  },
+  {
+    "id": "69e9611c-9e7f-4cab-ac8a-3eca033e4dae",
+    "desc": "Q4 FY26 financial results reported",
+    "actors": [
+      "Lenskart"
+    ],
+    "etype": "release",
+    "d": "2026-03-31",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9620689153671265
+  },
+  {
+    "id": "5ccae042-f351-4409-83d3-b6b92d64d74b",
+    "desc": "Ebola outbreak declared in DR Congo",
+    "actors": [
+      "World Health Organization"
+    ],
+    "etype": "announcement",
+    "d": "2025-04-05",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.887499988079071
+  },
+  {
+    "id": "a490d5ee-6b69-4ff1-a813-964d2012101b",
+    "desc": "Vijay Hazare Trophy begins",
+    "actors": [
+      "BCCI"
+    ],
+    "etype": "release",
+    "d": "2026-12-14",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 1.0
+  },
+  {
+    "id": "806b83e8-7c05-42ed-b2d5-9d6726bc8121",
+    "desc": "Syed Mushtaq Ali Trophy begins",
+    "actors": [
+      "BCCI"
+    ],
+    "etype": "release",
+    "d": "2026-11-14",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.978988528251648
+  },
+  {
+    "id": "59f4b74a-c6d3-4a62-90c8-7922fe0f1b47",
+    "desc": "Ranji Trophy begins",
+    "actors": [
+      "BCCI"
+    ],
+    "etype": "release",
+    "d": "2026-10-11",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9670000076293945
+  },
+  {
+    "id": "32c9d683-192c-4549-b8a9-3d1b4850127d",
+    "desc": "Irani Cup begins in Jammu/Srinagar",
+    "actors": [
+      "BCCI"
+    ],
+    "etype": "release",
+    "d": "2026-10-01",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.931257963180542
+  },
+  {
+    "id": "08bdaae9-c747-402f-990c-d1abe963d724",
+    "desc": "Killings of two Nigerian nationals in South Africa",
+    "actors": [
+      "Amaramiro Emmanuel",
+      "Ekpenyong Andrew"
+    ],
+    "etype": "accident",
+    "d": "2026-04-01",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.9249999523162842
+  },
+  {
+    "id": "d3e2babf-994b-4052-bb11-234c68222fbd",
+    "desc": "Second day of transport strike in Delhi-NCR",
+    "actors": [
+      "All India Motor Transport Congress",
+      "Chaalak Shakti Union"
+    ],
+    "etype": "protest",
+    "d": "2024-05-22",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.8516170978546143
+  },
+  {
+    "id": "61bd07d0-eaaa-463a-8003-1b4d0e15f3e2",
+    "desc": "Rajiv Gandhi assassinated by LTTE",
+    "actors": [
+      "Rajiv Gandhi"
+    ],
+    "etype": "accident",
+    "d": "1991-05-21",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9310483932495117
+  },
+  {
+    "id": "d03a3d1f-d66f-49f8-a43b-4ffa97928fb1",
+    "desc": "Championship Playoff Final match",
+    "actors": [
+      "Hull City",
+      "Middlesbrough"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-23",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9449252486228943
+  },
+  {
+    "id": "b4b3c014-8ee4-4448-9fd0-d7c27701a0ec",
+    "desc": "Game One of NBA Western Conference finals",
+    "actors": [
+      "Oklahoma City Thunder",
+      "San Antonio Spurs"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-20",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.9251922965049744
+  },
+  {
+    "id": "5bfb9a83-6a54-481a-a39f-ce032ebf7a0c",
+    "desc": "Google I/O 2026 keynote announcement",
+    "actors": [
+      "Google"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-14",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.8968750238418579
+  },
+  {
+    "id": "0c3c4402-6d5c-49a7-ad37-642b0ab1cb70",
+    "desc": "Congress MLAs appointed to Tamil Nadu cabinet",
+    "actors": [
+      "Congress",
+      "Tamilaga Vettri Kazhagam",
+      "Vijay"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-21",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.8648147583007812
+  },
+  {
+    "id": "5045a2f4-5b68-4458-97a2-9fcdc75ce9c8",
+    "desc": "Twisha Sharma allegedly died by suicide.",
+    "actors": [
+      "Twisha Sharma"
+    ],
+    "etype": "accident",
+    "d": "2024-05-12",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9430005550384521
+  },
+  {
+    "id": "0912bb34-ded5-450d-90d1-f8156dfa5aff",
+    "desc": "Q4 FY26 financial results reported",
+    "actors": [
+      "Ola Electric"
+    ],
+    "etype": "release",
+    "d": "2026-03-31",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9634236097335815
+  },
+  {
+    "id": "2c815dc0-f0b5-458b-ba21-f712b9548683",
+    "desc": "MGT-14 form filed with delay",
+    "actors": [
+      "Innoctive Technologies Private Limited"
+    ],
+    "etype": "filing",
+    "d": "2022-04-06",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.9662659764289856
+  },
+  {
+    "id": "de7d5609-bd18-4e71-9fd7-e4d8f2cfec40",
+    "desc": "Rajasthan Royals vs Lucknow Super Giants match",
+    "actors": [
+      "Lucknow Super Giants",
+      "Rajasthan Royals"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-22",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9124124050140381
+  },
+  {
+    "id": "57bafde7-4be3-4e46-a724-eba503d5a870",
+    "desc": "Cuban Air Force downing of two civilian US planes",
+    "actors": [
+      "Cuban Air Force"
+    ],
+    "etype": "accident",
+    "d": "1996-02-24",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9532214999198914
+  },
+  {
+    "id": "90fb71fb-190b-4e0b-b39d-887e6579edce",
+    "desc": "Russia's invasion of Ukraine begins",
+    "actors": [
+      "Russia"
+    ],
+    "etype": "accident",
+    "d": "2022-02-24",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.7124999761581421
+  },
+  {
+    "id": "32924351-9d7b-44d1-8ddb-94ffffde658b",
+    "desc": "2026 World Cup final",
+    "actors": [
+      "FIFA",
+      "Prasar Bharati"
+    ],
+    "etype": "sports_result",
+    "d": "2026-07-19",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9624999761581421
+  },
+  {
+    "id": "c09608c1-8503-497b-b3b7-e88705fe0eb6",
+    "desc": "Rahul Gandhi addresses 'Bahujan Swabhimaan Sabha' in Raebareli",
+    "actors": [
+      "BJP",
+      "Narendra Modi",
+      "Rahul Gandhi"
+    ],
+    "etype": "statement",
+    "d": "2026-05-20",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9375
+  },
+  {
+    "id": "87142100-5db8-4670-961b-48676c5ebfc5",
+    "desc": "NATO Foreign Ministers Meeting in Sweden",
+    "actors": [
+      "Marco Rubio",
+      "NATO",
+      "NATO officials"
+    ],
+    "etype": "meeting",
+    "d": "2024-05-22",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "e6d2abea-48f5-425c-9b43-c60ec5828bad",
+    "desc": "Phil Salt injured during match",
+    "actors": [
+      "Delhi Capitals",
+      "Phil Salt"
+    ],
+    "etype": "accident",
+    "d": "2026-04-18",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9624999761581421
+  },
+  {
+    "id": "c1e7739d-b1a2-4061-b330-6b5e519ee491",
+    "desc": "Europa League final between Freiburg and Aston Villa",
+    "actors": [
+      "Aston Villa",
+      "Freiburg"
+    ],
+    "etype": "release",
+    "d": "2026-05-20",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9624999761581421
+  },
+  {
+    "id": "706d5264-87ae-411b-bddf-82feeb49a608",
+    "desc": "Dodd-Frank Act signed into law",
+    "actors": [
+      "Barack Obama",
+      "Barney Frank",
+      "Chris Dodd"
+    ],
+    "etype": "announcement",
+    "d": "2010-07-21",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9624999761581421
+  },
+  {
+    "id": "624f7c02-b6b6-4c44-9f8a-961847f9d5af",
+    "desc": "Hardik Pandya returns as MI captain",
+    "actors": [
+      "Hardik Pandya",
+      "Mumbai Indians"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-20",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.699999988079071
+  },
+  {
+    "id": "eaa2b612-b5f7-4c71-beb0-acd0aee030b5",
+    "desc": "Colosseum visit by Modi and Meloni",
+    "actors": [
+      "Giorgia Meloni",
+      "Narendra Modi"
+    ],
+    "etype": "meeting",
+    "d": "2023-10-04",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.8872148394584656
+  },
+  {
+    "id": "c871a520-b2ea-430f-b69c-c486c1392eb7",
+    "desc": "Galwan Valley border clash between India and China",
+    "actors": [
+      "China",
+      "India"
+    ],
+    "etype": "accident",
+    "d": "2020-06-15",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.975602388381958
+  },
+  {
+    "id": "7b91484e-d691-4ea5-aced-2afcc41e06b0",
+    "desc": "Trump speaks on Iran conflict at White House",
+    "actors": [
+      "Donald Trump"
+    ],
+    "etype": "statement",
+    "d": "2020-05-19",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.8624999523162842
+  },
+  {
+    "id": "ef0449e5-6cd5-48a4-8d0c-ce5416153f76",
+    "desc": "CSK lost to SRH in IPL 2026",
+    "actors": [
+      "Chennai Super Kings",
+      "Sunrisers Hyderabad"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-18",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9378247261047363
+  },
+  {
+    "id": "baa5fb3e-2887-439b-85eb-e87e4f95bece",
+    "desc": "Release of Purushaha",
+    "actors": [
+      "Battula Koteswara Rao",
+      "Kasireddy Rajkumar",
+      "Pavan Kalyan Battula",
+      "Saptagiri"
+    ],
+    "etype": "release",
+    "d": "2024-05-22",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.9375
+  },
+  {
+    "id": "b15b3846-b08a-4c87-a7df-8385f69c84f4",
+    "desc": "Target year for Standard Chartered job cuts",
+    "actors": [
+      "Standard Chartered"
+    ],
+    "etype": "filing",
+    "d": "2030-12-31",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9249999523162842
+  },
+  {
+    "id": "160ba772-ef24-4810-aab9-6ba618d0c2ff",
+    "desc": "Putin concludes China visit",
+    "actors": [
+      "Li Qiang",
+      "Vladimir Putin"
+    ],
+    "etype": "meeting",
+    "d": "2024-05-20",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9196428656578064
+  },
+  {
+    "id": "94f41727-2641-471a-a058-1d135ad54c6f",
+    "desc": "CBSE 12th Result 2026 announced",
+    "actors": [
+      "Central Board of Secondary Education"
+    ],
+    "etype": "release",
+    "d": "2026-05-13",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.978519082069397
+  },
+  {
+    "id": "28e4fe70-461c-4aa2-818b-247b167e05a7",
+    "desc": "Bilateral talks between Modi and Meloni",
+    "actors": [
+      "Giorgia Meloni",
+      "Narendra Modi"
+    ],
+    "etype": "meeting",
+    "d": "2025-04-15",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.6616775989532471
+  },
+  {
+    "id": "8223ba42-bc8b-4f9e-b2df-b394f3b1c257",
+    "desc": "Jr NTR celebrates his 43rd birthday",
+    "actors": [
+      "Jr NTR"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-20",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.8817307949066162
+  },
+  {
+    "id": "0a6b5435-9974-485d-8d23-a90ac44530ec",
+    "desc": "Google I/O 2026 keynote and developer sessions",
+    "actors": [
+      "Google"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-19",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.8852739334106445
+  },
+  {
+    "id": "e282d94d-7318-43de-9081-4237b033ede0",
+    "desc": "Bangladesh wins 2nd Test by 78 runs",
+    "actors": [
+      "Bangladesh",
+      "Pakistan"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-20",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.8663945198059082
+  },
+  {
+    "id": "ba5cc287-efd7-4b72-afd2-e73969575a30",
+    "desc": "Conviction of Petr Vlachovsky in Czech court",
+    "actors": [
+      "Petr Vlachovsky"
+    ],
+    "etype": "legal",
+    "d": "2025-05-01",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9535714387893677
+  },
+  {
+    "id": "e54e191c-b724-4061-a914-f6960d8c36cd",
+    "desc": "Global early release in Hawaii",
+    "actors": [
+      "Amazon Prime Video"
+    ],
+    "etype": "release",
+    "d": "2026-05-19",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.8590757846832275
+  },
+  {
+    "id": "202bf258-843a-4de6-a3a0-c03cff34c15a",
+    "desc": "Census 2027 population enumeration phase",
+    "actors": [
+      "Government of India"
+    ],
+    "etype": "other",
+    "d": "2027-01-01",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9375
+  },
+  {
+    "id": "4de4f5af-81ad-49bd-8dc4-39e6f6764fbc",
+    "desc": "End of reported anti-illegal fishing operations",
+    "actors": [
+      "Sri Lanka Navy"
+    ],
+    "etype": "operation",
+    "d": "2026-05-15",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.7133928537368774
+  },
+  {
+    "id": "e03284f0-c6ab-4261-89b4-a4802322a12c",
+    "desc": "IMO Gender Equality Award ceremony",
+    "actors": [
+      "Arsenio Dominguez",
+      "IMO",
+      "International Maritime Organization",
+      "Momoko Kitada"
+    ],
+    "etype": "award_ceremony",
+    "d": "2026-05-18",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.9375
+  },
+  {
+    "id": "81168ed4-1ac3-454a-93a4-1838b4e581cf",
+    "desc": "Trump arrives in Beijing for talks",
+    "actors": [
+      "Donald Trump",
+      "Xi Jinping"
+    ],
+    "etype": "visit",
+    "d": "2025-05-14",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9249999523162842
+  },
+  {
+    "id": "23a9bbc8-bca3-4c8f-bd5f-05733b0dac10",
+    "desc": "Ceasefire comes into effect",
+    "actors": [
+      "Hezbollah",
+      "Israel",
+      "Lebanon",
+      "United States"
+    ],
+    "etype": "statement",
+    "d": "2024-04-17",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9375
+  },
+  {
+    "id": "9fd7f966-1e9f-4318-9640-f95e7fdd74d1",
+    "desc": "Q4FY26 earnings announcement",
+    "actors": [
+      "Vodafone Idea"
+    ],
+    "etype": "announcement",
+    "d": "2026-03-31",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.9624999761581421
+  },
+  {
+    "id": "219ea4fe-a56e-4b8d-81c6-6cfececc0889",
+    "desc": "Manchester City vs Bournemouth match ends 1-1",
+    "actors": [
+      "Bournemouth",
+      "Manchester City"
+    ],
+    "etype": "sports_result",
+    "d": "2025-05-19",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9300872087478638
+  },
+  {
+    "id": "06794d6a-ea72-4949-a2f9-f6bfadcb22f6",
+    "desc": "TN SSLC Result 2026 announcement at 9:30 am",
+    "actors": [
+      "Tamil Nadu Directorate of Government Examinations"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-20",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9565298557281494
+  },
+  {
+    "id": "e34026a0-a6ef-496e-bfd2-6e31cc4b0658",
+    "desc": "Certificate verification for selected candidates begins",
+    "actors": [
+      "Medical and Health Services Recruitment Board"
+    ],
+    "etype": "meeting",
+    "d": "2024-05-22",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9181959629058838
+  },
+  {
+    "id": "520a1b47-15fa-45d5-b195-928fdaaa7543",
+    "desc": "Meeting between PM Modi and Italian leaders",
+    "actors": [
+      "Giorgia Meloni",
+      "Narendra Modi",
+      "Sergio Mattarella"
+    ],
+    "etype": "meeting",
+    "d": "2026-05-19",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.7681737542152405
+  },
+  {
+    "id": "5a3ef4ea-53ff-4831-b8da-17c8585cf1b7",
+    "desc": "Start of Marco Rubio's visit to India",
+    "actors": [
+      "Marco Rubio"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-23",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.90946364402771
+  },
+  {
+    "id": "df2a2b8a-c532-437d-aaf6-55b06522b455",
+    "desc": "SpaceX Starship 12th test flight launch",
+    "actors": [
+      "SpaceX"
+    ],
+    "etype": "release",
+    "d": "2024-05-20",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9378288984298706
+  },
+  {
+    "id": "87ecc248-349f-4273-a5fe-30f253a2e621",
+    "desc": "Hezbollah fires rockets at Israel",
+    "actors": [
+      "Hezbollah"
+    ],
+    "etype": "attack",
+    "d": "2024-03-02",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.988043487071991
+  },
+  {
+    "id": "b661647b-472d-45d7-81bc-9482613ae4af",
+    "desc": "Sergey Ryabkov issues warning to NATO",
+    "actors": [
+      "Sergey Ryabkov"
+    ],
+    "etype": "statement",
+    "d": "2024-05-19",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.8952205777168274
+  },
+  {
+    "id": "252ad4e6-ec50-4902-84d4-e4a16454ab51",
+    "desc": "Starbucks Korea 'Tank Day' campaign launch",
+    "actors": [
+      "Starbucks Korea"
+    ],
+    "etype": "release",
+    "d": "2024-05-18",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "4d2feadf-df4f-4beb-91a4-b763cb76c33a",
+    "desc": "Atmospheric testing confirms safe gas levels",
+    "actors": [
+      "allgas"
+    ],
+    "etype": "statement",
+    "d": "2024-04-10",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9437500238418579
+  },
+  {
+    "id": "bd82d70c-8b02-4ca9-a928-fc016fa73eac",
+    "desc": "Shooting at Canley Vale home",
+    "actors": [
+      "Alai Ahio",
+      "NSW Police",
+      "police"
+    ],
+    "etype": "accident",
+    "d": "2024-04-16",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9375
+  },
+  {
+    "id": "04a29560-41c8-425c-a448-d01a52715dc0",
+    "desc": "Chelsea vs Tottenham Hotspur Premier League clash",
+    "actors": [
+      "Chelsea",
+      "Tottenham Hotspur"
+    ],
+    "etype": "sports_result",
+    "d": "2026-05-19",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.9613372087478638
+  },
+  {
+    "id": "cc6b7849-1530-4d50-8139-f86929068ad0",
+    "desc": "Trump remarks on near-strike against Iran",
+    "actors": [
+      "Donald Trump"
+    ],
+    "etype": "statement",
+    "d": "2025-05-20",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9312499761581421
+  },
+  {
+    "id": "1083e3d9-bd7d-416e-9a1f-d1a4d0531520",
+    "desc": "RBI discontinues investment fluctuation reserve requirement",
+    "actors": [
+      "Reserve Bank of India"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-18",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9408739805221558
+  },
+  {
+    "id": "d8b78850-bd70-4637-baaa-02a116c638f5",
+    "desc": "Announcement of India's squad for home series against Afghanistan",
+    "actors": [
+      "Ajit Agarkar",
+      "BCCI senior men's selection committee",
+      "Devajit Saikia"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-19",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "5c082d26-35e0-4da8-bd39-36cbc92aa0b5",
+    "desc": "Putin's official visit to China begins",
+    "actors": [
+      "Vladimir Putin",
+      "Xi Jinping"
+    ],
+    "etype": "visit",
+    "d": "2025-05-19",
+    "article_count": 3,
+    "source_count": 2,
+    "confidence_score": 0.9520767331123352
+  },
+  {
+    "id": "81a9ba76-0cd7-43b4-ba58-4799cede9122",
+    "desc": "WPI inflation reaches 8.3% in April 2026",
+    "actors": [
+      "India"
+    ],
+    "etype": "release",
+    "d": "2026-04-01",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.9624999761581421
+  },
+  {
+    "id": "b8dff666-4ea2-4942-b0a1-beeebab24b17",
+    "desc": "Cameron Smith finishes final round with 68",
+    "actors": [
+      "Alex Smalley",
+      "Cameron Smith",
+      "Jason Day",
+      "Min Woo Lee"
+    ],
+    "etype": "sports_result",
+    "d": "2024-05-20",
+    "article_count": 3,
+    "source_count": 1,
+    "confidence_score": 0.8999999761581421
+  },
+  {
+    "id": "532b451a-b5f7-4ba4-8832-802d2ff7ef37",
+    "desc": "Hardik Pandya last played for Mumbai Indians",
+    "actors": [
+      "Chennai Super Kings",
+      "Hardik Pandya",
+      "Mumbai Indians"
+    ],
+    "etype": "sports_result",
+    "d": "2024-05-02",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "dcf5fcec-b7f7-40b4-8c53-d01c7657d3de",
+    "desc": "Pulwama terrorist attack killed 40 CRPF personnel",
+    "actors": [
+      "Burhan Hamza",
+      "Jaish-e-Mohammed"
+    ],
+    "etype": "accident",
+    "d": "2019-02-14",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "bf8274fb-88a4-45e5-83aa-02c27bf0665c",
+    "desc": "Qualifying date for electoral roll revision",
+    "actors": [
+      "Election Commission of India"
+    ],
+    "etype": "announcement",
+    "d": "2026-10-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "2a46229d-4ae5-42e6-b796-04bd24874d78",
+    "desc": "CCTV footage reviewed in investigation",
+    "actors": [
+      "Lucknow Police"
+    ],
+    "etype": "filing",
+    "d": "2024-04-05",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9557692408561707
+  },
+  {
+    "id": "8cc2de96-9c40-4fa3-86ef-b74f48211738",
+    "desc": "Air India flight AI2651 grounded after tail strike during landing",
+    "actors": [
+      "Air India"
+    ],
+    "etype": "accident",
+    "d": "2024-05-21",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9889130592346191
+  },
+  {
+    "id": "11bd4cda-6152-46a2-bc60-276d5cb4ad92",
+    "desc": "Fire accident on NH-44 near Thupran",
+    "actors": [
+      "container truck driver",
+      "firefighters",
+      "police",
+      "travelers"
+    ],
+    "etype": "accident",
+    "d": "2023-10-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9249999523162842
+  },
+  {
+    "id": "151008a6-033b-41b7-8586-17e782d6bd45",
+    "desc": "Uncut version of Dhurandhar Part 1 released on Netflix and JioCinema",
+    "actors": [
+      "Aditya Dhar",
+      "Aditya Dharm",
+      "Ranveer Singh"
+    ],
+    "etype": "release",
+    "d": "2024-05-22",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "3db326f8-fa68-46ec-8ae4-bdf564942382",
+    "desc": "Start of India A tri-series in Sri Lanka",
+    "actors": [
+      "Afghanistan A",
+      "India A",
+      "Sri Lanka A"
+    ],
+    "etype": "release",
+    "d": "2026-06-09",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9876582622528076
+  },
+  {
+    "id": "55b56309-7790-4132-94e4-bcf897047eb1",
+    "desc": "Unai Emery becomes first coach to win Europa League with three clubs",
+    "actors": [
+      "Unai Emery"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-21",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.7513889074325562
+  },
+  {
+    "id": "13ecf159-1b11-46f6-9464-78affc04bc9c",
+    "desc": "Nykaa Q4 FY26 results announcement",
+    "actors": [
+      "Nykaa parent FSN E-Commerce Ventures"
+    ],
+    "etype": "announcement",
+    "d": "2024-03-31",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9606249928474426
+  },
+  {
+    "id": "53708c51-f048-4063-a61e-bbdf3a0f91a3",
+    "desc": "Russia\u2019s invasion of Ukraine",
+    "actors": [
+      "Russia",
+      "Ukraine"
+    ],
+    "etype": "other",
+    "d": "2022-02-24",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.44558823108673096
+  },
+  {
+    "id": "d1d67f01-a254-40f8-a7af-59e3d42af8b7",
+    "desc": "Expected iPhone 18 Pro Max launch announcement",
+    "actors": [
+      "Apple"
+    ],
+    "etype": "announcement",
+    "d": "2026-09-09",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9241071343421936
+  },
+  {
+    "id": "aab8a2ac-7124-446b-aec2-0055e83fa2ad",
+    "desc": "Incubator program launch by CM Revanth Reddy",
+    "actors": [
+      "Revanth Reddy"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-29",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9249999523162842
+  },
+  {
+    "id": "ff85f631-aeaf-411a-b616-24da27a80372",
+    "desc": "Distribution of bicycles and Indiramma sarees",
+    "actors": [
+      "Telangana government"
+    ],
+    "etype": "release",
+    "d": "2024-05-31",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.8954166173934937
+  },
+  {
+    "id": "43a0d85a-1399-4c1d-9a21-562769395fa2",
+    "desc": "Zepto aims to list on stock exchanges",
+    "actors": [
+      "Zepto"
+    ],
+    "etype": "release",
+    "d": "2025-07-31",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 1.0
+  },
+  {
+    "id": "c4a7b518-f8a5-4f2e-a17b-95d57cf9b112",
+    "desc": "Salman Khan posts anger on social media",
+    "actors": [
+      "Salman Khan"
+    ],
+    "etype": "statement",
+    "d": "2025-05-19",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9351292848587036
+  },
+  {
+    "id": "ff91fd34-a8fd-4cc4-b1bb-e55fe40dc7d5",
+    "desc": "Jai Arrow diagnosed with MND, retires from NRL",
+    "actors": [
+      "Jai Arrow"
+    ],
+    "etype": "announcement",
+    "d": "2024-07-03",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.984375
+  },
+  {
+    "id": "14dc4b40-79d2-4a4d-9b01-de974d9d6100",
+    "desc": "Associate resigned from company role",
+    "actors": [
+      "close associate"
+    ],
+    "etype": "filing",
+    "d": "2026-02-16",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9869999885559082
+  },
+  {
+    "id": "76eb57c5-9f08-4ac4-aa45-22d9c1296201",
+    "desc": "CA issued first purchase order",
+    "actors": [
+      "Cricket Australia"
+    ],
+    "etype": "market_event",
+    "d": "2026-02-18",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "d267d66b-4a75-4a4c-b008-dd48a02f1112",
+    "desc": "Pendlebury plays his 433rd AFL game",
+    "actors": [
+      "Collingwood",
+      "Scott Pendlebury",
+      "West Coast"
+    ],
+    "etype": "sports_result",
+    "d": "2024-07-06",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9940789341926575
+  },
+  {
+    "id": "47a6a125-755e-4c4b-8acb-e4c9e18a1e31",
+    "desc": "Sales launch of OPPO Find X9s in India",
+    "actors": [
+      "OPPO"
+    ],
+    "etype": "release",
+    "d": "2024-05-28",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.925000011920929
+  },
+  {
+    "id": "bb2c6013-28d1-4930-a0b5-35be9b137700",
+    "desc": "Santragachi\u2013Charlapalli summer special train extension ends",
+    "actors": [
+      "South Central Railway"
+    ],
+    "etype": "announcement",
+    "d": "2024-06-28",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9534957408905029
+  },
+  {
+    "id": "0f1658e5-72e4-4403-a172-d8e059182b3d",
+    "desc": "Charlapalli\u2013Santragachi summer special train extension",
+    "actors": [
+      "South Central Railway"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-23",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9520833492279053
+  },
+  {
+    "id": "ef827455-098f-404e-ba87-cd619fe1379b",
+    "desc": "Semi-finals (Asia Cup)",
+    "actors": [
+      "Asia Cup",
+      "India"
+    ],
+    "etype": "sports_result",
+    "d": "2024-06-05",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.45690789818763733
+  },
+  {
+    "id": "69ef38dc-d029-48d4-af2e-d8268bef41ce",
+    "desc": "Fire brought under control after five hours",
+    "actors": [
+      "Fire Department"
+    ],
+    "etype": "accident",
+    "d": "2024-04-11",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9560976028442383
+  },
+  {
+    "id": "d551a5c4-924e-4ddc-82f8-86c35b79613b",
+    "desc": "ODI series begins",
+    "actors": [
+      "Afghanistan",
+      "India"
+    ],
+    "etype": "sports_result",
+    "d": "2026-06-14",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9227272272109985
+  },
+  {
+    "id": "17ddc240-3ada-4203-a468-2d5fa1663442",
+    "desc": "Squad announcement",
+    "actors": [
+      "BCCI"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-19",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.925000011920929
+  },
+  {
+    "id": "8af228b4-4ec6-4c8a-ab6e-e99e0a8860b5",
+    "desc": "ONS releases 2025 net migration figures",
+    "actors": [
+      "Office for National Statistics"
+    ],
+    "etype": "release",
+    "d": "2025-12-31",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.968999981880188
+  },
+  {
+    "id": "18b19c2b-c498-44cc-8c7d-e4f3865a4223",
+    "desc": "FBI investigation began",
+    "actors": [
+      "FBI",
+      "US Attorney's Office"
+    ],
+    "etype": "investigation",
+    "d": "2020-01-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "a25677af-91cd-42ea-a421-1c5a7a41a2f6",
+    "desc": "One-year forward rupee rate hits 100/USD",
+    "actors": [
+      "Forex Markets"
+    ],
+    "etype": "market_event",
+    "d": "2019-09-18",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9149038791656494
+  },
+  {
+    "id": "ef07d51f-90d9-4e33-b8e2-b1cbd09a0b73",
+    "desc": "Raids conducted in 24 locations in Bagalkot",
+    "actors": [
+      "Karnataka Lokayukta Police"
+    ],
+    "etype": "raid",
+    "d": "2026-05-21",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "ac98b762-4777-46ce-91af-94bcc0473fd7",
+    "desc": "Marco Rubio's India visit concludes",
+    "actors": [
+      "India",
+      "Marco Rubio"
+    ],
+    "etype": "meeting",
+    "d": "2024-05-26",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "cddd0cf0-1c4a-499d-87ab-addb8015295b",
+    "desc": "Murder of Anita during the night",
+    "actors": [
+      "Anita"
+    ],
+    "etype": "accident",
+    "d": "2024-05-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9275000095367432
+  },
+  {
+    "id": "2e69dcbf-4a51-46e3-9e22-3fb11658e325",
+    "desc": "War with US and Israel begins",
+    "actors": [
+      "Iran",
+      "Israel",
+      "United States"
+    ],
+    "etype": "other",
+    "d": "2024-02-29",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.73067307472229
+  },
+  {
+    "id": "e41a3eb1-8cd1-4ccc-a577-f9eb5aaf9c4f",
+    "desc": "Cr\u00eda Cuervos wins Grand Prix du Jury",
+    "actors": [
+      "Carlos Saura"
+    ],
+    "etype": "award",
+    "d": "1976-05-14",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "18722313-1e48-4b9d-b8f4-cca4fa2b0978",
+    "desc": "Congo plays Denmark in Belgium as World Cup warm-up",
+    "actors": [
+      "Congo",
+      "Democratic Republic of the Congo",
+      "Denmark"
+    ],
+    "etype": "sports_result",
+    "d": "2023-06-03",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "f14078fc-6110-4754-bbf2-2c5526ad2c4f",
+    "desc": "Egypt vs Iran World Cup group match",
+    "actors": [
+      "Egypt",
+      "Iran"
+    ],
+    "etype": "meeting",
+    "d": "2026-06-26",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "6f75278f-2fd5-4de2-b234-25071165b90b",
+    "desc": "Egypt vs New Zealand World Cup match",
+    "actors": [
+      "Egypt",
+      "New Zealand"
+    ],
+    "etype": "meeting",
+    "d": "2026-06-21",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "50a64052-86e4-4d36-9586-5ab120a7dc56",
+    "desc": "Egypt vs Belgium World Cup opener",
+    "actors": [
+      "Belgium",
+      "Egypt"
+    ],
+    "etype": "meeting",
+    "d": "2026-06-15",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "7ef4ebe8-2f43-4896-ac28-14cef7ff13b4",
+    "desc": "Egypt vs Brazil friendly in Cleveland",
+    "actors": [
+      "Brazil",
+      "Egypt"
+    ],
+    "etype": "meeting",
+    "d": "2026-06-06",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "978f2b31-f907-43e0-849e-1c657f6cfb25",
+    "desc": "Pre-release event for film 'Peddi' in Hyderabad",
+    "actors": [
+      "Balakrishna",
+      "Nandamuri Balakrishna",
+      "Ram Charan"
+    ],
+    "etype": "event",
+    "d": "2024-06-02",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "4def5788-c512-48ad-8978-3be5ff1bf1b7",
+    "desc": "Ajay Singh released on bail after 57-day custody",
+    "actors": [
+      "Ajay Singh"
+    ],
+    "etype": "release",
+    "d": "2010-07-02",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9737012982368469
+  },
+  {
+    "id": "dbfa1fa4-15ca-4598-9a0c-75c5031797a0",
+    "desc": "Release of film 'I'm Game'",
+    "actors": [
+      "Dulquer Salmaan",
+      "Nahas Hidayath"
+    ],
+    "etype": "release",
+    "d": "2026-08-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9704545736312866
+  },
+  {
+    "id": "56dc88ea-8db8-464a-99c9-ea746051c525",
+    "desc": "Release date announcement via tweet",
+    "actors": [
+      "Dulquer Salmaan"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9557692408561707
+  },
+  {
+    "id": "6184f01c-d1c5-44a1-90ec-99d839630af9",
+    "desc": "Tamil Nadu Assembly elections held",
+    "actors": [
+      "AIADMK",
+      "CPI(M)",
+      "EPS",
+      "TVK",
+      "VCK",
+      "Vijay"
+    ],
+    "etype": "election",
+    "d": "2026-05-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "b1b16fb4-bf3f-45f1-9900-e2506709fe20",
+    "desc": "UAE aims to double oil export capacity via Fujairah",
+    "actors": [
+      "ADNOC"
+    ],
+    "etype": "release",
+    "d": "2027-01-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9492424130439758
+  },
+  {
+    "id": "398f4cd1-f498-4719-98bc-19b7b45db128",
+    "desc": "Merger agreement signed between SpaceX and xAI",
+    "actors": [
+      "Elon Musk",
+      "SpaceX",
+      "xAI"
+    ],
+    "etype": "filing",
+    "d": "2026-01-31",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "1966d416-41d4-42aa-85bf-893c2f54c841",
+    "desc": "GitHub announces containment of compromised employee device",
+    "actors": [
+      "GitHub"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "a1831e7a-7256-4c2b-ae4d-f082f7b96137",
+    "desc": "Release of Oppo Find X9s",
+    "actors": [
+      "Oppo"
+    ],
+    "etype": "release",
+    "d": "2024-05-28",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "7d3e0805-8731-4478-b4e5-6b6d025e90dc",
+    "desc": "UGC NET June 2026 registration ends",
+    "actors": [
+      "National Testing Agency"
+    ],
+    "etype": "filing",
+    "d": "2026-05-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.8971283435821533
+  },
+  {
+    "id": "d3285d2f-f6dc-43af-9479-2c02e2a21b0d",
+    "desc": "NEET(UG) 2026 re-exam",
+    "actors": [
+      "National Testing Agency"
+    ],
+    "etype": "release",
+    "d": "2026-06-21",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "6cbb1953-4047-4fb5-b3b0-53de30e78771",
+    "desc": "UGC NET form correction window opens",
+    "actors": [
+      "National Testing Agency"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-22",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.8842562437057495
+  },
+  {
+    "id": "8c2b1218-fdfc-4495-92fe-e0a7aa6031d8",
+    "desc": "School 'Vande Mataram' mandate issued",
+    "actors": [
+      "West Bengal government"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-13",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9620786905288696
+  },
+  {
+    "id": "3b84b1c1-31ca-4ff7-9fe1-9f397fad4332",
+    "desc": "Vahidi last seen before war began",
+    "actors": [
+      "Ahmad Vahidi"
+    ],
+    "etype": "statement",
+    "d": "2024-02-08",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9571428298950195
+  },
+  {
+    "id": "0140b8dd-5e5d-4a55-85eb-562351798e8c",
+    "desc": "Israeli strikes reportedly killed Ayatollah Ali Khamenei",
+    "actors": [
+      "Iran",
+      "Israel"
+    ],
+    "etype": "accident",
+    "d": "2024-02-28",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9668316841125488
+  },
+  {
+    "id": "397612b5-52d7-4954-a8b0-75c9f6c84367",
+    "desc": "Appeal registered before GSTAT",
+    "actors": [
+      "A & T Security Services Private Limited"
+    ],
+    "etype": "filing",
+    "d": "2026-03-19",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9892857074737549
+  },
+  {
+    "id": "a4f434ee-ca3f-4e20-a0e6-5fd77351e0ab",
+    "desc": "Release of MOD biannual civilian personnel report",
+    "actors": [
+      "Ministry of Defence"
+    ],
+    "etype": "release",
+    "d": "2026-04-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9632075428962708
+  },
+  {
+    "id": "32fad1da-7815-40a5-8a90-85de0d8c79d1",
+    "desc": "Match start at Eden Gardens, Kolkata",
+    "actors": [
+      "Kolkata Knight Riders",
+      "Mumbai Indians"
+    ],
+    "etype": "release",
+    "d": "2026-05-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.469366192817688
+  },
+  {
+    "id": "b6a64977-47f6-4d38-8f1d-16a6c52be36f",
+    "desc": "Iran conflict begins, impacting Indian rupee",
+    "actors": [
+      "Iran"
+    ],
+    "etype": "accident",
+    "d": "2024-02-28",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.7999999523162842
+  },
+  {
+    "id": "5ba9910d-b8bf-4068-a722-bd88619d4fbf",
+    "desc": "Electric car crashes into vehicles and tiffin center",
+    "actors": [
+      "driver",
+      "police"
+    ],
+    "etype": "accident",
+    "d": "2026-05-21",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.925000011920929
+  },
+  {
+    "id": "e8ffa4f3-c784-4e30-a623-b5f7a0c168a4",
+    "desc": "Collection of \u20b92.77 lakh in fines",
+    "actors": [
+      "Kendujhar RTO",
+      "Patna police"
+    ],
+    "etype": "filing",
+    "d": "2024-05-21",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.925000011920929
+  },
+  {
+    "id": "e7f9c5c8-3679-43ff-8a47-171c26525680",
+    "desc": "Trump announces delay of attack on Iran",
+    "actors": [
+      "Donald Trump"
+    ],
+    "etype": "announcement",
+    "d": "2025-05-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.4749999940395355
+  },
+  {
+    "id": "90d82c39-8f65-4351-b80c-7fda34b95fc2",
+    "desc": "Game 3 of Western Conference finals",
+    "actors": [
+      "Oklahoma City Thunder",
+      "San Antonio Spurs"
+    ],
+    "etype": "sports_result",
+    "d": "2024-06-07",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9666071534156799
+  },
+  {
+    "id": "3578bf32-9c7d-4d94-9292-be0fb50fda38",
+    "desc": "Supreme Court denies temporary restraining order for Dela Rosa",
+    "actors": [
+      "Philippine Supreme Court",
+      "Ronald Dela Rosa"
+    ],
+    "etype": "legal",
+    "d": "2026-05-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9125000238418579
+  },
+  {
+    "id": "8a208558-1d95-46c3-876d-e092dcffa105",
+    "desc": "Executive order expected to be issued",
+    "actors": [
+      "Donald Trump",
+      "White House"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-21",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "d35d391f-7f0f-4106-bd54-b899ce94261d",
+    "desc": "Drone attack in Syzran, Russia",
+    "actors": [
+      "Russia",
+      "Ukraine"
+    ],
+    "etype": "other",
+    "d": "2026-05-21",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9220237731933594
+  },
+  {
+    "id": "e23ddb0e-f44e-486d-b233-2c99c078131d",
+    "desc": "Webinar with Walmart to guide Indian exporters on US market entry",
+    "actors": [
+      "Consulate General of India in New York",
+      "Indian Consulate",
+      "Walmart"
+    ],
+    "etype": "meeting",
+    "d": "2024-05-29",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "d2297816-a37e-47be-b278-60919f63045a",
+    "desc": "INS Sunayna departs from Mumbai",
+    "actors": [
+      "Indian Navy"
+    ],
+    "etype": "release",
+    "d": "2026-04-02",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9191346168518066
+  },
+  {
+    "id": "c1977ed3-fd80-450f-b89c-d919469ecc23",
+    "desc": "Haj pilgrimage begins in Saudi Arabia",
+    "actors": [
+      "Qatar",
+      "Saudi Arabia",
+      "United Arab Emirates"
+    ],
+    "etype": "release",
+    "d": "2026-05-25",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "2ae2f86e-f7b7-4e47-8c56-0894de9c4e2a",
+    "desc": "Haryana schools reopen after summer break",
+    "actors": [
+      "Haryana government"
+    ],
+    "etype": "announcement",
+    "d": "2026-06-30",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9782894849777222
+  },
+  {
+    "id": "02f38b6f-ff6d-4b25-ace4-041be95205d4",
+    "desc": "Haryana schools close for summer vacation",
+    "actors": [
+      "Haryana government"
+    ],
+    "etype": "announcement",
+    "d": "2026-06-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9884614944458008
+  },
+  {
+    "id": "a075ff75-9e8e-48c7-942d-3bb6ba3080d2",
+    "desc": "Severe heatwave in West Uttar Pradesh resumes",
+    "actors": [
+      "India Meteorological Department"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-24",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.6721938848495483
+  },
+  {
+    "id": "c7359e43-e963-493b-8b9e-548c50d3d91c",
+    "desc": "Farmers face delays in grain procurement",
+    "actors": [
+      "Farmers"
+    ],
+    "etype": "accident",
+    "d": "2024-05-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.8107142448425293
+  },
+  {
+    "id": "091901e1-0190-4984-8bfe-848be9eaaca3",
+    "desc": "Loan maturity date",
+    "actors": [
+      "West Wits Mining"
+    ],
+    "etype": "statement",
+    "d": "2031-06-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "4a1bd35f-0593-4211-a8d0-d21b15b909d6",
+    "desc": "Final drawdown date for loan facility",
+    "actors": [
+      "West Wits Mining"
+    ],
+    "etype": "statement",
+    "d": "2028-06-30",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "fc77247d-96fb-4dcc-8443-402aac4f5473",
+    "desc": "Race 2 at Randwick, 11:35 AM",
+    "actors": [
+      "Audrey\u2019s Lane",
+      "Callistemon",
+      "Flying Embers",
+      "Phyxius"
+    ],
+    "etype": "sports_result",
+    "d": "2024-06-22",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 1.0
+  },
+  {
+    "id": "1684c398-62ab-4fc5-b05a-7ef4bfb9ca7e",
+    "desc": "Race 3 at Randwick, 12:10 PM",
+    "actors": [
+      "Exit Fee",
+      "Speedy Henry"
+    ],
+    "etype": "sports_result",
+    "d": "2024-06-22",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 1.0
+  },
+  {
+    "id": "d1d07c43-223d-4690-af83-b4f91bb72e5b",
+    "desc": "Race 1 at Randwick, 11:00 AM",
+    "actors": [
+      "Keen To Exceed",
+      "Lady Catalina",
+      "Thyme To Go",
+      "Uncertain Glory"
+    ],
+    "etype": "sports_result",
+    "d": "2024-06-22",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 1.0
+  },
+  {
+    "id": "92090919-8ed1-4192-9c4f-bfd5e01ee940",
+    "desc": "Hardik Pandya fined 10% match fee by BCCI",
+    "actors": [
+      "BCCI",
+      "Hardik Pandya"
+    ],
+    "etype": "filing",
+    "d": "2026-04-10",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "17dd75f6-e826-4ebd-836f-03d13c16019c",
+    "desc": "Match between Mumbai Indians and KKR",
+    "actors": [
+      "Kolkata Knight Riders",
+      "Mumbai Indians"
+    ],
+    "etype": "sports_result",
+    "d": "2026-04-09",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.7988095283508301
+  },
+  {
+    "id": "8c6f7baf-5331-4a98-b6a1-b148694bce22",
+    "desc": "Provisional assessment ordered for Anhui Krant's solar frame imports",
+    "actors": [
+      "Central Government"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-19",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9163914918899536
+  },
+  {
+    "id": "1934ae51-5bf1-4aec-97ab-8535f398b185",
+    "desc": "Nigeria vs Portugal friendly",
+    "actors": [
+      "Nigeria",
+      "Nigeria Super Eagles",
+      "Portugal"
+    ],
+    "etype": "sports_result",
+    "d": "2026-06-10",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "e15d645a-918d-4b79-840e-00cbb67b23f6",
+    "desc": "Sif rig starts work in Suriname",
+    "actors": [
+      "Borr Drilling"
+    ],
+    "etype": "release",
+    "d": "2026-07-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9589999914169312
+  },
+  {
+    "id": "4deab466-5692-49b8-b32b-0eef61a187e2",
+    "desc": "Port Harcourt Tech Expo 2026 begins",
+    "actors": [
+      "Niger Delta Development Commission",
+      "TechNexus"
+    ],
+    "etype": "meeting",
+    "d": "2026-06-11",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9574486017227173
+  },
+  {
+    "id": "6627f6c9-fced-4179-8197-beda9bd438d4",
+    "desc": "e-visa system nationwide rollout",
+    "actors": [
+      "Ghana Immigration Service"
+    ],
+    "etype": "release",
+    "d": "2026-05-25",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "d52b336d-e9b6-4d4f-8e5e-b54dc5b2ce1f",
+    "desc": "Israeli strike on security post to free Ahmadinejad",
+    "actors": [
+      "Israel",
+      "United States"
+    ],
+    "etype": "other",
+    "d": "2024-02-28",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.5997825860977173
+  },
+  {
+    "id": "1cb20a20-125b-4341-950b-11d339b99e85",
+    "desc": "Gallup releases State of the Global Workplace 2026",
+    "actors": [
+      "Gallup"
+    ],
+    "etype": "release",
+    "d": "2026-01-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9933168292045593
+  },
+  {
+    "id": "56be0781-e741-448a-add5-4d323e7f5161",
+    "desc": "Tax return filing deadline for FY26/AY27",
+    "actors": [
+      "taxpayers"
+    ],
+    "etype": "filing",
+    "d": "2026-07-31",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "67799082-c3e6-4c49-8fc5-ab41fa9f8b42",
+    "desc": "Narcotics team conducts surprise raids in Edapally",
+    "actors": [
+      "CI Bhasakarrao",
+      "Narcotics team",
+      "SHO Venkatnarayana"
+    ],
+    "etype": "raid",
+    "d": "2024-04-10",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9249999523162842
+  },
+  {
+    "id": "229f190c-e698-4b1f-bc5d-4802cb321348",
+    "desc": "Q4 FY26 financial period end",
+    "actors": [
+      "BLS International"
+    ],
+    "etype": "filing",
+    "d": "2026-03-31",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.98647540807724
+  },
+  {
+    "id": "fc40d8ed-40d1-4b40-9f26-64686962f94a",
+    "desc": "AEC referred matter to AFP for consideration",
+    "actors": [
+      "Australian Electoral Commission",
+      "Australian Federal Police"
+    ],
+    "etype": "filing",
+    "d": "2024-05-19",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "1972b96c-b442-4ce8-9625-8d1d2cccceba",
+    "desc": "CM Suvendu Adhikari's first North Bengal tour",
+    "actors": [
+      "Suvendu Adhikari"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9469101428985596
+  },
+  {
+    "id": "d48e1171-50dc-44f9-945a-bcfe11245333",
+    "desc": "Congress comments on Great Nicobar Project",
+    "actors": [
+      "Congress",
+      "Jairam Ramesh"
+    ],
+    "etype": "statement",
+    "d": "2026-05-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9237500429153442
+  },
+  {
+    "id": "b7f3a9ab-fefe-45a2-ad0c-fcb91b7eecbb",
+    "desc": "Initial swearing-in of 10 cabinet members",
+    "actors": [
+      "C. Joseph Vijay"
+    ],
+    "etype": "announcement",
+    "d": "2026-05-10",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9778409004211426
+  },
+  {
+    "id": "ffcfb386-fa0b-432b-8972-a08ea1351b6c",
+    "desc": "Fubara withdraws from APC gubernatorial primary",
+    "actors": [
+      "Siminalayi Fubara"
+    ],
+    "etype": "statement",
+    "d": "2024-04-09",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "05585298-cce1-4416-b437-1ff73500d927",
+    "desc": "India-EU Free Trade Agreement comes into force",
+    "actors": [
+      "EU",
+      "European Union",
+      "India"
+    ],
+    "etype": "announcement",
+    "d": "2026-01-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "7feb5afb-0810-4442-965e-46bfc70f4751",
+    "desc": "Ben-Gvir posts video mocking detained activists",
+    "actors": [
+      "Itamar Ben-Gvir"
+    ],
+    "etype": "release",
+    "d": "2024-07-17",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9802631139755249
+  },
+  {
+    "id": "7410889d-4ffe-4d91-8cc3-ac5d5484f025",
+    "desc": "Launch of the RECAP project in Sokoto",
+    "actors": [
+      "Action Against Hunger Nigeria",
+      "European Union",
+      "International Alert",
+      "Save The Child Initiative"
+    ],
+    "etype": "announcement",
+    "d": "2024-07-10",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "8bcbd5f4-9b29-4e3f-8d07-f6244a9d9fe8",
+    "desc": "Trump's first presidential visit to China",
+    "actors": [
+      "Donald Trump",
+      "Xi Jinping"
+    ],
+    "etype": "meeting",
+    "d": "2017-01-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.949999988079071
+  },
+  {
+    "id": "672d7068-bc57-4e13-9855-4a425e6977e6",
+    "desc": "Dust storms in 24 mandals expected",
+    "actors": [
+      "Andhra Pradesh Disaster Management Agency"
+    ],
+    "etype": "announcement",
+    "d": "2024-05-24",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.8482954502105713
+  },
+  {
+    "id": "ae3c217f-9ef7-40f7-b9fa-016681dca610",
+    "desc": "Marriage of Twisha Sharma and Samarth Singh",
+    "actors": [
+      "Samarth Singh",
+      "Twisha Sharma"
+    ],
+    "etype": "other",
+    "d": "2025-12-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "ee5710bf-dab8-417e-b608-02c47d7e9061",
+    "desc": "Operation Searchlight launched in East Pakistan",
+    "actors": [
+      "Pakistan"
+    ],
+    "etype": "accident",
+    "d": "1971-03-01",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9750000238418579
+  },
+  {
+    "id": "204336db-80d0-4a9a-8167-ae1da271a6c0",
+    "desc": "Reeves announces fuel duty increase scrapped",
+    "actors": [
+      "Rachel Reeves"
+    ],
+    "etype": "announcement",
+    "d": "2025-05-20",
+    "article_count": 2,
+    "source_count": 1,
+    "confidence_score": 0.9944736957550049
+  }
+]

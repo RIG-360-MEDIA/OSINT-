@@ -22,8 +22,19 @@ const TONE = { supportive: C_SUP, hostile: C_CRIT, neutral: [120, 140, 175] };
 const lerp = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 const clamp01 = (t) => Math.max(0, Math.min(1, t));
 
-// geojson district name -> our backend district key (handles the 2022-rename diffs)
-const ALIAS = { ANANTAPURAMU: 'ANANTAPUR', YSR: 'YSR KADAPA', 'ALLURI SITHARAMA RAJU': 'ALLURI SITARAMA RAJU' };
+// geojson district name -> our backend district key (handles full-vs-short + 2022-rename diffs)
+const ALIAS = {
+  // Andhra Pradesh
+  ANANTAPURAMU: 'ANANTAPUR', YSR: 'YSR KADAPA', 'ALLURI SITHARAMA RAJU': 'ALLURI SITARAMA RAJU',
+  // Telangana: GeoJSON uses full official names; backend uses short keys (incl. the
+  // Warangal Urban -> Hanumakonda 2021 rename). Without these, ~10 districts render
+  // unmatched/dark even though they have coverage.
+  'BHADRADRI KOTHAGUDEM': 'BHADRADRI', 'JAYASHANKAR BHUPALAPALLY': 'JAYASHANKAR',
+  'JOGULAMBA GADWAL': 'JOGULAMBA', 'KOMARAM BHEEM': 'KUMRAM BHEEM',
+  'MEDCHAL MALKAJGIRI': 'MEDCHAL', 'RANGA REDDY': 'RANGAREDDY',
+  'WARANGAL RURAL': 'WARANGAL', 'WARANGAL URBAN': 'HANUMAKONDA',
+  'YADADRI BHUVANAGIRI': 'YADADRI', MAHABUBNAGAR: 'MAHBUBNAGAR',
+};
 const norm = (s) => { const u = (s || '').toUpperCase().replace(/\s+/g, ' ').trim(); return ALIAS[u] || u; };
 // World choropleth join: ISO_A2_EH fixes Natural Earth's -99 codes (France, Norway, …).
 const isoOf = (f) => { const p = f.properties || {}; const eh = p.ISO_A2_EH; return (eh && eh !== '-99') ? eh : p.ISO_A2; };
@@ -73,7 +84,7 @@ function DStance({ s }) {
         <i style={{ width: supPct + '%', background: 'var(--supportive,#3cd6a0)' }} /><i style={{ width: (100 - supPct) + '%', background: 'var(--hostile,#f05c5c)' }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--faint)', marginTop: 4 }}>
-        <span>{s.sup} for</span><span>{s.neu} neutral</span><span>{s.crit} against</span>
+        <span>{s.sup} positive</span><span>{s.neu} neutral</span><span>{s.crit} negative</span>
       </div>
     </div>
   );
@@ -305,14 +316,15 @@ export default function MapPage() {
           </>
         ) : (
           <>
-            <div className="wm-label" style={{ marginBottom: 6 }}>{useChoropleth ? (flat ? 'DISTRICT COLOUR = NET STANCE' : 'DISTRICT COLOUR = NET STANCE · HEIGHT = COVERAGE') : 'COLOUR = STANCE'}</div>
+            <div className="wm-label" style={{ marginBottom: 6 }}>{useChoropleth ? (flat ? 'DISTRICT COLOUR = COVERAGE TONE' : 'DISTRICT COLOUR = COVERAGE TONE · HEIGHT = COVERAGE') : 'COLOUR = COVERAGE TONE'}</div>
             <div style={{ display: 'flex', gap: 14 }}>
-              {[['supportive', 'supportive'], ['neutral', 'neutral'], ['hostile', 'critical']].map(([k, lbl]) => (
+              {[['supportive', 'positive'], ['neutral', 'neutral'], ['hostile', 'negative']].map(([k, lbl]) => (
                 <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <i style={{ width: 9, height: 9, borderRadius: 9, background: `rgb(${TONE[k].join(',')})` }} />{lbl}
                 </span>
               ))}
             </div>
+            <div style={{ marginTop: 6, fontSize: '0.62rem', fontStyle: 'italic' }}>Overall coverage tone · last 21 days · not directed at you</div>
           </>
         )}
       </div>
@@ -324,7 +336,7 @@ export default function MapPage() {
         <div className="tmap-card" style={{ position: 'absolute', left: Math.min(hover.x + 16, 900), top: hover.y + 16, pointerEvents: 'none' }}>
           <h4>{hover.b.name}</h4>
           <div className="cv">{(hover.b.articles || 0).toLocaleString()} stories{hover.b.topic ? ` · ${hover.b.topic}` : ''}</div>
-          <div className="cr">+{hover.b.sup} / −{hover.b.crit} (net {hover.b.net > 0 ? '+' : ''}{hover.b.net})</div>
+          <div className="cr">coverage tone: +{hover.b.sup} / −{hover.b.crit} (net {hover.b.net > 0 ? '+' : ''}{hover.b.net})</div>
         </div>
       )}
       {hover && hover.haz && (
@@ -356,7 +368,7 @@ export default function MapPage() {
                   </div>))}
               </div>
               <div className="df-summary"><div className="df-stamp">RECENT ACTIVITY</div><p style={{ margin: '6px 0 0' }}>{dist.file.summary}</p></div>
-              <DCard title="Standing"><DStance s={dist.file.standing} /></DCard>
+              <DCard title="Coverage tone"><DStance s={dist.file.standing} /></DCard>
               {dist.file.top_stories.length > 0 && <DCard title="Top stories">{dist.file.top_stories.map((s, i) => (
                 <a key={i} href={s.url || '#'} target="_blank" rel="noreferrer" style={dRow}>
                   <span className={'df-recdot ' + s.tone} style={{ marginTop: 5 }} />

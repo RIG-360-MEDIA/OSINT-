@@ -1,0 +1,11 @@
+{
+  "name": "rig-pot-gen",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Local BotGuard PO-token generator for the YouTube transcript path (Option C validation).",
+  "dependencies": {
+    "bgutils-js": "^3.1.0",
+    "jsdom": "^24.1.0"
+  }
+}

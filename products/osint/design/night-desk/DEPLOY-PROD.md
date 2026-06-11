@@ -1,8 +1,11 @@
-# night-desk — production deploy notes
+# ROBIN-OSINT — production deploy notes
+
+> Note: the on-disk folder is still `night-desk/` and the Caddy mount paths
+> below keep that name; only the product branding changed to ROBIN-OSINT.
 
 Status: **not deployed to prod yet.** Runs locally (`localhost:5180`) against the
 prod API at `https://robin-osi.rig360media.com/osint`. Caddy currently proxies only
-`/osint/*` → `osint-backend:8000`; it does **not** serve the night-desk SPA.
+`/osint/*` → `osint-backend:8000`; it does **not** serve the ROBIN-OSINT SPA.
 
 When you deploy, you need: (1) a built static bundle, (2) a way to serve it, and
 (3) a **Caddy SPA fallback** so client-side routes (`/map`, `/war-room`, …) don't 404

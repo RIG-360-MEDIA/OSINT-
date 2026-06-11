@@ -6,6 +6,15 @@ import LiveStamp from '../components/LiveStamp';
 import { authFetch } from '../lib/supabase';
 
 const toneCls = (t) => (t === 'hostile' ? 'neg' : t === 'supportive' ? 'pos' : 'neu');
+// Colour the pressure-point readout by its polarity word (Positive → green,
+// Negative → red), falling back to the stance tone when it isn't a polarity.
+const pressureTone = (p) => {
+  const s = String(p?.score || '').toLowerCase();
+  if (s.includes('positive')) return 'pos';
+  if (s.includes('negative')) return 'neg';
+  if (s.includes('neutral')) return 'neu';
+  return toneCls(p?.stance);
+};
 const sentiCls = (v) => (typeof v !== 'number' ? 'neu' : v >= 10 ? 'pos' : v <= -10 ? 'neg' : 'neu');
 // Colour-classify the briefing callout cells by their meaning, not position
 // (the cell order varies — "The Attack" only appears when there's an adverse line).
@@ -224,7 +233,7 @@ export default function Home() {
             <div className="subline">
               {M.state && M.principal && <><span>{M.principal}</span><span className="sep" /></>}
               {M.displayName && <><span>{M.displayName}</span><span className="sep" /></>}
-              <span className="mono" style={{ color: 'var(--ink)' }}>last 50 days</span><span className="sep" />
+              <span className="mono" style={{ color: 'var(--ink)' }}>{M.window}</span><span className="sep" />
               <span>confidence <span className="pill">{M.confidence}</span></span>
             </div>
           </div>
@@ -295,7 +304,7 @@ export default function Home() {
       {/* ① THE BRIEFING */}
       <Reveal>
         <div className="panel hero briefing">
-          <div className="label gold">The Briefing · last 50 days</div>
+          <div className="label gold">The Briefing · {M.window}</div>
 
           <div className="bl-band">
             {(B.bottomLine || []).map((b, i) => {
@@ -407,8 +416,8 @@ export default function Home() {
                   <div className="rl">{p.rel}{p.kind ? <span className="pill" style={{ marginLeft: 8 }}>{p.kind}</span> : null}</div>
                 </div>
                 <div className="vd">
-                  <div className={'vv num ' + toneCls(p.stance)}>{p.verdict}</div>
-                  <div className={'sc num ' + toneCls(p.stance)}>{p.score}</div>
+                  <div className={'vv num ' + pressureTone(p)}>{p.verdict}</div>
+                  <div className={'sc num ' + pressureTone(p)} style={{ fontSize: '1.02rem', fontWeight: 600 }}>{p.score}</div>
                   {p.trend ? <div className="tr">{p.trend}</div> : null}
                   {p.id && <button className="player-remove" onClick={() => removeEntity(p.id)} title="Remove from watch list">×</button>}
                 </div>

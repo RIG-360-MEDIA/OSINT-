@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { observeApi } from '@/lib/observe-client'
 import { useObservePoll } from '../hooks/useObservePoll'
+import styles from '../observe.module.css'
 import { Panel } from './Panel'
 
 export function CrossTabAnalyst() {
@@ -19,8 +20,9 @@ export function CrossTabAnalyst() {
 
   return (
     <Panel
-      title="Crosstab analyst"
-      subtitle="Source × week for any actor (substring match)"
+      title="Crosstab Analyst"
+      subtitle="Search a person or organisation across sources & time"
+      help='Type "Modi", "Revanth Reddy", "ED" etc. Matches the actors list.'
       loading={isLoading}
       error={error}
     >
@@ -29,44 +31,47 @@ export function CrossTabAnalyst() {
           e.preventDefault()
           if (actor.trim()) setSubmitted({ actor: actor.trim(), days })
         }}
-        className="mb-2 flex items-center gap-2 text-xs"
+        className={styles.ctForm}
       >
         <input
           value={actor}
           onChange={(e) => setActor(e.target.value)}
-          placeholder="actor name (e.g. Modi)"
-          className="flex-1 rounded border border-neutral-300 px-2 py-1"
-          data-testid="crosstab-actor"
+          placeholder="e.g. Modi, Revanth Reddy"
+          className={styles.ctInput}
         />
-        <input
-          type="number"
-          value={days}
-          onChange={(e) => setDays(Math.max(1, Math.min(365, Number(e.target.value) || 30)))}
-          className="w-16 rounded border border-neutral-300 px-2 py-1"
-          aria-label="days"
-        />
-        <button type="submit" className="rounded bg-emerald-600 px-2 py-1 text-white">
-          Run
+        <div className={styles.ctDays}>
+          <input
+            type="number"
+            value={days}
+            onChange={(e) => setDays(Math.max(1, Math.min(365, Number(e.target.value) || 30)))}
+            className={styles.ctDaysInput}
+          />
+          <span style={{ fontSize: 12, color: 'var(--color-navy-600)' }}>days</span>
+        </div>
+        <button type="submit" className={styles.btnPrimary} disabled={!actor.trim()}>
+          Search
         </button>
       </form>
-      {data && (
-        <div className="max-h-56 overflow-y-auto text-xs">
-          <table className="w-full">
-            <thead className="sticky top-0 bg-neutral-100">
+
+      {!submitted ? (
+        <p className={styles.empty}>Enter an actor name to begin.</p>
+      ) : data && (
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
               <tr>
-                <th className="px-2 py-1 text-left">Source</th>
-                <th className="px-2 py-1 text-left">Week</th>
-                <th className="px-2 py-1 text-right">Events</th>
-                <th className="px-2 py-1 text-right">Articles</th>
+                <th>Source</th><th>Week</th><th style={{ textAlign: 'right' }}>Events</th><th style={{ textAlign: 'right' }}>Articles</th>
               </tr>
             </thead>
             <tbody>
-              {data.rows.map((r, i) => (
-                <tr key={`${r.source}-${r.week}-${i}`} className="border-b border-neutral-200">
-                  <td className="px-2 py-0.5 truncate max-w-[18ch]" title={r.source}>{r.source}</td>
-                  <td className="px-2 py-0.5">{r.week ?? '?'}</td>
-                  <td className="px-2 py-0.5 text-right tabular-nums">{r.n_events}</td>
-                  <td className="px-2 py-0.5 text-right tabular-nums">{r.n_articles}</td>
+              {data.rows.length === 0 ? (
+                <tr><td colSpan={4} className={styles.empty}>No matches for “{submitted.actor}” in last {submitted.days} days.</td></tr>
+              ) : data.rows.map((r, i) => (
+                <tr key={`${r.source}-${r.week}-${i}`}>
+                  <td style={{ maxWidth: '18ch', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.source}>{r.source}</td>
+                  <td>{r.week ?? '?'}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.n_events}</td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.n_articles}</td>
                 </tr>
               ))}
             </tbody>

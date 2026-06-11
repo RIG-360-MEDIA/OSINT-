@@ -1,0 +1,303 @@
+# RIG SURVEILLANCE - Production compose
+# Generated 2026-04-29 for rig-prod-sin (178.105.63.154)
+# See infrastructure/docker-compose.yml for the dev source-of-truth.
+# Boot: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+
+services:
+  rig-postgres:
+    image: ankane/pgvector:latest
+    container_name: rig-postgres
+    oom_score_adj: -900
+    environment:
+      POSTGRES_DB: rig
+      POSTGRES_USER: rig
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - rig-postgres-data:/var/lib/postgresql/data
+      - ../scripts/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5433:5432"
+    networks:
+      - rig-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rig -d rig"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  rig-freshrss:
+    image: lscr.io/linuxserver/freshrss:latest
+    container_name: rig-freshrss
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Asia/Kolkata
+      CRON_MIN: "*/15"
+    volumes:
+      - rig-freshrss-data:/config
+    ports:
+      - "127.0.0.1:8081:80"
+    networks:
+      - rig-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  rig-searxng:
+    image: searxng/searxng:latest
+    container_name: rig-searxng
+    environment:
+      BASE_URL: "http://rig-searxng:8080/"
+      INSTANCE_NAME: "RIG SearXNG"
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    networks:
+      - rig-network
+    restart: unless-stopped
+
+  rig-backend:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile.backend
+    image: rig-backend:prod
+    container_name: rig-backend
+    mem_limit: 12g
+    oom_score_adj: -500
+    env_file:
+      - .env.prod
+    environment:
+      DATABASE_URL: postgresql+asyncpg://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
+      DATABASE_URL_SYNC: postgresql://rig:${POSTGRES_PASSWORD}@rig-postgres:5432/rig
+      GROQ_API_KEYS: ${GROQ_API_KEYS:-}
+      CEREBRAS_API_KEYS: ${CEREBRAS_API_KEYS:-}
+      DOSSIER_ENABLED: ${DOSSIER_ENABLED:-false}
+      SEARXNG_URL: ${SEARXNG_URL:-http://rig-searxng:8080}
+      OPENSANCTIONS_API_KEY: ${OPENSANCTIONS_API_KEY:-}
+      OPENCORPORATES_API_KEY: ${OPENCORPORATES_API_KEY:-}
+      DOSSIER_PER_ADAPTER_TIMEOUT_S: ${DOSSIER_PER_ADAPTER_TIMEOUT_S:-12}
+      DOSSIER_GDELT_TIMEOUT_S: ${DOSSIER_GDELT_TIMEOUT_S:-25}
+      NEWSDATA_API_KEY: ${NEWSDATA_API_KEY:-}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      YOUTUBE_API_KEY_2: ${YOUTUBE_API_KEY_2:-}
+      YOUTUBE_API_KEY_3: ${YOUTUBE_API_KEY_3:-}
+      YOUTUBE_PROXY_URL: ${YOUTUBE_PROXY_URL:-}
+      YOUTUBE_COOKIES_PATH: ${YOUTUBE_COOKIES_PATH:-/app/youtube-cookies.txt}
+      FRESHRSS_URL: ${FRESHRSS_URL:-http://rig-freshrss:80}
+      FRESHRSS_USERNAME: ${FRESHRSS_USERNAME:-admin}
+      FRESHRSS_PASSWORD: ${FRESHRSS_PASSWORD:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+      SUPER_ADMIN_EMAILS: ${SUPER_ADMIN_EMAILS:-}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      GOVT_DEFAULT_SINCE_DAYS: ${GOVT_DEFAULT_SINCE_DAYS:-30}
+      GOVT_PER_PORTAL_CAP: ${GOVT_PER_PORTAL_CAP:-100}
+      NLP_BATCH_SIZE: ${NLP_BATCH_SIZE:-25}
+      BRIEF_ARTICLE_LIMIT: ${BRIEF_ARTICLE_LIMIT:-30}
+      TWITTER_BEARER_TOKEN: ${TWITTER_BEARER_TOKEN:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:-}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:-}
+      TELEGRAM_SESSION_STRING: ${TELEGRAM_SESSION_STRING:-}
+      ACLED_ACCESS_TOKEN: ${ACLED_ACCESS_TOKEN:-}
+      WM_TG_CACHE_TTL_S: ${WM_TG_CACHE_TTL_S:-1800}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      # /coverage/articles rebuild — feature flags
+      FEATURE_TOP_STORIES: ${FEATURE_TOP_STORIES:-on}
+      FEATURE_ASK_BAR: ${FEATURE_ASK_BAR:-}
+      FEATURE_CARDS: ${FEATURE_CARDS:-}
+      FEATURE_BREAKING: ${FEATURE_BREAKING:-}
+      FEATURE_CONTRADICTIONS: ${FEATURE_CONTRADICTIONS:-}
+      FEATURE_COMPARE: ${FEATURE_COMPARE:-}
+      FEATURE_WATCHLIST: ${FEATURE_WATCHLIST:-}
+      FEATURE_NOTIFICATIONS: ${FEATURE_NOTIFICATIONS:-}
+      FEATURE_COVERAGE_GAPS: ${FEATURE_COVERAGE_GAPS:-}
+    volumes:
+      - rig-beat-schedule:/app/beat
+      - /root/youtube-cookies.txt:/app/youtube-cookies.txt
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - rig-network
+    depends_on:
+      rig-postgres:
+        condition: service_healthy
+      rig-freshrss:
+        condition: service_healthy
+    restart: unless-stopped
+
+  rig-frontend:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile.frontend.prod
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://178-105-63-154.nip.io}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_DOSSIER_ENABLED: ${NEXT_PUBLIC_DOSSIER_ENABLED:-false}
+        NEXT_PUBLIC_WM_URL: ${NEXT_PUBLIC_WM_URL:-/world-monitor-app/}
+    image: rig-frontend:prod
+    container_name: rig-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://178.105.63.154}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+      NEXT_PUBLIC_DOSSIER_ENABLED: ${NEXT_PUBLIC_DOSSIER_ENABLED:-false}
+      NEXT_PUBLIC_WM_URL: ${NEXT_PUBLIC_WM_URL:-/world-monitor-app/}
+      WM_INTERNAL_URL: ${WM_INTERNAL_URL:-http://rig-worldmonitor:8080}
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - rig-network
+    depends_on:
+      - rig-backend
+    restart: unless-stopped
+
+  rig-caddy:
+    image: caddy:2-alpine
+    container_name: rig-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - rig-caddy-data:/data
+      - rig-caddy-config:/config
+    networks:
+      - rig-network
+    depends_on:
+      - rig-frontend
+      - rig-backend
+    restart: unless-stopped
+
+  rig-worldmonitor:
+    build:
+      context: ../world-monitor
+      dockerfile: Dockerfile
+    image: rig-worldmonitor:prod
+    container_name: rig-worldmonitor
+    environment:
+      UPSTASH_REDIS_REST_URL: "http://rig-wm-redis-rest:80"
+      UPSTASH_REDIS_REST_TOKEN: "${WM_REDIS_TOKEN:-wm-local-token}"
+      LOCAL_API_PORT: "46123"
+      LOCAL_API_MODE: "docker"
+      LOCAL_API_CLOUD_FALLBACK: "false"
+      WS_RELAY_URL: "http://rig-wm-ais-relay:3004"
+      LLM_API_URL: "${WM_LLM_API_URL:-}"
+      LLM_API_KEY: "${WM_LLM_API_KEY:-}"
+      LLM_MODEL: "${WM_LLM_MODEL:-}"
+      GROQ_API_KEY: "${WM_GROQ_API_KEY:-}"
+      AISSTREAM_API_KEY: "${AISSTREAM_API_KEY:-}"
+      FINNHUB_API_KEY: "${FINNHUB_API_KEY:-}"
+      EIA_API_KEY: "${EIA_API_KEY:-}"
+      FRED_API_KEY: "${FRED_API_KEY:-}"
+      ACLED_ACCESS_TOKEN: "${ACLED_ACCESS_TOKEN:-}"
+      NASA_FIRMS_API_KEY: "${NASA_FIRMS_API_KEY:-}"
+      CLOUDFLARE_API_TOKEN: "${CLOUDFLARE_API_TOKEN:-}"
+      AVIATIONSTACK_API: "${AVIATIONSTACK_API:-}"
+    ports:
+      - "127.0.0.1:3001:8080"
+    networks:
+      - rig-network
+    depends_on:
+      rig-wm-redis-rest:
+        condition: service_started
+      rig-wm-ais-relay:
+        condition: service_started
+    restart: unless-stopped
+
+  rig-wm-ais-relay:
+    build:
+      context: ../world-monitor
+      dockerfile: Dockerfile.relay
+    image: rig-worldmonitor-ais-relay:prod
+    container_name: rig-wm-ais-relay
+    environment:
+      AISSTREAM_API_KEY: "${AISSTREAM_API_KEY:-}"
+      PORT: "3004"
+    networks:
+      - rig-network
+    restart: unless-stopped
+
+  rig-wm-redis:
+    image: docker.io/redis:7-alpine
+    container_name: rig-wm-redis
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - rig-wm-redis-data:/data
+    networks:
+      - rig-network
+    restart: unless-stopped
+
+  rig-wm-redis-rest:
+    build:
+      context: ../world-monitor/docker
+      dockerfile: Dockerfile.redis-rest
+    image: rig-worldmonitor-redis-rest:prod
+    container_name: rig-wm-redis-rest
+    environment:
+      SRH_TOKEN: "${WM_REDIS_TOKEN:-wm-local-token}"
+      SRH_CONNECTION_STRING: "redis://rig-wm-redis:6379"
+    networks:
+      - rig-network
+    depends_on:
+      - rig-wm-redis
+    restart: unless-stopped
+
+  rig-wm-seeder:
+    build:
+      context: ../world-monitor
+      dockerfile: Dockerfile.seeder
+    image: rig-worldmonitor-seeder:prod
+    container_name: rig-wm-seeder
+    environment:
+      UPSTASH_REDIS_REST_URL: "http://rig-wm-redis-rest:80"
+      UPSTASH_REDIS_REST_TOKEN: "${WM_REDIS_TOKEN:-wm-local-token}"
+      GROQ_API_KEY: "${WM_GROQ_API_KEY:-}"
+      LLM_API_URL: "${WM_LLM_API_URL:-}"
+      LLM_API_KEY: "${WM_LLM_API_KEY:-}"
+      LLM_MODEL: "${WM_LLM_MODEL:-}"
+      AISSTREAM_API_KEY: "${AISSTREAM_API_KEY:-}"
+      FINNHUB_API_KEY: "${FINNHUB_API_KEY:-}"
+      EIA_API_KEY: "${EIA_API_KEY:-}"
+      FRED_API_KEY: "${FRED_API_KEY:-}"
+      ACLED_ACCESS_TOKEN: "${ACLED_ACCESS_TOKEN:-}"
+      NASA_FIRMS_API_KEY: "${NASA_FIRMS_API_KEY:-}"
+      CLOUDFLARE_API_TOKEN: "${CLOUDFLARE_API_TOKEN:-}"
+      AVIATIONSTACK_API: "${AVIATIONSTACK_API:-}"
+      SEEDER_INTERVAL_SEC: "${WM_SEEDER_INTERVAL_SEC:-3600}"
+      SEEDER_PER_SEED_TIMEOUT: "${WM_SEEDER_PER_SEED_TIMEOUT:-180}"
+    networks:
+      - rig-network
+    depends_on:
+      - rig-wm-redis-rest
+    restart: unless-stopped
+
+networks:
+  rig-network:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+        - subnet: fd00:dead:beef::/64
+
+volumes:
+  rig-postgres-data:
+    name: rig-postgres-data
+  rig-freshrss-data:
+    name: rig-freshrss-data
+  rig-wm-redis-data:
+    name: rig-wm-redis-data
+  rig-beat-schedule:
+    name: rig-beat-schedule
+  rig-caddy-data:
+    name: rig-caddy-data
+  rig-caddy-config:
+    name: rig-caddy-config

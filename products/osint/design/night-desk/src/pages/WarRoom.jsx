@@ -1,21 +1,9 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import { Reveal, Magnetic } from '../lib/ui';
-import Verify from '../components/Verify';
 import { authFetch } from '../lib/supabase';
 import LiveStamp from '../components/LiveStamp';
+import Sources from '../components/Sources';
 
-function Spark({ label, v, tone }) {
-  return (
-    <span className="cd-spark">
-      <span className="cd-spark-l">{label}</span>
-      <span className="cd-spark-t"><i className={'cd-spark-f' + (tone ? ' ' + tone : '')} style={{ width: Math.round((v || 0) * 100) + '%' }} /></span>
-    </span>
-  );
-}
-function Cite({ metric, onClick }) {
-  if (!metric) return null;
-  return <button className="cd-cite" onClick={onClick} title="Trace this figure">⌖ verify · {metric.n}</button>;
-}
 function Stat({ k, v, tone, note }) {
   return (
     <div className="cd-stat">
@@ -30,11 +18,9 @@ function Notice({ children }) {
 }
 
 export default function WarRoom() {
-  const [metric, setMetric] = useState(null);
   const [w, setW] = useState(null);
   const [status, setStatus] = useState({ loading: true, error: null });
   const [loadedAt, setLoadedAt] = useState(null);
-  const open = (m) => setMetric(m);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,19 +41,19 @@ export default function WarRoom() {
   if (status.error || !w || !w.personalized) return <Notice>{status.error ? `Couldn’t load the war room — ${status.error}` : 'Finish onboarding to open the war room.'}</Notice>;
 
   const STATION = w.station, LEAD = w.lead, CABLES = w.cables || [], ARSENAL = w.arsenal || {};
-  const MOMENTUM = w.momentum || { items: [] }, ATTACKMAP = w.attackmap || { issues: [], rivals: [], grid: {} };
-  const BLOC = w.bloc || { edges: [], solo: [] }, ROSTER = w.roster || { against: [], neutral: [], forNote: '' };
-  const maxVol = Math.max(1, ...MOMENTUM.items.map((m) => m.vol || 0));
 
   return (
     <div className="cabledesk">
       <div className="cd-station">
         <div className="cd-deskname"><span className="cd-live" />WAR ROOM <i>∕∕</i> {STATION.desk}<span style={{ marginLeft: 12 }}><LiveStamp at={loadedAt} /></span></div>
         <div className="cd-stats">
-          <Stat k="OPEN" v={STATION.open} />
-          <Stat k="CRITICAL" v={STATION.critical} tone="neg" />
-          <Stat k="PRESSURE" v={STATION.pressure} tone="neg" note={STATION.pressureNote} />
-          <Stat k="COUNTER-SPEED" v={STATION.counterSpeed} />
+          {STATION.mood && (
+            <Stat k="MOOD" v={STATION.mood.label} tone={STATION.mood.tone} note={STATION.mood.window_label} />
+          )}
+          <Stat k="ACTIVE ATTACKS" v={STATION.activeAttacks} note="separate stories against you · last 21 days" />
+          <Stat k="SERIOUS" v={STATION.serious} tone="neg" note="rated critical · last 21 days" />
+          <Stat k="NEGATIVE STORIES" v={STATION.negStories} tone="neg" note="last 21 days" />
+          <Stat k="TREND" v={STATION.trendLabel} tone={STATION.trendTone} note="vs earlier in 21-day window" />
         </div>
         <div className="cd-asof">{STATION.asOf}<span>{STATION.window}</span></div>
       </div>
@@ -78,9 +64,14 @@ export default function WarRoom() {
             <span className="cd-leadtag">{LEAD.tag}</span>
             <span className="cd-leadslug">{LEAD.slug}</span>
             <span className="cd-leadwin">{LEAD.windowEst}<em>*</em></span>
-            <Cite metric={LEAD.metric} onClick={() => open(LEAD.metric)} />
           </div>
           <p className="cd-leadread">{LEAD.read}</p>
+          {LEAD.summary && (
+            <div className="cd-leadsummary">
+              <div className="cd-leadsummary-h">SITUATION SUMMARY</div>
+              <p>{LEAD.summary}</p>
+            </div>
+          )}
           <div className="cd-leadmeta"><span>{LEAD.trigger}</span><span>{LEAD.basis}</span></div>
           <div className="cd-leadcav">* {LEAD.caveat}</div>
         </div>
@@ -88,30 +79,26 @@ export default function WarRoom() {
 
       <div className="cd-grid">
         <div className="cd-stack">
-          <div className="cd-stackhead">THREAT STACK <em>· ranked by volume · negativity · reach · tier</em></div>
+          <div className="cd-stackhead">ATTACKS ON YOU <em>· worst first</em></div>
           {CABLES.map((c, i) => (
             <Reveal key={c.id || i} y={10} delay={0.04 + i * 0.05}>
               <div className="cd-cable" data-sev={c.sev}>
                 <div className="cd-slug">
-                  <span className="cd-sev">{c.sev}</span>
+                  <span className="cd-sevchip">{c.sev}</span>
                   <span className="cd-verdict">{c.verdict}</span>
-                  <span className="cd-score">{c.score}<sup>{c.src}</sup></span>
                 </div>
-                <div className="cd-receipt">
-                  <Spark label="reach" v={c.receipt.reach} />
-                  <Spark label="neg" v={c.receipt.neg} tone="neg" />
-                  <Spark label="vel" v={c.receipt.vel} />
-                  <Spark label="tier" v={c.receipt.tier} />
-                </div>
+                <div className="cd-hostline">{c.src} adverse piece{c.src === 1 ? '' : 's'} · {c.facets.outlets} outlet{c.facets.outlets === 1 ? '' : 's'}</div>
                 <p className="cd-claim">{c.claim}</p>
                 {c.claim_en && <div className="en-gloss"><b>EN</b>{c.claim_en}</div>}
-                <div className="cd-meta"><span>● {c.who}</span><span>{c.date} · {c.origin}</span></div>
+                <div className="cd-meta"><span>● Originated with {c.origin}</span><span>Latest {c.date}</span></div>
                 <dl className="cd-facets">
-                  <div><dt>WHAT</dt><dd>{c.facets.what}</dd></div>
-                  <div><dt>HURTS</dt><dd>{c.facets.hurts}</dd></div>
-                  <div><dt>ACTS</dt><dd>{c.facets.acts}</dd></div>
-                  <div className="cd-hits"><dt>HITS</dt><dd>{(c.facets.hits || []).map((h) => <span className="cd-chip" key={h}>{h}</span>)}</dd></div>
+                  <div><dt>ISSUE</dt><dd>{c.facets.what}</dd></div>
+                  <div><dt>SCALE</dt><dd>{c.facets.hurts}</dd></div>
+                  <div><dt>ORIGIN</dt><dd>{c.origin} · first seen {c.date}</dd></div>
+                  <div><dt>ACTION</dt><dd>{c.facets.acts}</dd></div>
+                  <div className="cd-hits"><dt>OUTLETS</dt><dd>{(c.facets.hits || []).map((h) => <span className="cd-chip" key={h}>{h}</span>)}</dd></div>
                 </dl>
+                <Sources kind="topic" value={c.id} label="sources" />
               </div>
             </Reveal>
           ))}
@@ -120,154 +107,38 @@ export default function WarRoom() {
 
         <aside className="cd-arsenal">
           <div className="cd-block">
-            <div className="cd-bh">AMMUNITION <em>· for {ARSENAL.forCable}</em></div>
+            <div className="cd-bh">YOUR BEST LINES <em>· on {ARSENAL.forCable}</em></div>
             {(ARSENAL.ammunition || []).map((a, i) => (
-              <div className="cd-ammo" key={i}>▸ {a.text || a}{a.text_en && <div className="en-gloss"><b>EN</b>{a.text_en}</div>}</div>
+              <div className="cd-ammo" key={i}>▸ {a.url
+                ? <a href={a.url} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>{a.text || a}</a>
+                : (a.text || a)}{a.text_en && <div className="en-gloss"><b>EN</b>{a.text_en}</div>}</div>
             ))}
           </div>
           {ARSENAL.predraft && (
             <div className="cd-block">
-              <div className="cd-bh">PRE-DRAFT <span className="cd-langs"><b>{ARSENAL.predraft.lang}</b> · {ARSENAL.predraft.words}w</span></div>
+              <div className="cd-bh">SUGGESTED REPLY <span className="cd-langs"><b>{ARSENAL.predraft.lang}</b> · {ARSENAL.predraft.words}w</span></div>
               <p className="cd-draft">{ARSENAL.predraft.en}</p>
               <div className="cd-flag">⚑ {ARSENAL.predraft.flag}</div>
               <div className="cd-actrow"><Magnetic className="btn primary">approve</Magnetic><button className="btn">edit</button><button className="btn cd-ghost">kill</button></div>
             </div>)}
           <div className="cd-block">
-            <div className="cd-bh">INTERCEPTS <em>· watched voices in adverse coverage</em></div>
-            {(ARSENAL.intercepts || []).map((qq, i) => (
-              <div className="cd-intercept" key={i}>
-                <div className="cd-iq">“{qq.quote}”</div>
-                {qq.quote_en && <div className="en-gloss"><b>EN</b>{qq.quote_en}</div>}
-                <div className="cd-im"><b>{qq.who}</b> · {qq.role}<span className="cd-tier">{qq.tier}</span><span className="cd-isrc">{qq.src}</span></div>
-              </div>
-            ))}
-            {(ARSENAL.intercepts || []).length === 0 && <div className="cd-ammo">No opposition quotes intercepted in adverse coverage.</div>}
+            <div className="cd-bh">WHAT OPPONENTS ARE SAYING <em>· in stories that hit you</em></div>
+            {(ARSENAL.intercepts || []).map((qq, i) => {
+              const body = (
+                <>
+                  <div className="cd-iq">“{qq.quote}”</div>
+                  {qq.quote_en && <div className="en-gloss"><b>EN</b>{qq.quote_en}</div>}
+                  <div className="cd-im"><b>{qq.who}</b> · {qq.role}<span className="cd-tier">{qq.tier}</span><span className="cd-isrc">{qq.src}</span></div>
+                </>
+              );
+              return qq.url
+                ? <a className="cd-intercept" key={i} href={qq.url} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none', display: 'block' }}>{body}</a>
+                : <div className="cd-intercept" key={i}>{body}</div>;
+            })}
+            {(ARSENAL.intercepts || []).length === 0 && <div className="cd-ammo">No opposition quotes in stories that hit you this window.</div>}
           </div>
         </aside>
       </div>
-
-      <div className="cd-fhead">THE FIELD <em>· entity intelligence</em></div>
-      <div className="sub" style={{ maxWidth: 760, margin: '6px 0 16px', color: 'var(--faint)' }}>
-        Three reads on the people in your orbit: who's loudest in the news this window,
-        what they're hitting you on, and who keeps showing up together.
-      </div>
-      <div className="cd-mods">
-        <div className="cd-mod">
-          <div className="cd-mh">MOMENTUM <em style={{ color: 'var(--faint)', fontStyle: 'normal' }}>· loudest right now</em></div>
-          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 12px', color: 'var(--faint)' }}>
-            Stories per figure this window — the red slice is adverse coverage.
-          </div>
-          <div>
-            {MOMENTUM.items.map((m) => {
-              const vol = m.vol || 0, neg = m.neg || 0;
-              return (
-                <div key={m.name} title={`${vol} stories · ${neg} adverse`}
-                  style={{ display: 'grid', gridTemplateColumns: '116px 1fr 52px', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--line-2,#16161f)' }}>
-                  <span style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
-                  <span style={{ position: 'relative', height: 7, borderRadius: 4, overflow: 'hidden', background: 'var(--surface-2,#1a1712)' }}>
-                    <i style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: Math.round(vol / maxVol * 100) + '%', background: 'var(--faint,#8a8577)', opacity: 0.42 }} />
-                    <i style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: Math.round(neg / maxVol * 100) + '%', background: 'var(--hostile,#f05c5c)' }} />
-                  </span>
-                  <span style={{ textAlign: 'right', fontFamily: 'var(--mono)', fontSize: '0.78rem' }}>{vol.toLocaleString()}</span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="cd-mnote" style={{ marginTop: 10 }}>Bar = total coverage · red = adverse share.</div>
-        </div>
-
-        <div className="cd-mod">
-          <div className="cd-mh">ATTACK MAP <em style={{ color: 'var(--faint)', fontStyle: 'normal' }}>· what they hit you on</em></div>
-          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 12px', color: 'var(--faint)' }}>
-            Adverse stories where each rival co-appears with you, coloured by topic.
-          </div>
-          {(() => {
-            const TINT = { Politics: '#e97451', Governance: '#6f97e6', Legal: '#d2a05a', International: '#6ebfa6', Economy: '#b48cd9', Sports: '#5fb98a', Other: '#7b8499' };
-            const tint = (t) => TINT[t] || TINT.Other;
-            const rivals = ATTACKMAP.rivals || [];
-            if (!rivals.length) return <div className="cd-mnote">No co-occurring adverse coverage to map.</div>;
-            const issues = ATTACKMAP.issues || [];
-            const totals = ATTACKMAP.rival_totals || {};
-            const maxT = Math.max(1, ...rivals.map((rv) => totals[rv] || 0));
-            const used = issues.filter((is) => rivals.some((rv) => ((ATTACKMAP.grid[rv] || {})[is] || 0) > 0));
-            return (
-              <>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px 12px', marginBottom: 12 }}>
-                  {used.map((is) => (
-                    <span key={is} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.62rem', color: 'var(--faint)' }}>
-                      <i style={{ width: 9, height: 9, borderRadius: 3, background: tint(is) }} />{is}
-                    </span>
-                  ))}
-                </div>
-                {rivals.map((rv) => (
-                  <div key={rv} style={{ display: 'grid', gridTemplateColumns: '116px 1fr 30px', alignItems: 'center', gap: 10, padding: '6px 0' }}>
-                    <span title={rv} style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{rv}</span>
-                    <span style={{ display: 'flex', height: 9, borderRadius: 4, overflow: 'hidden', background: 'var(--surface-2,#1a1712)' }}>
-                      {used.map((is) => {
-                        const n = (ATTACKMAP.grid[rv] || {})[is] || 0;
-                        if (!n) return null;
-                        return <i key={is} title={`${n} · ${is}`} style={{ width: (n / maxT * 100) + '%', background: tint(is) }} />;
-                      })}
-                    </span>
-                    <span style={{ textAlign: 'right', fontFamily: 'var(--mono)', fontSize: '0.78rem', color: 'var(--hostile,#f05c5c)' }}>{totals[rv] || 0}</span>
-                  </div>
-                ))}
-              </>
-            );
-          })()}
-          <div className="cd-mnote" style={{ marginTop: 10 }}>{ATTACKMAP.foot}</div>
-        </div>
-
-        <div className="cd-mod">
-          <div className="cd-mh">BLOC <em style={{ color: 'var(--faint)', fontStyle: 'normal' }}>· who appears together</em></div>
-          <div className="sub" style={{ fontSize: '0.72rem', margin: '2px 0 12px', color: 'var(--faint)' }}>
-            Figures that repeatedly share your stories — read as implicit alliances.
-          </div>
-          <div>
-            {(() => {
-              const edges = [...BLOC.edges].sort((a, b) => (b.n || 0) - (a.n || 0));
-              const maxN = Math.max(1, ...edges.map((x) => x.n || 0));
-              return edges.map((e, i) => (
-                <div key={i} title={`${e.a} + ${e.b}: ${e.n} shared stories`} style={{ padding: '9px 0', borderBottom: '1px solid var(--line-2,#16161f)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontSize: '0.82rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>{e.a}</span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--faint)', flex: 'none' }}>↔</span>
-                    <span style={{ fontSize: '0.82rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, textAlign: 'right' }}>{e.b}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                    <span style={{ flex: 1, height: 5, borderRadius: 3, background: 'var(--surface-2,#1a1712)', overflow: 'hidden' }}>
-                      <i style={{ display: 'block', height: '100%', width: Math.round((e.n / maxN) * 100) + '%', background: 'var(--gold,#d4af37)' }} />
-                    </span>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: '0.72rem', color: 'var(--gold,#d4af37)', flex: 'none' }}>{e.n} shared</span>
-                  </div>
-                </div>
-              ));
-            })()}
-            {BLOC.edges.length === 0 && <div className="cd-mnote">No repeated co-coverage clusters.</div>}
-          </div>
-          <div className="cd-mnote" style={{ marginTop: 10 }}>{BLOC.foot}</div>
-        </div>
-
-        <div className="cd-mod cd-mod-wide">
-          <div className="cd-mh">ALLEGIANCE ROSTER <em>· outlets</em></div>
-          <div className="cd-roster">
-            <div>
-              <div className="cd-rcolh neg">HOSTILE · {ROSTER.against.length}</div>
-              <div className="cd-rwrap">{ROSTER.against.map((a) => <span className="cd-rchip neg" key={a}>{a}</span>)}{ROSTER.against.length === 0 && <span className="cd-fornote">none</span>}</div>
-            </div>
-            <div>
-              <div className="cd-rcolh">FENCE · {ROSTER.neutral.length}</div>
-              <div className="cd-rwrap">{ROSTER.neutral.map((a) => <span className="cd-rchip" key={a}>{a}</span>)}{ROSTER.neutral.length === 0 && <span className="cd-fornote">none</span>}</div>
-            </div>
-            <div>
-              <div className="cd-rcolh hollow">FRIENDLY</div>
-              <div className="cd-fornote">{ROSTER.forNote}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <Verify metric={metric} onClose={() => setMetric(null)} />
     </div>
   );
 }

@@ -228,8 +228,8 @@ def fetch_og_images_batch(limit: int = 30, max_age_days: int = 30) -> dict:
             "SELECT id::text, url FROM articles "
             "WHERE (thumbnail_url IS NULL OR thumbnail_url = '') "
             "  AND url IS NOT NULL AND url <> '' "
-            "  AND inserted_at >= now() - (%s || ' days')::interval "
-            "ORDER BY inserted_at DESC "
+            "  AND collected_at >= now() - (%s || ' days')::interval "
+            "ORDER BY collected_at DESC "
             "LIMIT %s",
             (str(max_age_days), int(limit)),
         )

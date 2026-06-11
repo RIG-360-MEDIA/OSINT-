@@ -1,0 +1,5304 @@
+{
+ "outliers": [
+  {
+   "rk": 1,
+   "story_id": "b6f91d2b-4838-4845-90c2-0f6be08595fc",
+   "n": 4310,
+   "tcoh": 0.1,
+   "core": 0.72,
+   "tshare": 0.72,
+   "top_ent": "iran",
+   "sc": "IN",
+   "rt": "Has the US-Iran ceasefire reset the cl"
+  },
+  {
+   "rk": 2,
+   "story_id": "76c64c8e-8d66-4b1a-8470-082d46795912",
+   "n": 1601,
+   "tcoh": 0.13,
+   "core": 0.57,
+   "tshare": 0.57,
+   "top_ent": "donald trump",
+   "sc": "US",
+   "rt": "What to know about the primary electio"
+  },
+  {
+   "rk": 3,
+   "story_id": "0820fa58-450d-45dc-bf65-86dd082d268a",
+   "n": 1534,
+   "tcoh": 0.07,
+   "core": 0.55,
+   "tshare": 0.55,
+   "top_ent": "israel",
+   "sc": "XX",
+   "rt": "Live: Trump says Israel and Lebanon ha"
+  },
+  {
+   "rk": 4,
+   "story_id": "4ded16a6-a158-434e-af08-6afc152c9741",
+   "n": 630,
+   "tcoh": 0.11,
+   "core": 0.46,
+   "tshare": 0.46,
+   "top_ent": "donald trump",
+   "sc": "IN",
+   "rt": "From agave syrup to raw materials: EU,"
+  },
+  {
+   "rk": 5,
+   "story_id": "bd04c18c-1145-4d3a-b9be-33641ad4d79f",
+   "n": 522,
+   "tcoh": 0.44,
+   "core": 0.43,
+   "tshare": 0.43,
+   "top_ent": "mv hondius",
+   "sc": "ES",
+   "rt": "Two dead after respiratory illness out"
+  },
+  {
+   "rk": 6,
+   "story_id": "fc53f9d5-2a07-48d6-afa3-54179ac4de37",
+   "n": 444,
+   "tcoh": 0.62,
+   "core": 0.61,
+   "tshare": 0.61,
+   "top_ent": "mick price",
+   "sc": "IN",
+   "rt": "Coal India Share Price Live Updates: C"
+  },
+  {
+   "rk": 7,
+   "story_id": "4c3c8bb2-6865-493c-8171-230746c0bac4",
+   "n": 330,
+   "tcoh": 0.35,
+   "core": 0.37,
+   "tshare": 0.37,
+   "top_ent": "nancy guthrie",
+   "sc": "US",
+   "rt": "'Where is Savannah?': Nancy Guthrie ca"
+  },
+  {
+   "rk": 8,
+   "story_id": "90bb790f-b540-4dc6-9285-ba7397414cfe",
+   "n": 272,
+   "tcoh": 0.51,
+   "core": 0.51,
+   "tshare": 0.51,
+   "top_ent": "twisha sharma",
+   "sc": "IN",
+   "rt": "Family Satisfied With Supreme Court’s"
+  },
+  {
+   "rk": 9,
+   "story_id": "c6e17224-c1dd-4167-8c36-40a5502643e5",
+   "n": 229,
+   "tcoh": 0.35,
+   "core": 0.57,
+   "tshare": 0.57,
+   "top_ent": "kerala",
+   "sc": "IN",
+   "rt": "No cat in treasury, Kerala in good pos"
+  },
+  {
+   "rk": 10,
+   "story_id": "2fc127da-f3dd-475f-ade0-8b096c6e7ea5",
+   "n": 210,
+   "tcoh": 0.16,
+   "core": 0.62,
+   "tshare": 0.62,
+   "top_ent": "cuba",
+   "sc": "CU",
+   "rt": "US charges against Raul Castro have no"
+  },
+  {
+   "rk": 11,
+   "story_id": "7c658602-b664-46e4-b094-87fafa60b069",
+   "n": 208,
+   "tcoh": 0.05,
+   "core": 0.47,
+   "tshare": 0.47,
+   "top_ent": "all progressives congress national leadership",
+   "sc": "NG",
+   "rt": "Six Ondo South LGs back Kekemeke for A"
+  },
+  {
+   "rk": 12,
+   "story_id": "e4687ac3-bfb8-4e71-a966-71de03ecc62a",
+   "n": 192,
+   "tcoh": 0.26,
+   "core": 0.46,
+   "tshare": 0.46,
+   "top_ent": "elon musk",
+   "sc": "US",
+   "rt": "Former OpenAI board member says Elon M"
+  },
+  {
+   "rk": 13,
+   "story_id": "be9439d5-53c6-41ea-aa46-6ba3f6ecd6ec",
+   "n": 189,
+   "tcoh": 0.58,
+   "core": 0.65,
+   "tshare": 0.65,
+   "top_ent": "italy",
+   "sc": "IT",
+   "rt": "Brock Lesnar Announced For Surprising"
+  },
+  {
+   "rk": 14,
+   "story_id": "7b718aeb-bb26-40d5-ac4b-af2d0260fedd",
+   "n": 171,
+   "tcoh": 0.23,
+   "core": 0.5,
+   "tshare": 0.5,
+   "top_ent": "nifty",
+   "sc": "IN",
+   "rt": "Gainers &amp; Losers: Tech Mahindra, V"
+  },
+  {
+   "rk": 15,
+   "story_id": "a55bc62c-bad9-4b24-97ef-e52e284030f4",
+   "n": 169,
+   "tcoh": 0.24,
+   "core": 0.63,
+   "tshare": 0.63,
+   "top_ent": "nifty",
+   "sc": "IN",
+   "rt": "Anand James’ top picks: Why Time Techn"
+  },
+  {
+   "rk": 16,
+   "story_id": "224ee8d1-aa91-40bd-82b0-2f51e3b91a49",
+   "n": 165,
+   "tcoh": 0.06,
+   "core": 0.46,
+   "tshare": 0.46,
+   "top_ent": "nigeria",
+   "sc": "NG",
+   "rt": "Party primaries and accountability, By"
+  },
+  {
+   "rk": 17,
+   "story_id": "c0a31ab7-98b6-4e9a-a6f8-7d6d311bab94",
+   "n": 165,
+   "tcoh": 0.1,
+   "core": 0.46,
+   "tshare": 0.46,
+   "top_ent": "nigeria",
+   "sc": "NG",
+   "rt": "Accord faults deregistration calls, in"
+  },
+  {
+   "rk": 18,
+   "story_id": "1e6d82e2-ed22-4881-aa96-0c1c575348ba",
+   "n": 164,
+   "tcoh": 0.45,
+   "core": 0.76,
+   "tshare": 0.76,
+   "top_ent": "south africa",
+   "sc": "ZA",
+   "rt": "Malema criticises Ghana’s evacuation o"
+  },
+  {
+   "rk": 19,
+   "story_id": "bf9bb0c7-6a3f-493b-b0f4-4c21fc3ae04d",
+   "n": 148,
+   "tcoh": 0.07,
+   "core": 0.47,
+   "tshare": 0.47,
+   "top_ent": "bola tinubu",
+   "sc": "NG",
+   "rt": "Nigeria will soon overcome security ch"
+  },
+  {
+   "rk": 20,
+   "story_id": "e141a04c-53a7-4f01-8c56-d2fa0b6df234",
+   "n": 146,
+   "tcoh": 0.36,
+   "core": 0.49,
+   "tshare": 0.49,
+   "top_ent": "suvendu adhikari",
+   "sc": "IN",
+   "rt": "Suvendu Adhikari announces ‘detect, de"
+  },
+  {
+   "rk": 21,
+   "story_id": "6f6428a5-3865-4190-a363-ebeb38dcf827",
+   "n": 141,
+   "tcoh": 0.36,
+   "core": 0.45,
+   "tshare": 0.45,
+   "top_ent": "east bengal football club",
+   "sc": "IN",
+   "rt": "ISL 2025-26 — Sportstar’s team of the"
+  },
+  {
+   "rk": 22,
+   "story_id": "1b18981a-21d3-4c15-939a-d51ff4b73d73",
+   "n": 140,
+   "tcoh": 0.16,
+   "core": 0.56,
+   "tshare": 0.56,
+   "top_ent": "nifty",
+   "sc": "IN",
+   "rt": "Indian markets seen weak at open amid"
+  },
+  {
+   "rk": 23,
+   "story_id": "ac9cdb1f-2c97-457d-b96e-40805939f0a7",
+   "n": 135,
+   "tcoh": 0.49,
+   "core": 0.46,
+   "tshare": 0.46,
+   "top_ent": "gujarat",
+   "sc": "IN",
+   "rt": "ipl 2026 csk crashes out after losing"
+  },
+  {
+   "rk": 24,
+   "story_id": "b9c5cc3f-6691-40b0-b8ae-bcdc5e0707b5",
+   "n": 134,
+   "tcoh": 0.17,
+   "core": 0.47,
+   "tshare": 0.47,
+   "top_ent": "all india trinamool congress",
+   "sc": "IN",
+   "rt": "TMC Reports Attack on Youth Wing Offic"
+  },
+  {
+   "rk": 25,
+   "story_id": "12704af6-152e-4c05-b97b-74f491bea220",
+   "n": 127,
+   "tcoh": 0.53,
+   "core": 0.72,
+   "tshare": 0.72,
+   "top_ent": "chennai super kings",
+   "sc": "IN",
+   "rt": "Good news for CSK, MS Dhoni is all set"
+  },
+  {
+   "rk": 26,
+   "story_id": "87303a45-6410-48da-85da-a955d4404e28",
+   "n": 126,
+   "tcoh": 0.11,
+   "core": 0.57,
+   "tshare": 0.57,
+   "top_ent": "france",
+   "sc": "KE",
+   "rt": "Macron tours East Africa amid push to"
+  },
+  {
+   "rk": 27,
+   "story_id": "fc9f6e48-4a0d-483d-90b0-aaa4d1ee003d",
+   "n": 124,
+   "tcoh": 0.39,
+   "core": 0.5,
+   "tshare": 0.5,
+   "top_ent": "vaibhav sooryavanshi",
+   "sc": "IN",
+   "rt": "Vaibhav Sooryavanshi enjoys IPL 2026 f"
+  },
+  {
+   "rk": 28,
+   "story_id": "8a4b3ef3-c79a-4179-a0f4-47c800498132",
+   "n": 121,
+   "tcoh": 0.33,
+   "core": 0.53,
+   "tshare": 0.53,
+   "top_ent": "kolkata knight riders",
+   "sc": "IN",
+   "rt": "DC vs KKR IPL 2026: Will Sameer Rizvi"
+  },
+  {
+   "rk": 29,
+   "story_id": "2ae6bbf0-6146-405b-8d61-95d50c8a308d",
+   "n": 120,
+   "tcoh": 0.43,
+   "core": 0.78,
+   "tshare": 0.78,
+   "top_ent": "royal challengers bengaluru",
+   "sc": "IN",
+   "rt": "'We asked ourselves a question last ye"
+  },
+  {
+   "rk": 30,
+   "story_id": "89071be3-aabb-4d22-bc4a-2be4e1cfbb91",
+   "n": 119,
+   "tcoh": 0.24,
+   "core": 0.48,
+   "tshare": 0.48,
+   "top_ent": "all india trinamool congress",
+   "sc": "IN",
+   "rt": "The roller-coaster relationship betwee"
+  }
+ ],
+ "stories": {
+  "01956a8f-2989-4fb7-99cc-9bc82eba3b46": {
+   "sid": "01956a8f-2989-4fb7-99cc-9bc82eba3b46",
+   "n": 17,
+   "tcoh": 0.29,
+   "core": 0.82,
+   "tshare": 0.82,
+   "top_ent": "nepal",
+   "sc": "NP",
+   "rt": "Nepal Cabinet Shake-Up: Inside Removal of 2 Mi",
+   "langs": {
+    "en": 16,
+    "kn": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Second Nepali minister leaves month-old government",
+     "subj": ""
+    },
+    {
+     "rn": 2,
+     "lang": "kn",
+     "title": "ನೇಪಾಳದಲ್ಲಿ ಭುಗಿಲೆದ್ದ ಆಕ್ರೋಶ: ಬಾಲೆನ್ ಶಾ ಸರ್ಕಾರದ ಮೊದಲ ವಿಕೆಟ್ ಪತನ; 26 ದಿನಕ್ಕೇ ಗೃಹ ಸಚಿವ ರಾಜಿನಾ",
+     "subj": "Nepal's Home Minister Sudhan Gurung resigns after 26 days in"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Concerns mount over new Nepal government’s use of ordinances and eviction drive",
+     "subj": "The new Nepali government under Prime Minister Balendra Shah"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Nepal: Top court seeks details of squatters' settlement demolition from govt",
+     "subj": "Nepal's Supreme Court orders government to provide details o"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Nepal: Interior minister elected on anti-corruption platform steps down amid financial inv",
+     "subj": "Nepal's Interior Minister Sudan Gurung resigns amid financia"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "India to invite Nepal to ICBA summit amid Lipulekh friction",
+     "subj": "India is set to invite Nepal to the International Big Cat Al"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Nepal PM should not offend close friends while safeguarding national interests: Editorial",
+     "subj": "Nepal PM Balendra Shah's refusal to meet foreign diplomats s"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Nepal’s New PM Balendra Shah Faces First Diplomatic Test With Upcoming India Visit",
+     "subj": "Nepal's new Prime Minister Balendra Shah faces a diplomatic "
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "China may not join alliance on conservation of big cats",
+     "subj": "China is unlikely to join the International Big Cat Alliance"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "China deepens footprint at AI conference despite NeurIPS dispute, US tensions",
+     "subj": "Chinese tech companies dominate AI conference submissions de"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "KP Sharma Oli: Nepal’s former prime minister arrested over alleged role in deadly protest ",
+     "subj": "Former Nepali PM KP Sharma Oli arrested for his role in a de"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Nepal's Balen Shah Government Sees Second Ministerial Exit In Weeks As Home Minister Resig",
+     "subj": "Nepal's Home Minister resigns amid public protests over cust"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Nepal Cabinet Shake-Up: Inside Removal of 2 Ministers From Balen Shah Govt",
+     "subj": "Nepal government reshuffles ministers amid scrutiny over fin"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Nepal’s PM-to-be uses rap to call for unity in first post-election message",
+     "subj": "Nepal's incoming prime minister Balendra Shah uses a rap vid"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "After Nepal PM Balendra Shah’s ordinance, 1,594 political appointees removed",
+     "subj": "Nepal's President Ram Chandra Poudel issued an ordinance rem"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Foreign Secretary Vikram Misri likely to visit Nepal next month: sources",
+     "subj": "Indian Foreign Secretary Vikram Misri is expected to visit N"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Nepal’s Army in spotlight as new government takes assertive turn",
+     "subj": "The Nepali Army issued a statement amid a shift in governmen"
+    }
+   ],
+   "bucket": "b1_5to20"
+  },
+  "060fb058-944a-4fc4-8059-2930ca5bab79": {
+   "sid": "060fb058-944a-4fc4-8059-2930ca5bab79",
+   "n": 20,
+   "tcoh": 0.45,
+   "core": 0.75,
+   "tshare": 0.75,
+   "top_ent": "carlos alcaraz",
+   "sc": "GB",
+   "rt": "",
+   "langs": {},
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Carlos Alcaraz to withdraw from Wimbledon 2026",
+     "subj": "Carlos Alcaraz withdraws from Wimbledon 2026 and the grass-c"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "​Cash, clash, clay: On the French Open 2026",
+     "subj": "An analysis of the 2026 French Open prospects for top tennis"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Whither Alexander Zverev, the forlorn scion of the lost generation?",
+     "subj": "Alexander Zverev's struggles to win a Grand Slam despite sus"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Spanish tennis star Carlos Alcaraz announces withdrawal from Wimbledon due to injury",
+     "subj": "Spanish tennis player Carlos Alcaraz withdraws from Wimbledo"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Carlos Alcaraz withdraws from Wimbledon with wrist injury",
+     "subj": "Carlos Alcaraz withdraws from Wimbledon due to a right wrist"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Carlos Alcaraz withdraws from Wimbledon in June due to lingering wrist injury",
+     "subj": "Carlos Alcaraz withdraws from Wimbledon due to a persistent "
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "\"I went to Ibiza every year\" - Rafael Nadal clearly explains why Carlos Alcaraz's public p",
+     "subj": ""
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Alcaraz injury woes deepen, former champion out of Wimbledon",
+     "subj": "Carlos Alcaraz withdraws from Wimbledon and the entire grass"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Carlos Alcaraz pulls out of Wimbledon because of wrist injury",
+     "subj": "Carlos Alcaraz withdraws from Wimbledon due to ongoing wrist"
+    },
+    {
+     "rn": 10,
+     "lang": "te",
+     "title": "వింబుల్డన్‌కు అల్కరాజ్ దూరం",
+     "subj": "Spanish tennis player Carlos Alcaraz withdraws from the Wimb"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Carlos Alcaraz Withdraws From Wimbledon 2026 After French Open Exit, ATP Rankings Set For ",
+     "subj": "Carlos Alcaraz withdraws from Wimbledon 2026 and the grass-c"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Carlos Alcaraz proves he's his own man with brutally honest take on fans obsessing over hi",
+     "subj": ""
+    },
+    {
+     "rn": 14,
+     "lang": "te",
+     "title": "వింబుల్డన్‌‌కు అల్కరాజ్‌‌ దూరం.. .. ఫిట్నెస్ లేదు.. తప్పుకున్నాడు",
+     "subj": "Spanish tennis player Carlos Alcaraz withdraws from Wimbledo"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Now or never: Why Alexander Zverev must seize his French Open moment",
+     "subj": "Alexander Zverev must capitalize on a clear path to win the "
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Alcaraz pulls out of Wimbledon and Queen’s owing to lingering wrist injury",
+     "subj": "Carlos Alcaraz withdraws from Wimbledon and Queen's Club Cha"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Rest and recover — Why Carlos Alcaraz withdrawing from French Open, Wimbledon makes sense",
+     "subj": "Carlos Alcaraz's withdrawal from the French Open and Wimbled"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Zverev still hoping for entry to Grand Slam champions club",
+     "subj": "Alexander Zverev seeks his first Grand Slam title at Roland "
+    },
+    {
+     "rn": 19,
+     "lang": "kn",
+     "title": "ವಿಂಬಲ್ಡನ್‌: ಹಿಂದೆಸರಿದ ಅಲ್ಕರಾಜ್",
+     "subj": ""
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Two-time winner Alcaraz out of Wimbledon with injury",
+     "subj": "Carlos Alcaraz withdraws from Wimbledon due to wrist injury"
+    }
+   ],
+   "bucket": "b2_20to50"
+  },
+  "0820fa58-450d-45dc-bf65-86dd082d268a": {
+   "sid": "0820fa58-450d-45dc-bf65-86dd082d268a",
+   "n": 1534,
+   "tcoh": 0.07,
+   "core": 0.55,
+   "tshare": 0.55,
+   "top_ent": "israel",
+   "sc": "XX",
+   "rt": "Live: Trump says Israel and Lebanon have agree",
+   "langs": {
+    "?": 44,
+    "ar": 1,
+    "bn": 3,
+    "ca": 1,
+    "en": 1449,
+    "fa": 1,
+    "fr": 8,
+    "gu": 1,
+    "hi": 4,
+    "hr": 1,
+    "id": 1,
+    "ja": 1,
+    "kn": 2,
+    "ml": 2,
+    "ne": 2,
+    "sw": 1,
+    "ta": 1,
+    "te": 9,
+    "uk": 1,
+    "zh-tw": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "US to close its flagship Gaza mission as Trump plan stalls",
+     "subj": "The Trump administration plans to shut the U.S. Civil-Milita"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Outrage as Israeli minister filmed taunting international activists detained in Israel",
+     "subj": "Israeli minister faces backlash for taunting detained intern"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Senior minister defends decision to withhold some Mandelson files",
+     "subj": "UK ministers accused of withholding documents related to Pet"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Lebanon’s death toll from Israeli strikes reaches 2,715 — Health Ministry",
+     "subj": "The Lebanese Health Ministry reported updated casualty figur"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "French soldier serving with UNIFIL killed in Lebanon attack",
+     "subj": "A French UNIFIL peacekeeper was killed and three others woun"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "US antisemitism envoy calls Argentina’s Milei ‘model for the world’",
+     "subj": "US envoy praises Argentina's Milei as a model for combating "
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Inside US plan to end hostilities after Israel's deepest incursion in Lebanon in 26 years",
+     "subj": "The US proposed a ceasefire plan to de-escalate hostilities "
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "More than 100 writers quit French publisher in protest against rightwing owner Vincent Bol",
+     "subj": "Over 100 writers have left the French publisher Grasset in p"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Massive explosion from Israeli operation seen in southern Lebanon",
+     "subj": "An Israeli military operation targeting a Hezbollah tunnel c"
+    },
+    {
+     "rn": 10,
+     "lang": "fr",
+     "title": "China’s quiet diplomacy: Inside Beijing’s behind-the-scenes role in Iran-US war",
+     "subj": ""
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "French ambassador's social media diplomacy lands poorly in Vanuatu",
+     "subj": "Vanuatu rebukes France's ambassador for using social media t"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Polls open in Gaza area in first municipal election in 20 years",
+     "subj": "Palestinians in Gaza and the West Bank participate in limite"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "'Nothing will bring back my son': How 10 minutes of bombing by Israel shattered lives in L",
+     "subj": "A 10-minute Israeli bombing on Lebanon on 8 April caused mas"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Tactical Victory For Netanyahu: Israel Seizes Strategic Beaufort Castle Amid Lebanon Offen",
+     "subj": ""
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Israeli soldiers jailed for desecration of Virgin Mary statue in Lebanon",
+     "subj": "Israeli soldiers jailed for desecrating a Virgin Mary statue"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "UNICEF ‘outraged’ after Israeli forces kill water truck drivers in Gaza",
+     "subj": "UNICEF expresses outrage over Israeli forces killing two wat"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "The ‘miracle’ food Adam Liaw says is the difference between life and death",
+     "subj": "Plumpy'Nut is a peanut paste used to treat severe child maln"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "idf captures strategic beaufort castle in south lebanon 2340438",
+     "subj": "The IDF captured the strategic Beaufort Castle in southern L"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Syria sees first government reshuffle since al-Assad’s ouster: State media",
+     "subj": "Interim Syrian President Ahmed al-Sharaa announced a governm"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Israel Captures Strategic Castle In Lebanon In Deepest Incursion Since 26 Years",
+     "subj": ""
+    }
+   ],
+   "bucket": "b5_400plus"
+  },
+  "0a78761a-0254-4eaf-a96e-b9332ac67d9a": {
+   "sid": "0a78761a-0254-4eaf-a96e-b9332ac67d9a",
+   "n": 59,
+   "tcoh": 0.48,
+   "core": 0.88,
+   "tshare": 0.88,
+   "top_ent": "iran",
+   "sc": "IN",
+   "rt": "Global oil price hits 4-year high on concerns ",
+   "langs": {
+    "?": 2,
+    "bn": 1,
+    "en": 56
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Oil falls as Iran proposes talks but prices still set for weekly gains",
+     "subj": "Oil prices fell as Iran proposed talks, though benchmarks re"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Oil prices trade lower as Trump announces ceasefire extension; naval blockade of Iran curb",
+     "subj": "Oil prices decline on extended US-Iran ceasefire but remain "
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Stocks drop, oil rises: Asian markets react to rising Iran tensions",
+     "subj": "Asian markets experience volatility as US-Iran tensions esca"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Iraq offers May-loading crude at deep discounts for loading inside Hormuz",
+     "subj": "Iraq offers May-loading crude at steep discounts for loading"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Oil prices extend gains as US-Iran war deadlock keeps supply off market",
+     "subj": "Oil prices rise due to US-Iran war deadlock disrupting Middl"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Oil Price Today (April 23): Crude oil prices cross $100 again as Iran war ceasefire talks ",
+     "subj": "Crude oil prices rise above $100 due to geopolitical tension"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Oil prices rise amid new U.S. threat, few signs of breaking stalemate with Iran",
+     "subj": ""
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Diesel purchased above $286; CPC denies high crude oil price claims",
+     "subj": ""
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Oil prices rise amid stalled US-Iran peace talks",
+     "subj": "Oil prices rise due to stalled US-Iran peace talks and conti"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Iran's rial currency hits record low as shaky ceasefire with US, Israel still holds",
+     "subj": "Iran's rial currency hit a record low against the US dollar "
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Oil prices jump as US, Iran trade fire in Strait of Hormuz",
+     "subj": "Oil prices surge following renewed military clashes between "
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Crude oil futures rise after exchange of fire between US and Iran",
+     "subj": "Crude oil futures rose following a military exchange between"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Oil Price Today (May 1): Crude oil holds above $110/barrel. What lies ahead?",
+     "subj": "Crude oil prices remain elevated due to geopolitical conflic"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Six-Week Container Spot Rate Rally Runs Out of Steam",
+     "subj": "Global container freight rates have reversed a six-week rall"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Transpacific Defies Downtrend as Container Spot Rates Climb on War-Driven Demand",
+     "subj": "Transpacific container spot rates are rising due to war-driv"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Oil at three-week high after US-Iran peace talks stall",
+     "subj": ""
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Price of Brent oil up almost 3% on ICE at $98.9 per barrel",
+     "subj": "Brent crude oil prices on ICE rose nearly 3% to $98.88 per b"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Oil prices up 4% on uncertain Iran-US ceasefire prospects",
+     "subj": ""
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Crude oil futures hit record ₹10,571/barrel; Brent breaches $126",
+     "subj": "Crude oil prices hit record highs due to geopolitical tensio"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Oil prices surge up 5 percent, reaching $106 per barrel as US and Iran tensions continue",
+     "subj": ""
+    }
+   ],
+   "bucket": "b3_50to150"
+  },
+  "19c0f675-0ac3-4e86-9849-7cd93c6b1f8e": {
+   "sid": "19c0f675-0ac3-4e86-9849-7cd93c6b1f8e",
+   "n": 5,
+   "tcoh": 0.4,
+   "core": 0.4,
+   "tshare": 0.4,
+   "top_ent": "h.d. kumaraswamy",
+   "sc": "IN",
+   "rt": "India gets its UPI for EV charging as Kumarasw",
+   "langs": {
+    "en": 2,
+    "hi": 2,
+    "te": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "hi",
+     "title": "पीएम ई-ड्राइव योजना के तहत देश भर में ईवी चार्जिंग इंफ्रास्ट्रक्चर को सक्षम बनाने पर राष्ट",
+     "subj": "The Ministry of Heavy Industries organized a national confer"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "India gets its UPI for EV charging as Kumaraswamy unveils unified Bharat e-charge",
+     "subj": "India's launch of Unified Bharat e-Charge, a national EV cha"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Kumaraswamy announces fresh funds to set up 1,243 EV chargers in Karnataka",
+     "subj": "Karnataka gets ₹123.26 crore for 1,243 EV chargers under PM "
+    },
+    {
+     "rn": 4,
+     "lang": "hi",
+     "title": "प्रधानमंत्री मोदी का विजन भारत की ईवी क्रांति को आगे बढ़ाता है: कर्नाटक को पीएम ई-ड्राइव य",
+     "subj": "Karnataka receives 1,243 new EV chargers under PM e-DRIVE sc"
+    },
+    {
+     "rn": 5,
+     "lang": "te",
+     "title": "EV వాహనదారులకు గుడ్‌న్యూస్‌..! UBCతో ఛార్జింగ్‌ సమస్యలకు చెక్‌!",
+     "subj": "The Indian government is launching the Unified Bharat e-Char"
+    }
+   ],
+   "bucket": "b1_5to20"
+  },
+  "1cb0cc96-f55e-48b8-a675-d82174aecaf8": {
+   "sid": "1cb0cc96-f55e-48b8-a675-d82174aecaf8",
+   "n": 80,
+   "tcoh": 0.1,
+   "core": 0.53,
+   "tshare": 0.53,
+   "top_ent": "ukraine",
+   "sc": "UA",
+   "rt": "PNG and Australia take note: cheap, non-state ",
+   "langs": {
+    "?": 2,
+    "en": 76,
+    "uk": 2
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "What Does Landpower Bring to an Air and Naval Fight?",
+     "subj": "Landpower's essential role in enabling air and naval dominan"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Volodymyr Zelenskyy warns US-Iran war could jeopardize Ukraine's missile defences",
+     "subj": "Zelenskyy warns Middle East conflict risks US missile defens"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Future Forces Exhibition ＆ Forum 2026: Where Decisions Are Made",
+     "subj": "The 16th Future Forces Exhibition & Forum (FF26) in Prague i"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Modeling the Lethality of Small Attack Drones and Loitering Munitions",
+     "subj": "Probabilistic model assessing lethality of small attack dron"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Russia’s growing Tech Industry and what it means for Ghana and Africa",
+     "subj": "Russia's technological advancements and their potential for "
+    },
+    {
+     "rn": 6,
+     "lang": "uk",
+     "title": "Як збільшити видимість теми окупованих територій в українському медіапросторі",
+     "subj": "Ukrainian media discusses improving coverage of occupied ter"
+    },
+    {
+     "rn": 7,
+     "lang": "",
+     "title": "27729",
+     "subj": "The strategic impact of military drone proliferation on mari"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Bankova, Budapest, and Bunnies",
+     "subj": "A weekly digest of Ukrainian commentary and analysis on poli"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Is Saudi Arabia Copying Iran's Deadly Drone Strategy?",
+     "subj": ""
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "JMDSF sets up Patrol and Defense Group with Mogami-class vessels",
+     "subj": "The Japan Maritime Self-Defense Force established a new Patr"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "The Iran war has strengthened Ukraine in surprising ways. Could a ceasefire with Russia be",
+     "subj": "Ukraine is leveraging the Iran conflict to strengthen allian"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Poland preparing for large-scale illegal arms imports from Ukraine — police",
+     "subj": "Polish police prepare for potential illegal arms trafficking"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "REVIEW OF “LEVERAGING HIGH-TECHNOLOGY DEVELOPMENTS IN THE CHINESE MILITARY AND MARITIME DO",
+     "subj": "A review of Captain Kamlesh Kumar Agnihotri's book on China'"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "As Iran saps US focus, the troop math for monitoring a Ukraine peace deal looks grim",
+     "subj": "The article is fundamentally about how U.S. military commitm"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Future Forces Exhibition ＆ Forum 2026: Where Decisions Are Made",
+     "subj": "The Future Forces Exhibition & Forum 2026 in Prague is a maj"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "The Limits of China’s NCO Corps and Future Warfare",
+     "subj": "China's military modernization faces operational friction du"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "IN BRIEF: Putin hails Russia as real melting pot",
+     "subj": "Vladimir Putin emphasizes Russia's ethnic diversity and unit"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Near Russian border, NATO grapples with ground robots in combat",
+     "subj": "NATO testing unmanned ground vehicles in Latvia amid evolvin"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Selective Sea Denial: The Rise of Land-based Anti-Ship Missiles as Political Instruments",
+     "subj": "Land-based Anti-Ship Missiles (AShMs) are emerging as strate"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Investigation: Russian shadow airlines use Algeria as base for secretive missions",
+     "subj": "Russian shadow airlines use Algeria as a base for secretive "
+    }
+   ],
+   "bucket": "b3_50to150"
+  },
+  "1e6d82e2-ed22-4881-aa96-0c1c575348ba": {
+   "sid": "1e6d82e2-ed22-4881-aa96-0c1c575348ba",
+   "n": 164,
+   "tcoh": 0.45,
+   "core": 0.76,
+   "tshare": 0.76,
+   "top_ent": "south africa",
+   "sc": "ZA",
+   "rt": "Malema criticises Ghana’s evacuation of citize",
+   "langs": {
+    "?": 3,
+    "en": 160,
+    "et": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Xenophobia Meets Ingratitude: Is Nigeria Under-Reacting?",
+     "subj": "Examines Nigeria's inadequate response to xenophobic attacks"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Anti-immigrant attacks and protests in South Africa",
+     "subj": ""
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "South Africa says it will cooperate with AU review of xenophobia claims after Ghana petiti",
+     "subj": "South Africa's cooperation with the African Union's review o"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Nigeria to evacuate 130 citizens from South Africa amid xenophobia fears",
+     "subj": "Nigeria arranging evacuation of citizens from South Africa d"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Foreigners not to blame for South Africa’s woes – Nigerian community",
+     "subj": "The Nigerian community in South Africa rejects blaming forei"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Xenophobia: Nigeria warns citizens ahead of Monday anti-foreigner protests in South Africa",
+     "subj": ""
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Xenophobia: Nigerians seeking return from South Africa will bear the cost – FG",
+     "subj": "Nigerian government requires citizens to self-fund repatriat"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Miracles Aboagye urges Linda Ocloo to step down over controversial Northern posting commen",
+     "subj": "Dennis Miracles Aboagye calls for Greater Accra Regional Min"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Xenophobia: Oshiomhole urges Senate to withdraw MTN, DSTV license",
+     "subj": ""
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "SARAH BAARTMAN, REPARATIONS AND THE COURAGE TO REMEMBER",
+     "subj": "The article reflects on Sarah Baartman's life as a symbol of"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "XENOPHOBIA: S/Africa should pay compensation — Amb. Olumoko",
+     "subj": ""
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "‘It will never cover what’s authentic’: African music industry weighs up AI risks and rewa",
+     "subj": "African music industry leaders and artists assess the risks "
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "South Africa condemns 'fake videos' of alleged xenophobic attacks",
+     "subj": "South Africa denies involvement in xenophobic attacks and co"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Economic challenges in S’Africa cannot justify xenophobic attacks – Nigerian community lea",
+     "subj": "A Nigerian community leader condemns xenophobic attacks in S"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Rising xenophobic tensions in South Africa prompt calls for Urgent govt action – ADSC Boss",
+     "subj": ""
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Ghana Youth Federation condemns xenophobic onslaught in South Africa",
+     "subj": "The Ghana Youth Federation condemns xenophobic violence in S"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "South Africa: Who is in Charge?",
+     "subj": "South Africa's government failure to address xenophobic viol"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Violence against foreign-owned shops in South Africa",
+     "subj": ""
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Nigeria vs Kenya: When African leaders compete over frivolities",
+     "subj": "A critique of African leaders reducing public discourse to t"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "ACCP raises alarm over rising xenophobia in South Africa, calls for intervention of AU and",
+     "subj": "The ACCP warns that rising xenophobia in South Africa threat"
+    }
+   ],
+   "bucket": "b4_150to400"
+  },
+  "224ee8d1-aa91-40bd-82b0-2f51e3b91a49": {
+   "sid": "224ee8d1-aa91-40bd-82b0-2f51e3b91a49",
+   "n": 165,
+   "tcoh": 0.06,
+   "core": 0.46,
+   "tshare": 0.46,
+   "top_ent": "nigeria",
+   "sc": "NG",
+   "rt": "Party primaries and accountability, By Reuben ",
+   "langs": {
+    "?": 7,
+    "bn": 2,
+    "en": 155,
+    "te": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "The beheaded teacher was someone’s son",
+     "subj": "The beheading of schoolteacher Michael Oyedokun in Oyo State"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Between Democracy, Neoliberalism and the Developmental State in Fixing Nigeria",
+     "subj": "The article argues that Nigeria requires a developmental sta"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Nwoko’s legal adviser rejects Delta APC senatorial primary result",
+     "subj": "Legal adviser to Senator Ned Nwoko rejects Delta APC senator"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "IN PRAISE OF KAYODE FAYEMI",
+     "subj": "The article praises John Kayode Fayemi's strategic leadershi"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "NIGERIA DAILY: Can The NDC Become Nigeria’s New Third Force In The Election Race?",
+     "subj": "The potential of the New Democratic Coalition (NDC) to emerg"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Audu Bako: Recollections of a loyal police orderly (I)",
+     "subj": "A book launch recalling the legacy of former Kano Governor A"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "What Is Wrong with Us? Why do we Reject Colonialism yet Cling to its Titles?",
+     "subj": "African nations' retention of colonial-era titles despite re"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "The High Cost of Imposition",
+     "subj": "The threat to Nigeria's democratic culture from candidate im"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Floodwaters and Political Opportunism",
+     "subj": ""
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Between dialogue and reform: Experts split over Oborevwori’s National Conference proposal",
+     "subj": "Experts debate Delta State Governor Oborevwori's proposal fo"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "2027: Kebbi defends record, slams Malami over governance claims",
+     "subj": "The Kebbi State Government criticized former AGF Abubakar Ma"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "When a coalition begins to unravel",
+     "subj": "The ADC Coalition's sustainability in Nigerian politics is q"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Nigeria’s sports facilities under threat of political rallies",
+     "subj": "Political parties in Nigeria using sports facilities for cam"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Why Nwoko lost APC primary to Okowa — Aniagwu",
+     "subj": ""
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "The unresolved paradox of Boko Haram insurgency in northern Nigeria",
+     "subj": "The persistent Boko Haram insurgency in northern Nigeria and"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Nigerian retired general abducted with his wife in the north-west",
+     "subj": "A retired Nigerian general and his wife were kidnapped in Ka"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "The Architecture of Empowerment: Why 50 Years in Namibia Has Taught Us to Invest in People",
+     "subj": "The Rössing Foundation's 50-year history of investing in peo"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "The question beneath the framework",
+     "subj": "The article examines whether the Naga political movement, ro"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Benin: Benin Teaching How It Should Be Done Without Coups!",
+     "subj": "Benin's democratic stability and economic progress amid regi"
+    },
+    {
+     "rn": 20,
+     "lang": "bn",
+     "title": "Nigeria and the crisis of performative patriotism",
+     "subj": "The article examines the gap between symbolic expressions of"
+    }
+   ],
+   "bucket": "b4_150to400"
+  },
+  "2534e314-9045-4d5b-8fab-cad588bceeb3": {
+   "sid": "2534e314-9045-4d5b-8fab-cad588bceeb3",
+   "n": 29,
+   "tcoh": 0.55,
+   "core": 0.66,
+   "tshare": 0.66,
+   "top_ent": "donald trump",
+   "sc": "US",
+   "rt": "Trump’s DOJ ramps up efforts to strip citizens",
+   "langs": {
+    "en": 28,
+    "te": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "New US Green Card rule sparks outrage among immigrants",
+     "subj": "The Trump administration's new policy restricts Green Card a"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "U.S. plans major expansion of Afrikaner refugee admissions amid political debate",
+     "subj": "The U.S. plans to significantly increase refugee admissions "
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Brian wants to go to the United States. He’s worried he won’t be let in",
+     "subj": "Australian tourists are avoiding the United States due to st"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "New U.S. Green Card rules raise concerns among professionals, students",
+     "subj": "New U.S. immigration rules requiring consular processing for"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Trump forces Green Card applicants to leave US: Tech leaders say they 'Don't understand wh",
+     "subj": "The Trump administration's policy requiring most Green Card "
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Abrupt changes to US green card process trigger widespread confusion and anxiety ",
+     "subj": "The Trump administration's policy shift requiring most forei"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "new us bill targets green card system with major changes",
+     "subj": "A new US Bill proposes replacing the diversity visa lottery "
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Brian wants to go to the United States. He’s worried he won’t be let in",
+     "subj": "Australians are avoiding travel to the US due to strict bord"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Trump’s DOJ ramps up efforts to strip citizenship from naturalized Americans",
+     "subj": "The Trump administration is accelerating efforts to strip ci"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "'Economic Benefit' exception: Who may be spared as Trump forces most Green Card applicants",
+     "subj": "The Trump administration's new policy requiring most green c"
+    },
+    {
+     "rn": 11,
+     "lang": "te",
+     "title": "విదేశీయులకు ట్రంప్ షాక్.. వీసా చెక్ చేశాకే లోన్లు, క్రెడిట్ కార్డులు ఇవ్వమని బ్యాంకులకు ఆద",
+     "subj": "The Trump administration has issued new guidelines requiring"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Trump administration tells green card applicants to apply from abroad",
+     "subj": "The Trump administration mandates that green card applicants"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Nigerians affected as Trump orders green card applicants to visit home countries",
+     "subj": "US President Donald Trump orders green card applicants to re"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "H-1B visa registrations see 38% drop; Green Card petitions next? US tightens rules for see",
+     "subj": "US immigration policy changes impacting H-1B visa registrati"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "US Immigration Expert Muzaffar Chishti Decodes Trump’s Targeting of H-1B Workers",
+     "subj": "US immigration expert Muzaffar Chishti discusses rising anti"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Venezuelan makeup artist who was deported to El Salvador seeks asylum in Spain: ‘I feel sa",
+     "subj": "A Venezuelan gay makeup artist deported to El Salvador seeks"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "us temporarily bars green card holders from african nations amid security concerns",
+     "subj": "The US government temporarily barred green-card holders from"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "More than 80 new immigration judges appointed as Trump pushes faster deportations: Report",
+     "subj": "The Trump administration has appointed over 80 new immigrati"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "H-1B chill sets in; Flipkart doubles down on Shopsy",
+     "subj": "Flipkart is intensifying its focus on the value commerce seg"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "H-1B Visa Applications Drop 38%. Trump Administration Says Days Of Abuse Over",
+     "subj": ""
+    }
+   ],
+   "bucket": "b2_20to50"
+  },
+  "2fc127da-f3dd-475f-ade0-8b096c6e7ea5": {
+   "sid": "2fc127da-f3dd-475f-ade0-8b096c6e7ea5",
+   "n": 210,
+   "tcoh": 0.16,
+   "core": 0.62,
+   "tshare": 0.62,
+   "top_ent": "cuba",
+   "sc": "CU",
+   "rt": "US charges against Raul Castro have no legal b",
+   "langs": {
+    "?": 3,
+    "bn": 1,
+    "en": 202,
+    "ne": 1,
+    "te": 3
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Bullyboy tactics in a once tropical playground",
+     "subj": "The article is fundamentally about the impact of new US sanc"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "What’s behind the forced disappearances in Ecuador?",
+     "subj": "The article examines forced disappearances of civilians in E"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "When the Rules Fail: Tax Incentives and Defense Sustainment",
+     "subj": "The article argues that distorted incentives in U.S. defense"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Is the United States on the Verge of Military Intervention in Cuba?",
+     "subj": "The article argues that the U.S. under Trump is escalating t"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "US to ramp up sanctions against Cuba further — Rubio",
+     "subj": ""
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "DR Congo accepts first set of deportees from the US",
+     "subj": "DR Congo receives first group of third-country deportees fro"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "China tells U.S. to ‘stop brandishing judicial stick’ against Cuba",
+     "subj": "China supports Cuba and criticizes U.S. for indicting former"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "US, Latin America countries criticise China’s retaliation over Panama Canal",
+     "subj": "US and Latin American countries criticize China's economic r"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Carlo Petrini, Slow Food movement founder, dies aged 76",
+     "subj": "The death of Carlo Petrini, founder of the Slow Food movemen"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "US charges Cuba’s Raúl Castro with murder over 1996 downing of two planes",
+     "subj": "The US has charged former Cuban leader Raúl Castro with cons"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "From Aid to Autonomy: Why Ghana must build self-reliance through health, research, and min",
+     "subj": "Ghana must transition from foreign aid dependence to self-re"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Former Cuban President Castro indicted in US",
+     "subj": "Former Cuban President Raul Castro has been indicted by the "
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Cuba Warns of Growing Threat of Aggression From US - Foreign Ministry",
+     "subj": "Cuba warns of increasing US military aggression and economic"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Rare public appearances, low profile mark Raúl Castro's life since stepping down as Cuba's",
+     "subj": ""
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "US indicts Raul Castro as fears of Cuba ‘invasion’ mount",
+     "subj": "The United States has indicted former Cuban President Raul C"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "US indicts Cuba’s Raul Castro over 1996 plane downing",
+     "subj": "The US has indicted former Cuban President Raul Castro over "
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Cutting off donor aid now would deepen health sector strain – Akwasi Acquah",
+     "subj": "Former Deputy Health Minister Akwasi Acquah warns that cutti"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Cuba says it has ‘legitimate’ right to defend itself amid US threats",
+     "subj": "Cuba asserts its right to defend itself against US military "
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "US report finds payment delays and audit failures are stalling compact funding rollout",
+     "subj": "A US report identifies payment delays and audit failures hin"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Trump comments spark speculation about his intentions towards Cuba",
+     "subj": "Donald Trump's comments about potential US intervention in C"
+    }
+   ],
+   "bucket": "b4_150to400"
+  },
+  "32012983-6cb3-46ef-a9bf-9f607752670b": {
+   "sid": "32012983-6cb3-46ef-a9bf-9f607752670b",
+   "n": 5,
+   "tcoh": 0.2,
+   "core": 0.4,
+   "tshare": 0.4,
+   "top_ent": "nagarjuna",
+   "sc": "IN",
+   "rt": "",
+   "langs": {},
+   "members": [
+    {
+     "rn": 1,
+     "lang": "te",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "actor nagarjuna moves delhi high court over unauthorized use of his name and photos suri 1",
+     "subj": "Actor Nagarjuna files a lawsuit against a clothing business "
+    },
+    {
+     "rn": 3,
+     "lang": "te",
+     "title": "ఢిల్లీ హైకోర్టుకు అక్కినేని నాగార్జున..",
+     "subj": "Actor Akkineni Nagarnyu filed a lawsuit against a clothing m"
+    },
+    {
+     "rn": 4,
+     "lang": "te",
+     "title": "ఢిల్లీ హైకోర్టు మెట్లెక్కిన టాలీవుడ్ నటుడు నాగార్జున",
+     "subj": "Tollywood actor Nagarjuna filed a case in Delhi High Court a"
+    },
+    {
+     "rn": 5,
+     "lang": "te",
+     "title": "నటుడు నాగార్జున ఫొటోలను వాడుకునే హక్కు ఎవరిచ్చారు?..నటుడి పిటిషన్‌‌పై ప్రతివాదులకు ఢిల్లీ ",
+     "subj": "Delhi High Court questions the commercial use of actor NagAr"
+    }
+   ],
+   "bucket": "b1_5to20"
+  },
+  "3dac4343-c6db-411d-84a5-02f5947cd1b9": {
+   "sid": "3dac4343-c6db-411d-84a5-02f5947cd1b9",
+   "n": 9,
+   "tcoh": 0.11,
+   "core": 0,
+   "tshare": 0,
+   "top_ent": "",
+   "sc": "IN",
+   "rt": "Effective Strategies To Eliminate Cockroaches ",
+   "langs": {
+    "?": 1,
+    "en": 1,
+    "hi": 3,
+    "te": 4
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "te",
+     "title": "Summer Tips: : ఏసీ లేకపోయినా ఇల్లు చల్లగా ఉండాలా? పైకప్పుపై ఈ చిన్న పని చేయండి!",
+     "subj": "The article provides tips on how to keep homes cool during s"
+    },
+    {
+     "rn": 2,
+     "lang": "hi",
+     "title": "अपनी छोटी सी बालकनी को इन 5 सब्जियों से बनाएं मिनी गार्डन, सिर्फ 2 महीने में पौधों में दिख",
+     "subj": "How to grow 5 specific vegetables in a balcony garden within"
+    },
+    {
+     "rn": 3,
+     "lang": "",
+     "title": "ఇంట్లోకి బొద్దింకలు రాకుండా ఆపే బెస్ట్ మార్గాలు ఇవే.. మళ్ళి  రమ్మన్న రావు...",
+     "subj": "The article is fundamentally about effective home remedies a"
+    },
+    {
+     "rn": 4,
+     "lang": "hi",
+     "title": "रसोई का चिपचिपा पंखा करना है साफ, अपनाएं ये 5 आसान तरीके तुरंत दिखेगा नया जैसा",
+     "subj": "The article provides five easy household methods to clean st"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Effective Strategies To Eliminate Cockroaches In Your Home",
+     "subj": "Effective strategies to eliminate cockroaches using househol"
+    },
+    {
+     "rn": 6,
+     "lang": "te",
+     "title": "కిచెన్‌లో బొద్దింకల బెడదతో విసిగిపోయారా? ఈ సింపుల్ చిట్కాలతో వాటిని శాశ్వతంగా పారద్రోలండి!",
+     "subj": "Simple home remedies to permanently eliminate cockroaches fr"
+    },
+    {
+     "rn": 7,
+     "lang": "hi",
+     "title": "घर में खत्म करना है चींटियों  का आतंक, तो ट्राई करें ये 5 असरदार घरेलू नुस्खे",
+     "subj": "The article provides five effective home remedies to elimina"
+    },
+    {
+     "rn": 8,
+     "lang": "te",
+     "title": "ఇంట్లో నుంచి బొద్దింకలు, బ్యాక్టీరియా తొలిగించడానికి నేచులర్ చిట్కా..",
+     "subj": "Natural remedy using camphor to eliminate pests and bacteria"
+    },
+    {
+     "rn": 9,
+     "lang": "te",
+     "title": "స్థలం లేదని బాధపడుతున్నారా? 20 లీటర్ల బకెట్ ఉంటే చాలు.. మీ ఇంటి మేడపైనే కూరగాయల తోట!",
+     "subj": "Urban gardening using 20-liter buckets on rooftops for fresh"
+    }
+   ],
+   "bucket": "b1_5to20"
+  },
+  "404c6ad8-06b1-46c8-b91f-50a0be5339a8": {
+   "sid": "404c6ad8-06b1-46c8-b91f-50a0be5339a8",
+   "n": 54,
+   "tcoh": 0.13,
+   "core": 0.54,
+   "tshare": 0.54,
+   "top_ent": "hyderabad",
+   "sc": "IN",
+   "rt": "‘Jo Chaahe Mango’: Hyderabad all set for mango",
+   "langs": {
+    "?": 3,
+    "bn": 1,
+    "en": 49,
+    "hr": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Tower Band to launch mixtape at Supa Heavy Wednesdays",
+     "subj": "Tower Band is launching a new mixtape titled Dancehall Futur"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "If your BMI is above 23, you are obese",
+     "subj": "The India Obesity Commission revised obesity guidelines for "
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Besa might be Spanish for kiss, but when it comes to Bondi tapas bars it’s chef’s kiss",
+     "subj": "Review of Besa, a new Spanish tapas bar in Bondi."
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Thailand-inspired lantern festival to light up Hyderabad on May 9",
+     "subj": "A Thailand-inspired lantern festival is scheduled to take pl"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Late-night spot near Gandipet for adventure activities in Hyderabad",
+     "subj": "Red Rush Adventure Park in Gandipet offers late-night advent"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Morning espresso, midnight martinis: Odd Culture turns Italian at new CBD restaurant",
+     "subj": "Odd Culture launches Bar Bruno, an Italian-inspired day-to-n"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Visit Musical Glow Garden, Hyderabad’s viral night attraction",
+     "subj": "The Musical Glow Garden, a new night attraction in Hyderabad"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Beyond Espresso: Coffee Blends and Brews Redefining Global Coffee Culture",
+     "subj": "Global coffee culture is evolving with regional blends and b"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "‘Jo Chaahe Mango’: Hyderabad all set for mango festival season 2",
+     "subj": "Hyderabad's annual mango festival celebrating mango varietie"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Happy Mother’s Day 2026: Best Places to Visit in Delhi NCR with Mother to Celebrate Her Da",
+     "subj": "A curated list of hidden gems in Delhi NCR for celebrating M"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Indoor activities to beat Hyderabad’s summer heat and stay entertained at home",
+     "subj": "Residents of Hyderabad are adopting indoor activities to com"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "GHMC notice to 14 outlets found violating food safety near schools, parks",
+     "subj": "GHMC issued notices to 14 food outlets for violating safety "
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Hyderabad: What’s happening at Shilpakala Vedika on May 23, 24?",
+     "subj": "The International Giant Light Puppet Show is scheduled to ta"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Inside Hyderabad’s most luxurious arcade and bowling destination",
+     "subj": "Hyderabad's luxury arcade and bowling destination, The Game "
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Beyond Kunafa: Underrated Arabic desserts to try in Hyderabad",
+     "subj": "Underrated Yemeni desserts like Masoub and Arika are gaining"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "6 theatres that make Hyderabad one of India’s best movie cities",
+     "subj": "Hyderabad's top movie theatres and their unique cinematic ex"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "These 6 cafes are fueling Hyderabad’s after-1 am food scene",
+     "subj": "Hyderabad's late-night cafe scene catering to night owls and"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Bar Kap opens at the House of Tan Yeok Nee with cocktails inspired by its storied past",
+     "subj": "Bar Kap opens in Singapore's historic House of Tan Yeok Nee "
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Club Felix",
+     "subj": "Club Felix is a new 110-seat lounge bar and supper club in t"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Nexus Hyderabad mall to host Ocean’s World from May 10",
+     "subj": "Nexus Hyderabad Mall hosting Ocean’s World, an immersive oce"
+    }
+   ],
+   "bucket": "b3_50to150"
+  },
+  "4c3c8bb2-6865-493c-8171-230746c0bac4": {
+   "sid": "4c3c8bb2-6865-493c-8171-230746c0bac4",
+   "n": 330,
+   "tcoh": 0.35,
+   "core": 0.37,
+   "tshare": 0.37,
+   "top_ent": "nancy guthrie",
+   "sc": "US",
+   "rt": "'Where is Savannah?': Nancy Guthrie case takes",
+   "langs": {
+    "?": 6,
+    "bn": 1,
+    "ca": 1,
+    "en": 320,
+    "te": 2
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "‘Legends’ Review: Netflix Crime Drama with Steve Coogan Is Less Than the Sum of Its Parts",
+     "subj": "A Netflix crime drama series exploring undercover operations"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Nancy Guthrie update: Pima County cop casts doubt on Annie, Tommaso Cioni's statements in ",
+     "subj": "A Pima County sergeant questions the initial statements made"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Nancy Guthrie update: Why experts say ransom notes likely didn't come from a kidnapper; ke",
+     "subj": "Experts question the authenticity of ransom notes in the Nan"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "EOCO re-arrest of ex-NAFCO CEO is an ‘abuse of the process’ – Dame fires back",
+     "subj": "Legal dispute over the re-arrest of ex-NAFCO CEO and his wif"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Lorna Hajdini row: Did JPMorgan executive's son react to assault allegations? Fact-checkin",
+     "subj": "Allegations of sexual assault against JPMorgan executive Lor"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Nancy Guthrie update: Bones found near Tucson home sparks fears; Pima County officials sha",
+     "subj": "Bones found near Nancy Guthrie's Tucson home spark fears and"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Landlord allegedly kills tenant over GH¢30 electrcity bill dispute at Medie",
+     "subj": "A landlord allegedly killed his tenant over a GH¢30 electric"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Lorna Hajdini hits back as ex-JPMorgan banker allegedly faked father’s death, abruptly lef",
+     "subj": "A former JPMorgan banker who filed a sexual harassment lawsu"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Plateau: How misrepresentation, political narratives undermine justice",
+     "subj": "The article examines how political narratives and institutio"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Legends review: Steve Coogan shines in this ’90s Netflix crime drama",
+     "subj": "Steve Coogan stars in a 1990s British undercover crime drama"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Lorna Hajdini sued: What is Rohypnol? Here's what we know about roofies, aka ‘date rape’ d",
+     "subj": "A lawsuit accuses JPMorgan executive Lorna Hajdini of druggi"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "'My mom Lorna Hajdini…': Wild post adds family twist to JPMorgan sex abuse case - here's t",
+     "subj": "JPMorgan executive Lorna Hajdini faces a sexual abuse lawsui"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Nancy Guthrie Case Latest Update Today LIVE: Retired FBI Agent Says 100 Days ‘Feels Like F",
+     "subj": "The investigation into the disappearance of Nancy Guthrie co"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Nancy Guthrie Case Latest Update: Ex-FBI Official Says Suspect May Not Be a Stranger, Sava",
+     "subj": ""
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Did Kanye West Secretly Meet Kim Kardashian Amid $8.4M Skims Drug Probe And Bianca Censori",
+     "subj": "Rumors of a secret meeting between Kanye West and Kim Kardas"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Nancy Guthrie update: Ex-FBI profiler says suspect's details can be found ‘in weeks' as ne",
+     "subj": "The ongoing investigation into Nancy Guthrie's kidnapping an"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Singapore court strikes out lawsuit seeking to shut down IMH's psychiatric powers",
+     "subj": "Singapore's High Court dismisses a lawsuit seeking to shut d"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Nancy Guthrie Case Latest Update Today: FBI Image Raises Fresh Questions as Savannah Guthr",
+     "subj": "Investigation into the disappearance of Nancy Guthrie and an"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Guzman y Gomez pulls the plug on US expansion, shutters stores",
+     "subj": "Guzman y Gomez exits the US market by closing its Chicago st"
+    }
+   ],
+   "bucket": "b4_150to400"
+  },
+  "4ded16a6-a158-434e-af08-6afc152c9741": {
+   "sid": "4ded16a6-a158-434e-af08-6afc152c9741",
+   "n": 630,
+   "tcoh": 0.11,
+   "core": 0.46,
+   "tshare": 0.46,
+   "top_ent": "donald trump",
+   "sc": "IN",
+   "rt": "From agave syrup to raw materials: EU, Mexico ",
+   "langs": {
+    "?": 1,
+    "en": 602,
+    "hi": 5,
+    "hr": 1,
+    "kn": 1,
+    "ne": 3,
+    "te": 17
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "King Charles showcases his musical talents on final day in Northern Ireland",
+     "subj": ""
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Trump has a new target in Europe – and there is a price for speaking up",
+     "subj": "US President Donald Trump retaliates against German Chancell"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "King Charles and Trump toast ties despite Iran tensions",
+     "subj": "King Charles and Donald Trump emphasize US-UK ties at a Whit"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Donald Trump says sending 5,000 more troops to Poland, stirring confusion about U.S. prese",
+     "subj": "President Donald Trump announces sending 5,000 additional U."
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Germany benefits from work with Ukraine — defense minister",
+     "subj": "Germany's military support for Ukraine and its benefits in i"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Poland joins Pentagon’s counter-drone marketplace amid unexpected US deployment cancellati",
+     "subj": "Poland joins the U.S. Pentagon's counter-drone marketplace a"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Pentagon email floats suspending Spain from NATO, other steps over Iran rift, source says",
+     "subj": "The Pentagon is considering punitive measures against NATO a"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "US to withdraw 5,000 troops from Germany amid Trump spat with Merz",
+     "subj": "The US plans to withdraw 5,000 troops from Germany following"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Europe must respond to pressure from US president in united fashion — British PM",
+     "subj": "European countries must respond collectively to pressure fro"
+    },
+    {
+     "rn": 10,
+     "lang": "ne",
+     "title": "ଆମେରିକା ଭାରତକୁ ଫେରାଇଲା ୬୫୭ ଅମୂଲ୍ୟ ବସ୍ତୁ",
+     "subj": ""
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Rubio on Possible Troop Pullout From Europe: US Resources Not Unlimited",
+     "subj": "Marco Rubio discusses potential US troop withdrawal from Eur"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Germany moving toward acquiring nukes could prompt Russian strike — Medvedev",
+     "subj": "Dmitry Medvedev warns that German nuclear acquisition would "
+    },
+    {
+     "rn": 13,
+     "lang": "te",
+     "title": "Zohran Mamdani-King Charles: కోహినూర్‌ వజ్రం భారత్‌కు ఇచ్చేయండి.. కింగ్ చార్లెస్‌‌కు మమ్దా",
+     "subj": "Zohran Mamdani requests King Charles to return Kohinoor Diam"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Europe needs plan to replace US forces, says Czech president",
+     "subj": ""
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Europe needs Ukraine as it looks to counter growing Russian threat",
+     "subj": "Europe views Ukraine as an essential security partner to cou"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "West Virginia Guardsmen Awarded Medals for Heroism in Nation's Capital",
+     "subj": ""
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "US not changing its program for supplying weapons to Kiev — top US diplomat",
+     "subj": "The US maintains its PURL program to supply weapons to Ukrai"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Big setback for Trump, US court strikes down President's 10% global tariffs",
+     "subj": "A US court ruled that President Trump's 10% global tariffs w"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Nato foreign ministers meet to navigate shifting partnership with the US – Europe live",
+     "subj": "NATO foreign ministers convene amid concerns over U.S. relat"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Navy Reviewing Ford-class Carrier Design Ahead of Future Contract Awards",
+     "subj": ""
+    }
+   ],
+   "bucket": "b5_400plus"
+  },
+  "684b6341-cf02-41ff-a006-07b7a29f3cb4": {
+   "sid": "684b6341-cf02-41ff-a006-07b7a29f3cb4",
+   "n": 67,
+   "tcoh": 0.18,
+   "core": 0.55,
+   "tshare": 0.55,
+   "top_ent": "all india trinamool congress",
+   "sc": "IN",
+   "rt": "Mamata, Abhishek's key meet with TMC counting ",
+   "langs": {
+    "?": 1,
+    "en": 44,
+    "hi": 7,
+    "hr": 1,
+    "kn": 1,
+    "ne": 10,
+    "te": 3
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Will things change for TMC after ‘sunset’? Mamata Banerjee stares at crushing defeat in We",
+     "subj": "Mamata Banerjee faces potential electoral defeat as BJP lead"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Mamata asks Trinamool agents to seek recount if BJP leads by 500-700 votes",
+     "subj": "Mamata Banerjee instructs Trinamool Congress agents to seek "
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Mamata urges TMC nominees not to leave counting centres as EC data shows BJP leading",
+     "subj": "West Bengal Chief Minister Mamata Banerjee urges TMC workers"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "TMC will win 200+ seats, exit polls propaganda to influence share market: Mamata confident",
+     "subj": "Mamata Banerjee expresses confidence in TMC winning 200+ sea"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Meetings to stocktaking: How outgoing CMs spent day",
+     "subj": "Outgoing chief ministers of West Bengal, Tamil Nadu, and Ker"
+    },
+    {
+     "rn": 6,
+     "lang": "kn",
+     "title": "ಬಿಜೆಪಿಯಿಂದ ಹಣ ಪಡೆದು Exit polls ಪ್ರಕಟ: 226 ಕ್ಕೂ ಹೆಚ್ಚು ಸ್ಥಾನಗಳಲ್ಲಿ TMC ಗೆಲುತ್ತೆ- ಮಮತಾ ಬ್ಯಾನ",
+     "subj": "Mamata Banerjee accuses BJP of manipulating exit polls and p"
+    },
+    {
+     "rn": 7,
+     "lang": "hi",
+     "title": "ममता बनर्जी के आरोप पर बीजेपी का जवाब- टीएमसी पहले से ही बना रही है हार के बहाने",
+     "subj": "BJP rejects Mamata Banerjee's EVM tampering claims, accusing"
+    },
+    {
+     "rn": 8,
+     "lang": "te",
+     "title": "Mamata Banerjee: 200కు పైగా సీట్లలో గెలుస్తాం, స్టాక్ మార్కెట్ కోసమే ఎగ్జిట్ పోల్స్..",
+     "subj": "Mamata Banerjee expresses confidence in TMC winning over 200"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "BJP outperformed most exit polls to get two-thirds majority in Bengal, but one pollster go",
+     "subj": "BJP's unexpected two-thirds majority in West Bengal assembly"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "West Bengal polls: Situation ‘fishy’, say cautious TMC leaders as several candidates trail",
+     "subj": "TMC leaders express concern over vote counting in West Benga"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Mamata, Abhishek's key meet with TMC counting agents ahead of Bengal result",
+     "subj": "Mamata and Abhishek Banerjee meet TMC counting agents before"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "‘Exit poll from BJP office’: Mamata Banerjee's first reaction on Bengal projections",
+     "subj": ""
+    },
+    {
+     "rn": 13,
+     "lang": "hi",
+     "title": "बंगाल में राजीव कुमार बने मतगणना पर्यवेक्षक, ममता बनर्जी ने पूर्व डीजीपी को सौंपी विशेष जि",
+     "subj": "Trinamool Congress assigns Rajiv Kumar as vote counting obse"
+    },
+    {
+     "rn": 14,
+     "lang": "hi",
+     "title": "एग्जिट पोल पर भड़कीं ममता बनर्जी, कहा- बीजेपी ऑफिस से तैयार हुए आंकड़े, जीतेगी TMC",
+     "subj": "Mamata Banerjee rejects exit polls, claims they are a BJP co"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "BJP Leader Samik Bhattacharya Responds to ‘Washing Machine’ Label, Claims TMC Leaders Lini",
+     "subj": "BJP leader Samik Bhattacharya responds to TMC leader's defec"
+    },
+    {
+     "rn": 16,
+     "lang": "ne",
+     "title": "Exit Pollକୁ ନେଇ ମୁହଁ ଖୋଲିଲେ ମମତା, କହିଲେ…",
+     "subj": ""
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "‘Ten lifetimes won’t be enough’: TMC’s Abhishek Banerjee dares ‘bangla birodhi’ leaders to",
+     "subj": "TMC's Abhishek Banerjee challenges BJP leaders to contest fr"
+    },
+    {
+     "rn": 18,
+     "lang": "te",
+     "title": "Mamata Banerjee: ‘‘కరెంట్ తీసేస్తున్నారు’’.. ఓట్ల లెక్కింపునకు ముందు మమతా సంచలన ఆరోపణ..",
+     "subj": "Mamata Banerjee alleges deliberate power outages and CCTV ta"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "TMC leaders, newly elected MLAs at Mamata’s home to discuss future strategy",
+     "subj": "TMC leaders and newly elected MLAs meeting with Mamata Baner"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "West Bengal Elections 2026: Mamata Banerjee Tells TMC Workers Not To Fear Results, Says Vi",
+     "subj": "Mamata Banerjee reassures TMC workers ahead of the 2026 West"
+    }
+   ],
+   "bucket": "b3_50to150"
+  },
+  "76b7cbda-d32c-4c0c-a855-77989476bb6c": {
+   "sid": "76b7cbda-d32c-4c0c-a855-77989476bb6c",
+   "n": 39,
+   "tcoh": 0.26,
+   "core": 0.56,
+   "tshare": 0.56,
+   "top_ent": "narendra modi",
+   "sc": "IN",
+   "rt": "PM Modi Says Nordic Investment In India Surged",
+   "langs": {
+    "en": 36,
+    "hi": 3
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "‘Ukraine needs to win this war’: Iceland PM says India and Nordics have different views on",
+     "subj": "Iceland's Prime Minister discusses shared democratic values "
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "India-EFTA and EU trade deals to reduce over-dependence: Norwegian foreign minister",
+     "subj": "Norwegian foreign minister discusses India-EFTA and EU trade"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "PM Modi woos Swedish cos to invest in India, says 'reform express' going at full speed",
+     "subj": "Prime Minister Narendra Modi urges Swedish and European comp"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Commitment to democracy makes India, Nordic nations natural partners: Modi",
+     "subj": "India and Nordic nations strengthening partnership through d"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "India-EU FTA to create new opportunities for industries, investors, innovators: Modi",
+     "subj": "India-EU Free Trade Agreement negotiations concluded, with f"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "India Turning to Europe, East Asia for Military Hardware",
+     "subj": "India is diversifying its defence partnerships toward Europe"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "PM Modi invites Norwegian companies to invest in India",
+     "subj": "Prime Minister Modi invites Norwegian companies to invest in"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "India-Estonia ties growing stronger in tech, startups, global diplomacy: Foreign Minister ",
+     "subj": "Estonia's Foreign Minister highlights growing India-Estonia "
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Free trade pact with India by year-end: EU Chief Ursula von der Leyen",
+     "subj": "EU and India are working to finalize a free trade agreement "
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "India, Nordic nations elevate ties to Green Technology and Innovation partnership",
+     "subj": "India and Nordic nations establish a Green Technology and In"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "India, Nordic nations elevate ties to Green Technology and Innovation Strategic Partnershi",
+     "subj": "India and Nordic nations establish a strategic partnership f"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "PM Modi addresses European industry leaders in Gothenburg, calls for deeper India-Europe e",
+     "subj": "Prime Minister Narendra Modi calls for deeper economic partn"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "India-Nordic Summit signals New Delhi's emergence as 'co-author of global governance': Ana",
+     "subj": "The 3rd India-Nordic Summit signifies India's shift toward b"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "39 new reasons to trade on VT Markets. Check out the new stocks.",
+     "subj": "VT Markets has added 39 new US stocks and ETFs to its tradin"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Modi’s Nordic-Mediterranean push: India deepens strategic footprint across Europe",
+     "subj": "Prime Minister Narendra Modi's 2026 European tour strengthen"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "India, Norway exploring more opportunities in maritime, green energy sectors: Envoy",
+     "subj": "India and Norway exploring bilateral cooperation in maritime"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "India news: PM Modi visits the Netherlands at start of Europe tour",
+     "subj": "Indian Prime Minister Narendra Modi's European tour and stra"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "PM Modi’s Sweden visit Marks Milestone in Deepening New Delhi-Stockholm Ties",
+     "subj": "Prime Minister Narendra Modi's 2026 visit to Gothenburg, Swe"
+    },
+    {
+     "rn": 19,
+     "lang": "hi",
+     "title": "प्रधानमंत्री की नीदरलैंड की आधिकारिक यात्रा",
+     "subj": "प्रधानमंत्री नरेन्द्र मोदी की नीदरलैंड की आधिकारिक यात्रा और"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "India’s Role Is Growing Worldwide’: Lithuania Pushes Stronger India-EU Security Partnershi",
+     "subj": "Lithuania advocates for stronger India-EU security cooperati"
+    }
+   ],
+   "bucket": "b2_20to50"
+  },
+  "76c64c8e-8d66-4b1a-8470-082d46795912": {
+   "sid": "76c64c8e-8d66-4b1a-8470-082d46795912",
+   "n": 1601,
+   "tcoh": 0.13,
+   "core": 0.57,
+   "tshare": 0.57,
+   "top_ent": "donald trump",
+   "sc": "US",
+   "rt": "What to know about the primary elections in th",
+   "langs": {
+    "?": 32,
+    "bn": 7,
+    "ca": 2,
+    "en": 1497,
+    "fa": 1,
+    "fr": 8,
+    "hi": 8,
+    "hr": 2,
+    "kn": 6,
+    "ko": 1,
+    "ml": 3,
+    "ne": 12,
+    "te": 16,
+    "uk": 6
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "New court filing raises questions about who shot Secret Service officer at White House pre",
+     "subj": ""
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Trump’s AI Jesus post shows he truly believes he is a God - America is in grave danger",
+     "subj": "The article argues that Donald Trump's AI-generated image of"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "trump shares militarised white house roof drone port images",
+     "subj": "President Trump unveils plans for a militarized drone port o"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "trump shares ai generated mount rushmore image featuring himself 1960465?utm source=home&u",
+     "subj": "Donald Trump shared an AI-generated image of himself on Moun"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Tulsi Gabbard to resign as US director of national intelligence",
+     "subj": "Tulsi Gabbard is resigning as US director of national intell"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Acting US attorney general defends subpoenas to reporters",
+     "subj": "Acting US Attorney General Todd Blanche defends subpoenas to"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "‘We Need to Get This Done’: Lawmakers, Labor and Industry Renew Push for SHIPS for America",
+     "subj": "Bipartisan legislative push to rebuild U.S. maritime industr"
+    },
+    {
+     "rn": 8,
+     "lang": "ne",
+     "title": "ଡିନର ପାର୍ଟିରେ ହଠାତ୍‌ ଟ୍ରମ୍ପଙ୍କୁ ଗୁଳିମାଡ଼! ଦେଖନ୍ତୁ ଭିଡିଓ",
+     "subj": "A shooting incident occurred during the White House Correspo"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "US primary results: Key takeaways from elections in Kentucky, Georgia, Pennsylvania, Alaba",
+     "subj": "The article is fundamentally about the results and key takea"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "What is Cole Tomas Allen’s ‘Special Request’ Over Washington Jail Stay? WH Shooting Suspec",
+     "subj": "Cole Tomas Allen seeks removal of suicide precautions in Was"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Trump's face could appear on US $250 bill",
+     "subj": "A proposal to feature Donald Trump on a new $250 US bill."
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "What Trump's Latest Health Checkup Says And What He Needs To Work On",
+     "subj": ""
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Greed and hubris: The inside story of a legal scandal",
+     "subj": "The downfall of disgraced former barrister Norman O'Bryan du"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Trump ‘in excellent health’ but should lose weight – Presidential physician",
+     "subj": ""
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Miranda Devine: Dems can cry corruption all they want – the DOJ’s anti-weaponization fund ",
+     "subj": "The DOJ's Anti-Weaponization Fund is a valid use of existing"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "New White House ballroom to cost under $400m – Trump",
+     "subj": "Trump announces revised cost estimate for White House ballro"
+    },
+    {
+     "rn": 17,
+     "lang": "",
+     "title": "'Me ＆ JD6 are good': Abdul Carter downplays rift with Jaxson Dart after criticizing Trump ",
+     "subj": "Abdul Carter addresses reported tension with teammate Jaxson"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Bolivia: Clashes in La Paz as protesters demand President Paz's ouster",
+     "subj": "Anti-government protests in Bolivia demand President Rodrigo"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "RFK Jr debuts his own hand bruise after Trump has been sporting one for months",
+     "subj": "Robert F Kennedy Jr and Donald Trump both display hand bruis"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "A health bill is coming, and it's entirely predictable",
+     "subj": "The predictable onset of health issues in later life and lac"
+    }
+   ],
+   "bucket": "b5_400plus"
+  },
+  "7b718aeb-bb26-40d5-ac4b-af2d0260fedd": {
+   "sid": "7b718aeb-bb26-40d5-ac4b-af2d0260fedd",
+   "n": 171,
+   "tcoh": 0.23,
+   "core": 0.5,
+   "tshare": 0.5,
+   "top_ent": "nifty",
+   "sc": "IN",
+   "rt": "Gainers &amp; Losers: Tech Mahindra, Vedanta a",
+   "langs": {
+    "?": 3,
+    "bn": 4,
+    "en": 135,
+    "fi": 1,
+    "hi": 4,
+    "kn": 3,
+    "te": 21
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "te",
+     "title": "Vodafone – Idea: కుప్పకూలిన స్టాక్ మార్కెట్.. కానీ వొడాఫోన్ ఐడియా షేర్లకు రెక్కలు! షేర్ ధర",
+     "subj": "Vodafone Idea's stock surged despite a falling market due to"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Mcap of 6 of top-10 most valued firms surges by Rs 74,111 cr; Reliance biggest winner",
+     "subj": "Market capitalization changes of top Indian companies in the"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Sensex slips into red by midday; L&T, Reliance weigh as insurance stocks buck trend",
+     "subj": "Equity benchmarks reversed gains due to selling pressure in "
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Stock Market LIVE Updates, Sensex Today: Markets Set For A Flat Start, Trading Session To ",
+     "subj": ""
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Mcap of 6 of top-10 most valued firms surges by ₹74,111 cr; Reliance biggest winner",
+     "subj": "Market valuation changes of top Indian companies over a week"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Gainers &amp; Losers: Tech Mahindra, Vedanta among 6 big movers on Tuesday",
+     "subj": ""
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Mcap of 7 top valued firms erodes by ₹1.54 trn, Reliance takes biggest hit",
+     "subj": ""
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Sensex rallies 356 points as stock markets close higher",
+     "subj": "Indian stock markets closed higher amid gains in blue-chip s"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Why market is falling today? Sensex falls 700 points as rupee weakens to record low amid M",
+     "subj": "Market decline in India due to geopolitical tensions and cur"
+    },
+    {
+     "rn": 10,
+     "lang": "te",
+     "title": "Stock Market Rally: ఎన్నికల ఫలితాల ప్రభావం.. స్టాక్ మార్కెట్ జోరు.. 800 పాయింట్లు ఎగిసిన స",
+     "subj": "Indian stock markets rallied significantly following positiv"
+    },
+    {
+     "rn": 11,
+     "lang": "te",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Sensex gains 560 points, Nifty above 23,800. Key factors behind today's Dalal Street rally",
+     "subj": "Indian stock markets rallied with gains in Sensex and Nifty "
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Stock markets trade higher in early trade",
+     "subj": "Benchmark stock indices Sensex and Nifty trade higher in ear"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Market cap of seven top firms erodes by Rs 1.54 trillion in holiday-shortened week",
+     "subj": "Market valuation of top Indian firms declined by Rs 1.54 tri"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Markets fall in early trade as oil prices rise, global cues weaken amid Iran tensions",
+     "subj": "Indian equity markets fell in early trade due to rising oil "
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Sensex Declines by 1,313 Points, Nifty Falls Below 23,900",
+     "subj": "Indian stock market indices Sensex and Nifty experience sign"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Stock Market Live April 24: Sensex drops over 900 pts, Nifty slips amid global jitters, oi",
+     "subj": "Indian stock markets declined amid global tensions, foreign "
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Stock Market: లాభాల పంట పండించిన స్టాక్ మార్కెట్.. రేపటి వ్యూహం ఇలా..",
+     "subj": "Indian stock markets surged due to global positive cues, fal"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "LIC’s $2 billion contrarian bet: 10 stocks the DII giant bought while the market bled",
+     "subj": "LIC's strategic investment in declining stocks amid market d"
+    }
+   ],
+   "bucket": "b4_150to400"
+  },
+  "7c658602-b664-46e4-b094-87fafa60b069": {
+   "sid": "7c658602-b664-46e4-b094-87fafa60b069",
+   "n": 208,
+   "tcoh": 0.05,
+   "core": 0.47,
+   "tshare": 0.47,
+   "top_ent": "all progressives congress national leadership",
+   "sc": "NG",
+   "rt": "Six Ondo South LGs back Kekemeke for APC senat",
+   "langs": {
+    "?": 7,
+    "ar": 1,
+    "bn": 2,
+    "de": 1,
+    "en": 195,
+    "ja": 1,
+    "sw": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "2027: Lagos assembly spokesperson secures APC ticket",
+     "subj": "Lagos Assembly spokesperson Stephen Ogundipe wins APC primar"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Adalebu declares for governor, rejects consensus",
+     "subj": "Adebayo Adelabu declares his intention to contest for Oyo St"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Uba Sani Chairs APC Governorship Campaign Council in Ekiti",
+     "subj": "APC appoints Uba Sani to lead campaign council for Ekiti gov"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Accord Party picks Ogun governorship candidate, assembly hopefuls",
+     "subj": "The Accord Party in Ogun State selects Okewole Olaniyi as it"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Gbenga Daniel: I’ll defeat Abiodun in free, fair primary",
+     "subj": "Gbenga Daniel claims he will defeat Dapo Abiodun in the APC "
+    },
+    {
+     "rn": 6,
+     "lang": "ja",
+     "title": "ASV504R53V50UOHB002M.html?iref=comtop BreakingNews list",
+     "subj": ""
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "House: Ondo APC Leaders Reject Alleged Automatic Ticket Plot",
+     "subj": "Ondo APC leaders reject claims of automatic ticket for incum"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "2027: Race Heats Up in Kogi as Akpoti-Uduaghan, Abdullahi Pick PDP Forms",
+     "subj": "Senator Natasha Akpoti-Uduaghan and Muhammad Abdullahi forma"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Adebutu, Lado, Kawu, Lamido, Pidomson, Jika Win Guber Tickets in PDP, ADC, NDC",
+     "subj": "The selection of gubernatorial candidates by PDP, ADC, and N"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Six Ondo South LGs back Kekemeke for APC senatorial ticket",
+     "subj": "Six Ondo South local government chairmen endorse Isaacs Keke"
+    },
+    {
+     "rn": 11,
+     "lang": "",
+     "title": "Lagos APC primaries sweep out key Assembly powerbrokers",
+     "subj": "The Lagos APC primaries have ousted several key principal of"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Gabam-led SDP expels Adebayo, Agunloye, 11 others",
+     "subj": "The Social Democratic Party (SDP) expels 13 key figures, inc"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Abia PDP Guber Candidate Pledges ‘People First’ Agenda  If Elected in 2027",
+     "subj": "PDP candidate Kelechi Anosike pledges a welfarist agenda for"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Traditional Institutions, Residents Endorse Return of Ogun Assembly Member, Akingbade",
+     "subj": "Traditional institutions and residents of Afon Community in "
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Sen Madori reaffirmed as APC candidate for Jigawa North-East",
+     "subj": "Senator Ahmad Abdulhamid Malam Madori has been re-nominated "
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Deputy speaker, 15 other Niger Assembly lawmakers fail to secure APC return tickets",
+     "subj": ""
+    },
+    {
+     "rn": 17,
+     "lang": "",
+     "title": "Sokoto: PDP picks Abdullahi as guber candidate",
+     "subj": "PDP in Sokoto State has selected Abubakar Abdullahi as its c"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Ex-AGF Malami emerges ADC governorship candidate in Kebbi",
+     "subj": "Former Nigerian Attorney-General Abubakar Malami becomes ADC"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Amaechi’s Ally Wins ADC Gov’ship Primary in Rivers",
+     "subj": "Gabriel Pidomson wins ADC governorship primary in Rivers Sta"
+    },
+    {
+     "rn": 20,
+     "lang": "ar",
+     "title": "މަޖިލީހުގެ ނައިބު ރައީސަކަށް އޭދަފުށީ ދާއިރާގެ މެންބަރު ސަލީމް",
+     "subj": "Ahmed Saleem elected as Deputy Speaker of the People's Majli"
+    }
+   ],
+   "bucket": "b4_150to400"
+  },
+  "862a1ed4-9cf3-4d04-8b78-a03d89e3d13e": {
+   "sid": "862a1ed4-9cf3-4d04-8b78-a03d89e3d13e",
+   "n": 14,
+   "tcoh": 0.29,
+   "core": 0.57,
+   "tshare": 0.57,
+   "top_ent": "central bureau of investigation",
+   "sc": "IN",
+   "rt": "NEET paper leak: Court sends 5 accused to judi",
+   "langs": {
+    "?": 2,
+    "en": 11,
+    "te": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Allegations of Financial Scam in Educational Institution: NSDC Adviser Under Scanner in ₹3",
+     "subj": "NSDC adviser Sandeep Singh Kaura faces criminal charges for "
+    },
+    {
+     "rn": 2,
+     "lang": "",
+     "title": "Pune school principal shared NEET-related questions for money: CBI tells court",
+     "subj": "A Pune school principal is accused of sharing NEET-UG exam q"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Manipur: Supreme Court orders fresh forensic probe of audio linked to N. Biren Singh",
+     "subj": "The Supreme Court ordered a fresh forensic probe of an audio"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Court extends custody of NEET-UG leak accused Manisha Hawaldar",
+     "subj": "A court extended the CBI custody of Manisha Hawaldar, an acc"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "NEET paper leak: Court extends Hawaldar's CBI custody by two days; remands Mandhare to jud",
+     "subj": "A Delhi court extended CBI custody for Manisha Hawaldar and "
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Supreme Court asks petitioner to turn in first-gen copy of leaked audio to forensic lab",
+     "subj": ""
+    },
+    {
+     "rn": 7,
+     "lang": "te",
+     "title": "పోక్సో కేసులో పారా ఆర్చరీ కోచ్‌కు ఐదేండ్ల జైలు",
+     "subj": "A national para-archery coach in India was sentenced to five"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "NEET UG paper leak: Court extends CBI custody of physics expert Manisha Hawaldar by two da",
+     "subj": "The Rouse Avenue court extended CBI custody of NEET UG paper"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "National para archery coach sentenced to five years imprisonment in POCSO case",
+     "subj": "National para archery coach Kuldeep Vedwan sentenced to five"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "NEET Paper Leak: Court Sends 5 Accused to Judicial Custody, Extends CBI Custody of Shubham",
+     "subj": "The Rouse Avenue Court in New Delhi sends five accused to ju"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "NEET paper leak: Court sends 5 accused to judicial custody, extends Khairnar's CBI remand",
+     "subj": "A Delhi court extends CBI remand for Shubham Khairnar and se"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "CBI arrests ‘2nd source’ of NEET leak: Pune Botany lecturer who had access to questions as",
+     "subj": "CBI arrests a Pune Botany lecturer as the second source in t"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Fake fee receipt scam unearthed in SV University",
+     "subj": "A fake fee receipt scam was unearthed at Sri Venkateswara Un"
+    },
+    {
+     "rn": 14,
+     "lang": "",
+     "title": "Pune principal sold NEET questions for cash, CBI tells court",
+     "subj": "A Pune school principal is accused of selling NEET-UG 2026 e"
+    }
+   ],
+   "bucket": "b1_5to20"
+  },
+  "93e1ce0a-70b5-4a8b-93e1-82d7ac315112": {
+   "sid": "93e1ce0a-70b5-4a8b-93e1-82d7ac315112",
+   "n": 26,
+   "tcoh": 0.19,
+   "core": 0.65,
+   "tshare": 0.65,
+   "top_ent": "vladimir putin",
+   "sc": "IN",
+   "rt": "Putin to attend BRICS summit in New Delhi on S",
+   "langs": {
+    "en": 21,
+    "hi": 1,
+    "te": 4
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "From sanctioned cars to beauty clinics, Russian rubles have flowed into China’s border tow",
+     "subj": "The economic relationship between China and Russia has deepe"
+    },
+    {
+     "rn": 2,
+     "lang": "te",
+     "title": "ప్రపంచం చూపు భారత్ వైపు.. ఒకే వేదికపైకి భారత్, రష్యా, చైనా.. ఢిల్లీలో పుతిన్-జిన్‌పింగ్ భే",
+     "subj": "India is set to host the 2026 BRICS summit in New Delhi, wit"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Russian President Vladimir Putin in Beijing for talks with Chinese leader Xi Jinping",
+     "subj": "Russian President Vladimir Putin's diplomatic visit to Beiji"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Vladimir Putin, Xi Jinping likely to be in New Delhi for BRICS summit in September",
+     "subj": "Russian President Vladimir Putin and Chinese President Xi Ji"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Live: Xi hosts Putin in China days after Trump state visit",
+     "subj": "Chinese President Xi Jinping hosts Russian President Vladimi"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Putin to travel to India in September to attend BRICS Leaders’ Summit",
+     "subj": "Russian President Vladimir Putin will attend the 18th BRICS "
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Putin to take Part in BRICS Summit in New Delhi in September",
+     "subj": "Russian President Vladimir Putin will attend the BRICS Summi"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Now it’s Vladimir Putin’s turn to visit Beijing",
+     "subj": "Vladimir Putin's visit to Beijing highlights deepening Russi"
+    },
+    {
+     "rn": 9,
+     "lang": "te",
+     "title": "భారత్‌లో బ్రిక్స్ సదస్సుకు పుతిన్",
+     "subj": "Russian President Vladimir Putin will attend the BRICS summi"
+    },
+    {
+     "rn": 10,
+     "lang": "hi",
+     "title": "रूसी राष्ट्रपति पुतिन सितंबर में इस दिन आएंगे भारत, BRICS समिट में होंगे शामिल",
+     "subj": "Russian President Vladimir Putin will visit India on Septemb"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "China's moment? Putin heads to Beijing after Trump courts Xi",
+     "subj": "Geopolitical dynamics between China, Russia, and the US foll"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "putin xi jinping likely to attend brics summit in india 2026 pcs 1524966.html",
+     "subj": "Russian President Putin and Chinese President Xi Jinping are"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Putin says Russia-China ties at unprecedented level, invites Xi to Russia",
+     "subj": "Vladimir Putin states that Russia-China relations are at an "
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Putin and Trump could meet in November – Kremlin",
+     "subj": "Kremlin suggests potential meeting between Putin and Trump a"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Breakthrough in US-Iran talks could occur before Trump’s visit to China — Pakistani envoy",
+     "subj": "A potential breakthrough in US-Iran negotiations before Trum"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "End of ceasefire, chance of Putin-Zelensky meeting: Kremlin delivers new press briefing",
+     "subj": "Kremlin spokesperson Dmitry Peskov updates on ceasefire, Put"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Schedule of Putin’s meetings at APEC summit in China to be drafted later — Peskov",
+     "subj": "The schedule for Russian President Vladimir Putin's meetings"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Possibility of Putin-Trump meeting, spirit of Beijing: what Kremlin aide said",
+     "subj": "Russian Presidential Aide Yury Ushakov discusses potential P"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Vladimir Putin visits Beijing with ‘very serious expectations’, soon after Donald Trump le",
+     "subj": "Vladimir Putin's visit to Beijing aims to strengthen Russia-"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Putin to attend BRICS summit in New Delhi on September 12-13: Kremlin aide",
+     "subj": "Russian President Vladimir Putin will attend the BRICS summi"
+    }
+   ],
+   "bucket": "b2_20to50"
+  },
+  "96d69dd7-3c70-4923-a5f8-7a58a6d1658b": {
+   "sid": "96d69dd7-3c70-4923-a5f8-7a58a6d1658b",
+   "n": 5,
+   "tcoh": 0.2,
+   "core": 0.4,
+   "tshare": 0.4,
+   "top_ent": "prince harry",
+   "sc": "IN",
+   "rt": "No Tom Hardy In MobLand Season 3? Here Are 5 A",
+   "langs": {
+    "en": 5
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Is Black Noir a clone of Homelander? The difference between The Boys comics and the show, ",
+     "subj": ""
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "From Harry Potter to Lanterns, HBO reveals new trailers from upcoming 2026 roster",
+     "subj": ""
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Will there be Margo's Got Money Troubles Season 2? Renewal possibilities explored",
+     "subj": ""
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "No Tom Hardy In MobLand Season 3? Here Are 5 Actors Who Could Replace Harry Da Souza",
+     "subj": "The article discusses potential actors who could replace Tom"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "The Terror: Devil in Silver episode 3 ending explained: Is Dr. Walter controlling New Hyde",
+     "subj": ""
+    }
+   ],
+   "bucket": "b1_5to20"
+  },
+  "96d97bca-c1da-4271-826c-3d00492df3df": {
+   "sid": "96d97bca-c1da-4271-826c-3d00492df3df",
+   "n": 83,
+   "tcoh": 0.25,
+   "core": 0.58,
+   "tshare": 0.58,
+   "top_ent": "west bengal",
+   "sc": "IN",
+   "rt": "India's communists once ruled millions. What h",
+   "langs": {
+    "bn": 2,
+    "en": 65,
+    "hi": 2,
+    "hr": 2,
+    "ne": 8,
+    "te": 4
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Cattle market empties as fear grips Eid preparations in India’s West Bengal",
+     "subj": "Fear and economic hardship affect Eid al-Adha cattle trade i"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "India's Modi celebrates 'record' win in opposition-held West Bengal",
+     "subj": "Prime Minister Narendra Modi celebrates a significant electo"
+    },
+    {
+     "rn": 3,
+     "lang": "te",
+     "title": "కలిసొచ్చిన కాలం.. వికసించిన కమలం",
+     "subj": "The political shift in West Bengal from Leftist ideology to "
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "India: West Bengal election win boosts Modi's BJP",
+     "subj": "The BJP's decisive victory in West Bengal's state election m"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "India's communists once ruled millions. What happened to them?",
+     "subj": ""
+    },
+    {
+     "rn": 6,
+     "lang": "te",
+     "title": "Modi-Trump: బెంగాల్‌లో విజయంపై మోడీని అభినందించిన ట్రంప్",
+     "subj": "Trump congratulates Modi on BJP's victory in West Bengal"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "FairPoint: Why Mamata Banerjee’s defeat resonated beyond India",
+     "subj": "The international reaction to Mamata Banerjee's defeat in We"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "The changing political map of India",
+     "subj": "The BJP's expanding political dominance across Indian states"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Which party governs which State/UT: In maps",
+     "subj": "The article maps the current political governance of Indian "
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "From Prafulla Chandra Ghosh to Mamata Banerjee: Full list of West Bengal chief ministers o",
+     "subj": ""
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "India's Modi eyes important win in opposition-held West Bengal",
+     "subj": "Indian Prime Minister Narendra Modi's BJP claims a major ele"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "​Take east: On the BJP government in West Bengal",
+     "subj": "BJP's victory in West Bengal Assembly elections and its stra"
+    },
+    {
+     "rn": 13,
+     "lang": "ne",
+     "title": "୨୦୧୪ରେ କେତୋଟି ରାଜ୍ୟରେ କ୍ଷମତାରେ ଥିଲା ଭାଜପା, ଦେଶରେ କିପରି କଲା ପ୍ରାଧାନ୍ୟ ବିସ୍ତାର? ଜାଣନ୍ତୁ ମୋଦି",
+     "subj": "The article analyzes the expansion of BJP's political influe"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "A round of elections that signals structural dominance",
+     "subj": "The BJP's structural dominance in Indian politics following "
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Modi's BJP conquers Bengal, one of India's toughest political frontiers",
+     "subj": "The BJP's victory in West Bengal marks a major political bre"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "School Assembly News Headlines Today [May 09]: Top National, Business News, Sports News, E",
+     "subj": "Daily news headlines covering national, business, sports, an"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 18,
+     "lang": "hi",
+     "title": "15-Year Drought Ends: State Ads Return to CPI(M) Mouthpiece Under BJP Rule",
+     "subj": "West Bengal government resumes advertising in CPI(M) newspap"
+    },
+    {
+     "rn": 19,
+     "lang": "bn",
+     "title": "How the BJP won West Bengal",
+     "subj": "The BJP's strategic evolution and victory in the West Bengal"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "India PM Modi’s party takes control of West Bengal in key state election",
+     "subj": "Modi's BJP wins control of West Bengal in a key state electi"
+    }
+   ],
+   "bucket": "b3_50to150"
+  },
+  "9df7fcfc-b5b7-4522-832a-2c9dca8faaa1": {
+   "sid": "9df7fcfc-b5b7-4522-832a-2c9dca8faaa1",
+   "n": 24,
+   "tcoh": 0.67,
+   "core": 0.92,
+   "tshare": 0.92,
+   "top_ent": "royal challengers bengaluru",
+   "sc": "IN",
+   "rt": "IPL Fantasy 2026: Fantasy XI for Match 74: Fin",
+   "langs": {
+    "en": 17,
+    "hi": 1,
+    "kn": 2,
+    "ne": 1,
+    "ta": 1,
+    "te": 2
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "WATCH: Washington Sundar’s 50-run knock guides GT to a competitive total against RCB in IP",
+     "subj": "Washington Sundar's fifty guides Gujarat Titans to a competi"
+    },
+    {
+     "rn": 2,
+     "lang": "hi",
+     "title": "GT vs RCB Live: किंग और प्रिंस के बीच खिताबी जंग आज, अहमदाबाद पहुंचे वैभव सूर्यवंशी",
+     "subj": "IPL 2026 final match between RCB and Gujarat Titans in Ahmed"
+    },
+    {
+     "rn": 3,
+     "lang": "te",
+     "title": "RCB vs GT: గుజరాత్‌తో క్వాలిఫయర్-1 మ్యాచ్‌.. ఆర్సీబీ రిస్క్ తీసుకోవద్దు, ఆ స్టార్ ప్లేయర్ ",
+     "subj": "A discussion about Royal Challengers Bangalore's opening com"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "RCB Predicted Playing 11 and Impact Player Options vs GT for the IPL 2026 Final ft. Venkat",
+     "subj": ""
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Krunal Pandya comes up with fierce celebration after outfoxing struggling Jos Buttler for ",
+     "subj": ""
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Washington Sundar survives as third umpire overturns Jordan Cox's diving boundary catch in",
+     "subj": ""
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "RCB and GT Set for IPL 2026 Final Amid High Stakes and Tight Security",
+     "subj": "RCB and Gujarat Titans are set to face each other in the IPL"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Rajat Patidar’s successful captaincy helps RCB win back-to-back titles in IPL titles",
+     "subj": "Rajat Patidar's captaincy leads Royal Challengers Bengaluru "
+    },
+    {
+     "rn": 9,
+     "lang": "ta",
+     "title": "IPL 2026 Final டிராபி யாருக்கு? ஆர்.சி.பி. பந்து வீச்சு தேர்வு",
+     "subj": "RCB won the toss and chose to bowl against Gujarat Titans in"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "WATCH: Krunal Pandya’s smartness sends dangerous Jos Buttler to the pavilion in IPL 2026 f",
+     "subj": "Krunal Pandya dismisses Jos Buttler during the IPL 2026 fina"
+    },
+    {
+     "rn": 11,
+     "lang": "te",
+     "title": "RCB Vs GT: ఐపీఎల్ 2026 ఫైనల్‌లో తీవ్ర వివాదం.. కోహ్లీ, అనుష్క శర్మ ఎందుకు షాక్ అయ్యారు..?",
+     "subj": "A controversial umpiring decision during the IPL 2026 Final "
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "RCB Fans Nervous As Pitch For IPL 2026 Final vs Gujarat Titans At Narendra Modi Stadium Re",
+     "subj": "RCB fans express nervousness over the pitch selection for th"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "GT vs CSK Match Prediction: Who will win today's IPL 2026 match?",
+     "subj": ""
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "GT vs RCB Dream11 Prediction IPL 2026: Fantasy Cricket Tips, Playing XI, Pitch Report For ",
+     "subj": "Fantasy cricket predictions for the Gujarat Titans vs Royal "
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "GT Predicted Playing 11 and Impact Player Options vs RCB for the IPL 2026 Final ft. Jos Bu",
+     "subj": ""
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "RCB Predicted Playing 11 and Impact Player Options vs GT for Qualifier 1 of IPL 2026 ft. V",
+     "subj": ""
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "GT Predicted Playing 11 and Impact Player Options vs RCB for Qualifier 1 of IPL 2026 ft. S",
+     "subj": ""
+    },
+    {
+     "rn": 20,
+     "lang": "ne",
+     "title": "IPL-2026 ଫାଇନାଲ୍‌ରେ ଟସ୍‌ ଜିତିଲା RCB",
+     "subj": "RCB won the toss and chose to bowl in the IPL 2026 final aga"
+    }
+   ],
+   "bucket": "b2_20to50"
+  },
+  "a2ae1481-b15f-4f2e-9fb9-9f5274e25c96": {
+   "sid": "a2ae1481-b15f-4f2e-9fb9-9f5274e25c96",
+   "n": 52,
+   "tcoh": 0.25,
+   "core": 0.64,
+   "tshare": 0.63,
+   "top_ent": "iran",
+   "sc": "JP",
+   "rt": "Global markets mixed amid May Day closures, oi",
+   "langs": {
+    "?": 2,
+    "en": 50
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Global Market Today: Asian shares mixed as Iran tensions flare up again",
+     "subj": "Global market volatility due to escalating Iran tensions aro"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "US Stock Market: Asian stocks advance on tech, dollar edges lower",
+     "subj": "Asian stocks rise on tech optimism and easing geopolitical t"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Yen trims gains against dollar after Japan's intervention in markets",
+     "subj": "The Japanese yen trimmed gains against the dollar after mark"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Dollar set for sharp weekly loss versus yen after Japan steps in",
+     "subj": "The dollar is heading for a significant weekly loss against "
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "D-Street bears brunt of elusive US-Iran truce",
+     "subj": "Indian stock indices fell 1-1.3% amid rising oil prices, sta"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Global Market Today: Asian stocks gain, dollar wobbles as Trump extends Iran ceasefire",
+     "subj": "Global markets reacted to U.S. President Donald Trump's deci"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Oil prices fall again amid Middle East ceasefire hopes after Wall Street sets another reco",
+     "subj": "Oil prices decline amid ceasefire hopes in the Middle East a"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "USD to Yen Today: Yen Jumps 2% Against Dollar; USD/ Yen Drops to 156–157 Amid Intervention",
+     "subj": "The Japanese yen strengthened significantly against the US d"
+    },
+    {
+     "rn": 12,
+     "lang": "",
+     "title": "Japan's Nikkei jumps past 65,000 mark for first time on Iran talks optimism",
+     "subj": "Japan's Nikkei index surpasses 65,000 for the first time ami"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Global Market Today: Asian stocks drop as Iran talks stall, oil gains",
+     "subj": "Asian stocks dropped and oil prices rose amid stalled Iran t"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Global Market: Japan bets on BOJ hawkish turn, US backing to defend Yen",
+     "subj": "Japan is coordinating with the US to defend the yen through "
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 16,
+     "lang": "",
+     "title": "Asian shares edge up, oil prices fall after Trump says peace talks on Iran war proceeding",
+     "subj": "The impact of U.S. President Trump's comments on Iran peace "
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Global markets mixed amid May Day closures, oil steady at $111 per barrel",
+     "subj": "Global financial markets were mixed on May Day with oil stea"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Stocks gain in Asia, oil flat amid new Gulf proposals",
+     "subj": "Asian stock markets and oil prices react to Gulf conflict de"
+    }
+   ],
+   "bucket": "b3_50to150"
+  },
+  "a697a8b2-1c27-4e3e-a1b2-f25bd515189c": {
+   "sid": "a697a8b2-1c27-4e3e-a1b2-f25bd515189c",
+   "n": 106,
+   "tcoh": 0.13,
+   "core": 0.48,
+   "tshare": 0.48,
+   "top_ent": "goodluck jonathan",
+   "sc": "NG",
+   "rt": "Turaki PDP adopts Jonathan despite thugs invas",
+   "langs": {
+    "?": 1,
+    "bn": 1,
+    "ca": 1,
+    "de": 2,
+    "en": 101
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Court Briefs",
+     "subj": "Namibian courts handled multiple criminal and civil cases in"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "El-Rufai’s trial stalled as court fixes June 1 for hearing",
+     "subj": "The corruption trial of former Kaduna governor Nasir El-Rufa"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "2027 Presidency: I’m consulting widely, says Jonathan",
+     "subj": "Former President Goodluck Jonathan consults on running for t"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "FCTA warns event centres, hotels against accommodating illegal political organisations",
+     "subj": "The FCT Administration warns event centres and hotels agains"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Tell them you are causing the delays – Judge clashes with Wontumi’s lawyers in court",
+     "subj": "Judge confronts defense lawyers over delays in a Ghanaian mi"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Jonathan pays tribute to Yar’Adua, calls him ‘gentleman president’",
+     "subj": "Ex-President Goodluck Jonathan honors the legacy of late Nig"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Jerry Gana receives Jonathan’s PDP certificate of return as presidential candidate",
+     "subj": ""
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "2027: PDP, NDC, APM Affirm Jonathan, Obi, Makinde as Presidential Candidates",
+     "subj": "PDP, NDC, and APM factions affirm Jonathan, Obi, and Makinde"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "2027: Jonathan considers comeback as court hears eligibility suit today",
+     "subj": "Former Nigerian President Jonathan considers potential 2027 "
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Why Jonathan is ineligible to contest in 2027-Ex-Ogun lawmaker",
+     "subj": "Constitutional eligibility of former Nigerian president Good"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "2027: Jonathan’s return may overheat the system, CAN leader warns",
+     "subj": "CAN warns of political realignments and potential Jonathan r"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "2027: Thugs attack PDP faction delegates, journalists after Jonathan’s candidacy ratificat",
+     "subj": "Thugs attack PDP faction delegates and journalists after Jon"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Quo Warranto: High Court adjourns OSP’s Stay of Execution application",
+     "subj": "The High Court in Accra has adjourned the hearing of the OSP"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "2027: Ganduje, Kano ex-deputy gov, in closed-door meeting with Shettima",
+     "subj": "Closed-door meeting between Kano political figures and Niger"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Case against ex-President Ranil Wickremesinghe to be taken up today",
+     "subj": ""
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Treason, terrorism case postponed",
+     "subj": "Jona Hangula's terrorism and high treason case in Namibia ha"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "2027: Say no to PDP presidential ticket – Keyamo tells Jonathan",
+     "subj": "Festus Keyamo urges Goodluck Jonathan to reject a PDP factio"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Do not tarnish your legacy – Okuapehemaa cautions Sophia Akuffo amid enstoolment reports",
+     "subj": "The Okuapehemaa cautions former Chief Justice Sophia Akuffo "
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Adnan Ghaith",
+     "subj": "Adnan Ghaith's role in Fatah and as Palestinian Authority's "
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Court fixes date for suit seeking new probe into Mohbad death",
+     "subj": "A Nigerian court has set May 28 for a hearing on a lawsuit s"
+    }
+   ],
+   "bucket": "b3_50to150"
+  },
+  "ad674136-c208-4bde-8d96-65592df2ed40": {
+   "sid": "ad674136-c208-4bde-8d96-65592df2ed40",
+   "n": 49,
+   "tcoh": 0.18,
+   "core": 0.78,
+   "tshare": 0.78,
+   "top_ent": "mexico",
+   "sc": "MX",
+   "rt": "No cartels involved - but Mexico's pyramid att",
+   "langs": {
+    "en": 49
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Mexico’s Sinaloa state governor resigns amid US drug trafficking charges",
+     "subj": "Sinaloa Governor Ruben Rocha Moya resigns after US drug traf"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Canadian killed in shooting at Mexico's ancient Teotihuacán pyramids",
+     "subj": "A Canadian woman was killed and 13 injured in a shooting at "
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "How America Can Coerce the Cartels",
+     "subj": "The article argues for a shift from brute force to condition"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Prison riot in Mexico leaves seven inmates dead",
+     "subj": ""
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "The CIA’s Cartel Campaign",
+     "subj": "CIA's covert operations against Mexican cartels inside Mexic"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Gunman walks in calmly, then gunshots and panic: New video of Mexico firing",
+     "subj": "A 27-year-old gunman attacked tourists at Mexico's Teotihuac"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Mexican President denies consulates meddle in US politics",
+     "subj": "Mexican President Claudia Sheinbaum denies allegations that "
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Mexico captures US-wanted nephew of drug lord ‘El Chapo’",
+     "subj": "Mexican authorities captured Isai Martinez Zepeda, the US-wa"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "World Cup host Mexico pledges security at tourist sites after shooting",
+     "subj": "Mexico enhances security at tourist sites following a shooti"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Mexico captures US-wanted nephew of drug lord ‘El Chapo’",
+     "subj": "Mexican authorities captured Isai Martinez Zepeda, the US-wa"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Mexico governor steps down over US trafficking allegations",
+     "subj": "Sinaloa Governor Ruben Rocha Moya steps down after US drug t"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Drug kingpin ‘El Chapo’ requests transfer from US to Mexico",
+     "subj": "Joaquín 'El Chapo' Guzmán requests transfer from US to Mexic"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Why Mexico’s Cartels Are So Hard to Defeat",
+     "subj": "The challenges of defeating Mexican cartels despite successf"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Two CIA agents reportedly killed in car crash in Mexican state of Chihuahua",
+     "subj": "Two CIA agents killed in a car crash in Mexico's Chihuahua s"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "No cartels involved - but Mexico's pyramid attack prompts new concerns",
+     "subj": "A lone gunman's attack at Mexico's Teotihuacán pyramid compl"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "US charges Mexican governor and other leaders with aiding drug cartel",
+     "subj": "US charges Sinaloa governor and Mexican officials with aidin"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Mexican president caught between Trump and her party",
+     "subj": ""
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "US charges Mexico’s Sinaloa state governor with drug trafficking",
+     "subj": "US charges Mexico's Sinaloa state governor with drug traffic"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "I was at the top of Mexico pyramid when a gunman opened fire",
+     "subj": "A Glasgow academic recounts escaping a gunman at Mexico's Te"
+    }
+   ],
+   "bucket": "b2_20to50"
+  },
+  "b6f91d2b-4838-4845-90c2-0f6be08595fc": {
+   "sid": "b6f91d2b-4838-4845-90c2-0f6be08595fc",
+   "n": 4310,
+   "tcoh": 0.1,
+   "core": 0.72,
+   "tshare": 0.72,
+   "top_ent": "iran",
+   "sc": "IN",
+   "rt": "Has the US-Iran ceasefire reset the clock on W",
+   "langs": {
+    "?": 79,
+    "bn": 14,
+    "ca": 3,
+    "de": 1,
+    "en": 3824,
+    "fa": 9,
+    "fr": 23,
+    "gu": 1,
+    "hi": 48,
+    "hr": 30,
+    "id": 3,
+    "ja": 4,
+    "kn": 37,
+    "ko": 2,
+    "ml": 11,
+    "mr": 2,
+    "ne": 97,
+    "sw": 1,
+    "ta": 3,
+    "te": 114,
+    "uk": 3,
+    "zh-tw": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "US turns down Iranian proposal to end war",
+     "subj": "US rejects Iranian proposal to end conflict over nuclear dea"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Trump Aide Warns US \"More Than Capable\" Of Restarting Iran War",
+     "subj": ""
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "US, Iran launch new attacks as they wrestle for control of Gulf waters",
+     "subj": "The U.S. and Iran exchange attacks in the Gulf, escalating t"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Trump tried to deliver an inspirational speech to graduates. It quickly became uncomfortab",
+     "subj": "Donald Trump delivers a controversial commencement speech at"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Trump Accuses Iran of Stalling Peace Talks",
+     "subj": "U.S. President Donald Trump accuses Iran of stalling peace t"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Iran foreign ministry says US must ‘abandon its excessive demands’",
+     "subj": ""
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Iran war has become a lesson in how power really works",
+     "subj": "The Iran war has exposed strategic miscalculations and flawe"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "India summons Iran s ambassador after Indian-flagged tankers shot at near Strait of Hormuz",
+     "subj": ""
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Is a US-Iran deal still possible?",
+     "subj": "The potential for a diplomatic deal between the US and Iran "
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Want to cross the Strait of Hormuz? Email the IRGC",
+     "subj": "Iran has established the Persian Gulf Strait Authority (PGSA"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Ghalibaf: From Grifter to Power Broker",
+     "subj": "Mohammad Baqer Ghalibaf's rise to power within Iran's leader"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Iran offers new proposal to end war with United States",
+     "subj": "The United States rejected Iran's proposal to end the war, w"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Iran Delivers Response to US on Latest Changes to Deal Ending War - Reports",
+     "subj": "Iran responds to US changes regarding a deal to end a war."
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Iran offers US to reach agreement on Hormuz opening during 30 days — Axios",
+     "subj": "Iran proposed a 30-day agreement to the US to end combat ope"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "‘Weeks, not years’: US pitches Operation Epic Fury as new model of warfare",
+     "subj": "The US promotes Operation Epic Fury as a new, swift model of"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Strait of Hormuz blockade could cripple world economy, Fed official warns",
+     "subj": ""
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Oil spike threatens Pakistan’s economic growth",
+     "subj": "Rising oil prices threaten Pakistan's economic growth and in"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "US-Israel-Iran War Latest News: Trump Says Iran Deal ‘Possible Before China Visit’ Amid St",
+     "subj": "US-Israel-Iran conflict and diplomatic efforts to de-escalat"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Strait of Hormuz Nears Third Month of Closure",
+     "subj": "The ongoing closure of the Strait of Hormuz and its impact o"
+    },
+    {
+     "rn": 20,
+     "lang": "ml",
+     "title": "കുവൈത്തിനു നേരെ വീണ്ടും ആക്രമണം",
+     "subj": "Kuwait was attacked again by drones and missiles, which were"
+    }
+   ],
+   "bucket": "b5_400plus"
+  },
+  "bd04c18c-1145-4d3a-b9be-33641ad4d79f": {
+   "sid": "bd04c18c-1145-4d3a-b9be-33641ad4d79f",
+   "n": 522,
+   "tcoh": 0.44,
+   "core": 0.43,
+   "tshare": 0.43,
+   "top_ent": "mv hondius",
+   "sc": "ES",
+   "rt": "Two dead after respiratory illness outbreak on",
+   "langs": {
+    "?": 1,
+    "bn": 6,
+    "en": 485,
+    "hi": 8,
+    "ne": 4,
+    "te": 18
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Govt activates surveillance after Hantavirus cases on cruise ship",
+     "subj": "The Indian government has activated surveillance measures fo"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Virus Detected Mid-Ocean on a Cruise—Doctor Shares What to Do",
+     "subj": "A medical alert about hantavirus detection on a cruise ship "
+    },
+    {
+     "rn": 3,
+     "lang": "ne",
+     "title": "ହାନ୍ତା ଭାଇରସ୍‌କୁ ନେଇ ଚିନ୍ତା: ମଣିଷଠାରୁ ମଣିଷକୁ ହେବ ସଂକ୍ରମଣ",
+     "subj": ""
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Hantavirus Explained: Why Experts Say Panic Isn’t Needed",
+     "subj": "Health experts explain why hantavirus poses low epidemic ris"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Spain seizes record amount of cocaine in Atlantic Ocean, authorities say",
+     "subj": "Spanish authorities seized a record amount of cocaine from a"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Hantavirus update: Where are the 23 cruise passengers? How many cases confirmed?",
+     "subj": "Hantavirus outbreak on MV Hondius cruise ship with 23 passen"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Atlantic Cruise ship Hantavirus outbreak: What we know so far",
+     "subj": "Hantavirus outbreak on MV Hondius cruise ship resulting in t"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "2 Indian nationals part of crew of luxury cruise ship that reported hantavirus outbreak",
+     "subj": "A hantavirus outbreak on a Dutch cruise ship has infected fi"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Last evacuation flights from hantavirus ship land in Netherlands",
+     "subj": "Evacuation flights from the hantavirus-hit ship MV Hondius l"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "WHO Chief recommends 42-day quarantine for MV Hondius ship evacuees",
+     "subj": "WHO recommends 42-day quarantine for cruise ship evacuees du"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "All measures taken to stop hantavirus spread after cruise scare — Spain",
+     "subj": "Spain's response to hantavirus cases among cruise ship evacu"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Views from inside the cruise ship after suspected hantavirus outbreak",
+     "subj": "A cruise ship with a suspected hantavirus outbreak is strand"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Nebraska University to treat US passengers from MV Hondius suspected of Hantavirus",
+     "subj": "Nebraska University to examine US cruise ship passengers sus"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "MV Hondius: the ice-breaking expedition cruise hit with suspected hantavirus outbreak",
+     "subj": "Suspected hantavirus outbreak on MV Hondius cruise ship in C"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Hantavirus in India? Who Are Two Indians evacuated from Virus-Struck Cruise Ship to Nether",
+     "subj": "Evacuation of two Indian nationals from a cruise ship with H"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Anger and resignation in Tenerife as hantavirus ship approaches",
+     "subj": "Tenerife residents protest potential health risks from hanta"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Two Indians among crew of luxury cruise ship hit by hantavirus outbreak",
+     "subj": "A hantavirus outbreak on a Dutch cruise ship with Indian cre"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Number of hantavirus cases onboard MV Hondius cruise ship up to 7 — WHO",
+     "subj": "The WHO reports seven hantavirus cases, including three deat"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "2 Indians on Board Ship Hit by Deadly Hantavirus Outbreak; Should India Be Worried?",
+     "subj": "A hantavirus outbreak on the cruise ship MV Hondius involves"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Passengers evacuated from Hantavirus-affected cruise ship",
+     "subj": "Passengers are evacuated from a hantavirus-stricken cruise s"
+    }
+   ],
+   "bucket": "b5_400plus"
+  },
+  "c6e17224-c1dd-4167-8c36-40a5502643e5": {
+   "sid": "c6e17224-c1dd-4167-8c36-40a5502643e5",
+   "n": 229,
+   "tcoh": 0.35,
+   "core": 0.57,
+   "tshare": 0.57,
+   "top_ent": "kerala",
+   "sc": "IN",
+   "rt": "No cat in treasury, Kerala in good position fi",
+   "langs": {
+    "?": 2,
+    "bn": 3,
+    "en": 187,
+    "hi": 13,
+    "hr": 6,
+    "kn": 5,
+    "ne": 1,
+    "te": 12
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Kerala Assembly polls 2026 results: UDF sweeps Wayanad; Minister O.R. Kelu suffers defeat",
+     "subj": "The Congress-led UDF won all three Assembly constituencies i"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Kerala Assembly Elections 2026: Clean sweep for UDF in Ernakulam as LDF falls flat",
+     "subj": "The United Democratic Front (UDF) achieved a decisive victor"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Kerala elections 2026: Check full list of winners",
+     "subj": "The 2026 Kerala Assembly election results showing UDF leadin"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Kerala Assembly Polls 2026: Rajeev Chandrasekhar cites Bengal model, projects BJP’s gains ",
+     "subj": "BJP projects long-term political strategy in Kerala after As"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Manjeshwaram 2026: K. Surendran eyes comeback in key Kerala battle",
+     "subj": "K. Surendran's loss in the 2026 Kerala Assembly election fro"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Kerala Assembly Polls 2026: RSP scripts the ultimate comeback story",
+     "subj": "RSP's electoral comeback in Kollam district during Kerala As"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "UDF surge bypasses Thrissur Congress",
+     "subj": "Congress party's electoral setbacks in Thrissur district des"
+    },
+    {
+     "rn": 9,
+     "lang": "kn",
+     "title": "ಕೇರಳ, ತಮಿಳುನಾಡಿನಲ್ಲಿ ನಮಗೆ ಮೇಲುಗೈ: ಮಲ್ಲಿಕಾರ್ಜುನ ಖರ್ಗೆ ವಿಶ್ವಾಸ",
+     "subj": ""
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Governance is the ultimate currency in Kerala",
+     "subj": "The 2026 Kerala Assembly election marked a shift in voter se"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Kerala assembly elections 2026: CPI(M)'s Sivankutty's bid to retain Nemom seat after 2016 ",
+     "subj": "CPI(M)'s V Sivankutty aims to retain the Nemom seat in the 2"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Kerala Assembly polls 2026: BDJS, Twenty20 fail to leave a political impact",
+     "subj": "The BDJS and Twenty20 parties failed to make a significant p"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Kerala Assembly Polls 2026: Narrow victory triggers political blame game in Kottarakara",
+     "subj": "A narrow victory in Kottarakara during the 2026 Kerala Assem"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Kerala Assembly Elections 2026: UDF sweeps Kozhikode with 12 seats",
+     "subj": "The UDF's victory in the Kozhikode district during the Keral"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Kerala Assembly Elections 2026: BJP emerges victorious in three seats",
+     "subj": "BJP wins three seats in Kerala Assembly elections 2026"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Kerala Assembly Elections 2026: BJP breaches the Left bastion of Chathannur",
+     "subj": "BJP wins Chathannur constituency in Kerala Assembly Election"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Kerala Assembly Polls 2026: BJP’s silent groundwork yields dividends in Kollam",
+     "subj": "The BJP's breakthrough victory in Chathannur and growing ele"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Kerala Assembly polls: IUML ‘backs’ V.D. Satheesan as Congress-led UDF’s CM pick",
+     "subj": "IUML leader supports V.D. Satheesan as UDF's Chief Minister "
+    },
+    {
+     "rn": 19,
+     "lang": "hr",
+     "title": "ಜನರ ನಂಬಿಕೆ, ಪ್ರೀತಿಯೇ ಅಭಿವೃದ್ಧಿಗೆ ಪ್ರೇರಣೆ: ಶಾಸಕ ಗೋಪಾಲಕೃಷ್ಣ ಬೇಳೂರು",
+     "subj": ""
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    }
+   ],
+   "bucket": "b4_150to400"
+  },
+  "cf3b4a99-8a15-43fb-ab82-3186e6c1baca": {
+   "sid": "cf3b4a99-8a15-43fb-ab82-3186e6c1baca",
+   "n": 43,
+   "tcoh": 0.33,
+   "core": 0.74,
+   "tshare": 0.74,
+   "top_ent": "west bengal",
+   "sc": "IN",
+   "rt": "Who Will Be Next Bengal CM If BJP Comes To Pow",
+   "langs": {
+    "en": 36,
+    "hi": 4,
+    "ne": 2,
+    "te": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "West Bengal Election 2026: Here’s the Full list of West Bengal Cabinet Ministers, Chief Mi",
+     "subj": "BJP's victory in the 2026 West Bengal Assembly elections and"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "",
+     "subj": ""
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Regional, caste calculus in BJP’s West Bengal Cabinet choices",
+     "subj": "BJP's West Bengal Cabinet allocation balancing regional and "
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "How Suvendu Adhikari emerged as BJP’s face in West Bengal",
+     "subj": "Suvendu Adhikari's political rise as BJP's first Chief Minis"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Pabitra Kar: TMC’s grassroots challenger in the high-stakes Nandigram battle",
+     "subj": "Pabitra Kar, a former BJP leader and ex-aide of Suvendu Adhi"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "West Bengal Elections: Ex-KKR Star Ashoke Dinda Appointed State’s Sports Minister As BJP F",
+     "subj": "Ashoke Dinda appointed as West Bengal's Sports Minister foll"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Fashion to politics, journey of BJP's Agnimitra Paul in Bengal politics",
+     "subj": "Agnimitra Paul's transition from fashion to BJP politics and"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "CM Adhikari charts governance roadmap for Sonar Bangla",
+     "subj": "Suvendu Adhikari assumes office as West Bengal's Chief Minis"
+    },
+    {
+     "rn": 9,
+     "lang": "hi",
+     "title": "जंगलमहल को लाल से भगवा करने में खुदीराम टुडू की रही अहम भूमिका, अब बने शुभेंदु कैबिनेट में",
+     "subj": "Khudiram Tudu's appointment as a minister in West Bengal's c"
+    },
+    {
+     "rn": 10,
+     "lang": "hi",
+     "title": "शुभेंदु कैबिनेट में संघ का प्रभाव, महिला और आदिवासी के साथ मतुआ को भी जगह",
+     "subj": "West Bengal's new cabinet formation with BJP influence, incl"
+    },
+    {
+     "rn": 11,
+     "lang": "hi",
+     "title": "दिलीप घोष को गांवों की जिम्मेदारी, अग्निमित्रा संभालेंगी ‘नारी शक्ति’, देखें बंगाल में किस",
+     "subj": "West Bengal cabinet assigns portfolios to ministers"
+    },
+    {
+     "rn": 12,
+     "lang": "hi",
+     "title": "बंगाल में कौन बनेगा मुख्यमंत्री? शुभेंदु अधिकारी का पलड़ा क्यों है सबसे भारी?",
+     "subj": "The article analyzes why Shubhendu Adhikari is seen as the f"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "West Bengal Election 2026 Results Live Update: Will West Bengal Get Two Deputy Chief Minis",
+     "subj": ""
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Who is Kshudiram Tudu, the low-profile tribal leader from Jangalmahal in BJP's new cabinet",
+     "subj": "The appointment of Kshudiram Tudu, a tribal leader from Jang"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "BJP's gamechanger in West Bengal politics? 5 key facts about Suvendu Adhikari",
+     "subj": "Suvendu Adhikari's political shift from TMC to BJP and his r"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "BJP gears up to pick Bengal CM; Suvendu Adhikari front runner",
+     "subj": "BJP's selection process for West Bengal Chief Minister follo"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Suvendu as BJP’s Bengal CM follows a pattern",
+     "subj": "The BJP appoints defectors like Suvendu Adhikari as Chief Mi"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Who will be the next Bengal chief minister? Meet Mamata Banerjee’s likely successor as ass",
+     "subj": "The selection of the next Chief Minister of West Bengal foll"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "BJP Leader Agnimitra Paul Makes Surprise Delhi Visit Amid Bengal CM Speculations",
+     "subj": "BJP leadership deliberations and Agnimitra Paul's Delhi visi"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "TMC MP Kakoli Ghosh Dastidar attends BJP government meeting in Bengal",
+     "subj": "TMC MP Kakoli Ghosh Dastidar attends a BJP-led government me"
+    }
+   ],
+   "bucket": "b2_20to50"
+  },
+  "cf51ad64-58ec-454f-b141-4ea1e803e399": {
+   "sid": "cf51ad64-58ec-454f-b141-4ea1e803e399",
+   "n": 19,
+   "tcoh": 0.21,
+   "core": 0.63,
+   "tshare": 0.63,
+   "top_ent": "cuba",
+   "sc": "CU",
+   "rt": "US general meets Cuban military officials at e",
+   "langs": {
+    "?": 1,
+    "en": 18
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "US extends sanctions against Belarusian leadership for another year",
+     "subj": "The United States has extended sanctions against Belarusian "
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "US and Cuban military leaders hold rare meeting at Guantanamo",
+     "subj": "US and Cuban military leaders held a rare meeting at Guantan"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "US pulls out of joint military board with Canada prompting angry responses from northern n",
+     "subj": "The United States has paused its participation in the Perman"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Cuba Calls Guantanamo Talks with U.S. General ‘Positive’",
+     "subj": ""
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Juan Manuel Santos on Colombia’s peace process, 10 years on",
+     "subj": ""
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Cuba, Nicaragua, Mexico – Pentagon Reportedly Eyeing Targets in Latin America",
+     "subj": "The US military is reportedly preparing for potential interv"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Spy vs. spy: A look at how some of Havana and Washington's most noteworthy agents operated",
+     "subj": "The history of espionage between the U.S. and Cuba, includin"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "US uses Puerto Rico as staging ground for potential strike on Cuba — expert",
+     "subj": "US military buildup in Puerto Rico for potential Cuba strike"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "US cancels tourist visas for board members of top Costa Rica newspaper",
+     "subj": "The US has revoked tourist visas for over half of the board "
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "US is using mercenaries to destabilize situation in countries outside its control — expert",
+     "subj": "A Russian military expert claims the US is using mercenaries"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Laura Fernandez sworn in as Costa Rica’s new president",
+     "subj": "Laura Fernandez is sworn in as Costa Rica's new president, v"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "US general meets Cuban military officials at edge of Guantanamo Bay",
+     "subj": ""
+    },
+    {
+     "rn": 13,
+     "lang": "",
+     "title": "Is Cuba next? US warns Havana is ‘a national security threat’ as Trump ramps up pressure",
+     "subj": "The US under President Donald Trump escalates rhetoric and s"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Top US and Cuban generals meet at Guantanamo Bay",
+     "subj": "US and Cuban generals meet at Guantanamo Bay to discuss oper"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "US general holds rare meeting with Cuban military officials near Guantanamo Bay",
+     "subj": "A U.S. general holds a rare meeting with Cuban military offi"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Monroe Doctrine 2.0: ‘Great Reset’ for US Imperialism?",
+     "subj": "The article analyzes the potential revival of the Monroe Doc"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Venezuela Needs Regime Change",
+     "subj": "The article argues that the U.S. intervention in Venezuela f"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Exclusive-US general meets Cuban military officials at edge of Guantanamo Bay",
+     "subj": "A U.S. general meets Cuban military officials at Guantanamo "
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Why Canada is seeing its biggest military recruitment surge in 30 years",
+     "subj": "Canada's military recruitment surge driven by geopolitical t"
+    }
+   ],
+   "bucket": "b1_5to20"
+  },
+  "d2e58b18-485e-4046-8a77-e5a79f5986c7": {
+   "sid": "d2e58b18-485e-4046-8a77-e5a79f5986c7",
+   "n": 102,
+   "tcoh": 0.22,
+   "core": 0.82,
+   "tshare": 0.82,
+   "top_ent": "pakistan",
+   "sc": "IN",
+   "rt": "India warns Pak on Op Sindoor anniversary, say",
+   "langs": {
+    "en": 95,
+    "ne": 2,
+    "te": 5
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "India will continue fighting cross-border terrorism, says MEA",
+     "subj": "India's reaffirmation of its right to defend against Pakista"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Pakistan's civil, military leadership attend ceremony at Pakistan Monument in Islamabad to",
+     "subj": "Pakistan commemorates the first anniversary of the conflict "
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Myanmar junta claims recapture of trade artery towards China",
+     "subj": "Myanmar military claims recapture of key trade corridor to C"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "India, Singapore Reaffirm Zero Tolerance Against Terrorism At Joint Working Group Meeting",
+     "subj": "India and Singapore reaffirm their commitment to combat terr"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Two wins, two losses: What India, Pakistan have learned a year after war",
+     "subj": "The aftermath of the India-Pakistan military conflict and it"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "The May war",
+     "subj": "India-Pakistan conflict and regional tensions following a re"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Gunmen Strike again in Plateau, Attack Mourners during Mass Burial",
+     "subj": "Gunmen attack mourners during a mass burial in Plateau State"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "One year of Operation Sindoor: Every time India countered Pak's claims, Trump's ceasefire ",
+     "subj": "India's military response to a terrorist attack in Jammu and"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Operation Sindoor signalled no terror sanctuary is safe: Indian Army",
+     "subj": "Indian military leaders mark the first anniversary of Operat"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "India warns Pak on Op Sindoor anniversary, says ‘right to defend’ absolute",
+     "subj": "India's reaffirmation of its right to defend against Pakista"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "CDF Munir addresses GHQ ceremony marking one year since Marka-i-Haq",
+     "subj": "Pakistani military chief warns of severe consequences for fu"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Marka-i-Haq a 'defining landmark in the nation’s journey': ISPR",
+     "subj": "Pakistan's military commemorates the first anniversary of th"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Editorial: Sindoor anniversary — rewriting rules of engagement",
+     "subj": "India's Operation Sindoor's first anniversary and its implic"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Pakistan Army chief says India conflict ‘battle of two ideologies’",
+     "subj": "Pakistan's military chief describes India-Pakistan conflict "
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "'Etched in history': PM Shehbaz says Pakistan cannot be 'intimidated or subdued' as nation",
+     "subj": "Pakistan commemorates the first anniversary of the Marka-i-H"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "A year after Operation Sindoor, two schools bear the cost of conflict in Pulwama and Poonc",
+     "subj": "Two schools in Jammu & Kashmir continue to grapple with trau"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "“Lightning” Struck Pakistan’s Ballistic Missile! Meet Barak-8, The Indo-Israeli Missile Th",
+     "subj": "An Indo-Israeli Barak-8 missile intercepted a Pakistani ball"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Parts of Keta submerged after hours of heavy downpour",
+     "subj": "Flooding in Keta Township due to heavy rainfall causing disp"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Pakistan eyes big Kashmir strike to trigger global intervention",
+     "subj": "Pakistan plans a major attack in Kashmir to force US interve"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Operation Sindoor: How 88 hours of conflict reshaped India air defences",
+     "subj": "Operation Sindoor's 88-hour conflict between India and Pakis"
+    }
+   ],
+   "bucket": "anchor"
+  },
+  "ded59179-5424-45ac-8fa8-263f5a842f89": {
+   "sid": "ded59179-5424-45ac-8fa8-263f5a842f89",
+   "n": 5,
+   "tcoh": 0.8,
+   "core": 1,
+   "tshare": 1,
+   "top_ent": "charles amissah",
+   "sc": "GH",
+   "rt": "Vicky Bright says Charles Amissah’s case shoul",
+   "langs": {
+    "en": 5
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "We have a failed emergency care system – Vicky Bright",
+     "subj": "Vicky Bright criticizes Ghana's emergency healthcare system "
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Charles Amissah’s Death: Victor Bright calls for action on Committee Recommendations, not ",
+     "subj": "Victor Bright urges implementation of government committee r"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Vicky Bright says Charles Amissah’s case should disturb every Ghanaian",
+     "subj": "Vicky Bright criticizes Ghana's healthcare system following "
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Someone must be held responsible – Vicky Bright calls for accountability over Charles Amis",
+     "subj": "Call for accountability in Ghana healthcare system following"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "We must find the hit-and-run driver – Dr Yamson on Charles Amissah case",
+     "subj": "Call for accountability in Charles Amissah's hit-and-run cas"
+    }
+   ],
+   "bucket": "b1_5to20"
+  },
+  "e4687ac3-bfb8-4e71-a966-71de03ecc62a": {
+   "sid": "e4687ac3-bfb8-4e71-a966-71de03ecc62a",
+   "n": 192,
+   "tcoh": 0.26,
+   "core": 0.46,
+   "tshare": 0.46,
+   "top_ent": "elon musk",
+   "sc": "US",
+   "rt": "Former OpenAI board member says Elon Musk offe",
+   "langs": {
+    "?": 4,
+    "en": 185,
+    "hi": 1,
+    "te": 2
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Hong Kong ‘block trade king’ exploited bank lapse to make HK$1.7 million, court told",
+     "subj": "Simon Sadler and Segantii Capital face trial for alleged ins"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Claim, counter-claim and tech's seedy side exposed: Five things we learned in the Musk-Alt",
+     "subj": "The trial between Elon Musk and Sam Altman over OpenAI's tra"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Elon Musk sought settlement with OpenAI before Oakland trial, filing shows",
+     "subj": "Elon Musk sought a settlement with OpenAI before a trial, as"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Elon Musk spars with OpenAI attorney in trial over company's evolution from a nonprofit",
+     "subj": "Elon Musk testifies in a trial against OpenAI regarding its "
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Elon Musk settles SEC lawsuit over Twitter disclosures, $1.5 million fine imposed",
+     "subj": "Elon Musk settles SEC lawsuit over delayed Twitter stock dis"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "'I thought he was going to hit me' OpenAI co-founder says of Musk",
+     "subj": "OpenAI co-founder Greg Brockman's testimony about a 2017 mee"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Elon Musk agrees to pay $1.5m over Twitter share buying",
+     "subj": ""
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "OpenAI to cap Microsoft revenue-sharing at $38 billion: Report",
+     "subj": "OpenAI and Microsoft agreed to a $38 billion cap on revenue-"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Elon Musk vs OpenAI trial enters second week",
+     "subj": "Elon Musk's lawsuit against OpenAI over its nonprofit status"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "New Mexico trial citing ‘public nuisance’ laws against Meta, social platforms",
+     "subj": "New Mexico is suing Meta for public nuisance over child safe"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "In OpenAI trial, former technology chief says Sam Altman sowed 'chaos,' distrust among top",
+     "subj": "Testimony in Elon Musk's lawsuit against OpenAI regarding CE"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Meta sued for ‘misleading’ Texans over WhatsApp privacy",
+     "subj": "Texas Attorney General sues Meta over WhatsApp privacy claim"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Volo Freezes Funds, Limits Damage After $3.5 Million Sui Blockchain Exploit",
+     "subj": ""
+    },
+    {
+     "rn": 14,
+     "lang": "te",
+     "title": "షాకిచ్చిన ఇన్ స్టాగ్రామ్.. ఇకపై మీ డేటాకు నో సేఫ్టీ.. ఇలా సేవ్ చేసుకోండి!",
+     "subj": "Instagram is removing end-to-end encryption for messages, ra"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "OpenAI chief Altman says Elon Musk wanted control of ChatGPT maker, denies betrayal",
+     "subj": "Sam Altman denies Elon Musk's claims of betrayal and asserts"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Elon Musk trial against Sam Altman to reveal OpenAI power struggle",
+     "subj": "Elon Musk sues Sam Altman and OpenAI executives over alleged"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Microsoft boss to testify on his role in OpenAI's founding",
+     "subj": "Microsoft CEO Satya Nadella testifies in Elon Musk's lawsuit"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Hollywood studios and actors' union find common ground on AI",
+     "subj": "Hollywood studios and SAG-AFTRA negotiate a new contract add"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Texas sues Meta and WhatsApp over encrypted chat claims",
+     "subj": "Texas sues Meta and WhatsApp over alleged misleading claims "
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "OpenAI cofounder Greg Brockman discloses nearly $30 billion stake, financial ties to Sam A",
+     "subj": "OpenAI co-founder Greg Brockman disclosed a nearly $30 billi"
+    }
+   ],
+   "bucket": "b4_150to400"
+  },
+  "eff98fcc-4e65-43b7-b031-f787327758d5": {
+   "sid": "eff98fcc-4e65-43b7-b031-f787327758d5",
+   "n": 49,
+   "tcoh": 0.35,
+   "core": 0.49,
+   "tshare": 0.49,
+   "top_ent": "bharatiya janata party",
+   "sc": "IN",
+   "rt": "Assam polls:Gaurav Gogoi questions EC on stron",
+   "langs": {
+    "?": 1,
+    "bn": 1,
+    "en": 44,
+    "hi": 2,
+    "ne": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "“Don’t link women’s reservation with delimitation”: Congress MP Gaurav Gogoi in LS",
+     "subj": "Congress MP Gaurav Gogoi opposes linking women's reservation"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "G. Sudhakaran slams Kerala CPI(M) leaders over remarks on paying tribute at brother’s memo",
+     "subj": "Former CPI(M) leader G Sudhakaran criticizes Kerala CPI(M) l"
+    },
+    {
+     "rn": 3,
+     "lang": "hi",
+     "title": "असम चुनाव में कैसा है &#8216;Gen-Z&#8217; स्वैग, देखें गुवाहाटी सीट पर कुनकी चौधरी का हाल",
+     "subj": "The article is fundamentally about the 2026 Assam Assembly e"
+    },
+    {
+     "rn": 4,
+     "lang": "",
+     "title": "“If Zubeen Garg does not get justice, then who will?”: Garima Garg",
+     "subj": "Demand for justice for singer Zubeen Garg following a solida"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Gaurav Gogoi Loses From Jorhat To BJP’s Hitendra Nath Goswami",
+     "subj": "Gaurav Gogoi lost the Jorhat assembly seat to BJP's Hitendra"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Durgapur Paschim Election Result 2026 Live Updates: Who is Leading and Who is Trailing in ",
+     "subj": "BJP candidate Lakshman Chandra Ghorui wins Durgapur Paschim "
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Assam Elections 2026: AJP president slams exit polls, calls projections ‘inaccurate’ and ‘",
+     "subj": "AJP president criticizes exit polls ahead of 2026 Assam elec"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "BJP spokesperson quits party amid ongoing Manipur ethnic conflict",
+     "subj": "BJP spokesperson Elangbam Johnson resigns from the party cit"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "In Manipur, the body of an MLA remains in morgue, waiting for justice",
+     "subj": "The article is fundamentally about the death and aftermath o"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Assam Congress to analyse poll defeat",
+     "subj": "The Assam Congress is analyzing its defeat in the Assembly e"
+    },
+    {
+     "rn": 11,
+     "lang": "hi",
+     "title": "गौरव गोगोई ने असम हार का लिया जिम्मा, कहा- नतीजे सोचने पर मजबूर करने वाले",
+     "subj": "Assam Congress president Gaurav Gogoi takes responsibility f"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Let’s keep Yaw Sarpong’s music alive as an honour – Family, fans appeal as gospel legend g",
+     "subj": "Family and fans of Ghanaian gospel musician Yaw Sarpong appe"
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "AJP’s Gen Z bet: Kunki Chowdhury in high-stakes urban contest",
+     "subj": "Kunki Chowdhury, a Gen Z candidate from AJP, lost the Guwaha"
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Khowang Assembly Elections 2026 Result LIVE: Chakradhar Gogoi (BJP) Won By 33 Seats, Key C",
+     "subj": "BJP candidate Chakradhar Gogoi is leading in the 2026 Khowan"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Why Prodip Hazarika, candidate from Sivasagar, remains AGP’s reliable face in Assam",
+     "subj": "AGP leader Prodip Hazarika trails in third place during the "
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Guwahati East Assembly Elections 2026 Result LIVE: Check Winner, New MLA, Key Candidates, ",
+     "subj": "The article provides information about the upcoming 2026 Guw"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Will play role of proactive opposition, raise people's issues: Assam Congress chief Gaurav",
+     "subj": "Assam Congress chief Gaurav Gogoi outlines opposition strate"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Assam polls:Gaurav Gogoi questions EC on strong rooms security, targets BJP",
+     "subj": "Gaurav Gogoi criticizes BJP and EC over Assam strong room se"
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Manipur BJP spokesperson quits party over ongoing ethnic crisis",
+     "subj": "Manipur BJP spokesperson resigns over party's handling of et"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Congress accepts Assam verdict, will continue to raise people’s issues: Gaurav Gogoi",
+     "subj": "Assam Congress party accepts election results and pledges to"
+    }
+   ],
+   "bucket": "b2_20to50"
+  },
+  "fc53f9d5-2a07-48d6-afa3-54179ac4de37": {
+   "sid": "fc53f9d5-2a07-48d6-afa3-54179ac4de37",
+   "n": 444,
+   "tcoh": 0.62,
+   "core": 0.61,
+   "tshare": 0.61,
+   "top_ent": "mick price",
+   "sc": "IN",
+   "rt": "Coal India Share Price Live Updates: Coal Indi",
+   "langs": {
+    "ca": 35,
+    "en": 404,
+    "fi": 2,
+    "id": 3
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Coal India Share Price Live Updates: Coal India  Current Market Status",
+     "subj": "Coal India's share price is experiencing a positive movement"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Negative Breakout: These 6 stocks cross below their 200 DMAs",
+     "subj": ""
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Who Am I? May 31, 2026",
+     "subj": "A riddle asking readers to identify a specific Indian compan"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Axis Bank Share Price Live Updates: Axis Bank's beta reveals its market dynamics",
+     "subj": "Axis Bank's current share price and trading volume performan"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "HCL Tech Share Price Live Updates: HCL Tech's recent performance raises concerns",
+     "subj": "HCL Tech's stock price performance and market indicators"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Asian Paints Share Price Live Updates: Asian Paints  Market Update",
+     "subj": "Real-time market updates and stock performance for Asian Pai"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Divis Labs Share Price Live Updates: Divis Labs maintains a beta of 0.7686 in the last six",
+     "subj": "Real-time market updates and stock performance analysis for "
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Tata Consumer Share Price Live Updates: Tata Consumer's growth reflected in monthly return",
+     "subj": "Tata Consumer's share price target and recommendation by Ela"
+    },
+    {
+     "rn": 9,
+     "lang": "ca",
+     "title": "Divis Labs Share Price Live Updates: Divis Labs experiences a weekly decline",
+     "subj": "Divis Laboratories stock price and market performance."
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Divis Labs Share Price Live Updates: Divis Labs' six-month beta reflects stability",
+     "subj": "Divis Labs stock price and market performance updates"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Hero MotoCorp Share Price Live Updates: Hero MotoCorp's beta signifies its investment prof",
+     "subj": "HDFC Securities issues a positive outlook on Hero MotoCorp w"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Airtel tests Indian subscribers again, targeting the top of the pyramid",
+     "subj": ""
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Angel One among 5 stocks flashing bullish signals, hinting at a possible uptrend",
+     "subj": ""
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Power Grid Share Price Live Updates: Power Grid's monthly performance reflects stability",
+     "subj": "Power Grid's stock price performance and market metrics on M"
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Bharti Airtel Share Price Live Updates: Bharti Airtel Experiences Strong Trading Volume",
+     "subj": "The article is fundamentally about real-time stock price mov"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Sunil Singhania’s Abakkus Portfolio: 6 stocks rally up to 75% in CY26; 5 new buys added in",
+     "subj": ""
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "ICICI Bank Share Price Live Updates: ICICI Bank's Current Price and Market Performance",
+     "subj": "ICICI Bank's current share price and market performance with"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "​​BSE, Wipro among 10 stocks to be added in Nifty Next 50, Nifty in September rejig. Check",
+     "subj": ""
+    },
+    {
+     "rn": 19,
+     "lang": "ca",
+     "title": "Power Grid Share Price Live Updates: Power Grid's Stock Faces Weekly Setback",
+     "subj": "Real-time market updates and performance analysis of Power G"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "IndusInd Bank Share Price Live Updates: IndusInd Bank's impressive monthly return",
+     "subj": "Real-time updates and analysis on IndusInd Bank's stock perf"
+    }
+   ],
+   "bucket": "b5_400plus"
+  },
+  "fd6e71d4-8004-4c3b-b034-de119bc91221": {
+   "sid": "fd6e71d4-8004-4c3b-b034-de119bc91221",
+   "n": 50,
+   "tcoh": 0.22,
+   "core": 0.7,
+   "tshare": 0.7,
+   "top_ent": "japan",
+   "sc": "IN",
+   "rt": "Anti-war protests rock Japan as PM pushes for ",
+   "langs": {
+    "en": 48,
+    "hi": 1,
+    "te": 1
+   },
+   "members": [
+    {
+     "rn": 1,
+     "lang": "en",
+     "title": "Singapore must keep making ‘bold bets’ to stay competitive in a fragmented world: Jeffrey ",
+     "subj": "Singapore must continue making bold economic strategies to r"
+    },
+    {
+     "rn": 2,
+     "lang": "en",
+     "title": "Japan’s new spy agency receives FBI backing with eyes on China and Russia",
+     "subj": "Japan plans to establish a centralized intelligence agency w"
+    },
+    {
+     "rn": 3,
+     "lang": "en",
+     "title": "Japan defence minister denies militarism and criticises China's 'huge arsenal'",
+     "subj": "Japan's defense minister denies accusations of militarism an"
+    },
+    {
+     "rn": 4,
+     "lang": "en",
+     "title": "Japan pushes back against accusations of ‘new militarism’",
+     "subj": "Japanese defence minister denies accusations of new militari"
+    },
+    {
+     "rn": 5,
+     "lang": "en",
+     "title": "Japanese defence chief takes swipe at China at security meet",
+     "subj": "Japanese Defence Minister Shinjiro Koizumi criticizes China'"
+    },
+    {
+     "rn": 6,
+     "lang": "en",
+     "title": "Japan defence chief takes swipe at China at security meet",
+     "subj": "Japan's defence minister criticizes China's military expansi"
+    },
+    {
+     "rn": 7,
+     "lang": "en",
+     "title": "Japan and China trade accusations at Shangri-La Dialogue",
+     "subj": "Japan and China exchange accusations of militarism and neo-m"
+    },
+    {
+     "rn": 8,
+     "lang": "en",
+     "title": "Anti-war protests rock Japan as PM pushes for stronger defence",
+     "subj": "Japan's anti-war protests against Prime Minister Sanae Takai"
+    },
+    {
+     "rn": 9,
+     "lang": "en",
+     "title": "Japan remains committed to postwar pacifist path — Cabinet",
+     "subj": "Japan reaffirms its commitment to a postwar pacifist path am"
+    },
+    {
+     "rn": 10,
+     "lang": "en",
+     "title": "Japan defence minister denies militarism and criticises China’s ‘huge arsenal’",
+     "subj": "Japan's defence minister denies militarism and criticises Ch"
+    },
+    {
+     "rn": 11,
+     "lang": "en",
+     "title": "Japan defence minister rebuffs claims of ‘new militarism’ levelled by China",
+     "subj": "Japan's defence minister rejects Chinese accusations of mili"
+    },
+    {
+     "rn": 12,
+     "lang": "en",
+     "title": "Japan taking cautious — if firm — approach to avoiding escalation with China",
+     "subj": "Japan's Defense Minister Shinjiro Koizumi denies militarism "
+    },
+    {
+     "rn": 13,
+     "lang": "en",
+     "title": "Japan eyes first export of indigenous missile system amid closer ties with Philippines",
+     "subj": "Japan considers exporting the Type 88 missile system to the "
+    },
+    {
+     "rn": 14,
+     "lang": "en",
+     "title": "Malaysia rebukes Norway over cancelled missile deal; calls out global ‘hypocrisy’ on war c",
+     "subj": "Malaysia rebukes Norway for cancelling a naval missile deal "
+    },
+    {
+     "rn": 15,
+     "lang": "en",
+     "title": "Japan says it remains open to dialogue with China; rejects 'new militarism’ label",
+     "subj": "Japan rejects Chinese accusations of militarism while affirm"
+    },
+    {
+     "rn": 16,
+     "lang": "en",
+     "title": "Malaysia slams 'deafening silence' over scrapped Norway missile deal",
+     "subj": "Malaysia condemns Norway for cancelling a missile deal and s"
+    },
+    {
+     "rn": 17,
+     "lang": "en",
+     "title": "Takaichi asks North Korea for summit to solve abduction issue",
+     "subj": "Japanese Prime Minister Sanae Takaichi urges North Korea's K"
+    },
+    {
+     "rn": 18,
+     "lang": "en",
+     "title": "Japan, Philippines to discuss surface-to-ship missile exports",
+     "subj": ""
+    },
+    {
+     "rn": 19,
+     "lang": "en",
+     "title": "Thousands rally in Tokyo against Sanae Takaichi government's dangerous policy moves",
+     "subj": "Thousands of people rallied in Tokyo to protest Prime Minist"
+    },
+    {
+     "rn": 20,
+     "lang": "en",
+     "title": "Japan PM vows ‘breakthrough’ with N. Korea in abduction issue",
+     "subj": ""
+    }
+   ],
+   "bucket": "b3_50to150"
+  }
+ }
+}

@@ -14,16 +14,20 @@ import Login from './pages/Login';
 import { useMe } from './lib/useMe';
 
 const PAGES = [Home, WarRoom, Analytics, Dossier, MapPage, Dispatch];
-// URL slug per page (Home lives at '/'). Keeps the address bar + back/forward in sync.
+// URL slug per page (Home lives at the base). Keeps the address bar + back/forward
+// in sync, and is base-path aware so it works at '/' (dev) or '/desk/' (subpath deploy).
 const SLUGS = ['home', 'war-room', 'analytics', 'dossier', 'map', 'dispatch'];
+const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, ''); // '' at root, '/desk' on subpath
 
 function pathToIndex(pathname) {
-  const slug = (pathname || '/').replace(/^\/+/, '').split('/')[0] || 'home';
+  let p = pathname || '/';
+  if (BASE && p.startsWith(BASE)) p = p.slice(BASE.length);
+  const slug = p.replace(/^\/+/, '').split('/')[0] || 'home';
   const ix = SLUGS.indexOf(slug);
   return ix >= 0 ? ix : 0;
 }
 function indexToPath(ix) {
-  return ix === 0 ? '/' : `/${SLUGS[ix]}`;
+  return ix === 0 ? `${BASE}/` : `${BASE}/${SLUGS[ix]}`;
 }
 
 function AppShell() {

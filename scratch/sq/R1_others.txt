@@ -1,0 +1,28 @@
+=== R1 cross-entity coverage (Latin broad + Indic) ===
+      label       | aem_total | latin_hit | latin_pct | latin_miss | indic_hit | indic_pct_of_miss | combined_pct | unexplained_tail 
+------------------+-----------+-----------+-----------+------------+-----------+-------------------+--------------+------------------
+ BJP              |      3289 |      2775 |      84.4 |        514 |       278 |              54.1 |         92.8 |              236
+ Mir Zulfeqar Ali |      1483 |         0 |       0.0 |       1483 |         0 |               0.0 |          0.0 |             1483
+ INC              |       703 |       113 |      16.1 |        590 |         2 |               0.3 |         16.4 |              588
+ BRS              |       660 |       464 |      70.3 |        196 |         0 |               0.0 |         70.3 |              196
+(4 rows)
+
+
+=== CONTROL entities: Iran, Modi, Tesla — must stay high under enrichment ===
+ label | aem_total | latin_hit | latin_pct 
+-------+-----------+-----------+-----------
+ Iran  |      8290 |      7826 |      94.4
+ Modi  |      2121 |      1941 |      91.5
+ Tesla |       129 |       129 |     100.0
+(3 rows)
+
+
+=== existing aliases in dict for the 5 target entities (what posture.py likely sees) ===
+      canonical_name      |                                                                                     aliases                                                                                      
+--------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Indian National Congress | {"Indian Congress","Prof. Indian National Congress","Shri Indian National Congress","Indian National Congress (INC)","MLA Congress",INC,"Dr. Indian National Congress",Congress}
+ Mir Zulfeqar Ali         | {Ali,"Mir Ali","MLA Ali","Shri Mir Zulfeqar Ali","Dr. Mir Zulfeqar Ali","Prof. Mir Zulfeqar Ali","Mir Zulfeqar Ali (Mir Zulfeqar Ali)"}
+ Bharatiya Janata Party   | {"MLA Party","Dr. Bharatiya Janata Party",Party,"Prof. Bharatiya Janata Party","Shri Bharatiya Janata Party","Bharatiya Party",BJP}
+ Bharat Rashtra Samithi   | {"Bharat Samithi","Dr. Bharat Rashtra Samithi",BRS,"Shri Bharat Rashtra Samithi","Prof. Bharat Rashtra Samithi","MLA Samithi",Samithi}
+(4 rows)
+

@@ -1,0 +1,935 @@
+[
+  {
+    "layer": 1,
+    "label": "SQL sanity",
+    "passed": true,
+    "metrics": {
+      "fk_orphans_per_table": {
+        "article_claims": 0,
+        "article_events": 0,
+        "article_links": 0,
+        "article_locations": 0,
+        "article_media": 0,
+        "article_numbers": 0,
+        "article_quotes": 0,
+        "article_stances": 0
+      },
+      "max_fk_orphans": 0,
+      "year_drift_pct_residual": "7.22",
+      "year_drift_pct_corrected": "39.5",
+      "year_drift_pre": "43334",
+      "year_drift_corrected_count": "39274",
+      "v3_article_count": 61255,
+      "v3_ok_count": 61255,
+      "claims_placeholder": {
+        "count": 183358,
+        "pct": 74.2,
+        "total": 247195
+      },
+      "row_counts": {
+        "article_claims": 247195,
+        "article_contradictions": 1,
+        "article_events": 165956,
+        "article_links": 4317208,
+        "article_locations": 207050,
+        "article_media": 1263721,
+        "article_numbers": 201711,
+        "article_quotes": 103624,
+        "articles": 102753,
+        "article_stances": 169788
+      },
+      "raw_sections": [
+        "1A. Row counts per v3 table",
+        "1B. Foreign-key orphans",
+        "1C. Year-drift residual on effective_event_date",
+        "1D. Truncation cliffs on summary fields",
+        "1E. NULL leakage on v3-ok articles",
+        "1F. Language mis-tag candidates",
+        "1G. extraction_version distribution",
+        "1H. Duplicate articles by url_hash",
+        "1J. article_claims placeholder bug",
+        "1I. event_date fill rate"
+      ]
+    },
+    "notes": [],
+    "findings": [
+      {
+        "severity": "LOW",
+        "layer": 1,
+        "category": "truncation",
+        "label": "Truncation cliff: summary_executive = 500",
+        "metric": {
+          "count": 85
+        },
+        "details": ""
+      },
+      {
+        "severity": "LOW",
+        "layer": 1,
+        "category": "truncation",
+        "label": "Truncation cliff: summary_executive = 1000",
+        "metric": {
+          "count": 67
+        },
+        "details": ""
+      },
+      {
+        "severity": "LOW",
+        "layer": 1,
+        "category": "null_leakage",
+        "label": "v3-ok NULL: published_at NULL",
+        "metric": {
+          "count": 1064,
+          "pct": 1.74
+        },
+        "details": ""
+      },
+      {
+        "severity": "CRITICAL",
+        "layer": 1,
+        "category": "extraction_placeholder",
+        "label": "article_claims.subject_text = 'article' / placeholder",
+        "metric": {
+          "count": 183358,
+          "pct": 74.2
+        },
+        "details": "LLM falls back to literal 'article' for subject_text when it can't identify a subject. Fix in extraction prompt."
+      },
+      {
+        "severity": "HIGH",
+        "layer": 1,
+        "category": "lang_mistag",
+        "label": "en-tagged with Devanagari chars in title",
+        "metric": {
+          "count": 1728
+        },
+        "details": ""
+      },
+      {
+        "severity": "HIGH",
+        "layer": 1,
+        "category": "lang_mistag",
+        "label": "en-tagged with Telugu chars in title",
+        "metric": {
+          "count": 6868
+        },
+        "details": ""
+      },
+      {
+        "severity": "HIGH",
+        "layer": 1,
+        "category": "lang_mistag",
+        "label": "te-tagged with no Telugu chars in title (suspect)",
+        "metric": {
+          "count": 749
+        },
+        "details": ""
+      }
+    ],
+    "stop_reason": null
+  },
+  {
+    "layer": 2,
+    "label": "Grounding probe",
+    "passed": true,
+    "metrics": {
+      "article_quotes": {
+        "hit_rate": 0.775,
+        "floor": 0.7,
+        "sampled": 2000,
+        "gate_passed": true,
+        "worst_sources": [
+          {
+            "source": "Eenadu",
+            "n": 9,
+            "hits": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "source": "Andhra Jyothy",
+            "n": 24,
+            "hits": 1,
+            "hit_rate": 0.042
+          },
+          {
+            "source": "Namasthe Telangana",
+            "n": 41,
+            "hits": 4,
+            "hit_rate": 0.098
+          },
+          {
+            "source": "HMTV",
+            "n": 33,
+            "hits": 4,
+            "hit_rate": 0.121
+          },
+          {
+            "source": "TV9 Telugu",
+            "n": 43,
+            "hits": 6,
+            "hit_rate": 0.14
+          }
+        ]
+      },
+      "article_claims": {
+        "hit_rate": 0.43,
+        "floor": 0.6,
+        "sampled": 2000,
+        "gate_passed": false,
+        "worst_sources": [
+          {
+            "source": "Channel 4 News",
+            "n": 7,
+            "hits": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "source": "PIB \u2014 Economy",
+            "n": 6,
+            "hits": 0,
+            "hit_rate": 0.0
+          },
+          {
+            "source": "BBC News \u2014 UK",
+            "n": 7,
+            "hits": 1,
+            "hit_rate": 0.143
+          },
+          {
+            "source": "Sportstar",
+            "n": 27,
+            "hits": 4,
+            "hit_rate": 0.148
+          },
+          {
+            "source": "Hindu Business Line \u2014 Markets",
+            "n": 20,
+            "hits": 3,
+            "hit_rate": 0.15
+          }
+        ]
+      },
+      "article_numbers": {
+        "hit_rate": 0.936,
+        "floor": 0.5,
+        "sampled": 2000,
+        "gate_passed": true,
+        "worst_sources": [
+          {
+            "source": "Dharitri",
+            "n": 38,
+            "hits": 28,
+            "hit_rate": 0.737
+          },
+          {
+            "source": "Eenadu",
+            "n": 12,
+            "hits": 9,
+            "hit_rate": 0.75
+          },
+          {
+            "source": "India Strategic",
+            "n": 5,
+            "hits": 4,
+            "hit_rate": 0.8
+          },
+          {
+            "source": "The Hindu \u2014 International",
+            "n": 24,
+            "hits": 20,
+            "hit_rate": 0.833
+          },
+          {
+            "source": "Dawn \u2014 Defence",
+            "n": 12,
+            "hits": 10,
+            "hit_rate": 0.833
+          }
+        ]
+      },
+      "article_stances": {
+        "hit_rate": 0.9845,
+        "floor": 0.7,
+        "sampled": 2000,
+        "gate_passed": true,
+        "worst_sources": [
+          {
+            "source": "India Today",
+            "n": 5,
+            "hits": 4,
+            "hit_rate": 0.8
+          },
+          {
+            "source": "Mint \u2014 Industry",
+            "n": 7,
+            "hits": 6,
+            "hit_rate": 0.857
+          },
+          {
+            "source": "Sputnik \u2014 Defence",
+            "n": 12,
+            "hits": 11,
+            "hit_rate": 0.917
+          },
+          {
+            "source": "TV9 Telugu",
+            "n": 49,
+            "hits": 45,
+            "hit_rate": 0.918
+          },
+          {
+            "source": "Andhra Jyothy",
+            "n": 27,
+            "hits": 25,
+            "hit_rate": 0.926
+          }
+        ]
+      },
+      "article_locations": {
+        "hit_rate": 0.9095,
+        "floor": 0.7,
+        "sampled": 2000,
+        "gate_passed": true,
+        "worst_sources": [
+          {
+            "source": "Prajavani",
+            "n": 9,
+            "hits": 5,
+            "hit_rate": 0.556
+          },
+          {
+            "source": "Small Wars Journal",
+            "n": 5,
+            "hits": 3,
+            "hit_rate": 0.6
+          },
+          {
+            "source": "The Guardian \u2014 Politics",
+            "n": 10,
+            "hits": 6,
+            "hit_rate": 0.6
+          },
+          {
+            "source": "TV9 Telugu",
+            "n": 65,
+            "hits": 43,
+            "hit_rate": 0.662
+          },
+          {
+            "source": "The Hindu \u2014 Society",
+            "n": 6,
+            "hits": 4,
+            "hit_rate": 0.667
+          }
+        ]
+      },
+      "article_events": {
+        "hit_rate": 0.915,
+        "floor": 0.7,
+        "sampled": 2000,
+        "gate_passed": true,
+        "worst_sources": [
+          {
+            "source": "Indian Defence Review",
+            "n": 9,
+            "hits": 5,
+            "hit_rate": 0.556
+          },
+          {
+            "source": "RNZ \u2014 Pacific",
+            "n": 5,
+            "hits": 3,
+            "hit_rate": 0.6
+          },
+          {
+            "source": "Eenadu",
+            "n": 13,
+            "hits": 9,
+            "hit_rate": 0.692
+          },
+          {
+            "source": "Hindu Business Line \u2014 Markets",
+            "n": 17,
+            "hits": 13,
+            "hit_rate": 0.765
+          },
+          {
+            "source": "Economic Times",
+            "n": 13,
+            "hits": 10,
+            "hit_rate": 0.769
+          }
+        ]
+      }
+    },
+    "notes": [],
+    "findings": [
+      {
+        "severity": "CRITICAL",
+        "layer": 2,
+        "category": "grounding",
+        "label": "article_claims grounding below floor",
+        "metric": {
+          "hit_rate": 0.43,
+          "floor": 0.6,
+          "sampled": 2000
+        },
+        "details": "article_claims: 43.0% < 60% floor"
+      }
+    ],
+    "stop_reason": null
+  },
+  {
+    "layer": 3,
+    "label": "Distribution anomalies",
+    "passed": true,
+    "metrics": {
+      "sources_below_50pct_summary": [
+        {
+          "source": "Delhi High Court",
+          "n": 34,
+          "summary_pct": "0.0",
+          "emb_pct": "0.0",
+          "pub_pct": "0.0"
+        },
+        {
+          "source": "ICMR",
+          "n": 33,
+          "summary_pct": "21.2",
+          "emb_pct": "39.4",
+          "pub_pct": "0.0"
+        },
+        {
+          "source": "TradeWinds",
+          "n": 56,
+          "summary_pct": "0.0",
+          "emb_pct": "98.2",
+          "pub_pct": "0.0"
+        },
+        {
+          "source": "PFRDA \u2014 Pension Regulator",
+          "n": 23,
+          "summary_pct": "39.1",
+          "emb_pct": "100.0",
+          "pub_pct": "0.0"
+        },
+        {
+          "source": "Financial Times \u2014 World",
+          "n": 924,
+          "summary_pct": "7.4",
+          "emb_pct": "41.5",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Business Standard \u2014 Technology",
+          "n": 79,
+          "summary_pct": "0.0",
+          "emb_pct": "92.4",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Stuff (NZ)",
+          "n": 1417,
+          "summary_pct": "0.0",
+          "emb_pct": "95.6",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Bloomberg \u2014 India",
+          "n": 139,
+          "summary_pct": "2.2",
+          "emb_pct": "95.7",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Ada Derana Sri Lanka",
+          "n": 284,
+          "summary_pct": "0.0",
+          "emb_pct": "98.2",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "NDTV Social",
+          "n": 1008,
+          "summary_pct": "0.0",
+          "emb_pct": "98.7",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "NDTV \u2014 India News",
+          "n": 1200,
+          "summary_pct": "0.0",
+          "emb_pct": "98.8",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Sportskeeda \u2014 India",
+          "n": 6145,
+          "summary_pct": "0.0",
+          "emb_pct": "99.1",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "ESPNcricinfo",
+          "n": 562,
+          "summary_pct": "0.0",
+          "emb_pct": "99.3",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Inc42 \u2014 Startups",
+          "n": 65,
+          "summary_pct": "0.0",
+          "emb_pct": "100.0",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Construction Week India",
+          "n": 20,
+          "summary_pct": "0.0",
+          "emb_pct": "100.0",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Indian Express Sports",
+          "n": 20,
+          "summary_pct": "0.0",
+          "emb_pct": "100.0",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Barbados Today",
+          "n": 32,
+          "summary_pct": "0.0",
+          "emb_pct": "100.0",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Gadgets 360",
+          "n": 104,
+          "summary_pct": "0.0",
+          "emb_pct": "100.0",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Breaking Defense",
+          "n": 40,
+          "summary_pct": "0.0",
+          "emb_pct": "100.0",
+          "pub_pct": "100.0"
+        },
+        {
+          "source": "Infraline",
+          "n": 20,
+          "summary_pct": "0.0",
+          "emb_pct": "100.0",
+          "pub_pct": "100.0"
+        }
+      ],
+      "summary_len_stats": {
+        "p5": "440",
+        "p50": "740",
+        "p95": "1053",
+        "p99": "1194",
+        "max": "2400",
+        "very_short": "2",
+        "trunc_500": "76",
+        "trunc_1000": "58"
+      },
+      "is_future_anomalies": {
+        "future_flag_but_past_event": 7825,
+        "past_flag_but_future_event": 6690,
+        "total_events_with_date": 96894
+      },
+      "stalled_sources_count": 15,
+      "stalled_sources_top": [
+        {
+          "source": "Khel Now",
+          "last_seen": "2026-04-25",
+          "total": "113"
+        },
+        {
+          "source": "India Today",
+          "last_seen": "2026-04-25",
+          "total": "150"
+        },
+        {
+          "source": "Korea Times",
+          "last_seen": "2026-04-25",
+          "total": "140"
+        },
+        {
+          "source": "Business Standard \u2014 Technology",
+          "last_seen": "2026-04-26",
+          "total": "115"
+        },
+        {
+          "source": "Gadgets 360",
+          "last_seen": "2026-04-29",
+          "total": "155"
+        },
+        {
+          "source": "Bar and Bench",
+          "last_seen": "2026-04-29",
+          "total": "388"
+        },
+        {
+          "source": "EastMojo",
+          "last_seen": "2026-04-29",
+          "total": "125"
+        },
+        {
+          "source": "Edex Live \u2014 Education",
+          "last_seen": "2026-04-29",
+          "total": "395"
+        },
+        {
+          "source": "Communications Today",
+          "last_seen": "2026-04-29",
+          "total": "335"
+        },
+        {
+          "source": "Ada Derana Sri Lanka",
+          "last_seen": "2026-04-29",
+          "total": "525"
+        }
+      ],
+      "sections_parsed": [
+        "3A. Per-source field-fill (30d, sources with >=20 articles)",
+        "3B. Per-day v3-ok counts (last 14 days)",
+        "3C. summary_executive length distribution (v3-ok)",
+        "3D. Events per article distribution",
+        "3E. is_future logical inconsistencies",
+        "3F. extraction_version x substrate_status",
+        "3G. Possibly-stalled sources (>=100 articles, no news in 7+ days)"
+      ]
+    },
+    "notes": [],
+    "findings": [
+      {
+        "severity": "HIGH",
+        "layer": 3,
+        "category": "is_future_flag",
+        "label": "is_future=TRUE but event is in the past",
+        "metric": {
+          "count": 7825
+        },
+        "details": "LLM flagged forecasting but extracted historical date"
+      },
+      {
+        "severity": "MEDIUM",
+        "layer": 3,
+        "category": "stalled_source",
+        "label": "Multiple sources stalled > 7 days",
+        "metric": {
+          "count": 15
+        },
+        "details": "Sources with \u2265100 historical articles but no news in 7+ days"
+      }
+    ],
+    "stop_reason": null
+  },
+  {
+    "layer": 4,
+    "label": "Cross-source agreement",
+    "passed": true,
+    "metrics": {
+      "date_agreement": {
+        "multi_source_clusters": "75",
+        "perfect_agreement": "20",
+        "one_disagreement": "25",
+        "many_disagreements": "30",
+        "spans_more_than_30days": "17",
+        "pct_perfect": "26.7"
+      },
+      "actor_agreement": {
+        "multi_source_clusters": "75",
+        "avg_events_per_cluster": "6.4",
+        "avg_distinct_actor_strings": "2.3",
+        "one_actor_string": "15",
+        "high_actor_variance": "23"
+      },
+      "location_agreement": {
+        "clusters_with_locations": "75",
+        "one_location": "0",
+        "two_or_three_locs": "0",
+        "many_locs": "75"
+      },
+      "high_disagreement_samples": [
+        {
+          "etype": "announcement",
+          "art_n": "17",
+          "src_n": "11",
+          "d_dates": "5",
+          "d_actors": "5",
+          "canonical": "Ceasefire agreed in US-Iran conflict"
+        },
+        {
+          "etype": "sports_result",
+          "art_n": "19",
+          "src_n": "7",
+          "d_dates": "5",
+          "d_actors": "4",
+          "canonical": "Rajasthan vs Lucknow IPL match in Jaipur"
+        },
+        {
+          "etype": "meeting",
+          "art_n": "15",
+          "src_n": "4",
+          "d_dates": "6",
+          "d_actors": "3",
+          "canonical": "Putin's visit to China begins"
+        },
+        {
+          "etype": "visit",
+          "art_n": "3",
+          "src_n": "3",
+          "d_dates": "6",
+          "d_actors": "3",
+          "canonical": "Putin's official visit to China begins"
+        },
+        {
+          "etype": "accident",
+          "art_n": "15",
+          "src_n": "12",
+          "d_dates": "3",
+          "d_actors": "5",
+          "canonical": "US and Israeli strikes on Iran began"
+        },
+        {
+          "etype": "sports_result",
+          "art_n": "7",
+          "src_n": "6",
+          "d_dates": "4",
+          "d_actors": "4",
+          "canonical": "Manchester City draw 1-1 at Bournemouth, confirming Arsenal"
+        },
+        {
+          "etype": "meeting",
+          "art_n": "4",
+          "src_n": "3",
+          "d_dates": "3",
+          "d_actors": "4",
+          "canonical": "Quad foreign ministers meeting in New Delhi"
+        },
+        {
+          "etype": "accident",
+          "art_n": "3",
+          "src_n": "3",
+          "d_dates": "4",
+          "d_actors": "3",
+          "canonical": "Israeli forces intercept Gaza aid flotilla"
+        },
+        {
+          "etype": "election",
+          "art_n": "11",
+          "src_n": "6",
+          "d_dates": "2",
+          "d_actors": "4",
+          "canonical": "Kentucky 4th district primary election"
+        },
+        {
+          "etype": "sports_result",
+          "art_n": "8",
+          "src_n": "4",
+          "d_dates": "3",
+          "d_actors": "3",
+          "canonical": "CSK vs Gujarat Titans (must-win)"
+        }
+      ]
+    },
+    "notes": [],
+    "findings": [
+      {
+        "severity": "MEDIUM",
+        "layer": 4,
+        "category": "cross_source_disagreement",
+        "label": "Multi-source clusters span >30 days on same event",
+        "metric": {
+          "count": 17
+        },
+        "details": "Likely date-extraction inconsistency within cluster members"
+      },
+      {
+        "severity": "HIGH",
+        "layer": 4,
+        "category": "cross_source_disagreement",
+        "label": "Multi-source clusters with perfect date agreement < 60%",
+        "metric": {
+          "pct_perfect": 26.7
+        },
+        "details": ""
+      },
+      {
+        "severity": "MEDIUM",
+        "layer": 4,
+        "category": "actor_variance",
+        "label": "Multi-source clusters with high actor variance",
+        "metric": {
+          "count": 23
+        },
+        "details": ""
+      }
+    ],
+    "stop_reason": null
+  },
+  {
+    "layer": 5,
+    "label": "LLM-as-judge",
+    "passed": true,
+    "metrics": {
+      "sampled": 5000,
+      "successes": 2188,
+      "errors": 2812,
+      "median_scores": {
+        "primary_subject_score": 10.0,
+        "summary_executive_score": 9.0,
+        "article_type_score": 10.0,
+        "actors_score": 10.0,
+        "event_dates_score": 8.0,
+        "overall_score": 9.0
+      },
+      "p25_scores": {
+        "primary_subject_score": 10.0,
+        "summary_executive_score": 8.0,
+        "article_type_score": 10.0,
+        "actors_score": 9.0,
+        "event_dates_score": 6.0,
+        "overall_score": 8.0
+      },
+      "summary_file": "judge_summary_2026-05-22.json"
+    },
+    "notes": [],
+    "findings": [
+      {
+        "severity": "MEDIUM",
+        "layer": 5,
+        "category": "llm_judge_score",
+        "label": "event_dates_score median below threshold",
+        "metric": {
+          "median": 8.0,
+          "p25": 6.0
+        },
+        "details": ""
+      }
+    ],
+    "stop_reason": null
+  },
+  {
+    "layer": 6,
+    "label": "Known bug probes",
+    "passed": true,
+    "metrics": {
+      "placeholder_subjects": {
+        "literal \"article\"": 183285,
+        "empty / whitespace-only": 7,
+        "literal \"story\" or \"report\"": 73
+      },
+      "drift_residual_unexplained": 0,
+      "is_future_contradictions": 7825,
+      "lang_mistags": {
+        "en+Bengali": 0,
+        "en+Devanagari": 1728,
+        "te+no Telugu": 749,
+        "en+Telugu": 6869
+      },
+      "truncation_cliffs": {
+        "500-char cliff": 85,
+        "2000-char cliff": 0,
+        "1000-char cliff": 67
+      },
+      "embedding_collisions": {
+        "total": 60974,
+        "duplicates": 8815,
+        "pct": 14.5
+      },
+      "v3_ok_missing": {
+        "missing_subject": 7,
+        "missing_summary": 9,
+        "missing_embedding": 281,
+        "missing_published_at": 1064,
+        "missing_article_type": 0
+      },
+      "v3_ok_total": 61255,
+      "sources_missing_summaries": [
+        {
+          "source": "UK Ministry of Defence",
+          "total": "104",
+          "missing": "1",
+          "missing_pct": "1.0"
+        },
+        {
+          "source": "Kannada Prabha",
+          "total": "229",
+          "missing": "2",
+          "missing_pct": "0.9"
+        },
+        {
+          "source": "Atlantic Council",
+          "total": "147",
+          "missing": "1",
+          "missing_pct": "0.7"
+        },
+        {
+          "source": "India Today",
+          "total": "146",
+          "missing": "1",
+          "missing_pct": "0.7"
+        },
+        {
+          "source": "Prabhat Khabar",
+          "total": "1124",
+          "missing": "2",
+          "missing_pct": "0.2"
+        },
+        {
+          "source": "HMTV",
+          "total": "1304",
+          "missing": "1",
+          "missing_pct": "0.1"
+        },
+        {
+          "source": "TV9 Telugu",
+          "total": "2440",
+          "missing": "1",
+          "missing_pct": "0.0"
+        }
+      ]
+    },
+    "notes": [],
+    "findings": [
+      {
+        "severity": "HIGH",
+        "layer": 6,
+        "category": "is_future_flag",
+        "label": "is_future=TRUE with past event_date (regression check)",
+        "metric": {
+          "count": 7825
+        },
+        "details": ""
+      },
+      {
+        "severity": "HIGH",
+        "layer": 6,
+        "category": "lang_mistag",
+        "label": "Language mis-tag total (all patterns)",
+        "metric": {
+          "total": 9346
+        },
+        "details": ""
+      },
+      {
+        "severity": "HIGH",
+        "layer": 6,
+        "category": "embedding_collisions",
+        "label": "LaBSE embedding collisions (boilerplate-dominated input)",
+        "metric": {
+          "count": 8815,
+          "pct": 14.5
+        },
+        "details": "Many articles share the same fingerprint \u2014 input text needs richer fields"
+      }
+    ],
+    "stop_reason": null
+  }
+]

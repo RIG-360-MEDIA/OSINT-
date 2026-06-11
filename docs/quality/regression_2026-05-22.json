@@ -1,0 +1,114 @@
+{
+  "ran_at": "2026-05-22T17:51:32.855390Z",
+  "gold_size": 200,
+  "matched": 200,
+  "passed": true,
+  "failures": {
+    "subject_changed": 0,
+    "article_missing": 0,
+    "substrate_no_longer_ok": 0
+  },
+  "failure_pct": {
+    "subject_changed": 0.0,
+    "article_missing": 0.0,
+    "substrate_no_longer_ok": 0.0
+  },
+  "info": {
+    "extraction_version_bumped": 151,
+    "summary_len_delta_30pct": 0
+  },
+  "info_pct": {
+    "extraction_version_bumped": 75.5,
+    "summary_len_delta_30pct": 0.0
+  },
+  "drift": {
+    "subject_changed": 0,
+    "article_missing": 0,
+    "substrate_no_longer_ok": 0,
+    "extraction_version_bumped": 151,
+    "summary_len_delta_30pct": 0
+  },
+  "per_source_top_drift": [
+    {
+      "source": "Sunday Guardian",
+      "subject_changed": 0,
+      "article_missing": 0,
+      "substrate_no_longer_ok": 0,
+      "extraction_version_bumped": 5,
+      "summary_len_delta_30pct": 0
+    },
+    {
+      "source": "PE Wire \u2014 India",
+      "subject_changed": 0,
+      "article_missing": 0,
+      "substrate_no_longer_ok": 0,
+      "extraction_version_bumped": 4,
+      "summary_len_delta_30pct": 0
+    },
+    {
+      "source": "Economic Times",
+      "subject_changed": 0,
+      "article_missing": 0,
+      "substrate_no_longer_ok": 0,
+      "extraction_version_bumped": 3,
+      "summary_len_delta_30pct": 0
+    },
+    {
+      "source": "The Hindu \u2014 Security",
+      "subject_changed": 0,
+      "article_missing": 0,
+      "substrate_no_longer_ok": 0,
+      "extraction_version_bumped": 3,
+      "summary_len_delta_30pct": 0
+    },
+    {
+      "source": "The Age (Australia)",
+      "subject_changed": 0,
+      "article_missing": 0,
+      "substrate_no_longer_ok": 0,
+      "extraction_version_bumped": 3,
+      "summary_len_delta_30pct": 0
+    },
+    {
+      "source": "St Lucia Times",
+      "subject_changed": 0,
+      "article_missing": 0,
+      "substrate_no_longer_ok": 0,
+      "extraction_version_bumped": 3,
+      "summary_len_delta_30pct": 0
+    },
+    {
+      "source": "Splash 247",
+      "subject_changed": 0,
+      "article_missing": 0,
+      "substrate_no_longer_ok": 0,
+      "extraction_version_bumped": 3,
+      "summary_len_delta_30pct": 0
+    },
+    {
+      "source": "BBC News \u2014 Business",
+      "subject_changed": 0,
+      "article_missing": 0,
+      "substrate_no_longer_ok": 0,
+      "extraction_version_bumped": 3,
+      "summary_len_delta_30pct": 0
+    },
+    {
+      "source": "Joy Online (Ghana)",
+      "subject_changed": 0,
+      "article_missing": 0,
+      "substrate_no_longer_ok": 0,
+      "extraction_version_bumped": 3,
+      "summary_len_delta_30pct": 0
+    },
+    {
+      "source": "Defense News",
+      "subject_changed": 0,
+      "article_missing": 0,
+      "substrate_no_longer_ok": 0,
+      "extraction_version_bumped": 3,
+      "summary_len_delta_30pct": 0
+    }
+  ],
+  "examples": []
+}

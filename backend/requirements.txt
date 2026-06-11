@@ -1,5 +1,5 @@
 # Web framework
-fastapi==0.119.0  # 2026-05-26: bumped to be compatible with starlette>=0.47.2
+fastapi==0.115.0
 uvicorn[standard]==0.30.0
 python-multipart==0.0.27  # security: CVE-2024-53981, CVE-2026-24486, CVE-2026-40347, CVE-2026-42561
 # Rate limiting (D-06): per-IP/per-user quotas on LLM and admin endpoints.
@@ -18,8 +18,8 @@ pydantic-settings>=2.6
 # Task queue (sqlalchemy extra required for sqla+postgresql broker)
 celery[sqlalchemy]==5.4.0
 
-# HTTP client
-httpx==0.28.1  # 2026-05-26: bumped for litellm 1.83.10 compat
+# HTTP client — >=0.28 required by litellm>=1.83; supabase>=2.10 also requires >=0.28
+httpx>=0.28.0,<1.0
 aiohttp==3.13.4  # security: 14 CVEs incl. CVE-2024-52304, CVE-2025-53643, CVE-2026-22815, CVE-2026-34513-34525
 
 # NLP — entity extraction
@@ -41,52 +41,50 @@ trafilatura==1.12.0
 # RSS/HTML parsing
 feedparser==6.0.11
 beautifulsoup4==4.12.3
-lxml==5.3.2  # 2026-05-26: locked to 5.3.x — crawl4ai needs it (CVE-2026-41066 accepted; we control RSS input)
+lxml>=5.3.0,<6.0  # crawl4ai 0.4.248 requires lxml~=5.3; upgrade crawl4ai before moving to lxml 6.x
 
 # Groq
 groq==0.11.0
 
-# Supabase auth
-supabase==2.18.0  # 2026-05-26: bumped for httpx 0.28 compat (litellm)
+# Supabase auth — 2.10+ requires httpx>=0.28 (aligned with litellm constraint above)
+supabase>=2.10.0
 
 # Data processing
 python-dateutil==2.9.0
+
+# Clustering — community detection (story layer). igraph's C-backed Louvain splits the
+# whole-corpus megablob in tens of MB; networkx Louvain needs GBs (the 12 GiB OOM wall).
+# REQUIRED, not optional: cluster_job_7 + story_loader FAIL LOUD (refuse to run) if igraph is
+# absent rather than silently falling back to the OOM-prone — and differently-clustering —
+# networkx path. Keep both pinned so an image rebuild can never quietly drop them.
+igraph==1.0.0
+leidenalg==0.12.0
 
 # PDF export (collections)
 reportlab==4.2.2
 
 # Tiered scraping
-crawl4ai==0.8.0  # 2026-05-26: bumped from 0.4.248 (CVE PYSEC-2026-33/34 + lxml 6.x compat)
+# crawl4ai installed separately in Dockerfile (--no-deps) to avoid its pinned
+# lxml~=5.3 / pillow~=10.4 constraints conflicting with our security pins.
+# See infrastructure/Dockerfile.backend for the isolated install step.
 playwright>=1.47.0
 
 # YouTube transcript extraction (P14 Clip Room)
 youtube-transcript-api==1.2.4
-# yt-dlp ≥ 2025.1: needed for nsig extraction + JS-runtime (deno) support
-# on current YouTube. Older 2024.11.18 falls back to generic n-function
-# search and returns "Only images are available" on most videos.
-yt-dlp>=2026.03.17
+yt-dlp==2024.11.18
 webvtt-py==0.5.1
 # SOCKS proxy support for YOUTUBE_PROXY_URL (WARP) — required by requests[socks]
 pysocks==1.7.1
 
-# THE NEWSROOM (Phase 2) — local 3-Lens transcription pipeline.
-# faster-whisper is the L3 ASR (CPU int8). Default model is `small`
-# (~480MB on disk, ~2GB RAM at runtime) — see backend/tasks/newsroom/lens_l3.py
-# for the upgrade path to large-v3 once host RAM allows.
-# pyphonetics + metaphone power the proper-noun snap step
-# (backend/tasks/newsroom/phonetic_snap.py) so transcripts that
-# mangle Indian names ("Revant Reddi" -> "Revanth Reddy") still snap
-# to the right entity_dictionary row. pyannote.audio is intentionally
-# NOT in requirements — the diarise stub kicks in until HF_TOKEN is set.
-faster-whisper==1.0.3
-pyphonetics==0.5.3
-metaphone==0.6
-
 # Newspaper clipping pipeline (P16 Cutting Room)
-# PyMuPDF renders the cropped article image; opendataloader-pdf
-# does layout-aware article extraction (requires Java at runtime).
+# PyMuPDF renders pages to images for PP-Structure + clips articles to JPEG.
+# PaddlePaddle (CPU) + PaddleOCR provide PP-Structure layout detection and OCR.
+# PP-Structure classifies newspaper page regions (title/text/figure/table)
+# and OCRs each region in one pass — handles both English and Indic scripts.
 PyMuPDF==1.24.10
-opendataloader-pdf==0.0.16
+paddlepaddle>=2.6.0,<3.0
+paddleocr>=2.8.0,<3.0
+# opendataloader-pdf removed — replaced by PaddleOCR PP-Structure pipeline
 importlib_resources==6.4.5
 
 # Sentiment analysis (P17 Signal Room)
@@ -104,11 +102,20 @@ python-jose[cryptography]==3.4.0  # security: PYSEC-2024-232, PYSEC-2024-233
 # Transitive-dep security pins — these come from fastapi (starlette),
 # reportlab/playwright (pillow), and crawl4ai (litellm). Pinning here
 # forces their installed version up regardless of parent constraints.
-starlette>=0.47.2  # security: CVE-2024-47874, CVE-2025-54121
+# starlette pin removed — conflicts with fastapi==0.115.0; version controlled by fastapi
 pillow>=12.2.0  # security: CVE-2026-25990, CVE-2026-40192, CVE-2026-42308, CVE-2026-42310, CVE-2026-42311
 litellm>=1.83.10  # security: CVE-2026-40217, CVE-2026-42203, CVE-2026-42208, CVE-2026-42271
 
-# P16 newspaper hybrid extractor — Tesseract line OCR + Indic headline matching.
-pytesseract>=0.3.10            # Tesseract 5 line OCR (clean grounded body text)
-indic-transliteration>=2.3.0   # IAST romanisation for Indic headline anchoring
+# NumPy ABI pin — scipy, scikit-learn, paddlepaddle, and spacy wheels on PyPI
+# are compiled against NumPy 1.x (96-byte dtype struct). NumPy 2.x changed the
+# struct to 88 bytes, causing a ValueError on every NLP import. Pin to <2.0 until
+# all upstream compiled wheels ship NumPy 2.x builds.
+numpy>=1.26.0,<2.0
+
+# Newspaper hybrid extractor — OCR + text cleanup. Tesseract is preferred over
+# PaddleOCR for both Indic and English newsprint body text (cleaner glyphs).
+# NOTE: also requires the apt packages `tesseract-ocr tesseract-ocr-eng
+# tesseract-ocr-tel` (+ other -ind packs) in Dockerfile.backend.
+pytesseract>=0.3.10            # Tesseract 5 line OCR (clean body text)
+indic-transliteration>=2.3.0   # IAST romanisation for Indic headline matching
 wordsegment>=1.3.1             # split OCR word-merges ("digitalassistant")

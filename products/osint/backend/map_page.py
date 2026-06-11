@@ -149,50 +149,6 @@ async def _region_feed(db, state_code: str | None) -> list[dict[str, Any]]:
     return feed
 
 
-async def _district_feeds(db, state_code: str) -> list[dict[str, Any]]:
-    """Every district in the state (incl. zero-coverage ones), each with up to 5 newest
-    in-window stories. One LEFT JOIN + window function so empty districts still appear."""
-    rows = (await db.execute(text(f"""
-        WITH ranked AS (
-          SELECT d.id did, d.name dist, a.id::text aid, a.title, a.language_iso lang,
-                 s.name src, a.url, a.thumbnail_url thumb, a.collected_at,
-                 (SELECT round(avg(({POL}) * st.intensity)::numeric, 2)
-                    FROM article_stances st WHERE st.article_id = a.id) lean,
-                 row_number() OVER (PARTITION BY d.id ORDER BY a.collected_at DESC NULLS LAST) rn,
-                 count(a.id) OVER (PARTITION BY d.id) AS total
-            FROM districts d
-            LEFT JOIN article_districts ad ON ad.district_id = d.id
-            LEFT JOIN articles a ON a.id = ad.article_id
-                 AND a.source_country = 'IN'
-                 AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
-            LEFT JOIN sources s ON s.id = a.source_id
-           WHERE d.state_code = :sc
-        )
-        SELECT did, dist, aid, title, lang, src, url, thumb, collected_at, lean, rn, total
-          FROM ranked
-         WHERE aid IS NULL OR rn <= 5
-         ORDER BY did
-    """), {"sc": state_code, "wh": FEED_WH})).fetchall()
-    by_dist: dict[Any, dict[str, Any]] = {}
-    items_flat: list[dict[str, Any]] = []
-    for r in rows:
-        d = by_dist.get(r.did)
-        if d is None:
-            d = {"id": r.did, "name": (r.dist or "").title(), "count": int(r.total or 0), "items": []}
-            by_dist[r.did] = d
-        if r.aid is not None:
-            item = {"id": r.aid, "headline": r.title, "source": r.src, "url": r.url,
-                    "thumbnail": r.thumb,
-                    "collected_at": str(r.collected_at) if r.collected_at else None,
-                    "tone": _lean_tone(r.lean), "lang": r.lang}
-            d["items"].append(item)
-            items_flat.append(item)
-    await i18n.attach_en(db, items_flat, "headline")
-    out = list(by_dist.values())
-    out.sort(key=lambda d: (-d["count"], d["name"]))
-    return out
-
-
 def _situation(bubbles: list[dict[str, Any]], region: str, window_days: int, unit: str = "district") -> str:
     """A factual restatement of the aggregate — no inference beyond what the data says."""
     if not bubbles:
@@ -203,13 +159,11 @@ def _situation(bubbles: list[dict[str, Any]], region: str, window_days: int, uni
     top = max(bubbles, key=lambda b: b["articles"])
     topics = Counter(b["topic"] for b in bubbles
                      if b.get("topic") and str(b["topic"]).upper() != "OTHER")
-    tone = "leans positive" if sup > crit * 1.25 else "leans negative" if crit > sup * 1.25 else "is mixed"
+    tone = "supportive" if sup > crit * 1.25 else "critical" if crit > sup * 1.25 else "mixed"
     plural = f"{unit[:-1]}ies" if unit.endswith("y") else f"{unit}s"
     units = unit if len(bubbles) == 1 else plural
     parts = [f"Across {region}, {total:,} stories landed in the last {window_days} days "
-             f"from {len(bubbles)} {units}. "
-             f"Overall coverage tone: {sup} positive vs {crit} negative ({tone}) — "
-             f"this is the general tone of all coverage, not specific to you."]
+             f"from {len(bubbles)} {units} ({sup} supportive, {crit} critical — {tone})."]
     parts.append(f"{top['name']} leads with {top['articles']:,} stories.")
     if topics:
         parts.append(f"Coverage skews toward {topics.most_common(1)[0][0]}.")
@@ -284,5 +238,4 @@ async def build_map(db, prefs: dict[str, Any], scope: str = "mine") -> dict[str,
     return {"scope": "mine", "level": "district", "region": region, "state_code": sc,
             "principal": pname, "bubbles": bubbles, "bbox": _bbox(bubbles),
             "window_days": wd, "feed": await _region_feed(db, sc),
-            "districtFeeds": await _district_feeds(db, sc),
             "situation": _situation(bubbles, region, wd)}

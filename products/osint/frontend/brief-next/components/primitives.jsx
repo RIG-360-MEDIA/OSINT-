@@ -1,6 +1,6 @@
 // Primitive components: icons, sparkline, metric number, glass building blocks
 
-import React, { useEffect, useId, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 
 /* ── Icons (inline, minimal Lucide-style) ─────────────────── */
 export const Icon = ({ name, size = 16, stroke = 1.6, color = "currentColor" }) => {
@@ -58,9 +58,7 @@ export const Sparkline = React.memo(function Sparkline({
   kpi = false,
 }) {
   const ref = useRef(null);
-  // useId() is hydration-safe — Math.random() differed SSR vs client and
-  // collapsed boss's entire brief subtree on first paint.
-  const id = "sg-" + useId().replace(/:/g, "");
+  const id = useMemo(() => "sg-" + Math.random().toString(36).slice(2, 9), []);
   const [drawn, setDrawn] = useState(false);
 
   const { linePath, fillPath, lastPoint } = useMemo(() => {
@@ -163,31 +161,28 @@ export const MetricNumber = ({ value, format = "int", duration = 1100, className
   const [seen, setSeen] = useState(false);
   const ref = useRef(null);
 
-  // reduced-motion is window-only — checking at render time mismatched SSR.
-  // Start false (matches SSR) and update after mount.
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.matchMedia) {
-      setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    }
-  }, []);
+  const reduced = useMemo(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    []
+  );
 
-  // Fixed locale ("en-US") so server and client format numbers identically.
-  // Using undefined → user-locale → SSR-CSR mismatch on the formatted text.
   const formatter = useMemo(() => {
     if (format === "percent") {
-      return new Intl.NumberFormat("en-US", {
+      return new Intl.NumberFormat(undefined, {
         style: "percent",
         maximumFractionDigits: 1,
       });
     }
     if (format === "decimal") {
-      return new Intl.NumberFormat("en-US", {
+      return new Intl.NumberFormat(undefined, {
         minimumFractionDigits: 1,
         maximumFractionDigits: 1,
       });
     }
-    return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+    return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
   }, [format]);
 
   useEffect(() => {
@@ -278,18 +273,9 @@ export const LiveDot = ({ tone = "live" }) => <span className={`live-dot ${tone}
 
 /* ── Countdown (MO-5: real refresh countdown) ──────────── */
 export const Countdown = ({ to, bare = false }) => {
-  // mounted gate prevents SSR/CSR hydration mismatch — Date.now() differs
-  // between server render and client hydration, which would unmount the
-  // entire <App> subtree below this component.
-  const [mounted, setMounted] = useState(false);
-  const [now, setNow] = useState(0);
+  const [now, setNow] = useState(Date.now());
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    setNow(Date.now());
-  }, []);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -299,22 +285,13 @@ export const Countdown = ({ to, bare = false }) => {
     );
     obs.observe(ref.current);
     return () => obs.disconnect();
-  }, [mounted]);
+  }, []);
 
   useEffect(() => {
     if (!visible) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [visible]);
-
-  if (!mounted) {
-    // Static placeholder for SSR — same on server and first client render.
-    return (
-      <span ref={ref} className="countdown" aria-live="polite" suppressHydrationWarning>
-        {bare ? "—:—" : "Next refresh in —:—"}
-      </span>
-    );
-  }
 
   const diff = Math.max(0, to - now);
   const refreshing = diff === 0;

@@ -25,7 +25,7 @@ from typing import Any
 
 from sqlalchemy import text
 
-from posture import POL, _BODY_PRESENT, compute_posture, current_mood, principal_of
+from posture import POL, _BODY_PRESENT, compute_posture, principal_of
 from relevance import score_relevant
 import i18n as _i18n
 
@@ -42,8 +42,6 @@ def _clean_title(t):
     return c or t
 
 _MIN = "−"  # unicode minus, matches the design's typography
-_LQ = "“"  # left double quotation mark
-_RQ = "”"  # right double quotation mark
 
 # Parties/fronts are frequently mistyped as `person` in the entity dictionary.
 # PEOPLE TO WATCH is about individuals, so we exclude org/party-shaped names.
@@ -53,9 +51,7 @@ _PARTY_RE = re.compile(
 
 
 def _is_person(m: dict[str, Any]) -> bool:
-    t = (m.get("type") or "").lower()
-    k = (m.get("kind") or "").lower()
-    if t not in ("person", "politician") and k not in ("person", "politician"):
+    if m.get("type") != "person" and m.get("kind") != "person":
         return False
     return not _PARTY_RE.search(m.get("name", ""))
 
@@ -293,81 +289,7 @@ def _region_label(m: dict[str, Any]) -> str:
     return m.get("state") or ("national" if m.get("type") == "person" else "")
 
 
-async def _top_pos_neg_stories_for(
-    db, ids: list[str], pid: str, wh: int
-) -> dict[str, dict]:
-    """Best (most positive lean) and worst (most negative lean) co-story per entity."""
-    if not ids:
-        return {}
-    title_ok = (
-        " AND a.title IS NOT NULL "
-        " AND a.title !~* '\\.(html?|aspx|php)$' "
-        " AND a.title !~* '[/\\\\]' "
-        " AND a.title !~* '(^|[ _-])[0-9]{4,}[ _-]?[a-z]{0,4}(\\.html?)?$' "
-        " AND length(a.title) BETWEEN 18 AND 220 "
-    )
-    rows = (await db.execute(text(f"""
-        WITH scored AS (
-            SELECT m.entity_id::text AS eid,
-                   a.title, s.name AS outlet, a.url,
-                   round(100 * avg(({POL}) * st.intensity)::numeric, 1) AS lean
-              FROM article_entity_mentions m
-              JOIN article_entity_mentions mp ON mp.article_id = m.article_id
-                                             AND mp.entity_id = CAST(:pid AS uuid)
-              JOIN articles a ON a.id = m.article_id
-              JOIN sources s ON s.id = a.source_id
-              JOIN article_stances st ON st.article_id = a.id
-             WHERE m.entity_id = ANY(CAST(:ids AS uuid[]))
-               AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
-               AND a.collected_at <= analytics.now_sim()
-               AND {_BODY_PRESENT}
-               {title_ok}
-             GROUP BY m.entity_id, a.id, a.title, s.name, a.url
-        ),
-        ranked AS (
-            SELECT eid, title, outlet, url, lean,
-                   rank() OVER (PARTITION BY eid ORDER BY lean DESC) AS pos_rank,
-                   rank() OVER (PARTITION BY eid ORDER BY lean ASC)  AS neg_rank
-              FROM scored
-        )
-        SELECT eid, title, outlet, url, lean, pos_rank, neg_rank
-          FROM ranked
-         WHERE pos_rank = 1 OR neg_rank = 1
-    """), {"ids": ids, "pid": pid, "wh": wh})).fetchall()
-
-    out: dict[str, dict] = {}
-    for r in rows:
-        if r.eid not in out:
-            out[r.eid] = {}
-        entry = {
-            "title": _clean_title(r.title),
-            "outlet": r.outlet,
-            "url": r.url or "",
-            "lean": float(r.lean) if r.lean is not None else 0.0,
-        }
-        if r.pos_rank == 1:
-            out[r.eid]["top_pos"] = entry
-        if r.neg_rank == 1:
-            out[r.eid]["top_neg"] = entry
-    return out
-
-
-def _read_word(fav: float | None) -> str:
-    """The shared-coverage tone as a plain WORD instead of a bare number."""
-    if fav is None:
-        return "—"
-    if fav <= -25:
-        return "Very negative"
-    if fav <= -10:
-        return "Negative"
-    if fav < 10:
-        return "Mixed"
-    if fav < 25:
-        return "Positive"
-    return "Very positive"
-
-
-async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 8) -> dict[str, Any]:
+async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 5) -> dict[str, Any]:
     pid, _ = principal_of(prefs)
     states = (prefs.get("regions") or {}).get("states") or []
     meta = prefs["watchlist"]["entity_meta"]
@@ -380,10 +302,9 @@ async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 8) -> d
 
     sigs = []
     for m in people:
-        pinned = bool(m.get("pinned"))
         c = cov.get(m["id"])
         coverage = int(c.coverage) if c else 0
-        if coverage == 0 and not pinned:
+        if coverage == 0:
             continue
         co_p = int(c.co_principal) if c else 0
         in_reg = int(c.in_region) if c else 0
@@ -400,22 +321,23 @@ async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 8) -> d
         pressure = adverse_co * 100
         # ENTANGLEMENT = how present they are in YOUR coverage.
         entangle = co_p * 100 + in_reg * 2 + min(coverage, 200) / 50.0
-        sigs.append({"m": m, "pinned": pinned, "coverage": coverage, "co_p": co_p, "in_reg": in_reg,
+        sigs.append({"m": m, "coverage": coverage, "co_p": co_p, "in_reg": in_reg,
                      "adverse_co": adverse_co, "in_reg_neg": in_reg_neg,
                      "lean": lean_fav, "lean_n": lean_n,
                      "pressure": pressure, "entangle": entangle})
 
-    # PEOPLE TO WATCH is a manually-curated list, not an auto-curated feed: it
-    # shows ONLY the individuals the user explicitly added (newest first), capped
-    # at `limit`. We deliberately do NOT backfill a freed slot with a relevance-
-    # ranked name — removing someone leaves the panel smaller. `limit` is a ceiling,
-    # not a target. Each surviving card still renders its genuine coverage read
-    # (pressure / entangled / thin), and a freshly-added name with no coverage yet
-    # gets the "just added" treatment below.
-    def _rk(s: dict[str, Any]) -> str:
-        return "pressure" if s["pressure"] > 0 else "entangled"
-    pinned_cards = [s for s in sigs if s["pinned"]][::-1][:limit]
-    ordered = [(_rk(s), s) for s in pinned_cards]
+    # Blend: lead with up to 3 genuine pressure points, fill the rest with the
+    # most-entangled names. Honest per-persona — pressure cards are empty when no
+    # watched figure is in adverse coverage (then it's an all-entangled board).
+    chosen_ids: set[str] = set()
+    pressure_cards = sorted([s for s in sigs if s["pressure"] > 0],
+                            key=lambda x: -x["pressure"])[:3]
+    for s in pressure_cards:
+        chosen_ids.add(s["m"]["id"])
+    entangled_cards = sorted([s for s in sigs if s["m"]["id"] not in chosen_ids],
+                             key=lambda x: -x["entangle"])[: max(0, limit - len(pressure_cards))]
+    ordered = ([("pressure", s) for s in pressure_cards]
+               + [("entangled", s) for s in entangled_cards])[:limit]
     chosen_ids_list = [s["m"]["id"] for _, s in ordered]
     outlets = await _top_outlets_for(db, chosen_ids_list, wh)
     latest_stories = await _latest_co_story_for(db, chosen_ids_list, pid, wh)
@@ -435,19 +357,11 @@ async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 8) -> d
         outlet = outlets.get(m["id"])
         lean_fav, lean_n = s["lean"], s["lean_n"]
 
-        if s.get("pinned") and s["coverage"] == 0:
-            tone = "neutral"
-            verdict = "Just added"
-            score = "—"
-            why = f"No coverage in {_window_label(wh)} yet — newly added to your watch list."
-            watch = "Freshly added; the card fills in as stories mention them."
-            summary = (f"{m['name']} is on your watch list but hasn't appeared in coverage "
-                       f"this window yet. {rel} — the read builds as articles come in.")
-        elif kind == "pressure":
+        if kind == "pressure":
             neg_lean = lean_fav is not None and lean_fav <= -15
             tone = "hostile" if (neg_lean or s["adverse_co"] >= 2) else "neutral"
             verdict = "Pressure point"
-            score = _read_word(lean_fav) if (lean_fav is not None and lean_n >= 3) else "—"
+            score = _signed(lean_fav) if (lean_fav is not None and lean_n >= 3) else "—"
             adv, irn = s["adverse_co"], s["in_reg_neg"]
             adv_co = f"{adv} story" if adv == 1 else f"{adv} stories"
             adv_adj = f"{adv} adverse story" if adv == 1 else f"{adv} adverse stories"
@@ -477,7 +391,7 @@ async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 8) -> d
             else:
                 verdict = ("Reads favourable" if tone == "supportive"
                            else "Reads adverse" if tone == "hostile" else "Mixed read")
-                score = _read_word(lean_fav)
+                score = _signed(lean_fav)
                 lean_word = ("positive" if lean_fav >= 15 else "negative" if lean_fav <= -15 else "even")
                 why = (f"In the {s['co_p']} stories where you both appear, coverage leans {lean_word} "
                        f"({_signed(lean_fav)}); {s['coverage']} total mentions"
@@ -501,7 +415,7 @@ async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 8) -> d
             t = latest_title.strip()
             if len(t) > 140:
                 t = t[:137].rstrip() + "…"
-            summary = f"{summary} Latest: {_LQ}{t}{_RQ} ({ls.get('source') or '—'})."
+            summary = f"{summary} Latest: “{t}” ({ls.get('source') or '—'})."
             if not _i18n.is_english(latest_title):
                 latest_title_en = en_map.get(latest_title)
 
@@ -523,222 +437,7 @@ async def build_players(db, prefs: dict[str, Any], wh: int, limit: int = 8) -> d
     return {"players": players}
 
 
-# ───────────────────────── THE SIX (evidence feeds) ─────────────────────────
-def _ago(h: Any) -> str:
-    """Human 'time ago' from an age in hours."""
-    if h is None:
-        return ""
-    h = float(h)
-    if h < 1:
-        return f"{max(1, int(h * 60))}m ago"
-    if h < 24:
-        return f"{int(h)}h ago"
-    return f"{int(h / 24)}d ago"
-
-
-def _pol_tone(pol: Any) -> str:
-    """Sum of (polarity x intensity) → a simple pos/neg/neutral dot class."""
-    if pol is None:
-        return "neu"
-    p = float(pol)
-    return "neg" if p < 0 else "pos" if p > 0 else "neu"
-
-
-def _trim(s: str | None, n: int = 160) -> str:
-    s = (s or "").strip()
-    return s if len(s) <= n else s[: n - 1].rstrip() + "…"
-
-
-async def build_six_feeds(db, prefs: dict[str, Any], pid: str, pname: str,
-                          wh: int) -> dict[str, Any]:
-    """THE SIX rebuilt as six plain evidence feeds — each a 'latest X about you'
-    list, sourced and linkable, ordered newest-first so it refreshes as articles
-    ingest. No derived abstractions: every row is a real quote or headline."""
-    win = _window_label(wh)
-    if not pid:
-        return {"six": []}
-    p = {"pid": pid, "wh": wh}
-    # Coverage tone DIRECTED AT THE PRINCIPAL (not the whole article): only
-    # stances whose target is the principal count, so "Congress criticised" in a
-    # story doesn't read as support for a Congress CM. Matches the sentiment feed.
-    pol_sum = (f"(SELECT COALESCE(sum(({POL})*st.intensity),0) "
-               f"FROM article_stances st WHERE st.article_id=a.id "
-               f"AND st.actor_entity_id=CAST(:pid AS uuid))")
-    to_en: set[str] = set()   # non-English strings to translate in one batch
-
-    # ── 1. Latest quotes about you ──────────────────────────────────────────
-    qrows = (await db.execute(text(f"""
-        SELECT q.quote_text AS txt, q.speaker_name AS who, src.name AS source,
-               a.url AS url,
-               EXTRACT(EPOCH FROM (analytics.now_sim()-a.collected_at))/3600.0 AS age_h
-          FROM article_quotes q
-          JOIN articles a ON a.id=q.article_id
-          JOIN sources src ON src.id=a.source_id
-          JOIN article_entity_mentions m ON m.article_id=a.id AND m.entity_id=CAST(:pid AS uuid)
-         WHERE a.collected_at >= analytics.now_sim()-make_interval(hours=>:wh)
-           AND a.collected_at <= analytics.now_sim()
-           AND q.is_direct AND q.quote_text IS NOT NULL
-           AND char_length(btrim(q.quote_text)) >= 15
-           AND {_BODY_PRESENT}
-         ORDER BY a.collected_at DESC
-         LIMIT 14
-    """), p)).fetchall()
-    quote_items, seen_q = [], set()
-    for r in qrows:
-        t = _trim(r.txt, 220)
-        key = t.lower()[:60]
-        if key in seen_q:
-            continue
-        seen_q.add(key)
-        if not _i18n.is_english(t):
-            to_en.add(t)
-        who = (r.who or "").strip()
-        sub = " · ".join(x for x in [who, r.source] if x)
-        quote_items.append({"kind": "quote", "text": t, "sub": sub,
-                            "when": _ago(r.age_h), "tone": "neu", "url": r.url or ""})
-        if len(quote_items) >= 5:
-            break
-
-    async def _articles(extra: str, limit: int = 5):
-        rows = (await db.execute(text(f"""
-            SELECT COALESCE(NULLIF(a.title,''), a.lead_text_translated, '') AS title,
-                   src.name AS source, a.url AS url, {pol_sum} AS pol,
-                   EXTRACT(EPOCH FROM (analytics.now_sim()-a.collected_at))/3600.0 AS age_h
-              FROM article_entity_mentions m
-              JOIN articles a ON a.id=m.article_id
-              JOIN sources src ON src.id=a.source_id
-             WHERE m.entity_id=CAST(:pid AS uuid)
-               AND a.collected_at >= analytics.now_sim()-make_interval(hours=>:wh)
-               AND a.collected_at <= analytics.now_sim()
-               AND {_BODY_PRESENT}
-               {extra}
-             ORDER BY a.collected_at DESC
-             LIMIT {int(limit)}
-        """), p)).fetchall()
-        out = []
-        for r in rows:
-            t = _trim(r.title, 150)
-            if not t:
-                continue
-            if not _i18n.is_english(t):
-                to_en.add(t)
-            out.append({"kind": "link", "text": t, "sub": r.source,
-                        "when": _ago(r.age_h), "tone": _pol_tone(r.pol),
-                        "url": r.url or ""})
-        return out
-
-    # ── 2/3/4. Latest articles · criticism · support ───────────────────────
-    art_items = await _articles("")
-    crit_items = await _articles(f"AND {pol_sum} < 0")
-    supp_items = await _articles(f"AND {pol_sum} > 0")
-
-    # ── 5. Latest from people you watch ────────────────────────────────────
-    wmeta = (prefs.get("watchlist") or {}).get("entity_meta") or []
-    wids = [m["id"] for m in wmeta if _is_person(m) and m.get("id") != pid]
-    watch_items = []
-    if wids:
-        wrows = (await db.execute(text(f"""
-            SELECT COALESCE(NULLIF(a.title,''), a.lead_text_translated, '') AS title,
-                   src.name AS source, a.url AS url,
-                   (SELECT canonical_name FROM entity_dictionary ed WHERE ed.id=m.entity_id) AS person,
-                   EXTRACT(EPOCH FROM (analytics.now_sim()-a.collected_at))/3600.0 AS age_h,
-                   a.collected_at AS ts
-              FROM article_entity_mentions m
-              JOIN articles a ON a.id=m.article_id
-              JOIN sources src ON src.id=a.source_id
-             WHERE m.entity_id = ANY(CAST(:wids AS uuid[]))
-               AND a.collected_at >= analytics.now_sim()-make_interval(hours=>:wh)
-               AND a.collected_at <= analytics.now_sim()
-               AND {_BODY_PRESENT}
-             ORDER BY a.collected_at DESC
-             LIMIT 30
-        """), {"wids": wids, "wh": wh})).fetchall()
-        seen_w = set()
-        for r in wrows:
-            t = _trim(r.title, 140)
-            if not t or t.lower()[:50] in seen_w:
-                continue
-            seen_w.add(t.lower()[:50])
-            if not _i18n.is_english(t):
-                to_en.add(t)
-            sub = " · ".join(x for x in [(r.person or "").strip(), r.source] if x)
-            watch_items.append({"kind": "link", "text": t, "sub": sub,
-                                "when": _ago(r.age_h), "tone": "neu", "url": r.url or ""})
-            if len(watch_items) >= 5:
-                break
-
-    # ── 6. What you're being tied to ───────────────────────────────────────
-    # Exclude noise that isn't a meaningful "tie": the principal himself, his OWN
-    # state and party (derived from prefs), and pure locations — so the feed shows
-    # the PEOPLE and RIVAL PARTIES he's being linked to, not 'Telangana'/'Hyderabad'.
-    psmeta = prefs.get("primary_subject_meta") or {}
-    own_state = (psmeta.get("state") or "").strip()
-    states = (prefs.get("regions") or {}).get("states") or []
-    own_party = (psmeta.get("party") or "").strip()
-    # Block the principal's own party under every label it travels under so a
-    # Congress CM isn't shown as "tied to" his own party.
-    _party_aliases = {"inc", "congress", "indian national congress"}
-    excl_names = {n.lower() for n in (
-        [pname, own_state, own_party] + list(states)) if n and n.strip()}
-    excl_names |= _party_aliases if (own_party.lower() in _party_aliases
-                                     or "congress" in own_party.lower()) else set()
-    tied_rows = (await db.execute(text("""
-        SELECT ed.canonical_name AS name, count(DISTINCT a.id) AS n
-          FROM article_entity_mentions m
-          JOIN articles a ON a.id=m.article_id
-          JOIN article_entity_mentions co ON co.article_id=a.id AND co.entity_id <> CAST(:pid AS uuid)
-          JOIN entity_dictionary ed ON ed.id=co.entity_id
-         WHERE m.entity_id=CAST(:pid AS uuid)
-           AND a.collected_at >= analytics.now_sim()-make_interval(hours=>:wh)
-           AND a.collected_at <= analytics.now_sim()
-           AND ed.redirected_to IS NULL
-           AND char_length(ed.canonical_name) >= 3
-           AND COALESCE(ed.entity_type,'') <> 'location'
-           AND lower(btrim(ed.canonical_name)) <> ALL(CAST(:excl AS text[]))
-           AND {body}
-         GROUP BY ed.canonical_name
-         ORDER BY n DESC
-         LIMIT 7
-    """.format(body=_BODY_PRESENT)),
-        {**p, "excl": list(excl_names) or [""]})).fetchall()
-    tied_items = [{"kind": "tag", "text": r.name,
-                   "sub": f"in {r.n} stories" if r.n != 1 else "in 1 story",
-                   "tone": "neu"} for r in tied_rows
-                  if (r.name or "").strip().lower() not in excl_names]
-
-    # One batched translation pass for every non-English line we'll show.
-    en_map = await _i18n.ensure_en(db, to_en) if to_en else {}
-    for grp in (quote_items, art_items, crit_items, supp_items, watch_items):
-        for it in grp:
-            if it["text"] in en_map and en_map[it["text"]]:
-                it["en"] = _trim(en_map[it["text"]], 220 if it["kind"] == "quote" else 150)
-
-    feeds = [
-        {"key": "quotes",  "title": "Latest quotes in your coverage",
-         "blurb": "What people are saying — word for word.",
-         "items": quote_items, "empty": f"No quotes in the last {win}."},
-        {"key": "articles", "title": "Latest articles about you",
-         "blurb": "Fresh coverage, newest first.",
-         "items": art_items, "empty": f"No new articles in the last {win}."},
-        {"key": "criticism", "title": "Latest criticism of you",
-         "blurb": "The newest coverage that runs against you.",
-         "items": crit_items, "empty": "No clearly negative coverage right now."},
-        {"key": "support", "title": "Latest support for you",
-         "blurb": "The newest coverage that runs with you.",
-         "items": supp_items, "empty": "No clearly positive coverage right now."},
-        {"key": "watchlist", "title": "Latest from people you watch",
-         "blurb": "New stories featuring your watch list.",
-         "items": watch_items,
-         "empty": "Nothing new from your watch list yet." if wids
-                  else "Add people to your watch list to see this."},
-        {"key": "tied", "title": "What you're being tied to",
-         "blurb": "Names and topics showing up alongside you.",
-         "items": tied_items, "empty": "Not enough coverage to tell yet."},
-    ]
-    return {"six": feeds}
-
-
-# ───────────────────────── THE SIX (legacy analytical, unused) ──────────────
+# ───────────────────────── THE SIX ─────────────────────────
 def build_six(prefs: dict[str, Any], posture: dict[str, Any], wh: int) -> dict[str, Any]:
     M = posture.get("metrics", {})
     win = _window_label(wh)
@@ -765,7 +464,7 @@ def build_six(prefs: dict[str, Any], posture: dict[str, Any], wh: int) -> dict[s
               f"quoted {you_q} times to the opposition's {opp_q}. The risk is not volume — it's a "
               f"single line. ")
         if origin.get("title"):
-            ht += (f"{_LQ}{origin['title']}{_RQ} ({origin.get('outlet', '')}) is the seed of the "
+            ht += (f"“{origin['title']}” ({origin.get('outlet','')}) is the seed of the "
                    f"one adverse narrative; it is still contained. ")
         if contested:
             ht += f"You are contested on {contested[0]['topic'].title()} ({_signed(contested[0]['favourability'])}). "
@@ -776,7 +475,7 @@ def build_six(prefs: dict[str, Any], posture: dict[str, Any], wh: int) -> dict[s
         ht = (f"Net lean is {_signed(overall) if overall is not None else 'thin'} across {ov_n} "
               f"outlet-signals with {n_hostile} hostile outlet(s). ")
         if origin.get("title"):
-            ht += f"The adverse line originates with {_LQ}{origin['title']}{_RQ} ({origin.get('outlet','')}). "
+            ht += f"The adverse line originates with “{origin['title']}” ({origin.get('outlet','')}). "
         ht += f"Opposition is quoted {opp_q} to your {you_q}."
     six.append({"kicker": "The Hard Truth", "title": ht_title, "body": ht,
                 "print": "built from coverage + stance counts — it reads the press, not the public."})
@@ -790,12 +489,12 @@ def build_six(prefs: dict[str, Any], posture: dict[str, Any], wh: int) -> dict[s
         spread = len(amp_outlets)
         if spread >= 3:
             items.append({"verdict": "RESPOND", "vtone": "neg",
-                          "text": f"{_LQ}{origin['title']}{_RQ} — carried by {spread} outlets "
+                          "text": f"“{origin['title']}” — carried by {spread} outlets "
                                   f"({neg} adverse signals in {win}). It has spread past its origin; "
                                   f"answer it before it sets."})
         else:
             items.append({"verdict": "HOLD", "vtone": "neu",
-                          "text": f"{_LQ}{origin['title']}{_RQ} — still {('one outlet' if spread<=1 else f'{spread} outlets')} "
+                          "text": f"“{origin['title']}” — still {('one outlet' if spread<=1 else f'{spread} outlets')} "
                                   f"and {neg} adverse signals total. Loud where it runs, not yet spreading. "
                                   f"Watch, don't feed."})
     if not items:
@@ -867,7 +566,7 @@ def build_six(prefs: dict[str, Any], posture: dict[str, Any], wh: int) -> dict[s
                                f"A short position line, ready to ship or kill."})
     if origin.get("title"):
         drafts.append({"verdict": "COUNTER-LINE", "vtone": "pos",
-                       "text": f"For the {_LQ}{origin['title'][:60]}{_RQ} line — a one-paragraph rebuttal to get ahead of it honestly."})
+                       "text": f"For the “{origin['title'][:60]}” line — a one-paragraph rebuttal to get ahead of it honestly."})
     drafts.append({"verdict": "TRANSLATED", "vtone": "neu",
                    "text": "The sharpest adverse Telugu line, rendered in English so your national desk sees exactly what's being said."})
     six.append({"kicker": "Ready For You", "title": "Drafts waiting for your sign-off", "items": drafts,
@@ -940,14 +639,14 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
         support_v = f"{a0['outlet']} is running {warmth} positive for you — the clean place to land a win this week."
         support_id, support_url = None, ""
     elif top_r and (overall or 0) >= 0:
-        support_v = f"{_LQ}{top_title}{_RQ} is your strongest story this window."
+        support_v = f"“{top_title}” is your strongest story this window."
         support_id, support_url = top_r.get("id"), top_r.get("url", "")
     else:
         support_v = "No strong positive signal detected in coverage this window."
         support_id, support_url = None, ""
 
     if ao.get("title"):
-        attack_v = f"{_LQ}{ao_title}{_RQ} — {ao.get('outlet', '')}."
+        attack_v = f"“{ao_title}” — {ao.get('outlet', '')}."  # noqa
         attack_id, attack_url = ao.get("article_id"), ao_url
     else:
         attack_v = "No concentrated attack line in the current window."
@@ -956,7 +655,7 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
     steam_r = ranked[1] if len(ranked) > 1 else top_r
     if steam_r:
         steam_title = _clean_title(steam_r.get("title_en") or steam_r.get("title", ""))
-        steam_v = f"{_LQ}{steam_title}{_RQ} is gathering traction — track it before it frames the narrative."
+        steam_v = f"“{steam_title}” is gathering traction — track it before it frames the narrative."
         steam_id, steam_url = steam_r.get("id"), steam_r.get("url", "")
     else:
         steam_v = "Not enough coverage to identify a gaining story."
@@ -995,7 +694,7 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
         f"Your coverage over the {_window_label(wh)} reads {coverage_strength} {stance_word}.",
     ]
     if top_title and top_title != "—":
-        h.append(f"The story drawing the most attention in your window is {_LQ}{top_title}{_RQ} — "
+        h.append(f"The story drawing the most attention in your window is “{top_title}” — "
                  f"it is setting the tone for how your work is being read.")
     if you_q or opp_q:
         if you_q >= max(1, opp_q):
@@ -1010,7 +709,7 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
                        else "not yet spread beyond its origin")
         spread_desc = ("and has already spread to multiple outlets" if amp_count > 1
                        else "but has not yet spread beyond its origin")
-        h.append(f"There is one adverse thread to watch: {_LQ}{ao_title}{_RQ} from "
+        h.append(f"There is one adverse thread to watch: “{ao_title}” from "
                  f"{ao.get('outlet', 'an outlet')} — it is the live hostile line, "
                  f"{spread_desc}.")
     if owns:
@@ -1081,7 +780,7 @@ def build_briefing(prefs: dict[str, Any], posture: dict[str, Any],
     conf = traj.get("confidence", "low")
     wn: list[str] = []
     if ao.get("title"):
-        wn.append(f"The most important thing to watch is whether {_LQ}{ao_title}{_RQ} gets "
+        wn.append(f"The most important thing to watch is whether “{ao_title}” gets "
                   f"picked up by a second major outlet — that is the single event that moves "
                   f"it from a contained thread to a story requiring a public response.")
     else:
@@ -1162,16 +861,15 @@ async def build_home(db, prefs: dict[str, Any], *, display_name: str | None = No
     ao_en = (await _i18n.ensure_en(db, {ao_t})).get(ao_t) if (ao_t and not _i18n.is_english(ao_t)) else None
     briefing = build_briefing(prefs, posture, ranked, wh_events, relevance_wh, ao_en=ao_en, ao_url=ao_url)
     players_out = await build_players(db, prefs, posture_wh)
-    six = await build_six_feeds(db, prefs, pid, pname, posture_wh)
+    six = build_six(prefs, posture, posture_wh)
 
     now = (await db.execute(text("SELECT analytics.now_sim() AS n"))).scalar()
-    # SHARED CANONICAL MOOD — the ONE directed, intensity-weighted 3-day headline
-    # mood Home / War Room / Report must all show identically. Its `fav` drives the
-    # masthead headline number AND the Coverage Sentiment "now" figure so the two
-    # never contradict; the waveform trajectory points stay as computed below.
-    mood = await current_mood(db, pid)
-    sentiment = await _sentiment_series(db, pid, posture_wh, mood["fav"])
-    sentiment["label"] = mood["label"]
+    overall, ov_n = _overall_fav(posture)
+    sentiment = await _sentiment_series(db, pid, posture_wh, overall)
+    # Confidence from the favourability signal count (share_of_voice dropped from
+    # the Home metric set for speed).
+    conf = ("high" if ov_n >= 20 else "medium" if ov_n >= 8
+            else "low" if ov_n > 0 else "insufficient")
 
     parts = (pname or "").split()
     states = (prefs.get("regions") or {}).get("states") or []
@@ -1182,12 +880,9 @@ async def build_home(db, prefs: dict[str, Any], *, display_name: str | None = No
         "last": " ".join(parts[1:]) if len(parts) > 1 else "",
         "displayName": display_name,
         "asOf": _fmt_asof(now),
-        # Window, headline number, adverse/favourable label + confidence all come
-        # from the shared current_mood so the masthead agrees with War Room / Report.
-        "window": mood["window_label"],
-        "overall": mood["fav"],
-        "label": mood["label"],
-        "confidence": mood["confidence"],
+        "window": _window_label(posture_wh),
+        "overall": overall,
+        "confidence": conf,
     }
 
     return {
@@ -1203,32 +898,15 @@ async def build_home(db, prefs: dict[str, Any], *, display_name: str | None = No
 
 
 
-_HTML_TAG_RE = re.compile(r"<[^>]+>")
-# Leading breadcrumb nav some scrapers leave on the lead text: "Home |Telangana |…"
-_BREADCRUMB_RE = re.compile(r"^(?:[\w&'.\-]+ *\| *)+")
-
-
-def _clean_head(s: str | None) -> str:
-    """Strip raw HTML and breadcrumb nav a scraper may have left in the text."""
-    if not s:
-        return ""
-    s = _HTML_TAG_RE.sub(" ", s)
-    s = _BREADCRUMB_RE.sub("", s)
-    return re.sub(r"\s+", " ", s).strip()
-
-
 async def sentiment_explain(db, pid: str, wh: int, limit: int = 5) -> dict[str, Any]:
     """Top +/- stories driving the sentiment number, each with a one-line why.
     Same population as the score (stances ABOUT the principal) ordered by
-    contribution = POL x intensity, so it can never disagree with the headline.
-
-    The English gloss is a clean *title* translation (never the breadcrumb-/HTML-
-    polluted lead text), attached only to non-English headlines — an English
-    headline already reads in the 'why' line, so a gloss would be redundant."""
+    contribution = POL x intensity, so it can never disagree with the headline."""
     rows = (await db.execute(text(f"""
         SELECT a.id::text AS id, src.name AS source, st.stance,
                round((({POL}) * st.intensity)::numeric, 2) AS contrib,
-               COALESCE(NULLIF(a.title, ''), NULLIF(a.lead_text_translated, ''), '') AS headline,
+               COALESCE(NULLIF(a.title, ''), a.lead_text_translated, '') AS headline,
+               left(COALESCE(NULLIF(a.lead_text_translated, ''), ''), 140) AS headline_en,
                a.language_detected AS lang,
                a.url AS url
           FROM article_entity_mentions m
@@ -1243,27 +921,20 @@ async def sentiment_explain(db, pid: str, wh: int, limit: int = 5) -> dict[str, 
            AND {_BODY_PRESENT}
     """), {"pid": pid, "wh": wh})).fetchall()
 
-    # Pick the strongest movers first so we only pay to translate the few shown.
-    pos_rows = sorted((r for r in rows if float(r.contrib) > 0),
-                      key=lambda r: -float(r.contrib))[:limit]
-    neg_rows = sorted((r for r in rows if float(r.contrib) < 0),
-                      key=lambda r: float(r.contrib))[:limit]
-
-    # Translate only the non-English titles among the rows we'll actually show.
-    heads = {r.id: _clean_head(r.headline) for r in (pos_rows + neg_rows)}
-    non_en = {h for h in heads.values() if h and not _i18n.is_english(h)}
-    en_map = await _i18n.ensure_en(db, non_en) if non_en else {}
-
     def _item(r):
         positive = float(r.contrib) > 0
         verb = "praised" if positive else "criticised"
-        head = heads.get(r.id, "")
-        head_en = "" if (not head or _i18n.is_english(head)) else (en_map.get(head) or "")
+        head = (r.headline or "").strip()
+        head_en = (r.headline_en or "").strip()
         return {"article_id": r.id, "source": r.source, "stance": r.stance,
                 "contribution": float(r.contrib), "headline": head[:140],
                 "headline_en": head_en[:140], "lang": (r.lang or ""),
                 "url": (r.url or ""),
                 "why": f"{r.source} {verb} you — {head[:90]}"}
 
-    return {"top_positive": [_item(r) for r in pos_rows],
-            "top_negative": [_item(r) for r in neg_rows]}
+    items = [_item(r) for r in rows]
+    pos = sorted((i for i in items if i["contribution"] > 0),
+                 key=lambda x: -x["contribution"])[:limit]
+    neg = sorted((i for i in items if i["contribution"] < 0),
+                 key=lambda x: x["contribution"])[:limit]
+    return {"top_positive": pos, "top_negative": neg}

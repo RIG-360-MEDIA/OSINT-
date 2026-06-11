@@ -365,33 +365,59 @@ class RSSCollector:
 
         title = (item.get("title") or url)[:500]
 
-        try:
-            result = await conn.execute(
-                """
-                INSERT INTO articles (
-                    source_id, url, url_hash, title,
-                    lead_text_original, full_text_scraped,
-                    published_at, collected_at,
-                    content_type, source_tier,
-                    thumbnail_url, author_name,
-                    nlp_processed
-                ) VALUES (
-                    $1::uuid, $2, $3, $4,
-                    $5, $6,
-                    $7, NOW(),
-                    'article', $8,
-                    $9, $10,
-                    FALSE
-                )
-                ON CONFLICT (url_hash) DO NOTHING
-                """,
+        _INSERT_SQL = """
+            INSERT INTO articles (
                 source_id, url, url_hash, title,
-                lead_text, full_text,
-                published_at, source_tier,
-                thumbnail, author,
+                lead_text_original, full_text_scraped,
+                published_at, collected_at,
+                content_type, source_tier,
+                thumbnail_url, author_name,
+                nlp_processed
+            ) VALUES (
+                $1::uuid, $2, $3, $4,
+                $5, $6,
+                $7, NOW(),
+                'article', $8,
+                $9, $10,
+                FALSE
             )
+            ON CONFLICT (url_hash) DO NOTHING
+        """
+        _insert_args = (
+            source_id, url, url_hash, title,
+            lead_text, full_text,
+            published_at, source_tier,
+            thumbnail, author,
+        )
+
+        try:
+            result = await conn.execute(_INSERT_SQL, *_insert_args)
             # asyncpg returns "INSERT 0 N" — N=1 means inserted, N=0 means conflict
             return "inserted" if result.endswith(" 1") else "duplicate"
+        except (
+            asyncpg.exceptions.InterfaceError,
+            asyncpg.exceptions.ConnectionDoesNotExistError,
+        ) as exc:
+            # Stale conn (Postgres restart, idle timeout, network blip).
+            # Retry once with a fresh connection — avoids dropping the article.
+            # Added 2026-06-05 after the Postgres-restart cascade.
+            logger.warning(
+                "Stale DB conn — reconnecting to retry insert for %s: %s",
+                url, exc,
+            )
+            try:
+                fresh = await asyncpg.connect(DATABASE_URL)
+                try:
+                    result = await fresh.execute(_INSERT_SQL, *_insert_args)
+                    return "inserted" if result.endswith(" 1") else "duplicate"
+                finally:
+                    await fresh.close()
+            except Exception as exc2:
+                logger.error(
+                    "DB insert failed (after reconnect) for %s: %s",
+                    url, exc2,
+                )
+                return "error"
         except Exception as exc:
             logger.error("DB insert failed for %s: %s", url, exc)
             return "error"

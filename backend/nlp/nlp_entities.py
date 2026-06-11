@@ -6,6 +6,8 @@ Entity extraction with two-layer resolution:
 from __future__ import annotations
 
 import logging
+import re
+import unicodedata
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +16,49 @@ logger = logging.getLogger(__name__)
 # Loaded once at worker startup via load_entity_dictionary(); O(1) lookup per span.
 
 _ENTITY_DICT: dict[str, dict] = {}
+# Type-3 fuzzy fallback: normalized-surface -> entry. Only keys that resolve to a
+# SINGLE canonical are kept (ambiguous/homonym keys are dropped at load time).
+_ENTITY_NORM: dict[str, dict] = {}
 _DICT_LOADED: bool = False
 _LOADED_VERSION: int = 0
 _LAST_VERSION_CHECK: float = 0.0
+
+# Migration 095 (2026-06-04) Tier 4: durable NER fix. Strip leading honorifics/office-titles/
+# article-particles BEFORE the entity_dictionary lookup so a span like "Chief Minister Revanth
+# Reddy" resolves to the bare "Revanth Reddy" entry, EVEN IF no alias was pre-loaded for it.
+# Without this, NER on a fresh "Chief Minister Smith" article (Smith not yet in dict variants)
+# would emit a brand-new titled row and re-create the dupe class. Regex anchored at start,
+# case-insensitive, dot optional. Must match the migration 095 strip regex byte-for-byte.
+_TITLE_STRIP_RE = re.compile(
+    r"^(chief minister|deputy chief minister|prime minister|deputy prime minister|"
+    r"vice president|president|minister|senator|justice|governor|mayor|"
+    r"honourable|honorable|hon\.?|speaker|"
+    r"sri|shri|smt|sm|dr|mr|mrs|ms|prof|capt|col|gen|lt|maj|adv|engr|"
+    r"a|an|the|cm|pm)\.?\s+",
+    re.IGNORECASE,
+)
+
+
+def _strip_title(key: str) -> str:
+    """Strip a single leading title/honorific/article from a lowercase entity-span key.
+    Returns the bare form, or the original key if no prefix matched. Used as a fallback at
+    dict-lookup time when the full span isn't directly in _ENTITY_DICT — preserves canonical
+    resolution for NEW (not-yet-aliased) entities."""
+    bare = _TITLE_STRIP_RE.sub("", key, count=1).strip()
+    return bare if bare and bare != key and len(bare) > 2 else key
+
+
+def _normalize_key(s: str) -> str:
+    """Punctuation/diacritic/spacing-insensitive form for the Type-3 fuzzy fallback.
+    Merges surface variants like 'K. Annamalai'/'K Annamalai' and 'Y.S.'/'YS' without
+    touching the exact-match path. Deterministic — it only collapses surface noise
+    (accents, dots, apostrophes, punctuation, repeated spaces), never name tokens."""
+    s = unicodedata.normalize("NFKD", (s or "").lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    s = s.replace(".", "").replace("’", "").replace("'", "")
+    s = re.sub(r"[^\w\s]", " ", s)
+    return re.sub(r"\s+", " ", s).strip()
+
 
 _COMMON_WORDS: frozenset[str] = frozenset({
     "india", "indian", "new", "united",
@@ -36,7 +78,7 @@ async def load_entity_dictionary(db_conn) -> int:
     Returns number of lookup keys registered.
     db_conn is a SQLAlchemy AsyncSession.
     """
-    global _ENTITY_DICT, _DICT_LOADED
+    global _ENTITY_DICT, _ENTITY_NORM, _DICT_LOADED
     if _DICT_LOADED:
         return len(_ENTITY_DICT)
 
@@ -52,11 +94,15 @@ async def load_entity_dictionary(db_conn) -> int:
 
     new_dict: dict[str, dict] = {}
     for row in rows:
+        surfaces = [row.canonical_name] + [
+            (a or "").strip() for a in (row.aliases or []) if (a or "").strip()
+        ]
         entry = {
             "canonical_name": row.canonical_name,
             "entity_type": row.entity_type,
             "state": row.state,
             "party": row.party,
+            "surfaces": surfaces,  # canonical + aliases -> word-boundary prominence scoring
         }
         new_dict[row.canonical_name.lower()] = entry
         if row.aliases:
@@ -65,12 +111,32 @@ async def load_entity_dictionary(db_conn) -> int:
                 if stripped:
                     new_dict[stripped.lower()] = entry
 
+    # Type-3 normalized fallback index. One pass over UNIQUE entries; a normalized
+    # surface shared by >1 distinct canonical is ambiguous (homonyms) and dropped,
+    # so the fallback never mis-resolves "two people, same normalized name".
+    norm_map: dict[str, dict] = {}
+    norm_ambig: set[str] = set()
+    for entry in {id(e): e for e in new_dict.values()}.values():
+        for surface in entry["surfaces"]:
+            nk = _normalize_key(surface)
+            if not nk or len(nk) < 4 or nk in _COMMON_WORDS:
+                continue
+            existing = norm_map.get(nk)
+            if existing is None:
+                norm_map[nk] = entry
+            elif existing["canonical_name"] != entry["canonical_name"]:
+                norm_ambig.add(nk)
+    for nk in norm_ambig:
+        norm_map.pop(nk, None)
+
     _ENTITY_DICT = new_dict
+    _ENTITY_NORM = norm_map
     _DICT_LOADED = True
     logger.info(
-        "Entity dictionary loaded: %d entities, %d lookup keys",
+        "Entity dictionary loaded: %d entities, %d lookup keys, %d normalized fallback keys",
         len(rows),
         len(_ENTITY_DICT),
+        len(_ENTITY_NORM),
     )
 
     # Capture current version so the reload task can detect future changes
@@ -140,30 +206,42 @@ async def check_and_reload_if_stale(db_conn) -> bool:
         return False
 
 
-def compute_prominence(entity_name: str, title: str, text: str) -> float:
-    """
-    Score how prominently an entity features in an article. Returns 0.0–1.0.
+_WB_CACHE: dict[str, "re.Pattern"] = {}
 
-    Scoring rationale (prevents sidebar contamination):
-      Title mention      → +3.0  (headline entity — high signal)
-      First 300 chars    → +2.0  (lede paragraph — strong signal)
-      Each body mention  → +1.0  (cap at 5 occurrences)
-      Normalised         → score / 5.0, capped at 1.0
 
-    A sidebar-only entity mentioned once in the body scores 0.2.
-    A headline entity scores at least 0.6 before any body count.
+def _wb(s: str) -> "re.Pattern":
+    """Cached word-boundary regex for a surface form."""
+    p = _WB_CACHE.get(s)
+    if p is None:
+        p = re.compile(r"\b" + re.escape(s) + r"\b")
+        _WB_CACHE[s] = p
+    return p
+
+
+def compute_prominence(surface_forms, title: str, text: str) -> float:
     """
-    name = entity_name.lower()
+    Score how prominently an entity features in an article (0.0–1.0), matching ANY of its
+    surface forms (canonical + aliases) on WORD BOUNDARIES.
+
+    Two fixes over the old substring version:
+      * word-boundary, not substring — "Man" no longer matches "Rah-man"/"Mani-pur";
+      * scored over ALL surface forms — a "PM Modi" headline scores "Narendra Modi" via the
+        "Modi" surface instead of 0 (the canonical never substring-matched the headline).
+    Title +3.0, lede (first 300) +2.0, each body mention +1.0 (cap 5), /5.0 capped 1.0.
+    Forms shorter than 3 chars are ignored (kills ambiguous 2-char aliases like "US").
+    """
     title_l = (title or "").lower()
-    text_l = (text or "").lower()
-
+    lede_l = (text or "").lower()[:300]
+    body_l = (text or "").lower()[:5000]
+    forms = [f.lower() for f in (surface_forms or []) if f and len(f) >= 3]
+    if not forms:
+        return 0.0
     score = 0.0
-    if name in title_l:
+    if any(_wb(f).search(title_l) for f in forms):
         score += 3.0
-    if name in text_l[:300]:
+    if any(_wb(f).search(lede_l) for f in forms):
         score += 2.0
-    score += min(text_l.count(name), 5) * 1.0
-
+    score += min(sum(len(_wb(f).findall(body_l)) for f in forms), 5) * 1.0
     return min(score / 5.0, 1.0)
 
 
@@ -200,11 +278,22 @@ def extract_entities(
     # Layer 2 — dictionary resolution of SpaCy spans
     for span_text, spacy_label in spacy_spans:  # noqa: B007 (spacy_label unused after fix2)
         key = span_text.lower().strip()
-        if not key or key == "none" or len(key) < 2:
+        # min length 3 + common-word guard (matches the title-scan path) — stops a SpaCy
+        # "US"/"IT"/"UN" span resolving to a short-alias entity (e.g. US -> United Spirits).
+        if not key or key == "none" or len(key) < 3 or key in _COMMON_WORDS:
             continue
-        if key not in _ENTITY_DICT:
-            continue
-        entry = _ENTITY_DICT[key]
+        entry = _ENTITY_DICT.get(key)
+        if entry is None:
+            # Tier 4 fallback: strip leading title/honorific/article and re-try ONCE. Catches
+            # NEW articles whose titled span isn't yet aliased in dict ("Chief Minister Smith"
+            # -> "smith") so we don't keep creating dupes downstream.
+            bare = _strip_title(key)
+            entry = _ENTITY_DICT.get(bare) if bare != key else None
+            if entry is None:
+                # Tier 5 (Type-3): punctuation/diacritic/spacing-normalized fallback.
+                entry = _ENTITY_NORM.get(_normalize_key(span_text))
+            if entry is None:
+                continue
         canonical = entry["canonical_name"]
         if canonical in seen_canonical:
             continue
@@ -214,18 +303,35 @@ def extract_entities(
             "type": entry["entity_type"],
             "label": entry["entity_type"],
             "confidence": 0.9,
-            "prominence": round(compute_prominence(canonical, title, text), 3),
+            "prominence": round(compute_prominence(entry["surfaces"], title, text), 3),
         })
 
-    # Direct title scan — catches entities SpaCy missed (e.g. Kaleshwaram → NORP)
+    # Direct title scan via word + 1-3gram lookup (O(title), word-boundary BY CONSTRUCTION:
+    # "man" only matches the whole word, never "Rah-man"). Replaces the old O(17K-dict)
+    # substring loop that both polluted the set and was the backfill's hot path.
     title_lower = (title or "").lower()
-    for key, entry in _ENTITY_DICT.items():
-        if not key or key == "none" or len(key) < 3:
+    words = re.findall(r"\b[\w']+\b", title_lower)
+    cands: set[str] = set()
+    for i in range(len(words)):
+        cands.add(words[i])
+        if i + 1 < len(words):
+            cands.add(f"{words[i]} {words[i+1]}")
+        if i + 2 < len(words):
+            cands.add(f"{words[i]} {words[i+1]} {words[i+2]}")
+    for key in cands:
+        if len(key) < 3 or key in _COMMON_WORDS:
             continue
-        if key.lower() in _COMMON_WORDS:
-            continue
-        if key not in title_lower:
-            continue
+        entry = _ENTITY_DICT.get(key)
+        if entry is None:
+            # Tier 4 fallback (mirrors the SpaCy-resolution branch above)
+            bare = _strip_title(key)
+            entry = _ENTITY_DICT.get(bare) if (bare != key and bare not in _COMMON_WORDS) else None
+            if entry is None:
+                # Tier 5 (Type-3): normalized fallback (ambiguous keys excluded at load).
+                nk = _normalize_key(key)
+                entry = _ENTITY_NORM.get(nk) if nk not in _COMMON_WORDS else None
+            if entry is None:
+                continue
         canonical = entry["canonical_name"]
         if canonical in seen_canonical:
             continue
@@ -235,7 +341,7 @@ def extract_entities(
             "type": entry["entity_type"],
             "label": "DICT_MATCH",
             "confidence": 0.85,
-            "prominence": round(compute_prominence(canonical, title, text), 3),
+            "prominence": round(compute_prominence(entry["surfaces"], title, text), 3),
         })
 
     entities.sort(key=lambda x: x["prominence"], reverse=True)

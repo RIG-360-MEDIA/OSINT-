@@ -22,23 +22,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.routers.admin_router import admin_router
-from backend.routers.analyst_router import analyst_router
-from backend.routers.brief_router import brief_router
-from backend.routers.coverage_router import coverage_router
-from backend.routers.coverage_articles_router import coverage_articles_router
-from backend.routers.debug_router import debug_router
-from backend.routers.onboarding_router import onboarding_router
 from backend.routers.clippings_router import clippings_router, newspapers_router
-from backend.routers.clips_router import clips_router
-from backend.routers.documents_router import documents_router
 from backend.routers.me_router import me_router
 from backend.routers.observe_router import observe_router
-from backend.routers.brief_router import brief_router
 from backend.routers.rbac_admin_router import rbac_admin_router
-from backend.routers.signals_router import signals_router
-from backend.routers.worldmonitor_router import worldmonitor_router
-from backend.routers.thread_router import thread_router
-from backend.routers.cm_router import cm_router
 from backend.middleware.impersonation_audit import ImpersonationAuditMiddleware
 from backend.middleware.request_id import RequestIdMiddleware
 
@@ -49,24 +36,11 @@ app = FastAPI(
 )
 
 app.include_router(admin_router)
-app.include_router(analyst_router)
-app.include_router(debug_router)
-app.include_router(onboarding_router)
-app.include_router(brief_router)
-app.include_router(coverage_router)
-app.include_router(coverage_articles_router)
 app.include_router(clippings_router)
 app.include_router(newspapers_router)
-app.include_router(clips_router)
-app.include_router(documents_router)
-app.include_router(signals_router)
-app.include_router(thread_router)
-app.include_router(worldmonitor_router)
-app.include_router(cm_router)
 app.include_router(me_router)
 app.include_router(rbac_admin_router)
 app.include_router(observe_router)
-app.include_router(brief_router)
 
 # Audit logger — must be added AFTER routers are configured. ASGI middleware
 # wraps the whole app, so registration order doesn't affect routing.
@@ -79,7 +53,7 @@ app.add_middleware(RequestIdMiddleware)
 # Default keeps local dev origins working; production must override.
 _cors_origins_raw = os.getenv(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:3000,http://localhost:3001,http://localhost:4000,http://localhost:5173,http://127.0.0.1:5173",
+    "http://localhost:3000,http://localhost:3001,http://localhost:4000",
 )
 _cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
 app.add_middleware(

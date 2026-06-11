@@ -1,16 +1,15 @@
 """
-Cutting Room API — newspaper clippings feed (P16).
+Cuttings pillar — newspaper clipping feed + newsstand mastheads + PDF proxy.
 
-Endpoints:
-    GET  /api/clippings/feed            — paginated clipping feed
-    GET  /api/clippings/papers          — newsstand mastheads (active papers)
-    GET  /api/clippings/{id}/image      — base64 PNG of rendered clipping
-    GET  /api/clippings/{id}/full       — full clipping (both languages)
-    GET  /api/newspapers/{id}/pdf       — stream the day's PDF on demand
+Routers exported:
+    clippings_router  — /api/clippings/…
+    newspapers_router — /api/newspapers/…
 """
+from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
+from typing import Optional
 from uuid import UUID
 
 import httpx
@@ -18,503 +17,343 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import text
 
-from backend.auth.auth_middleware import get_current_principal, get_current_user, require_page
-from backend.collectors.newspaper_collector import (
-    get_pdf_url_from_careerswave,
-)
+from backend.auth.auth_middleware import get_current_principal, get_current_user
+from backend.collectors.newspaper_collector import get_pdf_url_from_careerswave
 from backend.database import get_db
 
 logger = logging.getLogger(__name__)
 
-clippings_router = APIRouter(
-    prefix="/api/clippings",
-    tags=["clippings"],
-    dependencies=[Depends(require_page("cuttings"))],
-)
+clippings_router = APIRouter(prefix="/api/clippings", tags=["clippings"])
+newspapers_router = APIRouter(prefix="/api/newspapers", tags=["newspapers"])
 
-newspapers_router = APIRouter(
-    prefix="/api/newspapers",
-    tags=["newspapers"],
-    dependencies=[Depends(require_page("cuttings"))],
-)
-
-# How long a cached Drive URL stays fresh before we re-resolve it.
-_PDF_URL_TTL = timedelta(hours=6)
-
-_USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-)
+_PDF_CACHE_TTL_SECONDS = 6 * 3600
+_RELEVANCE_MIN = 0.3
 
 
-def _parse_feed_cursor(raw: str) -> tuple[float, str, str] | None:
-    """
-    DB-1: composite cursor for the feed.
-
-    Encoded as "<relevance_score>|<collected_at_iso>|<clipping_uuid>" so
-    that page-2 onward can apply a tuple comparison
-    `(rs, ca, id) < (cur_rs, cur_ca, cur_id)` matching the same sort key
-    the ORDER BY uses (relevance_score DESC, collected_at DESC, id).
-
-    Returns (rs, ca_iso, id_str) or None for empty/malformed input.
-    """
-    if not raw:
-        return None
-    try:
-        score_s, ca_s, id_s = raw.split("|", 2)
-        return float(score_s), ca_s, id_s
-    except (ValueError, AttributeError):
-        return None
-
-
-@clippings_router.get("/feed")
-async def get_clippings_feed(
-    newspaper: str = Query(default="all"),
-    language: str = Query(default="all"),
-    days: int = Query(default=7),
-    limit: int = Query(default=20, ge=1, le=200),
-    cursor: str = Query(default=""),
-    user: dict = Depends(get_current_principal),
-):
-    """Return recent relevant clippings grouped-ready for display.
-
-    SEC-1: results are filtered to clippings whose `entities_extracted`
-    overlaps the calling user's `user_entities` set. Users with zero
-    entities configured fall back to the global view (graceful default).
-
-    DB-1: cursor is composite `(relevance_score, collected_at, id)` so
-    pagination matches the ORDER BY key and never skips/duplicates rows.
-    """
-    cur = _parse_feed_cursor(cursor)
-    # asyncpg validates bind types eagerly: it wants real datetime / UUID
-    # instances, not ISO strings — even when the surrounding SQL has an
-    # explicit CAST. Build native sentinels for page-1 ("infinity" tuple)
-    # and parsed values for page-2+.
-    sentinel_ca = datetime(9999, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
-    sentinel_id = UUID("ffffffff-ffff-ffff-ffff-ffffffffffff")
-    if cur is not None:
-        cur_score_v: float = cur[0]
-        try:
-            cur_ca_v: datetime = datetime.fromisoformat(cur[1])
-        except ValueError:
-            cur_ca_v = sentinel_ca
-        try:
-            cur_id_v: UUID = UUID(cur[2])
-        except (ValueError, AttributeError):
-            cur_id_v = sentinel_id
-    else:
-        cur_score_v = 1e9
-        cur_ca_v = sentinel_ca
-        cur_id_v = sentinel_id
-
-    async with get_db() as db:
-        params: dict = {
-            "days": days,
-            "limit": limit + 1,
-            "paper": newspaper,
-            "lang": language,
-            "user_id": user["id"],
-            "cur_score": cur_score_v,
-            "cur_ca": cur_ca_v,
-            "cur_id": cur_id_v,
-        }
-
-        # SEC-1 — JOIN against the user's entity set with graceful fallback.
-        # Users with zero entities configured see everything (current behavior
-        # is preserved); users with entities see only clippings whose
-        # `entities_extracted` array contains at least one matching name.
-        result = await db.execute(
-            text(
-                """
-                SELECT
-                    nc.id::text AS clipping_id,
-                    nc.newspaper_name,
-                    nc.newspaper_language,
-                    nc.edition_date,
-                    nc.page_number,
-                    nc.headline,
-                    nc.headline_translated,
-                    LEFT(nc.article_text, 300) AS text_preview,
-                    LEFT(nc.article_text_translated, 300)
-                        AS translated_preview,
-                    (nc.clipping_image_b64 IS NOT NULL) AS has_image,
-                    nc.relevance_score,
-                    nc.relevance_explanation,
-                    nc.collected_at
-                FROM newspaper_clippings nc
-                WHERE nc.collected_at > NOW() - (:days * INTERVAL '1 day')
-                  AND nc.relevance_score >= 0.3
-                  AND (:paper = 'all' OR nc.newspaper_name = :paper)
-                  AND (:lang  = 'all' OR nc.newspaper_language = :lang)
-                  AND (nc.relevance_score, nc.collected_at, nc.id)
-                       < (:cur_score, CAST(:cur_ca AS timestamptz), CAST(:cur_id AS uuid))
-                  AND (
-                    NOT EXISTS (
-                      SELECT 1 FROM user_entities WHERE user_id = CAST(:user_id AS uuid)
-                    )
-                    OR EXISTS (
-                      SELECT 1
-                      FROM jsonb_array_elements(nc.entities_extracted) AS ent
-                      JOIN user_entities ue
-                        ON LOWER(ue.canonical_name) = LOWER(ent->>'name')
-                       AND ue.user_id = CAST(:user_id AS uuid)
-                    )
-                  )
-                ORDER BY nc.relevance_score DESC, nc.collected_at DESC, nc.id
-                LIMIT :limit
-                """
-            ),
-            params,
-        )
-        clippings = result.fetchall()
-        has_more = len(clippings) > limit
-        clippings = clippings[:limit]
-
-        next_cursor: str | None = None
-        if has_more and clippings:
-            last = clippings[-1]
-            next_cursor = (
-                f"{last.relevance_score}|{last.collected_at.isoformat()}|"
-                f"{last.clipping_id}"
-            )
-
-        # CODE-1: removed a second unbounded GROUP BY query that aggregated
-        # papers across the last `days` window on every /feed call. The
-        # frontend never consumed it (Newsstand uses the dedicated /papers
-        # endpoint), and at scale this was a full-table scan per request.
-        return {
-            "clippings": [
-                {
-                    "clipping_id": c.clipping_id,
-                    "newspaper_name": c.newspaper_name,
-                    "newspaper_language": c.newspaper_language,
-                    "edition_date": (
-                        c.edition_date.isoformat()
-                        if c.edition_date
-                        else None
-                    ),
-                    "page_number": c.page_number,
-                    "headline": c.headline,
-                    "headline_translated": c.headline_translated,
-                    "text_preview": c.text_preview,
-                    "translated_preview": c.translated_preview,
-                    "has_image": c.has_image,
-                    "relevance_score": c.relevance_score,
-                    "relevance_explanation": c.relevance_explanation,
-                    "collected_at": c.collected_at.isoformat(),
-                }
-                for c in clippings
-            ],
-            "has_more": has_more,
-            "next_cursor": next_cursor,
-        }
-
+# ── /api/clippings/papers ─────────────────────────────────────────────────────
 
 @clippings_router.get("/papers")
-async def list_active_papers(
-    days: int = Query(default=7, ge=1, le=30),
-    user: dict = Depends(get_current_principal),
-):
-    """
-    List newspapers visible on the Newsstand. A paper appears if EITHER:
-        - it has at least one relevant clipping in the last `days`
-          *that matches the calling user's entity set* (SEC-1), OR
-        - we have a resolvable PDF edition for today (so the user can still
-          click through and read the full broadcast even when entity
-          matching produced zero hits).
-
-    Sorted clip_count DESC, then name ASC. Drives /cuttings.
-
-    SEC-1: clip_count is the user-filtered count. Users with zero entities
-    configured fall back to the global behavior (no entity filter applied).
-    """
+async def list_papers(
+    days: int = Query(7, ge=1, le=365),
+    _user: dict = Depends(get_current_user),
+    principal: dict = Depends(get_current_principal),
+) -> dict:
+    """One row per active newspaper with clipping count and PDF availability."""
     async with get_db() as db:
-        result = await db.execute(
-            text(
-                """
-                SELECT
-                    ns.id::text                                  AS newspaper_id,
-                    ns.name                                      AS name,
-                    ns.language                                  AS language,
-                    COALESCE(
-                        MAX(nc.edition_date),
-                        MAX(ne.edition_date)
-                    )                                            AS edition_date,
-                    COUNT(nc.id)                                 AS clip_count,
-                    BOOL_OR(ne.pdf_url IS NOT NULL)              AS pdf_available
-                FROM newspaper_sources ns
-                LEFT JOIN newspaper_editions ne
-                       ON ne.newspaper_id = ns.id
-                      AND ne.edition_date = CURRENT_DATE
-                LEFT JOIN newspaper_clippings nc
-                       ON nc.newspaper_id = ns.id
-                      AND nc.collected_at > NOW() - (:days * INTERVAL '1 day')
-                      AND nc.relevance_score >= 0.3
-                      AND (
-                        NOT EXISTS (
-                          SELECT 1 FROM user_entities WHERE user_id = CAST(:user_id AS uuid)
-                        )
-                        OR EXISTS (
-                          SELECT 1
-                          FROM jsonb_array_elements(nc.entities_extracted) AS ent
-                          JOIN user_entities ue
-                            ON LOWER(ue.canonical_name) = LOWER(ent->>'name')
-                           AND ue.user_id = CAST(:user_id AS uuid)
-                        )
-                      )
-                WHERE ns.is_active = TRUE
-                GROUP BY ns.id, ns.name, ns.language
-                HAVING COUNT(nc.id) > 0 OR BOOL_OR(ne.pdf_url IS NOT NULL)
-                ORDER BY clip_count DESC, name ASC
-                """
-            ),
-            {"days": days, "user_id": user["id"]},
-        )
-        rows = result.fetchall()
-        return {
-            "papers": [
-                {
-                    "newspaper_id": r.newspaper_id,
-                    "name": r.name,
-                    "language": r.language,
-                    "edition_date": (
-                        r.edition_date.isoformat() if r.edition_date else None
-                    ),
-                    "clip_count": int(r.clip_count),
-                    "pdf_available": bool(r.pdf_available),
-                }
-                for r in rows
-            ]
-        }
+        rows = (
+            await db.execute(
+                text(
+                    """
+                    SELECT
+                        ns.id          AS newspaper_id,
+                        ns.name        AS name,
+                        ns.language    AS language,
+                        MAX(nc.edition_date) AS edition_date,
+                        COUNT(nc.id) FILTER (WHERE nc.relevance_score >= 0.3)
+                                                AS clip_count,
+                        BOOL_OR(ne.pdf_url IS NOT NULL) AS pdf_available
+                    FROM newspaper_sources ns
+                    LEFT JOIN newspaper_clippings nc
+                           ON nc.newspaper_id = ns.id
+                          AND nc.edition_date >= CURRENT_DATE - INTERVAL '1 day' * :days
+                    LEFT JOIN newspaper_editions ne
+                           ON ne.newspaper_id = ns.id
+                          AND ne.edition_date >= CURRENT_DATE - INTERVAL '1 day' * :days
+                    WHERE ns.is_active = TRUE
+                    GROUP BY ns.id, ns.name, ns.language
+                    HAVING COUNT(nc.id) FILTER (WHERE nc.relevance_score >= 0.3) > 0
+                        OR BOOL_OR(ne.pdf_url IS NOT NULL)
+                    ORDER BY clip_count DESC
+                    """
+                ),
+                {"days": days},
+            )
+        ).fetchall()
 
+    return {
+        "papers": [
+            {
+                "newspaper_id": str(r.newspaper_id),
+                "name": r.name,
+                "language": r.language,
+                "edition_date": str(r.edition_date) if r.edition_date else None,
+                "clip_count": r.clip_count or 0,
+                "pdf_available": bool(r.pdf_available),
+            }
+            for r in rows
+        ]
+    }
+
+
+# ── /api/clippings/feed ───────────────────────────────────────────────────────
+
+@clippings_router.get("/feed")
+async def clippings_feed(
+    limit: int = Query(20, ge=1, le=100),
+    days: int = Query(7, ge=1, le=365),
+    newspaper: Optional[str] = Query(None),
+    language: Optional[str] = Query(None),
+    cursor: Optional[str] = Query(None),
+    _user: dict = Depends(get_current_user),
+    principal: dict = Depends(get_current_principal),
+) -> dict:
+    """Cursor-paginated feed of relevant newspaper clippings."""
+    conditions = ["nc.relevance_score >= 0.3"]
+    params: dict = {"limit": limit + 1, "days": days}
+
+    if newspaper:
+        conditions.append("nc.newspaper_name = :paper")
+        params["paper"] = newspaper
+
+    if language:
+        conditions.append("nc.newspaper_language = :lang")
+        params["lang"] = language
+
+    if cursor:
+        conditions.append("nc.collected_at < :cursor::timestamptz")
+        params["cursor"] = cursor
+
+    where_sql = " AND ".join(conditions)
+
+    async with get_db() as db:
+        all_rows = (
+            await db.execute(
+                text(
+                    f"""
+                    SELECT
+                        nc.id                              AS clipping_id,
+                        nc.newspaper_name                  AS newspaper_name,
+                        nc.newspaper_language              AS newspaper_language,
+                        nc.edition_date                    AS edition_date,
+                        nc.page_number                     AS page_number,
+                        nc.headline                        AS headline,
+                        nc.headline_translated             AS headline_translated,
+                        LEFT(nc.article_text, 300)         AS text_preview,
+                        LEFT(nc.article_text_translated, 300) AS translated_preview,
+                        (nc.clipping_image_b64 IS NOT NULL
+                         AND LENGTH(nc.clipping_image_b64) > 0) AS has_image,
+                        nc.relevance_score                 AS relevance_score,
+                        nc.relevance_explanation           AS relevance_explanation,
+                        nc.collected_at                    AS collected_at
+                    FROM newspaper_clippings nc
+                    WHERE {where_sql}
+                    ORDER BY nc.collected_at DESC
+                    LIMIT :limit
+                    """
+                ),
+                params,
+            )
+        ).fetchall()
+
+        has_more = len(all_rows) > limit
+        rows = all_rows[:limit]
+        next_cursor = (
+            rows[-1].collected_at.isoformat() if has_more and rows else None
+        )
+
+        news_rows = (
+            await db.execute(
+                text(
+                    """
+                    SELECT newspaper_name, newspaper_language,
+                           COUNT(*) AS count
+                    FROM newspaper_clippings
+                    WHERE edition_date >= CURRENT_DATE - INTERVAL '1 day' * :days
+                      AND relevance_score >= 0.3
+                    GROUP BY newspaper_name, newspaper_language
+                    ORDER BY count DESC
+                    """
+                ),
+                {"days": days},
+            )
+        ).fetchall()
+
+    return {
+        "clippings": [
+            {
+                "clipping_id": str(r.clipping_id),
+                "newspaper_name": r.newspaper_name,
+                "newspaper_language": r.newspaper_language,
+                "edition_date": str(r.edition_date),
+                "page_number": r.page_number,
+                "headline": r.headline,
+                "headline_translated": r.headline_translated,
+                "text_preview": r.text_preview,
+                "translated_preview": r.translated_preview,
+                "has_image": bool(r.has_image),
+                "relevance_score": r.relevance_score,
+                "relevance_explanation": r.relevance_explanation,
+                "collected_at": (
+                    r.collected_at.isoformat() if r.collected_at else None
+                ),
+            }
+            for r in rows
+        ],
+        "has_more": has_more,
+        "next_cursor": next_cursor,
+        "newspapers": [
+            {
+                "name": r.newspaper_name,
+                "language": r.newspaper_language,
+                "count": r.count,
+            }
+            for r in news_rows
+        ],
+    }
+
+
+# ── /api/clippings/{id}/image ─────────────────────────────────────────────────
 
 @clippings_router.get("/{clipping_id}/image")
-async def get_clipping_image(
+async def clipping_image(
     clipping_id: UUID,
-    user: dict = Depends(get_current_principal),
-):
-    """Return the base64 PNG of the rendered clipping.
-
-    SEC-1: row-level access check. Users with zero entities configured
-    fall back to global access (graceful default). Otherwise the row
-    must overlap their entity set.
-    """
+    _user: dict = Depends(get_current_user),
+    principal: dict = Depends(get_current_principal),
+) -> dict:
+    """Return the base64-encoded clipping image."""
     async with get_db() as db:
-        result = await db.execute(
-            text(
-                """
-                SELECT clipping_image_b64
-                FROM newspaper_clippings nc
-                WHERE nc.id = CAST(:cid AS uuid)
-                  AND (
-                    NOT EXISTS (
-                      SELECT 1 FROM user_entities WHERE user_id = CAST(:user_id AS uuid)
-                    )
-                    OR EXISTS (
-                      SELECT 1
-                      FROM jsonb_array_elements(nc.entities_extracted) AS ent
-                      JOIN user_entities ue
-                        ON LOWER(ue.canonical_name) = LOWER(ent->>'name')
-                       AND ue.user_id = CAST(:user_id AS uuid)
-                    )
-                  )
-                """
-            ),
-            {"cid": str(clipping_id), "user_id": user["id"]},
-        )
-        row = result.fetchone()
-        if not row:
-            raise HTTPException(
-                status_code=404, detail="Clipping not found"
+        row = (
+            await db.execute(
+                text(
+                    "SELECT clipping_image_b64"
+                    " FROM newspaper_clippings WHERE id = :cid"
+                ),
+                {"cid": str(clipping_id)},
             )
-        return {"image_b64": row.clipping_image_b64}
+        ).fetchone()
 
+    if not row or not row.clipping_image_b64:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    return {"image_b64": row.clipping_image_b64}
+
+
+# ── /api/clippings/{id}/full ──────────────────────────────────────────────────
 
 @clippings_router.get("/{clipping_id}/full")
-async def get_clipping_full(
+async def clipping_full(
     clipping_id: UUID,
-    user: dict = Depends(get_current_principal),
-):
-    """Return full clipping text (original + translated).
-
-    SEC-1: same row-level entity-overlap check as /image.
-    """
+    _user: dict = Depends(get_current_user),
+    principal: dict = Depends(get_current_principal),
+) -> dict:
+    """Full clipping text (both languages if available)."""
     async with get_db() as db:
-        result = await db.execute(
-            text(
-                """
-                SELECT
-                    id,
-                    headline,
-                    headline_translated,
-                    article_text,
-                    article_text_translated,
-                    newspaper_name,
-                    edition_date
-                FROM newspaper_clippings nc
-                WHERE nc.id = CAST(:cid AS uuid)
-                  AND (
-                    NOT EXISTS (
-                      SELECT 1 FROM user_entities WHERE user_id = CAST(:user_id AS uuid)
-                    )
-                    OR EXISTS (
-                      SELECT 1
-                      FROM jsonb_array_elements(nc.entities_extracted) AS ent
-                      JOIN user_entities ue
-                        ON LOWER(ue.canonical_name) = LOWER(ent->>'name')
-                       AND ue.user_id = CAST(:user_id AS uuid)
-                    )
-                  )
-                """
-            ),
-            {"cid": str(clipping_id), "user_id": user["id"]},
-        )
-        row = result.fetchone()
-        if not row:
-            raise HTTPException(
-                status_code=404, detail="Clipping not found"
+        row = (
+            await db.execute(
+                text(
+                    """
+                    SELECT headline, headline_translated,
+                           article_text, article_text_translated,
+                           newspaper_name, edition_date
+                    FROM newspaper_clippings
+                    WHERE id = :cid
+                    """
+                ),
+                {"cid": str(clipping_id)},
             )
-        return {
-            "clipping_id": str(row.id),
-            "headline": row.headline,
-            "headline_translated": row.headline_translated,
-            "article_text": row.article_text,
-            "article_text_translated": row.article_text_translated,
-            "newspaper_name": row.newspaper_name,
-            "edition_date": (
-                row.edition_date.isoformat()
-                if row.edition_date
-                else None
-            ),
-        }
+        ).fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Clipping not found")
+
+    return {
+        "headline": row.headline,
+        "headline_translated": row.headline_translated,
+        "article_text": row.article_text,
+        "article_text_translated": row.article_text_translated,
+        "newspaper_name": row.newspaper_name,
+        "edition_date": str(row.edition_date),
+    }
 
 
-# ─────────────────────────────────────────────────────────────────────────
-# /api/newspapers/{id}/pdf — re-fetch the day's edition on demand.
-# ─────────────────────────────────────────────────────────────────────────
-
-
-async def _resolve_edition_pdf_url(
-    db, newspaper_id: str, edition_date: date,
-) -> str | None:
-    """
-    Return a usable Drive URL for the requested edition.
-
-    Uses newspaper_editions cache when fresh; otherwise re-resolves via
-    careerswave and upserts. Returns None if no edition can be located.
-    """
-    cached = await db.execute(
-        text(
-            """
-            SELECT pdf_url, fetched_at
-            FROM newspaper_editions
-            WHERE newspaper_id = CAST(:nid AS uuid) AND edition_date = :ed
-            """
-        ),
-        {"nid": newspaper_id, "ed": edition_date},
-    )
-    row = cached.fetchone()
-    if row and (datetime.now(timezone.utc) - row.fetched_at) < _PDF_URL_TTL:
-        return row.pdf_url
-
-    src = await db.execute(
-        text(
-            """
-            SELECT careerswave_url
-            FROM newspaper_sources
-            WHERE id = CAST(:nid AS uuid) AND is_active = TRUE
-            """
-        ),
-        {"nid": newspaper_id},
-    )
-    src_row = src.fetchone()
-    if not src_row or not src_row.careerswave_url:
-        return None
-
-    pdf_url = await get_pdf_url_from_careerswave(src_row.careerswave_url)
-    if not pdf_url:
-        return None
-
-    await db.execute(
-        text(
-            """
-            INSERT INTO newspaper_editions (newspaper_id, edition_date, pdf_url, fetched_at)
-            VALUES (CAST(:nid AS uuid), :ed, :url, NOW())
-            ON CONFLICT (newspaper_id, edition_date)
-            DO UPDATE SET pdf_url = EXCLUDED.pdf_url, fetched_at = NOW()
-            """
-        ),
-        {"nid": newspaper_id, "ed": edition_date, "url": pdf_url},
-    )
-    await db.commit()
-    return pdf_url
-
+# ── /api/newspapers/{id}/pdf ──────────────────────────────────────────────────
 
 @newspapers_router.get("/{newspaper_id}/pdf")
-async def stream_edition_pdf(
+async def newspaper_pdf(
     newspaper_id: UUID,
-    date_str: str = Query(default="", alias="date"),
-    user: dict = Depends(get_current_principal),
-):
-    """Stream the requested newspaper edition PDF (re-fetched on demand)."""
-    if date_str:
+    date_param: Optional[str] = Query(None, alias="date"),
+    _user: dict = Depends(get_current_user),
+    principal: dict = Depends(get_current_principal),
+) -> StreamingResponse:
+    """Stream today's (or a specified date's) PDF edition, using a 6-hour URL cache."""
+    if date_param is not None:
         try:
-            ed_date = date.fromisoformat(date_str)
-        except ValueError as exc:
+            target_date = date.fromisoformat(date_param)
+        except ValueError:
             raise HTTPException(
-                status_code=400, detail="date must be YYYY-MM-DD"
-            ) from exc
+                status_code=400, detail="Invalid date format. Use YYYY-MM-DD."
+            )
     else:
-        ed_date = date.today()
+        target_date = date.today()
+
+    nid = str(newspaper_id)
 
     async with get_db() as db:
-        pdf_url = await _resolve_edition_pdf_url(db, str(newspaper_id), ed_date)
+        cache_row = (
+            await db.execute(
+                text(
+                    """
+                    SELECT pdf_url, fetched_at
+                    FROM newspaper_editions
+                    WHERE newspaper_id = :nid AND edition_date = :dt
+                    """
+                ),
+                {"nid": nid, "dt": str(target_date)},
+            )
+        ).fetchone()
 
-    if not pdf_url:
-        raise HTTPException(
-            status_code=404,
-            detail="No edition available for this newspaper on this date",
-        )
+        pdf_url: str | None = None
 
-    # RUN-2: validate the upstream actually returns a PDF, not Drive's
-    # "can't scan for viruses, click to download" HTML interstitial. The
-    # symptom previously was a 2.4 KB body labelled application/pdf that
-    # was actually HTML — viewers rendered nothing.
-    async def iter_pdf():
-        async with httpx.AsyncClient(
-            timeout=60,
-            follow_redirects=True,
-            headers={"User-Agent": _USER_AGENT},
-        ) as client:
-            async with client.stream("GET", pdf_url) as upstream:
-                if upstream.status_code != 200:
-                    raise HTTPException(
-                        status_code=502,
-                        detail=(
-                            f"Upstream PDF host returned {upstream.status_code}"
-                        ),
-                    )
-                first_chunk = True
-                async for chunk in upstream.aiter_bytes(chunk_size=65536):
-                    if first_chunk:
-                        first_chunk = False
-                        if not chunk.startswith(b"%PDF-"):
-                            logger.warning(
-                                "stream_edition_pdf: upstream returned non-PDF "
-                                "for newspaper_id=%s date=%s (first 32 bytes: %r)",
-                                newspaper_id, ed_date, chunk[:32],
-                            )
-                            raise HTTPException(
-                                status_code=502,
-                                detail=(
-                                    "Upstream returned non-PDF content "
-                                    "(likely Drive interstitial). Please retry."
-                                ),
-                            )
+        if cache_row:
+            fetched_at = cache_row.fetched_at
+            if fetched_at.tzinfo is None:
+                fetched_at = fetched_at.replace(tzinfo=timezone.utc)
+            age = (datetime.now(timezone.utc) - fetched_at).total_seconds()
+            if age < _PDF_CACHE_TTL_SECONDS:
+                pdf_url = cache_row.pdf_url
+
+        if not pdf_url:
+            src = (
+                await db.execute(
+                    text(
+                        "SELECT careerswave_url"
+                        " FROM newspaper_sources WHERE id = :nid"
+                    ),
+                    {"nid": nid},
+                )
+            ).fetchone()
+
+            if not src or not src.careerswave_url:
+                raise HTTPException(
+                    status_code=404, detail="No PDF available for this edition."
+                )
+
+            pdf_url = await get_pdf_url_from_careerswave(src.careerswave_url)
+            if not pdf_url:
+                raise HTTPException(
+                    status_code=404, detail="No PDF available for this edition."
+                )
+
+            await db.execute(
+                text(
+                    """
+                    INSERT INTO newspaper_editions (newspaper_id, edition_date, pdf_url, fetched_at)
+                    VALUES (:nid, :dt, :url, NOW())
+                    ON CONFLICT (newspaper_id, edition_date) DO UPDATE
+                        SET pdf_url = EXCLUDED.pdf_url, fetched_at = NOW()
+                    """
+                ),
+                {"nid": nid, "dt": str(target_date), "url": pdf_url},
+            )
+            await db.commit()
+
+    async def _pdf_stream():
+        client = httpx.AsyncClient()
+        try:
+            async with client.stream("GET", pdf_url) as resp:
+                async for chunk in resp.aiter_bytes(65536):
                     yield chunk
+        finally:
+            await client.aclose()
 
-    return StreamingResponse(
-        iter_pdf(),
-        media_type="application/pdf",
-        headers={"Content-Disposition": "inline"},
-    )
+    return StreamingResponse(_pdf_stream(), media_type="application/pdf")

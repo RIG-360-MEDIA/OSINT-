@@ -12,10 +12,18 @@ from datetime import timedelta
 from celery import Celery
 from celery.schedules import crontab
 
-DATABASE_URL_SYNC: str = os.environ.get(
-    "DATABASE_URL_SYNC",
-    "postgresql://rig:rigpassword@rig-postgres:5432/rig",
-)
+def _resolve_sync_url() -> str:
+    explicit = os.environ.get("DATABASE_URL_SYNC", "")
+    if explicit:
+        return explicit
+    # Derive from DATABASE_URL so the password is never lost when
+    # DATABASE_URL_SYNC is missing from .env (e.g. recreate without --env-file).
+    async_url = os.environ.get("DATABASE_URL", "")
+    if async_url:
+        return async_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    return "postgresql://rig:rigpassword@rig-postgres:5432/rig"
+
+DATABASE_URL_SYNC: str = _resolve_sync_url()
 
 _broker_url = DATABASE_URL_SYNC.replace("postgresql", "sqla+postgresql", 1)
 _result_url = DATABASE_URL_SYNC.replace("postgresql", "db+postgresql", 1)
@@ -58,12 +66,12 @@ app = Celery(
         "backend.tasks.entity_mention_task",
         # Nightly v2→v3 upgrade pass (translation + register fields)
         "backend.tasks.v3_upgrade_task",
-        # YouTube clips: discovery + extraction + substrate enrichment drain
-        "backend.tasks.youtube_task",
-        "backend.tasks.youtube_clip_enrich",
         # Newspaper clippings: daily collection fan-out + substrate enrichment
         "backend.tasks.newspaper_task",
         "backend.tasks.clipping_enrich",
+        # YouTube clips: discovery + extraction + substrate enrichment drain
+        "backend.tasks.youtube_task",
+        "backend.tasks.youtube_clip_enrich",
     ],
 )
 
@@ -105,13 +113,9 @@ app.config_from_object(
             "tasks.collectors.tgspdcl_power":   {"queue": "collectors"},
             "tasks.collectors.welfare_coverage":{"queue": "collectors"},
             "tasks.collectors.acled_sink":      {"queue": "collectors"},
-            # YouTube: discovery on collectors (RSS safe from Hetzner),
-            # transcript fetch via relay + extraction + enrichment on youtube.
-            "tasks.discover_youtube_channels":   {"queue": "collectors"},
-            "tasks.fetch_youtube_transcripts":   {"queue": "youtube"},
-            "tasks.run_youtube_extraction":      {"queue": "youtube"},
-            "tasks.enrich_clip":                 {"queue": "youtube"},
-            "tasks.drain_pending_clips":         {"queue": "youtube"},
+            # Brief generation — dedicated brief queue (worker-relevance)
+            "tasks.generate_all_briefs":        {"queue": "brief"},
+            "tasks.generate_brief_for_user":    {"queue": "brief"},
             # Newspaper clippings — collection + substrate enrichment both on
             # the documents queue (design §6.2: NEVER nlp — that's article NLP).
             "tasks.collect_newspapers":          {"queue": "documents"},
@@ -119,54 +123,15 @@ app.config_from_object(
             "tasks.collect_one_newspaper":       {"queue": "documents"},
             "tasks.enrich_clipping":             {"queue": "documents"},
             "tasks.drain_pending_clippings":     {"queue": "documents"},
+            # YouTube: discovery on collectors (RSS safe from Hetzner),
+            # transcript fetch via relay + extraction + enrichment on youtube.
+            "tasks.discover_youtube_channels":    {"queue": "collectors"},
+            "tasks.fetch_youtube_transcripts":    {"queue": "youtube"},
+            "tasks.run_youtube_extraction":       {"queue": "youtube"},
+            "tasks.enrich_clip":                  {"queue": "youtube"},
+            "tasks.drain_pending_clips":          {"queue": "youtube"},
         },
         "beat_schedule": {
-            # YouTube discovery (RSS, 30m) → relay transcript fetch (3m) →
-            # extraction (5m) → substrate enrich drain (10m). Mirrors live Hetzner.
-            "discover-youtube-channels-every-30-min": {
-                "task": "tasks.discover_youtube_channels",
-                "schedule": timedelta(minutes=30),
-                "options": {"queue": "collectors"},
-            },
-            "fetch-youtube-transcripts-every-3-min": {
-                "task": "tasks.fetch_youtube_transcripts",
-                "schedule": timedelta(minutes=3),
-                "kwargs": {"limit": 3},
-                "options": {"queue": "youtube"},
-            },
-            "run-youtube-extraction-every-5-min": {
-                "task": "tasks.run_youtube_extraction",
-                "schedule": timedelta(minutes=5),
-                "kwargs": {"limit": 10},
-                "options": {"queue": "youtube"},
-            },
-            "drain-pending-clips-every-10-min": {
-                "task": "tasks.drain_pending_clips",
-                "schedule": timedelta(minutes=10),
-                "kwargs": {"limit": 20},
-                "options": {"queue": "youtube"},
-            },
-            # Newspaper clippings — two idempotent passes (design §3).
-            # PRIMARY 02:00 UTC = 07:30 IST: fan out every active paper.
-            "collect-newspapers-primary": {
-                "task": "tasks.collect_newspapers",
-                "schedule": crontab(hour=2, minute=0),
-                "options": {"queue": "documents"},
-            },
-            # FALLBACK 03:00 UTC = 08:30 IST: only papers with NO clipping
-            # row for today (covers late CareersWave uploads + failures).
-            "collect-newspapers-fallback": {
-                "task": "tasks.collect_newspapers_fallback",
-                "schedule": crontab(hour=3, minute=0),
-                "options": {"queue": "documents"},
-            },
-            # Catch-up drain for any clipping left in substrate_status=pending.
-            "drain-pending-clippings-every-10-min": {
-                "task": "tasks.drain_pending_clippings",
-                "schedule": timedelta(minutes=10),
-                "kwargs": {"limit": 50},
-                "options": {"queue": "documents"},
-            },
             "collect-rss-every-15-min": {
                 "task": "tasks.collect_rss",
                 "schedule": timedelta(minutes=15),
@@ -236,6 +201,60 @@ app.config_from_object(
                 "schedule": crontab(hour=0, minute=5),
                 "options": {"queue": "default"},
             },
+            # Newspaper clippings — two idempotent passes (design §3).
+            # PRIMARY 02:00 UTC = 07:30 IST: fan out every active paper.
+            "collect-newspapers-primary": {
+                "task": "tasks.collect_newspapers",
+                "schedule": crontab(hour=2, minute=0),
+                "options": {"queue": "documents"},
+            },
+            # FALLBACK 03:00 UTC = 08:30 IST: only papers with NO clipping
+            # row for today (covers late CareersWave uploads + failures).
+            "collect-newspapers-fallback": {
+                "task": "tasks.collect_newspapers_fallback",
+                "schedule": crontab(hour=3, minute=0),
+                "options": {"queue": "documents"},
+            },
+            # Catch-up drain for any clipping left in substrate_status=pending
+            # (e.g. enrich enqueue lost on a restart). Cheap no-op when empty.
+            "drain-pending-clippings-every-10-min": {
+                "task": "tasks.drain_pending_clippings",
+                "schedule": timedelta(minutes=10),
+                "kwargs": {"limit": 50},
+                "options": {"queue": "documents"},
+            },
+            # YouTube discovery — RSS Atom feed per active channel, every 30 min.
+            # Safe from Hetzner (RSS not IP-blocked).
+            "discover-youtube-channels-every-30-min": {
+                "task": "tasks.discover_youtube_channels",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "collectors"},
+            },
+            # YouTube transcript fetch via relay — Hetzner calls the Tailscale
+            # relay on the laptop, relay fetches from YouTube on residential IP.
+            # Limit 3 keeps us well under the relay's 15/min rate cap.
+            "fetch-youtube-transcripts-every-3-min": {
+                "task": "tasks.fetch_youtube_transcripts",
+                "schedule": timedelta(minutes=3),
+                "kwargs": {"limit": 3},
+                "options": {"queue": "youtube"},
+            },
+            # YouTube extraction — drain transcribed rows into clips, every 5 min.
+            "run-youtube-extraction-every-5-min": {
+                "task": "tasks.run_youtube_extraction",
+                "schedule": timedelta(minutes=5),
+                "kwargs": {"limit": 10},
+                "options": {"queue": "youtube"},
+            },
+            # YouTube clip substrate drain — catch-up for any clip left pending
+            # after extraction (e.g. worker restart during batch). Bounded at 20
+            # per tick so the youtube worker (concurrency=1) isn't overwhelmed.
+            "drain-pending-clips-every-10-min": {
+                "task": "tasks.drain_pending_clips",
+                "schedule": timedelta(minutes=10),
+                "kwargs": {"limit": 20},
+                "options": {"queue": "youtube"},
+            },
             "check-entity-dict-every-5-min": {
                 "task": "tasks.check_entity_dict_version",
                 "schedule": timedelta(minutes=5),
@@ -303,17 +322,31 @@ app.config_from_object(
                 "schedule": timedelta(minutes=60),
                 "options": {"queue": "nlp"},
             },
-            # Nightly v3 upgrade — 22:30 UTC = 04:00 IST
-            "v3-upgrade-nightly": {
-                "task": "tasks.quality.v3_upgrade",
-                "schedule": crontab(hour=22, minute=30),
-                "options": {"queue": "nlp"},
-            },
+            # DISABLED 2026-05-29: the v1→v2 nightly repass (register +
+            # translation only) is now redundant — new articles go straight
+            # to v3 via the drain-tick task below, and v3 already produces
+            # register_style + english_translation + the full fact layer.
+            # Removing the "v2 step" so articles aren't diverted to a partial
+            # version. (The 23,971 legacy v1 articles are an accepted blind
+            # spot; re-extracting them would need a one-off claim-filter run.)
+            # "v3-upgrade-nightly": {
+            #     "task": "tasks.quality.v3_upgrade",
+            #     "schedule": crontab(hour=22, minute=30),
+            #     "options": {"queue": "nlp"},
+            # },
             # Daily contradiction detection — 23:00 UTC = 04:30 IST
             "contradictions-daily": {
                 "task": "tasks.refresh_contradictions",
                 "schedule": crontab(hour=23, minute=0),
                 "options": {"queue": "nlp"},
+            },
+            # Daily brief generation fan-out — 00:30 UTC = 06:00 IST
+            # Iterates every user with brief page access and enqueues a
+            # per-user generate_brief_for_user task on the brief queue.
+            "generate-briefs-daily": {
+                "task": "tasks.generate_all_briefs",
+                "schedule": crontab(hour=0, minute=30),
+                "options": {"queue": "brief"},
             },
         },
     }

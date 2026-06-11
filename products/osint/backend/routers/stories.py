@@ -611,7 +611,7 @@ async def _new_layer_stories(
         # wire-deduped outlet count; article_count is the full member size.
         card["metrics"]["articles"] = int(sr.article_count or card["metrics"]["articles"])
         card["metrics"]["outlets"] = int(sr.indep or card["metrics"]["outlets"])
-        card["story_id"] = sr.story_id
+        card["story_id"] = str(sr.story_id)
         cards.append(card)
     return cards
 

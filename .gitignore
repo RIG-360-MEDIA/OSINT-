@@ -36,3 +36,4 @@ infrastructure/Dockerfile.frontend.prod.tmp-*
 .env.prod
 *.bak
 *.backup
+secrets/

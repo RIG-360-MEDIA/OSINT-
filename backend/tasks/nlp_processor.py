@@ -223,11 +223,11 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
     from sqlalchemy import text
 
     from backend.nlp.cm.geo_district import load_gazetteer, tag_districts
-    from backend.nlp.nlp_embedding import check_semantic_duplicate, generate_embedding
+    from backend.nlp.nlp_embedding import check_semantic_duplicate, generate_embedding, LABSE_REVISION
     from backend.nlp.nlp_entities import extract_entities
     from backend.nlp.nlp_geo import tag_geography
     from backend.nlp.nlp_language import detect_and_translate
-    from backend.nlp.nlp_topic import classify_topic
+    from backend.nlp.nlp_topic import classify_topic, classify_topic_fine
 
     title = article.title or ""
     lead_original = article.lead_text_original
@@ -251,12 +251,26 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
     entities = extract_entities(title=title, text=working_text, nlp_model=nlp_model)
 
     # ── Step 3: Topic classification ──────────────────────────────────────────
+    # topic_category: original 15-bucket classifier, LEFT UNTOUCHED so every
+    # existing consumer keeps the same contract.
     topic = await classify_topic(
+        title=title,
+        lead_text_translated=working_text if has_good_text else None,
+    )
+    # topic_fine (migration 084): additive 25-bucket classifier with a
+    # don't-hedge instruction + India-aware buckets. Populated only for
+    # articles processed from 2026-05-30 onward; older rows stay NULL.
+    topic_fine = await classify_topic_fine(
         title=title,
         lead_text_translated=working_text if has_good_text else None,
     )
 
     # ── Step 4: Geographic tagging (state-level) ──────────────────────────────
+    # geo_secondary history: category_a_fixes.sql (~2026-05-24) DROPPED this
+    # column, but the NLP UPDATE still wrote it -> UndefinedColumnError that
+    # zeroed entities + embeddings (the 2026-05-26 collapse). Migration 088
+    # (2026-05-30) re-added geo_secondary (text[]) because ~14 reader files
+    # still consume it, so NLP persists it again for read/write consistency.
     geo_primary, geo_secondary = await tag_geography(
         title=title,
         lead_text_translated=working_text if has_good_text else None,
@@ -291,9 +305,7 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
     duplicate_of: str | None = None
 
     if has_good_text:
-        from backend.nlp.embed_guard import safe_embed_input  # T15
-        _safe_input = safe_embed_input(working_text)
-        embedding = precomputed_embedding or (generate_embedding(_safe_input) if _safe_input else None)
+        embedding = precomputed_embedding or generate_embedding(working_text)
         if embedding:
             dup_id = await check_semantic_duplicate(
                 embedding=embedding,
@@ -317,9 +329,13 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
               lead_text_translated  = :lead_text_translated,
               entities_extracted    = CAST(:entities_extracted AS jsonb),
               topic_category        = :topic_category,
+              topic_fine            = :topic_fine,
               geo_primary           = :geo_primary,
-              geo_secondary         = :geo_secondary,
+              geo_secondary         = CAST(:geo_secondary AS text[]),
               labse_embedding       = CAST(:labse_embedding AS vector),
+              embedded_at           = CASE WHEN CAST(:embedding_model AS text) IS NOT NULL THEN now() ELSE embedded_at END,
+              embedding_model       = COALESCE(:embedding_model, embedding_model),
+              embedding_revision    = COALESCE(:embedding_revision, embedding_revision),
               is_duplicate          = :is_duplicate,
               duplicate_of          = CAST(:duplicate_of AS uuid),
               nlp_processed         = TRUE,
@@ -333,9 +349,12 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
             "lead_text_translated": lead_translated if has_good_text else None,
             "entities_extracted": json.dumps(entities),
             "topic_category": topic,
+            "topic_fine": topic_fine,
             "geo_primary": geo_primary,
-            "geo_secondary": geo_secondary,
+            "geo_secondary": geo_secondary or [],
             "labse_embedding": embedding_str,
+            "embedding_model": "sentence-transformers/LaBSE" if embedding else None,
+            "embedding_revision": LABSE_REVISION if embedding else None,
             "is_duplicate": is_duplicate,
             "duplicate_of": duplicate_of,
             "nlp_confidence": nlp_confidence,

@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     libpq-dev \
     curl \
-    default-jre-headless \
+    # Playwright/Chromium deps
     libnss3 \
     libatk-bridge2.0-0 \
     libdrm2 \
@@ -26,11 +26,17 @@ RUN apt-get update && apt-get install -y \
     libpango-1.0-0 \
     libatk1.0-0 \
     libcups2 \
-    ffmpeg \
-    unzip \
+    # PaddlePaddle / OpenCV system deps (PP-Structure newspaper OCR pipeline)
+    libgomp1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgl1 \
     # Tesseract 5 + language packs (newspaper hybrid extractor body OCR).
-    # eng/hin/tel cover the pillar languages; the other Indic packs match
-    # _TESS_LANG_MAP in collectors/newspaper_layout/ocr.py.
+    # Tesseract is preferred over PaddleOCR for both English and Indic newsprint
+    # (cleaner glyphs). eng/hin/tel cover the three pillar languages; the other
+    # Indic packs match _TESS_LANG_MAP in collectors/newspaper_layout/ocr.py.
     tesseract-ocr \
     tesseract-ocr-eng \
     tesseract-ocr-hin \
@@ -44,33 +50,15 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-mar \
     && rm -rf /var/lib/apt/lists/*
 
-# Deno JS runtime — required by recent yt-dlp for YouTube nsig extraction.
-# Without it yt-dlp falls back to a generic regex that fails on current
-# YouTube and returns "Only images are available" instead of audio/video.
-# Static binary, ~30MB, no Node/npm needed. Pinned for reproducibility.
-ARG DENO_VERSION=v2.4.4
-RUN curl -fsSL --output /tmp/deno.zip \
-        https://github.com/denoland/deno/releases/download/${DENO_VERSION}/deno-x86_64-unknown-linux-gnu.zip \
-    && unzip -q -o /tmp/deno.zip -d /usr/local/bin/ \
-    && chmod +x /usr/local/bin/deno \
-    && rm /tmp/deno.zip \
-    && deno --version | head -1
-
 # Copy and install Python dependencies first
 # (separate layer — only rebuilds when requirements.txt changes)
 COPY backend/requirements.txt .
 COPY backend/requirements-dev.txt .
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 
-# P15 — government document PDF pipeline.
-# OpenDataLoader (Apache 2.0) is the primary extractor; PyMuPDF is the
-# fallback for simple digital PDFs. Installed in a dedicated layer so the
-# heavier requirements.txt install above stays cached.
-RUN pip install --no-cache-dir opendataloader-pdf pymupdf
-
-# P16 — newspaper hybrid extractor: bake Tesseract `tessdata_best` (float LSTM)
-# models for the Indic languages. The apt packs ship lower-accuracy "fast"
-# integer models that garble Devanagari/Telugu conjuncts and tank both body
+# Newspaper hybrid extractor — bake Tesseract `tessdata_best` (float LSTM) models
+# for the pillar + Indic languages. The apt packs ship the lower-accuracy "fast"
+# integer models, which garble Devanagari/Telugu conjuncts and tank both body
 # quality and headline-anchor rate; the best models fix that. ocr.py auto-uses
 # this dir via TESSDATA_BEST_DIR when a model is present (--oem 1).
 ENV TESSDATA_BEST_DIR=/usr/share/tesseract-ocr/5/tessdata_best
@@ -81,23 +69,31 @@ RUN mkdir -p "$TESSDATA_BEST_DIR" \
       || echo "tessdata_best/$L download skipped"; \
     done
 
+# P16 — Pre-bake PaddleOCR PP-Structure models into the image.
+# First instantiation downloads layout + OCR weights (~600 MB from PaddlePaddle CDN).
+# Baking them here means containers start without internet access at runtime.
+# Build time: ~5-8 min on first run; subsequent builds use the layer cache.
+# Models download on first use if this step fails (OOM during build, CDN timeout, etc.)
+RUN python -c "from paddleocr import PPStructure; PPStructure(show_log=False, lang='en')" \
+ && python -c "from paddleocr import PPStructure; PPStructure(show_log=False, lang='te')" \
+ || echo "PaddleOCR model pre-bake skipped — will download on first container use"
+
+# Install crawl4ai separately with --no-deps so its pinned lxml~=5.3 and
+# pillow~=10.4 constraints don't override our security-pinned versions.
+# playwright (the only hard runtime dep crawl4ai actually uses at import time)
+# is already installed above from requirements.txt.
+RUN pip install --no-cache-dir --no-deps crawl4ai==0.4.248
+
 # Install Crawl4AI browser + JS snippets.
-# crawl4ai-setup installs Playwright Chromium and populates
-# the js_snippet directory that crawl4ai requires at runtime.
-RUN crawl4ai-setup
+# Non-fatal: crawl4ai-setup may fail if --no-deps omitted a crawl4ai internal dep;
+# playwright is already installed from requirements.txt so basic browser scraping works.
+RUN crawl4ai-setup || echo "crawl4ai-setup skipped — tiered scraping will fall back to playwright direct"
 
 # Download SpaCy model
 RUN python -m spacy download en_core_web_sm
 
 # Download LaBSE model into the image cache so the worker never needs internet
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('LaBSE')"
-
-# Pre-download the Faster-Whisper `medium` model (Phase 2 L3 ASR).
-# ~1.5GB on disk; 3-4GB RAM at runtime. Baked into the image so the
-# whisper worker doesn't need internet at runtime (HF_HUB_OFFLINE=1
-# is set below). `small` is too weak on Indic languages; `large-v3`
-# (3GB / 10GB RAM) needs more host RAM than Hetzner currently has.
-RUN python -c "from faster_whisper import WhisperModel; WhisperModel('medium', device='cpu', compute_type='int8')"
 
 # Copy application code
 COPY backend/ ./backend/

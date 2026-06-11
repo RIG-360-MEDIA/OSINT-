@@ -23,6 +23,7 @@ the schema below.
 REQUIRED fields (ALL must be present):
   article_type: one of [news, opinion, analysis, explainer, interview, press_release, sports_result, editorial, column, letter, other]
   primary_subject: 1 short sentence describing what the article is FUNDAMENTALLY about
+  headline_en: a faithful, concise English translation of the clipping's headline (copy as-is if already English)
   summaries: {preview: str<=50ch, snippet: str<=200ch, executive: str<=1000ch}
   locations: [{text: str, country: str|null, region: str|null, city: str|null, is_primary: bool}] max 5, can be []
   events: [{date: YYYY-MM-DD|null, description: <=14 words, event_type: announcement|meeting|filing|statement|protest|release|election|accident|market_event|legal|sports_result|other, actors: [names], is_future: bool}] max 6, can be []

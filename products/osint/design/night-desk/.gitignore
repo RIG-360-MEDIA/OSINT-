@@ -1,0 +1,9 @@
+# Secrets — never commit. (Root .gitignore also covers .env repo-wide.)
+.env
+.env.*
+!.env.example
+server/.env
+
+# deps / build
+node_modules/
+dist/

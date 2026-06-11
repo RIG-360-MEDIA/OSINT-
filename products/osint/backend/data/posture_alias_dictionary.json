@@ -1,0 +1,934 @@
+{
+  "version": "2026-06-04-v1",
+  "generated_at": "2026-06-04",
+  "scope": "posture.py body-presence matcher widening — political entities only",
+  "notes": "Curated additive alias list. Each entity records rejected_unsafe with reason so the audit trail is durable. No DB writes — feeds product chat's posture.py matcher.",
+  "entities": [
+    {
+      "canonical_name": "Y. S. Jagan Mohan Reddy",
+      "entity_id": "8cf3663e-23f3-4bdd-af8c-c7b6b22f2804",
+      "entity_type": "PERSON",
+      "notes": "Merged from 3 fragmented dict ids (2026-06-04). Body text often uses punctuated 'Y.S.' form that the normalized surface_forms ('ys jagan mohan reddy') miss — these aliases recover body-present matches incl. the YSRCP attack lines.",
+      "aliases": [
+        "Y. S. Jagan Mohan Reddy",
+        "Y.S. Jagan Mohan Reddy",
+        "YS Jagan Mohan Reddy",
+        "Jagan Mohan Reddy",
+        "Y.S. Jagan",
+        "Y. S. Jagan",
+        "YS Jagan",
+        "Jagan Reddy",
+        "YSRCP chief"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Jagan",
+          "reason": "bare given-name overreach — matches Jagannath / Jagan Mohan (others) and unrelated tokens corpus-wide"
+        }
+      ]
+    },
+    {
+      "canonical_name": "All India Trinamool Congress",
+      "entity_id": "c48b58f0-d974-4241-a551-6972da662e09",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 4446,
+      "aliases": [
+        "All India Trinamool Congress",
+        "Trinamool Congress",
+        "TMC",
+        "AITC",
+        "Trinamool"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Congress",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        },
+        {
+          "alias": "All Congress",
+          "reason": "partial-match overreach — would match unrelated tokens"
+        },
+        {
+          "alias": "MP Congress",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Bharatiya Janata Party",
+      "entity_id": "cf29b7d4-f2c5-49b6-a96e-32dcea57c972",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 3291,
+      "aliases": [
+        "Bharatiya Janata Party",
+        "BJP",
+        "B.J.P.",
+        "BJP party",
+        "Bhartiya Janata Party"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Party",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        },
+        {
+          "alias": "MLA Party",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        },
+        {
+          "alias": "Bharatiya Party",
+          "reason": "partial-match overreach — would match unrelated tokens"
+        },
+        {
+          "alias": "Dr. Bharatiya Janata Party",
+          "reason": "meaningless titled prefix — already merged in mig 095"
+        },
+        {
+          "alias": "Prof. Bharatiya Janata Party",
+          "reason": "meaningless titled prefix — already merged in mig 095"
+        },
+        {
+          "alias": "Shri Bharatiya Janata Party",
+          "reason": "meaningless titled prefix — already merged in mig 095"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Narendra Modi",
+      "entity_id": "159af28e-65d5-4f6b-9bfb-76ea24f0ef0b",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 2131,
+      "aliases": [
+        "Narendra Modi",
+        "Modi",
+        "PM Modi",
+        "Prime Minister Narendra Modi",
+        "Narendra Damodardas Modi",
+        "Shri Narendra Modi"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Damodardas",
+          "reason": "partial-match overreach — would match unrelated tokens"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Supreme Court of India",
+      "entity_id": "28eaa4ef-8a8f-4cf8-b4d0-e3c342d1d434",
+      "entity_type": "ORG",
+      "aem_attributions_today": 1369,
+      "aliases": [
+        "Supreme Court of India",
+        "Supreme Court",
+        "SC of India",
+        "SCI",
+        "apex court",
+        "Indian Supreme Court"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "SC",
+          "reason": "partial-match overreach — would match unrelated tokens (SC alone matches 'Scheduled Castes', 'sub-commission' etc.)"
+        },
+        {
+          "alias": "Court",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Mamata Banerjee",
+      "entity_id": "d380a607-a076-4bb4-a252-b03c65bc2bf6",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 974,
+      "aliases": [
+        "Mamata Banerjee",
+        "Mamata Banarjee",
+        "Mamata"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Banerjee",
+          "reason": "bare given-name overreach — matches every person of this name — matches Abhishek Banerjee, Aparna Banerjee, etc."
+        }
+      ]
+    },
+    {
+      "canonical_name": "Reserve Bank of India",
+      "entity_id": "ca5edd31-ff3a-4d7a-b92d-f1f3c75eb60b",
+      "entity_type": "ORG",
+      "aem_attributions_today": 802,
+      "aliases": [
+        "Reserve Bank of India",
+        "RBI",
+        "R.B.I.",
+        "Reserve Bank"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Bank",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Dravida Munnetra Kazhagam",
+      "entity_id": "5075e152-bd0d-4b0b-9780-56d1c4a14f1e",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 733,
+      "aliases": [
+        "Dravida Munnetra Kazhagam",
+        "DMK",
+        "D.M.K."
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Kazhagam",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Indian National Congress",
+      "entity_id": "21410228-f50d-4da6-b02d-133963314632",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 703,
+      "aliases": [
+        "Indian National Congress",
+        "Indian National Congress (INC)",
+        "Congress party"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Congress",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        },
+        {
+          "alias": "MP Congress",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        },
+        {
+          "alias": "All Congress",
+          "reason": "partial-match overreach — would match unrelated tokens"
+        },
+        {
+          "alias": "Indian Congress",
+          "reason": "partial-match overreach — would match unrelated tokens"
+        },
+        {
+          "alias": "INC",
+          "reason": "matches 'Inc.' corporation suffix in business news (India Inc., Diana Shipping Inc., etc.) — spot-read 3/3 FPs in posture validation"
+        },
+        {
+          "alias": "I.N.C.",
+          "reason": "same as INC — corporation-suffix overreach"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Bharat Rashtra Samithi",
+      "entity_id": "34dd3ce9-ac2d-43ae-bfab-edf8bb75c3f6",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 661,
+      "aliases": [
+        "Bharat Rashtra Samithi",
+        "BRS",
+        "Telangana Rashtra Samithi",
+        "TRS",
+        "Bharasa"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Samithi",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        },
+        {
+          "alias": "MLA Samithi",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        },
+        {
+          "alias": "Bharat Samithi",
+          "reason": "partial-match overreach — would match unrelated tokens"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Election Commission of India",
+      "entity_id": "50ee2dbb-588b-4863-9adc-5b4719b1310c",
+      "entity_type": "ORG",
+      "aem_attributions_today": 619,
+      "aliases": [
+        "Election Commission of India",
+        "ECI",
+        "Election Commission",
+        "E.C.I."
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Commission",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Rahul Gandhi",
+      "entity_id": "13676001-3789-495e-9b7a-a6ffa2d7d0bc",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 602,
+      "aliases": [
+        "Rahul Gandhi",
+        "Rahul"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Gandhi",
+          "reason": "bare given-name overreach — matches every person of this name — matches Sonia, Priyanka, Mahatma, Indira, etc."
+        }
+      ]
+    },
+    {
+      "canonical_name": "Central Bureau of Investigation",
+      "entity_id": "e60755d4-17e1-4597-83ff-c6ec1df88d47",
+      "entity_type": "ORG",
+      "aem_attributions_today": 546,
+      "aliases": [
+        "Central Bureau of Investigation",
+        "CBI",
+        "C.B.I."
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Bureau",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        },
+        {
+          "alias": "Investigation",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Amit Shah",
+      "entity_id": "3a66b478-37de-4294-9ec9-8c900cff0ac6",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 546,
+      "aliases": [
+        "Amit Shah",
+        "Amitbhai Shah",
+        "Home Minister Amit Shah"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Shah",
+          "reason": "bare given-name overreach — matches every person of this name — matches Naseeruddin Shah, Idris Shah, hundreds of others"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Siddaramaiah",
+      "entity_id": "16486ad6-1653-42bb-ac7b-36939bf0416d",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 495,
+      "aliases": [
+        "Siddaramaiah",
+        "Siddharamaiah"
+      ],
+      "rejected_unsafe": []
+    },
+    {
+      "canonical_name": "All India Anna Dravida Munnetra Kazhagam",
+      "entity_id": "406b9130-ae1a-4643-b696-33551154cb0b",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 463,
+      "aliases": [
+        "All India Anna Dravida Munnetra Kazhagam",
+        "AIADMK",
+        "A.I.A.D.M.K.",
+        "Anna DMK"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Kazhagam",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        },
+        {
+          "alias": "Anna",
+          "reason": "bare given-name overreach — matches every person of this name"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Sonia Gandhi",
+      "entity_id": "b2bf19b2-027a-4259-a715-a1f1b756d6a6",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 357,
+      "aliases": [
+        "Sonia Gandhi"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Sonia",
+          "reason": "bare given-name overreach — matches every person of this name"
+        },
+        {
+          "alias": "Gandhi",
+          "reason": "bare given-name overreach — matches every person of this name"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Shiv Sena",
+      "entity_id": "f4cca0c8-eda3-42bd-a41b-e75d99cf6178",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 328,
+      "aliases": [
+        "Shiv Sena",
+        "ShivSena",
+        "SS party"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Sena",
+          "reason": "partial-match overreach — would match unrelated tokens (also matches Jana Sena, Yuva Sena)"
+        }
+      ]
+    },
+    {
+      "canonical_name": "K. T. Rama Rao",
+      "entity_id": "d2da8f86-bf20-4890-89ff-b1ecf5a8d62d",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 273,
+      "aliases": [
+        "K. T. Rama Rao",
+        "KTR",
+        "K.T.R.",
+        "KT Rama Rao",
+        "K. Taraka Rama Rao",
+        "Kalvakuntla Taraka Rama Rao"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Rao",
+          "reason": "bare given-name overreach — matches every person of this name"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Rashtriya Janata Dal",
+      "entity_id": "8154252a-8e0a-42cf-961c-e4e2d8176e7f",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 262,
+      "aliases": [
+        "Rashtriya Janata Dal",
+        "RJD",
+        "R.J.D."
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Janata Dal",
+          "reason": "partial-match overreach — would match unrelated tokens"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Himanta Biswa Sarma",
+      "entity_id": "a6c787b8-b695-408c-a745-ea205869f109",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 255,
+      "aliases": [
+        "Himanta Biswa Sarma",
+        "Himanta Sarma",
+        "Himanta"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Sarma",
+          "reason": "bare given-name overreach — matches every person of this name"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Chandrababu Naidu",
+      "entity_id": "2b925288-5456-45c1-bc35-26204b1a5317",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 234,
+      "aliases": [
+        "Chandrababu Naidu",
+        "N. Chandrababu Naidu",
+        "Nara Chandrababu Naidu",
+        "CBN"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Naidu",
+          "reason": "bare given-name overreach — matches every person of this name — many Telugu surnames"
+        },
+        {
+          "alias": "Chandrababu",
+          "reason": "partial-match overreach — would match unrelated tokens"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Aam Aadmi Party",
+      "entity_id": "eedf9311-8fa0-4519-a442-eb3a827f7d06",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 228,
+      "aliases": [
+        "Aam Aadmi Party",
+        "AAP",
+        "A.A.P.",
+        "Aam Aadmi"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Party",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Mallikarjun Kharge",
+      "entity_id": "1bdb5f69-0de3-487f-9a5c-a77d6a19b2fa",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 227,
+      "aliases": [
+        "Mallikarjun Kharge",
+        "M. Kharge"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Kharge",
+          "reason": "bare given-name overreach — matches every person of this name"
+        }
+      ]
+    },
+    {
+      "canonical_name": "K. Chandrashekar Rao",
+      "entity_id": "672c8c03-8534-4a7a-bda4-060f648421be",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 210,
+      "aliases": [
+        "K. Chandrashekar Rao",
+        "KCR",
+        "K Chandrashekar Rao",
+        "K.C.R.",
+        "Kalvakuntla Chandrashekar Rao"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Chandrashekar",
+          "reason": "bare given-name overreach — matches every person of this name"
+        },
+        {
+          "alias": "Rao",
+          "reason": "bare given-name overreach — matches every person of this name"
+        }
+      ]
+    },
+    {
+      "canonical_name": "M. K. Stalin",
+      "entity_id": "d3769ff7-d6ea-4422-adce-425ee919b41f",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 203,
+      "aliases": [
+        "M. K. Stalin",
+        "MK Stalin",
+        "M.K. Stalin",
+        "Stalin",
+        "Muthuvel Karunanidhi Stalin"
+      ],
+      "rejected_unsafe": []
+    },
+    {
+      "canonical_name": "YSR Congress Party",
+      "entity_id": "2d3f60df-dc85-4e38-97f3-46ed7ad88032",
+      "entity_type": "ORG",
+      "aem_attributions_today": 158,
+      "aliases": [
+        "YSR Congress Party",
+        "YSRCP",
+        "YSRC",
+        "YSR Congress",
+        "Y.S.R. Congress Party"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Congress",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Rajnath Singh",
+      "entity_id": "acf3bef2-98b6-43a6-924c-2488cc25bba4",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 155,
+      "aliases": [
+        "Rajnath Singh",
+        "Defence Minister Rajnath Singh"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Rajnath",
+          "reason": "bare given-name overreach — matches every person of this name"
+        },
+        {
+          "alias": "Singh",
+          "reason": "bare given-name overreach — matches every person of this name — extremely common"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Pinarayi Vijayan",
+      "entity_id": "a1b3847c-a5e7-43fe-8fb7-012009389177",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 152,
+      "aliases": [
+        "Pinarayi Vijayan",
+        "P. Vijayan"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Vijayan",
+          "reason": "bare given-name overreach — matches every person of this name"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Nationalist Congress Party",
+      "entity_id": "c62035fa-1799-463b-bcd6-1295b6084a56",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 150,
+      "aliases": [
+        "Nationalist Congress Party",
+        "NCP",
+        "N.C.P.",
+        "Nationalist Congress"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Congress",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        },
+        {
+          "alias": "Party",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Yogi Adityanath",
+      "entity_id": "ea8aed00-f956-422d-a2ab-58735bdc56a1",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 140,
+      "aliases": [
+        "Yogi Adityanath",
+        "Yogi Adityanath Maharaj",
+        "Adityanath",
+        "Ajay Mohan Bisht"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Yogi",
+          "reason": "partial-match overreach — would match unrelated tokens — matches 'a yogi', 'yogi class', etc."
+        }
+      ]
+    },
+    {
+      "canonical_name": "Telugu Desam Party",
+      "entity_id": "d3c1e74b-e794-4e78-a10c-a047144ff123",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 122,
+      "aliases": [
+        "Telugu Desam Party",
+        "TDP",
+        "T.D.P.",
+        "Telugu Desam"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Desam",
+          "reason": "partial-match overreach — would match unrelated tokens"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Enforcement Directorate",
+      "entity_id": "e45e2357-2b58-4a82-b9c7-905848780359",
+      "entity_type": "ORG",
+      "aem_attributions_today": 115,
+      "aliases": [
+        "Enforcement Directorate",
+        "ED",
+        "E.D."
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "ED",
+          "reason": "partial-match overreach — would match unrelated tokens (ED alone matches countless 2-char tokens)"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Arvind Kejriwal",
+      "entity_id": "54013768-1203-4508-8386-4a7df7bfba1f",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 101,
+      "aliases": [
+        "Arvind Kejriwal",
+        "Kejriwal"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Arvind",
+          "reason": "bare given-name overreach — matches every person of this name"
+        }
+      ]
+    },
+    {
+      "canonical_name": "NITI Aayog",
+      "entity_id": "f3268d91-4153-4532-b92a-0eb66d2cae5b",
+      "entity_type": "ORG",
+      "aem_attributions_today": 100,
+      "aliases": [
+        "NITI Aayog",
+        "Niti Aayog",
+        "N.I.T.I. Aayog"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Aayog",
+          "reason": "partial-match overreach — would match unrelated tokens"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Samajwadi Party",
+      "entity_id": "8dd8b98a-c501-45f1-9d98-c5e800cad6e4",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 92,
+      "aliases": [
+        "Samajwadi Party",
+        "SP party",
+        "Samajwadi",
+        "S.P. party"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "SP",
+          "reason": "partial-match overreach — would match unrelated tokens (SP matches 'special police', 'service provider', etc.)"
+        },
+        {
+          "alias": "Party",
+          "reason": "common-noun overreach — bare alias matches unrelated text corpus-wide"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Nirmala Sitharaman",
+      "entity_id": "1bbfa30f-8958-4531-81a8-6372b5a11fa6",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 79,
+      "aliases": [
+        "Nirmala Sitharaman",
+        "FM Nirmala Sitharaman",
+        "Finance Minister Nirmala Sitharaman"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Sitharaman",
+          "reason": "bare given-name overreach — matches every person of this name"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Akhilesh Yadav",
+      "entity_id": "8b49e04c-65aa-4b8e-8d90-e7b250c98df7",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 65,
+      "aliases": [
+        "Akhilesh Yadav",
+        "Akhilesh"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Yadav",
+          "reason": "bare given-name overreach — matches every person of this name — matches Tejashwi Yadav, Lalu Yadav"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Nitish Kumar",
+      "entity_id": "be0e63ae-2f77-4fb4-b802-cbbf78b6d1e6",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 64,
+      "aliases": [
+        "Nitish Kumar"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Nitish",
+          "reason": "bare given-name overreach — matches every person of this name"
+        },
+        {
+          "alias": "Kumar",
+          "reason": "bare given-name overreach — matches every person of this name — matches Akshay Kumar, Manoj Kumar, etc."
+        }
+      ]
+    },
+    {
+      "canonical_name": "Asaduddin Owaisi",
+      "entity_id": "92a84982-18e1-4fcd-ac69-e2965794f789",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 40,
+      "aliases": [
+        "Asaduddin Owaisi",
+        "Asad Owaisi"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Owaisi",
+          "reason": "bare given-name overreach — matches every person of this name — matches Akbaruddin Owaisi (brother)"
+        }
+      ]
+    },
+    {
+      "canonical_name": "Sharad Pawar",
+      "entity_id": "d602bca6-2647-4e9a-9547-cb41f66ce0e2",
+      "entity_type": "PERSON",
+      "aem_attributions_today": 33,
+      "aliases": [
+        "Sharad Pawar",
+        "Sharadchandra Pawar",
+        "S. Pawar"
+      ],
+      "rejected_unsafe": [
+        {
+          "alias": "Pawar",
+          "reason": "bare given-name overreach — matches every person of this name — matches Ajit Pawar, Supriya Pawar"
+        }
+      ]
+    }
+  ],
+  "validation_pass": {
+    "sampled_entities": [
+      {
+        "label": "TMC",
+        "total": 4446,
+        "canonical": 133,
+        "widened": 1237,
+        "added": 1104,
+        "widened_pct": 27.8,
+        "fp_in_spotread": 0
+      },
+      {
+        "label": "BJP",
+        "total": 3291,
+        "canonical": 1048,
+        "widened": 2777,
+        "added": 1729,
+        "widened_pct": 84.4,
+        "fp_in_spotread": 0
+      },
+      {
+        "label": "Modi",
+        "total": 2131,
+        "canonical": 1623,
+        "widened": 1948,
+        "added": 325,
+        "widened_pct": 91.4,
+        "fp_in_spotread": 0
+      },
+      {
+        "label": "DMK",
+        "total": 733,
+        "canonical": 192,
+        "widened": 641,
+        "added": 449,
+        "widened_pct": 87.4,
+        "fp_in_spotread": "~1 borderline (Jofra Archer Telugu)"
+      },
+      {
+        "label": "INC",
+        "total": 703,
+        "canonical": 34,
+        "widened": 84,
+        "added": 50,
+        "widened_pct": 11.9,
+        "fp_in_spotread": "3/3 FPs — 'INC' matches 'Inc.' corp suffix — alias REMOVED post-validation"
+      },
+      {
+        "label": "BRS",
+        "total": 661,
+        "canonical": 115,
+        "widened": 464,
+        "added": 349,
+        "widened_pct": 70.2,
+        "fp_in_spotread": 0
+      },
+      {
+        "label": "AAP",
+        "total": 228,
+        "canonical": 134,
+        "widened": 207,
+        "added": 73,
+        "widened_pct": 90.8,
+        "fp_in_spotread": 0
+      },
+      {
+        "label": "KCR",
+        "total": 210,
+        "canonical": 9,
+        "widened": 67,
+        "added": 58,
+        "widened_pct": 31.9,
+        "fp_in_spotread": 0
+      },
+      {
+        "label": "Kejriwal",
+        "total": 101,
+        "canonical": 90,
+        "widened": 96,
+        "added": 6,
+        "widened_pct": 95,
+        "fp_in_spotread": "1-2 borderline (TVK Vijay Telugu, CUET context)"
+      },
+      {
+        "label": "Owaisi",
+        "total": 40,
+        "canonical": 35,
+        "widened": 35,
+        "added": 0,
+        "widened_pct": 87.5,
+        "fp_in_spotread": "n/a — 0 additional catches"
+      }
+    ],
+    "controls": [
+      {
+        "label": "Iran",
+        "total": 8322,
+        "widened": 7846,
+        "widened_pct": 94.3
+      },
+      {
+        "label": "Modi",
+        "total": 2131,
+        "widened": 1948,
+        "widened_pct": 91.4
+      },
+      {
+        "label": "Tesla",
+        "total": 130,
+        "widened": 130,
+        "widened_pct": 100
+      }
+    ],
+    "thresholds": {
+      "BJP >=2500": "PASS (widened=2777)",
+      "INC >=100": "FAIL (widened=84) — diagnosed as AEM alias-overreach (Congress overreach in entity_dictionary), not script gap; structural fix needed in alias-cleanup-v2",
+      "Iran/Modi/Tesla unchanged": "PASS (94.3/91.4/100.0)"
+    }
+  }
+}

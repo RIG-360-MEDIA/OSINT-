@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RIG OSINT — Obsidian Dispatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=Geist+Mono:wght@300..700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=switzer@300,400,500,600,700&display=swap" rel="stylesheet">
+<style>
+/* ============ OBSIDIAN DISPATCH — design tokens ============ */
+:root{
+  /* surfaces — obsidian, cool undertone, never pure black */
+  --void:        oklch(0.12 0.015 255);
+  --surface:     oklch(0.155 0.016 255);
+  --raised:      oklch(0.205 0.018 255);
+  --hairline:    oklch(0.40 0.02 255 / .35);
+  --hairline-2:  oklch(0.55 0.03 255 / .18);
+  /* ink — warm-neutral, not clinical */
+  --ink:         oklch(0.95 0.008 85);
+  --muted:       oklch(0.68 0.012 255);
+  --faint:       oklch(0.52 0.012 255);
+  /* the one warm — command */
+  --command:     oklch(0.82 0.13 78);
+  --command-dim: oklch(0.62 0.09 78);
+  /* signal palette — colour IS meaning */
+  --hostile:     oklch(0.66 0.19 25);
+  --supportive:  oklch(0.77 0.14 165);
+  --rival:       oklch(0.68 0.19 320);
+  --neutral-sig: oklch(0.62 0.03 255);
+  --type:        'Switzer', system-ui, -apple-system, sans-serif;
+  --display:     'Fraunces', Georgia, 'Times New Roman', serif;
+  --mono:        'Geist Mono', ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
+  /* fluid scale (Utopia-style clamps) */
+  --step--1: clamp(0.78rem, 0.74rem + 0.18vw, 0.88rem);
+  --step-0:  clamp(0.94rem, 0.90rem + 0.20vw, 1.06rem);
+  --step-1:  clamp(1.20rem, 1.10rem + 0.50vw, 1.55rem);
+  --step-2:  clamp(1.60rem, 1.40rem + 1.0vw, 2.30rem);
+  --step-4:  clamp(2.9rem, 2.2rem + 3.4vw, 5.6rem);
+  --ease: cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{ -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+body{
+  font-family:var(--type); font-size:var(--step-0); color:var(--ink);
+  background:var(--void); line-height:1.5; letter-spacing:.01em;
+  font-variation-settings:"wght" 420;
+}
+::selection{ background:var(--command); color:#1a1206; }
+
+/* ============ atmosphere — composed space, not a fill ============ */
+.atmos{ position:fixed; inset:0; z-index:-2; pointer-events:none;
+  background:
+    radial-gradient(60% 38% at 50% -6%, oklch(0.82 0.13 78 / .10), transparent 70%),
+    radial-gradient(50% 50% at 88% 12%, oklch(0.66 0.19 320 / .07), transparent 70%),
+    radial-gradient(60% 60% at 10% 30%, oklch(0.60 0.12 230 / .06), transparent 70%),
+    radial-gradient(90% 70% at 50% 116%, oklch(0.30 0.05 255 / .55), transparent 60%),
+    var(--void);
+}
+/* faint intelligence-cartography contour lines */
+.atmos::after{ content:""; position:absolute; inset:0; opacity:.4;
+  background-image:repeating-linear-gradient(115deg, oklch(0.6 0.03 255 / .025) 0 1px, transparent 1px 88px);
+}
+/* grain — kills the clinical flatness */
+.grain{ position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.45;
+  mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.wrap{ max-width:1180px; margin:0 auto; padding:0 clamp(18px,4vw,40px); }
+
+/* ============ command bar ============ */
+.cmdbar{ display:flex; align-items:center; gap:22px; padding:18px 0 16px; border-bottom:1px solid var(--hairline); }
+.mark{ display:flex; align-items:baseline; gap:9px; font-family:var(--display); }
+.mark .rig{ font-size:1.45rem; font-variation-settings:"opsz" 40,"wght" 600; letter-spacing:.02em; }
+.mark .osint{ font-family:var(--mono); font-size:.62rem; letter-spacing:.32em; color:var(--command);
+  border:1px solid var(--command-dim); padding:3px 7px 2px; border-radius:3px; align-self:center;
+  box-shadow:0 0 16px oklch(0.82 0.13 78 / .18); }
+.ask{ flex:1; display:flex; align-items:center; gap:10px; max-width:430px; margin-inline:auto;
+  background:oklch(0.18 0.016 255 / .7); border:1px solid var(--hairline); border-radius:8px;
+  padding:9px 13px; color:var(--faint); font-size:.86rem; }
+.ask .kbd{ margin-left:auto; font-family:var(--mono); font-size:.66rem; color:var(--muted);
+  border:1px solid var(--hairline); border-radius:4px; padding:2px 6px; }
+.ask svg{ color:var(--command); }
+.actions{ display:flex; gap:9px; align-items:center; }
+.btn{ font-family:var(--type); font-weight:600; font-size:.82rem; border-radius:7px; padding:8px 14px;
+  border:1px solid var(--hairline); background:transparent; color:var(--ink); cursor:pointer; transition:.18s var(--ease); }
+.btn.primary{ background:linear-gradient(180deg, oklch(0.86 0.13 80), oklch(0.74 0.12 72)); color:#22160a;
+  border-color:transparent; box-shadow:0 1px 0 oklch(1 0 0 / .25) inset, 0 6px 22px oklch(0.82 0.13 78 / .22); }
+.btn:hover{ border-color:var(--command-dim); }
+
+/* status ribbon */
+.ribbon{ display:flex; gap:26px; flex-wrap:wrap; padding:11px 0; font-size:.74rem; color:var(--muted);
+  border-bottom:1px solid var(--hairline); font-family:var(--mono); letter-spacing:.04em; }
+.ribbon b{ color:var(--ink); font-weight:500; }
+.dotlive{ width:7px; height:7px; border-radius:50%; background:var(--supportive); display:inline-block;
+  box-shadow:0 0 9px var(--supportive); animation:pulse 2.6s var(--ease) infinite; vertical-align:middle; margin-right:7px;}
+@keyframes pulse{ 0%,100%{opacity:1; box-shadow:0 0 9px var(--supportive)} 50%{opacity:.45; box-shadow:0 0 2px var(--supportive)} }
+
+/* ============ masthead ============ */
+.masthead{ display:grid; grid-template-columns:1fr auto; gap:40px; align-items:end; padding:48px 0 30px;
+  border-bottom:1px solid var(--hairline); }
+.eyebrow{ font-family:var(--mono); font-size:.7rem; letter-spacing:.34em; text-transform:uppercase; color:var(--command); margin-bottom:14px; }
+.subject{ font-family:var(--display); font-size:var(--step-4); line-height:.96; font-variation-settings:"opsz" 144,"wght" 540,"SOFT" 20;
+  letter-spacing:-.015em; }
+.subject em{ font-style:italic; color:var(--muted); font-variation-settings:"opsz" 144,"wght" 420,"SOFT" 40; }
+.dateline{ margin-top:18px; display:flex; gap:18px; align-items:center; color:var(--muted); font-size:.84rem; }
+.dateline .mono{ font-family:var(--mono); color:var(--ink); }
+.sep{ width:4px; height:4px; border-radius:50%; background:var(--faint); }
+
+/* pressure instrument */
+.gauge{ text-align:center; }
+.gauge svg{ display:block; }
+.gauge .val{ font-family:var(--mono); font-size:2.1rem; font-variation-settings:"wght" 500; letter-spacing:-.02em;
+  font-feature-settings:"tnum"; line-height:1; margin-top:-46px; }
+.gauge .cap{ font-family:var(--mono); font-size:.62rem; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); margin-top:8px; }
+.gauge .delta{ color:var(--hostile); }
+
+/* ============ panels / console chrome ============ */
+.deck{ display:grid; grid-template-columns:1.5fr 1fr; gap:22px; padding:32px 0; }
+@media(max-width:880px){ .deck{ grid-template-columns:1fr } .masthead{ grid-template-columns:1fr } }
+.panel{ position:relative; background:var(--surface); border:1px solid var(--hairline); border-radius:12px; padding:24px 24px 26px; }
+.panel.read{ background:linear-gradient(180deg, oklch(0.17 0.017 255), oklch(0.145 0.015 255)); }
+/* operational corner brackets */
+.panel::before,.panel::after{ content:""; position:absolute; width:13px; height:13px; opacity:.6; }
+.panel::before{ top:9px; left:9px; border-top:1px solid var(--command-dim); border-left:1px solid var(--command-dim); }
+.panel::after{ bottom:9px; right:9px; border-bottom:1px solid var(--command-dim); border-right:1px solid var(--command-dim); }
+.label{ font-family:var(--mono); font-size:.66rem; letter-spacing:.24em; text-transform:uppercase; color:var(--muted);
+  display:flex; align-items:center; gap:9px; margin-bottom:16px; }
+.label::after{ content:""; flex:1; height:1px; background:var(--hairline); }
+
+.bluf{ font-family:var(--display); font-size:var(--step-1); line-height:1.34; font-variation-settings:"opsz" 40,"wght" 380,"SOFT" 0;
+  color:var(--ink); }
+.bluf b{ font-variation-settings:"opsz" 40,"wght" 600; color:#fff; }
+.findings{ list-style:none; margin-top:22px; display:grid; gap:13px; }
+.findings li{ display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; font-size:.92rem; color:var(--muted); }
+.findings .tick{ width:8px; height:8px; border-radius:2px; margin-top:6px; }
+.findings .tick.neg{ background:var(--hostile); box-shadow:0 0 8px var(--hostile); }
+.findings .tick.pos{ background:var(--supportive); box-shadow:0 0 8px var(--supportive); }
+.findings b{ color:var(--ink); font-weight:600; }
+
+/* instrument cluster (small stats) */
+.instruments{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+.inst{ background:var(--raised); border:1px solid var(--hairline); border-radius:10px; padding:15px 16px; }
+.inst .k{ font-family:var(--mono); font-size:.6rem; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
+.inst .v{ font-family:var(--mono); font-size:1.5rem; font-variation-settings:"wght" 500; margin-top:6px; letter-spacing:-.02em; font-feature-settings:"tnum"; }
+.inst .v small{ font-size:.8rem; color:var(--muted); font-variation-settings:"wght" 400; }
+.inst.cool .v{ color:oklch(0.78 0.10 230); } .inst.warm .v{ color:var(--command); }
+
+/* ============ favourability roster — the hero ============ */
+.roster .row{ display:grid; grid-template-columns:1fr 96px 1fr 64px; align-items:center; gap:10px; padding:7px 0; }
+.roster .name{ text-align:right; font-size:.9rem; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.roster .name.r{ text-align:left; }
+.barwrap{ position:relative; height:11px; }
+.barwrap.l{ display:flex; justify-content:flex-end; } /* hostile grows leftward */
+.bar{ height:100%; border-radius:3px; transform-origin:inherit; }
+.bar.neg{ background:linear-gradient(90deg, var(--hostile), oklch(0.66 0.19 25 / .35)); box-shadow:0 0 12px oklch(0.66 0.19 25 / .45); }
+.bar.pos{ background:linear-gradient(90deg, oklch(0.77 0.14 165 / .35), var(--supportive)); box-shadow:0 0 12px oklch(0.77 0.14 165 / .45); }
+.bar.neu{ background:var(--neutral-sig); box-shadow:none; }
+.spine{ width:1px; background:var(--hairline-2); justify-self:center; height:20px; grid-column:2 / 4; grid-row:1; pointer-events:none; }
+.score{ font-family:var(--mono); font-size:.86rem; font-feature-settings:"tnum"; text-align:left; }
+.score.neg{ color:var(--hostile);} .score.pos{ color:var(--supportive);} .score.neu{ color:var(--muted);}
+.tagline{ display:flex; justify-content:space-between; font-family:var(--mono); font-size:.6rem; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--faint); margin:4px 0 14px; }
+
+/* heat scoreboard */
+.heat{ list-style:none; display:grid; gap:11px; }
+.heat li{ display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; }
+.heat .hn{ font-size:.9rem; }
+.heat .ht{ position:relative; height:6px; background:oklch(0.3 0.02 255 / .5); border-radius:3px; grid-column:1/-1; overflow:hidden; }
+.heat .hf{ position:absolute; inset:0 auto 0 0; border-radius:3px;
+  background:linear-gradient(90deg, var(--command), var(--hostile)); box-shadow:0 0 10px oklch(0.66 0.19 25 / .4); }
+.heat .hv{ font-family:var(--mono); font-size:.82rem; color:var(--ink); font-feature-settings:"tnum"; }
+
+/* cross-language */
+.clg{ display:flex; gap:26px; align-items:flex-end; }
+.clg .lang{ flex:1; }
+.clg .lname{ font-family:var(--mono); font-size:.7rem; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+.clg .lval{ font-family:var(--mono); font-size:2.1rem; margin-top:4px; font-variation-settings:"wght" 500; font-feature-settings:"tnum"; }
+.clg .neg{ color:var(--hostile);} .clg .pos{ color:var(--supportive);}
+.gapchip{ font-family:var(--mono); font-size:.78rem; color:var(--command); border:1px solid var(--command-dim);
+  padding:5px 10px; border-radius:20px; box-shadow:0 0 18px oklch(0.82 0.13 78 / .12); }
+
+/* issue chips */
+.issues{ display:flex; flex-wrap:wrap; gap:10px; }
+.chip{ display:inline-flex; align-items:center; gap:9px; font-size:.86rem; padding:8px 13px; border-radius:8px;
+  border:1px solid var(--hairline); background:var(--raised); }
+.chip .iv{ font-family:var(--mono); font-feature-settings:"tnum"; }
+.chip.owns{ border-color:oklch(0.77 0.14 165 / .4);} .chip.owns .iv{ color:var(--supportive);}
+.chip.cedes{ border-color:oklch(0.66 0.19 25 / .4);} .chip.cedes .iv{ color:var(--hostile);}
+.chip .verdict{ font-family:var(--mono); font-size:.58rem; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+
+footer{ padding:34px 0 60px; color:var(--faint); font-family:var(--mono); font-size:.66rem; letter-spacing:.16em;
+  border-top:1px solid var(--hairline); margin-top:20px; text-transform:uppercase; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+
+.section-title{ font-family:var(--display); font-size:var(--step-2); font-variation-settings:"opsz" 80,"wght" 480; margin:36px 0 4px; letter-spacing:-.01em;}
+.section-sub{ color:var(--muted); font-size:.88rem; margin-bottom:20px; }
+
+/* reveal motion (guarded) */
+.bar,.hf{ width:var(--w,0); transition:width 1.1s var(--ease); }
+.reveal{ opacity:0; transform:translateY(14px); transition:opacity .7s var(--ease), transform .7s var(--ease); }
+.ready .reveal{ opacity:1; transform:none; }
+@media(prefers-reduced-motion:reduce){ *{ animation:none!important; transition:none!important } .reveal{opacity:1; transform:none} }
+</style>
+</head>
+<body>
+<div class="atmos"></div><div class="grain"></div>
+
+<div class="wrap">
+  <!-- command bar -->
+  <div class="cmdbar">
+    <div class="mark"><span class="rig">RIG</span><span class="osint">OSINT</span></div>
+    <label class="ask">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v3M12 19v3M5 12H2M22 12h-3M6.3 6.3 4.2 4.2M19.8 19.8l-2.1-2.1M17.7 6.3l2.1-2.1M4.2 19.8l2.1-2.1"/></svg>
+      Ask anything about your coverage…
+      <span class="kbd">⌘K</span>
+    </label>
+    <div class="actions">
+      <button class="btn">Export</button>
+      <button class="btn primary">Send brief</button>
+    </div>
+  </div>
+
+  <!-- status ribbon -->
+  <div class="ribbon">
+    <span><span class="dotlive"></span>Live feed</span>
+    <span><b>228</b> sources monitored</span>
+    <span>English · Telugu · Hindi · Kannada</span>
+    <span>Updated <b>Wed 27 May 2026</b></span>
+    <span><b>11,203</b> articles · 24h</span>
+  </div>
+
+  <!-- masthead -->
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">Situation Brief · Telangana</div>
+      <h1 class="subject">Revanth <em>Reddy</em></h1>
+      <div class="dateline">
+        <span>Chief Minister · Indian National Congress</span><span class="sep"></span>
+        <span class="mono">21-DAY WINDOW</span><span class="sep"></span>
+        <span>confidence <span class="mono" style="color:var(--supportive)">HIGH</span></span>
+      </div>
+    </div>
+    <!-- pressure gauge instrument -->
+    <div class="gauge">
+      <svg width="210" height="124" viewBox="0 0 200 116" fill="none">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="oklch(0.82 0.13 78)"/><stop offset="1" stop-color="oklch(0.66 0.19 25)"/>
+        </linearGradient></defs>
+        <path d="M20 100 A80 80 0 0 1 180 100" stroke="oklch(0.30 0.02 255 / .6)" stroke-width="10" stroke-linecap="round"/>
+        <path d="M20 100 A80 80 0 0 1 180 100" stroke="url(#g)" stroke-width="10" stroke-linecap="round"
+              stroke-dasharray="155 252" style="filter:drop-shadow(0 0 6px oklch(0.66 0.19 25 / .5))"/>
+        <line x1="100" y1="100" x2="32" y2="100" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" transform="rotate(111 100 100)"/>
+        <circle cx="100" cy="100" r="5" fill="var(--ink)"/>
+      </svg>
+      <div class="val">123.8</div>
+      <div class="cap">Pressure · <span class="delta">▲ above baseline</span></div>
+    </div>
+  </header>
+
+  <!-- DECK: situation read + instruments -->
+  <div class="deck">
+    <section class="panel read reveal">
+      <div class="label">Strategic Read</div>
+      <p class="bluf">Revanth Reddy is running a <b>two-front narrative offensive</b> — accusing the BJP of a “divide &amp; rule” policy isolating Muslims and Maoists, while countering BRS charges that Congress has <b>failed farmers</b>. Momentum is positive but <b>cooling</b>, and opposition pressure is concentrated in the Telugu-language press.</p>
+      <ul class="findings">
+        <li><span class="tick neg"></span><span><b>BRS on the attack</b> — accuses Congress of failing farmers; opposition leaders arrested in Jangaon ahead of the CM's visit fuel a suppression-of-dissent narrative.</span></li>
+        <li><span class="tick pos"></span><span><b>Counter-move landing</b> — grain &amp; maize procurement reviews on mission-mode; collectors held accountable. Defence is arriving <b>8.4h</b> after each attack.</span></li>
+        <li><span class="tick neg"></span><span><b>Finance is a blind spot</b> — opposition is loud on FINANCE (119 articles) where you are nearly absent (1).</span></li>
+      </ul>
+    </section>
+
+    <aside class="instruments reveal">
+      <div class="inst"><div class="k">Share of Voice</div><div class="v">10.9<small>%</small></div></div>
+      <div class="inst cool"><div class="k">Coverage Trend</div><div class="v">−0.45<small>/day · cooling</small></div></div>
+      <div class="inst"><div class="k">Narrative Half-Life</div><div class="v">2<small> days</small></div></div>
+      <div class="inst warm"><div class="k">Counter-Speed</div><div class="v">8.4<small>h</small></div></div>
+      <div class="inst" style="grid-column:1/-1"><div class="k">Cross-Language Hostility Gap</div>
+        <div class="v"><span style="color:var(--hostile)">−22.0</span> <small>Telugu</small> &nbsp;vs&nbsp; <span style="color:var(--muted)">−1.3</span> <small>English</small> &nbsp;·&nbsp; <span style="color:var(--command)">Δ 20.7</span></div></div>
+    </aside>
+  </div>
+
+  <!-- favourability roster -->
+  <h2 class="section-title">Outlet Favourability</h2>
+  <p class="section-sub">Who frames you hostile, who frames you friendly — intensity-weighted, n ≥ 3.</p>
+  <section class="panel roster reveal">
+    <div class="tagline"><span>◄ Hostile</span><span>Ally ►</span></div>
+    <!-- rows: name | bar(left) | bar(right) | score -->
+    <div class="row"><div class="name">Namasthe Telangana</div><div class="barwrap l"><div class="bar neg" style="--w:100%"></div></div><div class="barwrap"></div><div class="score neg">−50.0</div></div>
+    <div class="row"><div class="name">V6 Velugu</div><div class="barwrap l"><div class="bar neg" style="--w:52%"></div></div><div class="barwrap"></div><div class="score neg">−25.8</div></div>
+    <div class="row"><div class="name">Andhra Jyothy</div><div class="barwrap l"><div class="bar neg" style="--w:39%"></div></div><div class="barwrap"></div><div class="score neg">−19.5</div></div>
+    <div class="row"><div class="name">Telangana Today</div><div class="barwrap l"><div class="bar neg" style="--w:30%"></div></div><div class="barwrap"></div><div class="score neg">−15.0</div></div>
+    <div class="row"><div class="name">Siasat Daily</div><div class="barwrap l"><div class="bar neu" style="--w:6%"></div></div><div class="barwrap"></div><div class="score neu">−1.4</div></div>
+    <div class="row"><div class="name">The Hindu</div><div class="barwrap l"><div class="bar neu" style="--w:4%"></div></div><div class="barwrap"></div><div class="score neu">−0.8</div></div>
+    <div class="row"><div class="name">Eenadu</div><div class="barwrap"></div><div class="barwrap"><div class="bar neu" style="--w:8%"></div></div><div class="score neu">+3.2</div></div>
+    <div class="row"><div class="name">NTV Telugu</div><div class="barwrap"></div><div class="barwrap"><div class="bar pos" style="--w:65%"></div></div><div class="score pos">+32.5</div></div>
+  </section>
+
+  <!-- two-up: heat + issues -->
+  <div class="deck" style="grid-template-columns:1fr 1fr">
+    <section class="panel reveal">
+      <div class="label">Opposition Under Fire · Heat</div>
+      <ul class="heat">
+        <li><span class="hn">K. Chandrashekar Rao</span><span class="hv">97.0</span><span class="ht"><span class="hf" style="--w:100%"></span></span></li>
+        <li><span class="hn">Bharatiya Janata Party</span><span class="hv">83.4</span><span class="ht"><span class="hf" style="--w:86%"></span></span></li>
+        <li><span class="hn">Harish Rao</span><span class="hv">82.6</span><span class="ht"><span class="hf" style="--w:85%"></span></span></li>
+        <li><span class="hn">Bandi Sanjay Kumar</span><span class="hv">22.0</span><span class="ht"><span class="hf" style="--w:23%"></span></span></li>
+        <li><span class="hn">AIMIM</span><span class="hv">9.8</span><span class="ht"><span class="hf" style="--w:10%"></span></span></li>
+      </ul>
+    </section>
+    <section class="panel reveal">
+      <div class="label">Issue Ownership</div>
+      <p class="section-sub" style="margin:-4px 0 16px">Where your coverage is favourable — and where you're ceding the ground.</p>
+      <div class="issues">
+        <span class="chip owns">Infrastructure <span class="iv">+38.5</span><span class="verdict">owns</span></span>
+        <span class="chip owns">Agriculture <span class="iv">+23.3</span><span class="verdict">owns</span></span>
+        <span class="chip cedes">Politics <span class="iv">−11.7</span><span class="verdict">cedes</span></span>
+        <span class="chip cedes">Other <span class="iv">−8.6</span><span class="verdict">contested</span></span>
+      </div>
+      <div class="label" style="margin-top:26px">Quote-Selection Bias</div>
+      <p style="font-size:.9rem;color:var(--muted)"><b style="color:var(--ink)">Namasthe Telangana</b> quotes your critics <b style="color:var(--hostile)">3</b> : <b style="color:var(--supportive)">0</b> you — a hostile frame wearing a neutral tone. <b style="color:var(--ink)">Andhra Jyothy</b> runs <b style="color:var(--supportive)">28</b>:<b style="color:var(--hostile)">3</b> in your favour.</p>
+    </section>
+  </div>
+
+  <footer>
+    <span>RIG OSINT · Obsidian Dispatch</span>
+    <span>chrome is silence — data is light</span>
+    <span>Generated 27 May 2026 · 06:00 IST</span>
+  </footer>
+</div>
+
+<script>
+  // guarded reveal — set bar widths from --w, fade panels in
+  addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[style*="--w"]').forEach(el=>{
+      const w = getComputedStyle(el).getPropertyValue('--w');
+      el.style.width='0'; requestAnimationFrame(()=>requestAnimationFrame(()=> el.style.width=w));
+    });
+    requestAnimationFrame(()=> document.body.classList.add('ready'));
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RIG OSINT — Daily State Intelligence Brief · Andhra Pradesh</title>
+<style>
+  :root{
+    --ink:#ece7da; --muted:#a59f8e; --faint:#7b7565;
+    --bg:#0b0a10; --panel:#121119; --panel2:#16151f; --line:#26242f;
+    --gold:#d8b45a; --gold-d:#9c8136;
+    --pos:#46c98a; --neu:#6b7691; --neg:#ef5d5d; --hi:#f0913e;
+    --serif:Georgia,'Times New Roman',serif; --mono:'SF Mono',ui-monospace,'Cascadia Mono',Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#070610;color:var(--ink);font-family:Inter,-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;line-height:1.55;}
+  .page{max-width:820px;margin:26px auto;background:linear-gradient(180deg,#0c0b12,#0a0910);border:1px solid var(--line);border-radius:10px;padding:42px 46px;box-shadow:0 24px 70px rgba(0,0,0,.5);}
+  .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;}
+  h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.1;margin:8px 0 4px;}
+  h2{font-family:var(--serif);font-weight:600;font-size:21px;margin:34px 0 6px;border-left:3px solid var(--gold);padding-left:12px;}
+  h2 .ix{font-family:var(--mono);font-size:11px;color:var(--gold-d);letter-spacing:.1em;margin-right:8px;}
+  .sub{color:var(--muted);font-size:12.5px;}
+  .lede{color:var(--muted);}
+  .rule{height:1px;background:var(--line);margin:14px 0;}
+  .masthead{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;border-bottom:2px solid var(--gold-d);padding-bottom:16px;}
+  .stamp{font-family:var(--mono);font-size:10.5px;color:var(--faint);text-align:right;line-height:1.7;}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 4px;}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;}
+  .kpi .v{font-size:22px;font-weight:600;font-family:var(--serif);}
+  .kpi .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--faint);text-transform:uppercase;}
+  .kpi .d{font-size:11px;margin-top:2px;}
+  .up{color:var(--pos)} .down{color:var(--neg)} .flat{color:var(--neu)}
+  ul.exec{list-style:none;padding:0;margin:10px 0 0;}
+  ul.exec li{position:relative;padding:8px 0 8px 26px;border-bottom:1px solid var(--line);}
+  ul.exec li:before{content:'▸';position:absolute;left:4px;color:var(--gold);}
+  ul.exec li b{color:var(--ink);}
+  .heat{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px;}
+  .heat th{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);}
+  .heat td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+  .sev{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:20px;}
+  .sev.crit{background:rgba(239,93,93,.16);color:#ff7a7a;border:1px solid rgba(239,93,93,.5)}
+  .sev.high{background:rgba(240,145,62,.15);color:var(--hi);border:1px solid rgba(240,145,62,.5)}
+  .sev.mod{background:rgba(216,180,90,.13);color:var(--gold);border:1px solid rgba(216,180,90,.4)}
+  .sev.low{background:rgba(70,201,138,.12);color:var(--pos);border:1px solid rgba(70,201,138,.35)}
+  .dev{border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:12px 0;background:var(--panel);}
+  .dev .theme{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;}
+  .dev h3{font-family:var(--serif);font-size:17px;margin:5px 0 6px;font-weight:600;}
+  .dev .meta{font-family:var(--mono);font-size:10px;color:var(--faint);margin-top:8px;}
+  .chip{display:inline-block;font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:4px;border:1px solid var(--line);color:var(--muted);margin-right:5px;}
+  .bars div{display:flex;align-items:center;gap:10px;padding:5px 0;}
+  .bars .nm{width:150px;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bars .tr{flex:1;height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;}
+  .bars .tr i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-d),var(--gold));}
+  .bars .vv{width:70px;text-align:right;font-family:var(--mono);font-size:11.5px;}
+  .senti{display:flex;height:14px;border-radius:6px;overflow:hidden;margin:8px 0 4px;}
+  .stories{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+  .story{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel);}
+  .story .img{height:96px;background:linear-gradient(135deg,#1b1a25,#121119);display:flex;align-items:center;justify-content:center;color:var(--faint);font-family:var(--mono);font-size:9px;letter-spacing:.1em;border-bottom:1px solid var(--line);}
+  .story .bd{padding:10px 12px;}
+  .story .ti{font-size:13px;font-weight:600;line-height:1.3;}
+  .story .en{font-size:11px;color:var(--muted);margin-top:3px;}
+  .story .mt{font-family:var(--mono);font-size:9.5px;color:var(--faint);margin-top:7px;}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:7px;margin-right:5px;}
+  .quote{border-left:2px solid var(--gold-d);padding:4px 0 4px 14px;margin:10px 0;}
+  .quote p{margin:0;font-family:var(--serif);font-style:italic;font-size:14px;}
+  .quote .en{font-style:normal;font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .quote .who{font-family:var(--mono);font-size:10px;color:var(--faint);margin-top:3px;}
+  .figs{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .fig{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:11px 13px;}
+  .fig .v{font-family:var(--serif);font-size:18px;font-weight:600;color:var(--gold);}
+  .fig .c{font-size:11.5px;color:var(--muted);}
+  .act{counter-reset:a;list-style:none;padding:0;}
+  .act li{counter-increment:a;position:relative;padding:11px 0 11px 40px;border-bottom:1px solid var(--line);}
+  .act li:before{content:counter(a);position:absolute;left:0;top:9px;width:26px;height:26px;border-radius:50%;background:rgba(216,180,90,.14);border:1px solid var(--gold-d);color:var(--gold);font-family:var(--mono);font-size:12px;display:flex;align-items:center;justify-content:center;}
+  .act li b{color:var(--ink)}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  .src th, .src td{font-size:12px;}
+  .footer{margin-top:30px;border-top:1px solid var(--line);padding-top:12px;font-family:var(--mono);font-size:9.5px;color:var(--faint);display:flex;justify-content:space-between;}
+  .tag-pos{color:var(--pos)} .tag-neg{color:var(--neg)} .tag-mix{color:var(--hi)}
+  .conf{font-family:var(--mono);font-size:9px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:2px 7px;}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- MASTHEAD -->
+  <div class="masthead">
+    <div>
+      <div class="eyebrow">RIG OSINT · DAILY STATE INTELLIGENCE BRIEF</div>
+      <h1>Andhra Pradesh — Situation Snapshot</h1>
+      <div class="sub">Prepared for <b style="color:var(--ink)">N. Chandrababu Naidu desk</b> · 24-hour window</div>
+    </div>
+    <div class="stamp">
+      05 JUN 2026 · 02:40 IST<br>
+      WINDOW 24H · vs PRIOR 24H<br>
+      CONFIDENCE · HIGH (416 stories)<br>
+      CLASSIFICATION · INTERNAL
+    </div>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="kpis">
+    <div class="kpi"><div class="l">Stories tracked</div><div class="v">416</div><div class="d down">▼ 7% vs prior 24h</div></div>
+    <div class="kpi"><div class="l">Net sentiment</div><div class="v" style="color:var(--pos)">+31%</div><div class="d">144 supportive · 60 critical</div></div>
+    <div class="kpi"><div class="l">Districts active</div><div class="v">26</div><div class="d flat">NTR &amp; Krishna lead</div></div>
+    <div class="kpi"><div class="l">Adverse share</div><div class="v" style="color:var(--hi)">22%</div><div class="d">politics &amp; law-and-order driven</div></div>
+  </div>
+
+  <!-- A. EXECUTIVE SUMMARY -->
+  <h2><span class="ix">A</span>Executive Summary</h2>
+  <div class="sub">The seven things that moved in the last 24 hours, and why they matter to the state.</div>
+  <ul class="exec">
+    <li><b>Coverage cooled ~7%</b> (416 vs 447 stories) but the political share held firm at ~33% — the state's news cycle remains dominated by party manoeuvring rather than administration, and that is where today's friction sits.</li>
+    <li><b>Net sentiment stays positive (+31%)</b>, yet 60 critical pieces — concentrated in <b>politics (27 adverse)</b> and <b>law &amp; order (14 adverse)</b> — show the negativity is narrow and targeted, not broad public discontent.</li>
+    <li><b>TDP intra-party friction surfaced in Mylavaram</b>: reports of police cases against the party's own local leaders signal an internal-discipline problem the leadership will want contained before it is weaponised by the opposition.</li>
+    <li><b>Tirupati is under quiet capacity strain</b> — 15-hour darshan waits alongside ₹4.16 crore in single-day offerings point to a crowd-management and revenue-governance story that can flip from devotional pride to administrative embarrassment overnight.</li>
+    <li><b>YSR Kadapa coverage is rising (+47%, 34→50 stories)</b> against a falling state baseline — an early divergence worth watching for what is pulling attention into the Reddy heartland.</li>
+    <li><b>Telangana narrative is bleeding into the AP feed</b>: anti-Congress / pro-irrigation framing from Telangana outlets is appearing in state coverage, a cross-border information current rather than a domestic one.</li>
+    <li><b>No critical-severity domain today.</b> The board is two amber (Political/Social, Law &amp; Order) over a green baseline — a manageable day that rewards monitoring over intervention.</li>
+  </ul>
+
+  <!-- B. RISK HEATMAP -->
+  <h2><span class="ix">B</span>Risk Heatmap</h2>
+  <div class="sub">Severity = coverage volume × adverse share × 24-hour velocity, by domain.</div>
+  <table class="heat">
+    <tr><th>Domain</th><th>Severity</th><th>Signal</th><th style="text-align:right">24h vol · adverse</th></tr>
+    <tr><td><b>Political / Social unrest</b></td><td><span class="sev high">🟠 HIGH</span></td><td>Intra-party TDP friction + cross-border narrative pressure; 20% of political coverage adverse.</td><td style="text-align:right;font-family:var(--mono)">138 · 28</td></tr>
+    <tr><td><b>Law &amp; Order</b></td><td><span class="sev high">🟠 HIGH</span></td><td>38% adverse share (security + legal) — the highest negativity ratio on the board, though low volume.</td><td style="text-align:right;font-family:var(--mono)">37 · 14</td></tr>
+    <tr><td><b>Governance</b></td><td><span class="sev mod">🟡 MODERATE</span></td><td>Administrative coverage steady (irrigation, schemes); 1 adverse piece. Watch, don't act.</td><td style="text-align:right;font-family:var(--mono)">19 · 1</td></tr>
+    <tr><td><b>Infrastructure</b></td><td><span class="sev low">🟢 LOW</span></td><td>Cooling — down a third (22→14). No pressure signal.</td><td style="text-align:right;font-family:var(--mono)">14 · 2</td></tr>
+    <tr><td><b>Economy</b></td><td><span class="sev low">🟢 LOW</span></td><td>Business ticking up (8→11), finance quiet. Zero adverse.</td><td style="text-align:right;font-family:var(--mono)">14 · 0</td></tr>
+    <tr><td><b>Health</b></td><td><span class="sev low">🟢 LOW</span></td><td>Stable background coverage, no anomaly cluster.</td><td style="text-align:right;font-family:var(--mono)">15 · 0</td></tr>
+    <tr><td><b>Environment</b></td><td><span class="sev low">🟢 LOW</span></td><td>Light (incl. agriculture). No active weather/hazard alert near the state.</td><td style="text-align:right;font-family:var(--mono)">16 · 0</td></tr>
+  </table>
+
+  <!-- C. KEY DEVELOPMENTS -->
+  <h2><span class="ix">C</span>Key Developments</h2>
+  <div class="sub">Clustered by theme, not listed by article. Each is rewritten and contextualised.</div>
+
+  <div class="dev">
+    <div class="theme">Party Discipline · Political</div>
+    <h3>TDP's own house: police cases against Mylavaram leaders expose a local-cadre fault line</h3>
+    <div class="lede">Coverage out of Mylavaram describes cases and arrests touching Telugu Desam Party figures — not opposition attacks but in-house turbulence. For a party that runs on organisational discipline, intra-cadre legal trouble in a Krishna-belt constituency is the kind of small fire that, left unattended, becomes an opposition talking point about "law and order even within the ruling party." The signal is reputational, not yet electoral.</div>
+    <div class="meta"><span class="chip">Tupaki · Tier 2</span><span class="chip">Mylavaram, NTR/Krishna</span><span class="chip tag-neg">● adverse</span> · 14h ago</div>
+  </div>
+
+  <div class="dev">
+    <div class="theme">Faith &amp; Crowd Governance · Infrastructure</div>
+    <h3>Tirupati strains under its own success: 15-hour darshan queues meet ₹4.16 crore in a single day</h3>
+    <div class="lede">Two data points from the temple town tell one story. Devotees reported waiting up to 15 hours for darshan, while the hundi collected ₹4.16 crore in one day of offerings. Read together, this is a capacity-versus-demand problem dressed as devotional success: record footfall and revenue alongside service-delivery stress. It is a latent governance story — crowd safety, queue management, pilgrim experience — that the administration can get ahead of, or be caught flat-footed by during the next festival peak.</div>
+    <div class="meta"><span class="chip">Daily Thanthi · Tier 1</span><span class="chip">Tirupati</span><span class="chip tag-mix">● mixed</span> · 9h ago</div>
+  </div>
+
+  <div class="dev">
+    <div class="theme">Cross-Border Narrative · Political/Social</div>
+    <h3>Telangana's Congress-vs-irrigation fight is spilling into the AP information space</h3>
+    <div class="lede">A cluster of Telangana-origin pieces — criticism of Congress rule, contested framing of the Palamuru–Rangareddy irrigation project, and pointed remarks attributed to state figures — is surfacing inside Andhra coverage. This is narrative spillover rather than a domestic AP event: a neighbouring-state political current that watchers should tag as <i>imported</i>, so it is not mistaken for home-grown sentiment when reading the day's tone.</div>
+    <div class="meta"><span class="chip">Namasthe Telangana · Tier 2</span><span class="chip">Border / TG-AP</span><span class="chip tag-neg">● adverse</span> · 11h ago</div>
+  </div>
+
+  <!-- D. GEOGRAPHIC -->
+  <h2><span class="ix">D</span>Geographic Intelligence</h2>
+  <div class="sub">District-level coverage. NTR &amp; Krishna (the capital corridor) dominate; YSR Kadapa is the mover.</div>
+  <div class="bars" style="margin-top:8px;">
+    <div><span class="nm">NTR (Vijayawada)</span><span class="tr"><i style="width:100%"></i></span><span class="vv">243 <span style="color:var(--neg)">▼</span></span></div>
+    <div><span class="nm">Krishna</span><span class="tr"><i style="width:91%"></i></span><span class="vv">222 <span style="color:var(--neg)">▼</span></span></div>
+    <div><span class="nm">YSR Kadapa</span><span class="tr"><i style="width:21%"></i></span><span class="vv">50 <span style="color:var(--pos)">▲47%</span></span></div>
+    <div><span class="nm">Tirupati</span><span class="tr"><i style="width:19%"></i></span><span class="vv">46 <span class="flat">·</span></span></div>
+    <div><span class="nm">Chittoor</span><span class="tr"><i style="width:19%"></i></span><span class="vv">46 <span class="flat">·</span></span></div>
+    <div><span class="nm">Alluri Sitarama Raju</span><span class="tr"><i style="width:18%"></i></span><span class="vv">45 <span class="flat">·</span></span></div>
+    <div><span class="nm">Visakhapatnam</span><span class="tr"><i style="width:18%"></i></span><span class="vv">43 <span class="flat">·</span></span></div>
+    <div><span class="nm">Palnadu</span><span class="tr"><i style="width:10%"></i></span><span class="vv">24 <span style="color:var(--neg)">▼</span></span></div>
+  </div>
+  <div class="sub" style="margin-top:10px;"><b>Hotspot read:</b> coverage is heavily concentrated in the Vijayawada–Amaravati capital corridor (NTR + Krishna = 56% of the state's stories), which is structural rather than event-driven. The signal to watch is <b>YSR Kadapa</b> — a +47% jump against a falling baseline points to something pulling attention into the YSRCP heartland; flagged for tomorrow's confirmation.</div>
+
+  <!-- E. SENTIMENT & NARRATIVE -->
+  <h2><span class="ix">E</span>Sentiment &amp; Narrative</h2>
+  <div class="senti">
+    <span style="width:53%;background:var(--pos)"></span><span style="width:25%;background:var(--neu)"></span><span style="width:22%;background:var(--neg)"></span>
+  </div>
+  <div class="sub">144 supportive · 68 neutral · 60 critical (of 272 stance-scored). <span class="tag-pos">Net +31%</span>, but <b>polarised on politics</b>.</div>
+  <div class="lede" style="margin-top:8px;">The state's tone is net-positive, carried by faith, sport and routine governance. The negativity is <b>not diffuse — it is concentrated</b>: nearly half of all adverse coverage sits in political and law-and-order topics. The single clearest <b>narrative divergence</b> today is geographic: Telangana outlets are pushing an anti-Congress, contested-irrigation frame that is appearing in AP coverage, while AP-native outlets stay closer to administrative and devotional stories. No coordinated misinformation pattern is detected; this reads as ordinary cross-border political messaging, not an engineered campaign.</div>
+
+  <!-- F. EARLY WARNING -->
+  <h2><span class="ix">F</span>Early-Warning Signals</h2>
+  <div class="sub">Small now, but accelerating — watch before they escalate.</div>
+  <table class="heat">
+    <tr><th>Signal</th><th>Now → prior</th><th>Read</th></tr>
+    <tr><td><span class="dot" style="background:var(--hi)"></span><b>YSR Kadapa coverage spike</b></td><td>50 ← 34 (+47%)</td><td>Attention rising in the YSRCP heartland against a falling state baseline.</td></tr>
+    <tr><td><span class="dot" style="background:var(--gold)"></span><b>Tirupati crowd pressure</b></td><td>15h waits · ₹4.16 cr</td><td>Capacity strain that can flip to a safety/governance story at the next peak.</td></tr>
+    <tr><td><span class="dot" style="background:var(--gold)"></span><b>Sports surge</b></td><td>22 ← 13 (+69%)</td><td>KS Bharat retirement driving volume — benign, but distorts the day's mix.</td></tr>
+    <tr><td><span class="dot" style="background:var(--pos)"></span><b>Business uptick</b></td><td>11 ← 8 (+38%)</td><td>Low base; no adverse tone. Track for a genuine economic thread.</td></tr>
+  </table>
+
+  <!-- G. STAKEHOLDER IMPACT -->
+  <h2><span class="ix">G</span>Stakeholder Impact</h2>
+  <div class="twocol">
+    <div>
+      <div class="eyebrow" style="color:var(--muted)">WHO IS AFFECTED</div>
+      <ul class="exec" style="font-size:12.5px;">
+        <li><b>Pilgrims / devotees</b> — Tirupati queue &amp; capacity (high visibility).</li>
+        <li><b>TDP cadre</b> — Mylavaram intra-party legal friction.</li>
+        <li><b>Farmers / rural</b> — irrigation &amp; Palamuru funding narrative.</li>
+        <li><b>Urban Vijayawada–Amaravati</b> — capital-corridor concentration.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="eyebrow" style="color:var(--muted)">WHO IS DRIVING IT</div>
+      <ul class="exec" style="font-size:12.5px;">
+        <li><b>N. Chandrababu Naidu / TDP</b> — central to political coverage.</li>
+        <li><b>YSRCP figures</b> — rising via the Kadapa thread.</li>
+        <li><b>Revanth Reddy / TG Congress</b> — source of the imported narrative.</li>
+        <li><b>Faith institutions (TTD)</b> — Tirupati revenue &amp; crowds.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- H. RECOMMENDED ACTIONS -->
+  <h2><span class="ix">H</span>Recommended Actions</h2>
+  <div class="sub">Practical moves the day's signals support. Suggestions, prioritised.</div>
+  <ol class="act">
+    <li><b>Pre-empt the Tirupati capacity story.</b> Issue a proactive note on darshan queue-management and festival-readiness before 15-hour waits become a safety headline — convert a latent risk into a governance win.</li>
+    <li><b>Contain the Mylavaram friction internally.</b> Quietly address the TDP intra-party legal cases at constituency level before the opposition frames them as "ruling-party lawlessness."</li>
+    <li><b>Tag and track the YSR Kadapa spike.</b> Task a monitor on the +47% Kadapa rise for 48 hours to confirm whether it is event-driven or an emerging YSRCP push.</li>
+    <li><b>Flag the imported Telangana narrative.</b> Mark the anti-Congress/irrigation frame as cross-border so it is not misread as AP sentiment; prepare a clarifying line only if it crosses into domestic coverage.</li>
+    <li><b>Hold elsewhere.</b> Health, economy, infrastructure and environment are quiet — no action warranted; preserve attention for the two amber domains.</li>
+  </ol>
+
+  <!-- TOP STORIES -->
+  <h2><span class="ix">+</span>Top Stories <span class="sub" style="font-weight:400">· latest, with thumbnails</span></h2>
+  <div class="stories">
+    <div class="story"><div class="img">▣ HERO IMAGE</div><div class="bd"><div class="ti">మైల‌వ‌రం టీడీపీలో ర‌గ‌డ‌.. సొంత వారిపైనే కేసులా..?</div><div class="en">EN · Turmoil in Mylavaram TDP — cases against their own?</div><div class="mt"><span class="dot" style="background:var(--neg)"></span>Tupaki · Tier 2 · Mylavaram · 14h</div></div></div>
+    <div class="story"><div class="img">▣ HERO IMAGE</div><div class="bd"><div class="ti">திருப்பதியில் 15 மணிநேரம் காத்திருந்து தரிசனம்</div><div class="en">EN · Tirupati devotees wait 15 hours for darshan</div><div class="mt"><span class="dot" style="background:var(--neu)"></span>Daily Thanthi · Tier 1 · Tirupati · 9h</div></div></div>
+    <div class="story"><div class="img">▣ HERO IMAGE</div><div class="bd"><div class="ti">ప్రమాదంలో తెలంగాణ అస్తిత్వం</div><div class="en">EN · "Telangana's identity in jeopardy" — Congress rule criticised</div><div class="mt"><span class="dot" style="background:var(--neg)"></span>Namasthe Telangana · Tier 2 · 11h</div></div></div>
+    <div class="story"><div class="img">▣ HERO IMAGE</div><div class="bd"><div class="ti">KS Bharat announces retirement from international cricket</div><div class="en">—</div><div class="mt"><span class="dot" style="background:var(--neu)"></span>The Hindu — Sport · Tier 1 · 7h</div></div></div>
+  </div>
+
+  <!-- NOTABLE QUOTES + FIGURES -->
+  <div class="twocol" style="margin-top:14px;">
+    <div>
+      <h2 style="margin-top:6px;"><span class="ix">+</span>In Their Words</h2>
+      <div class="quote"><p>"దమ్ముంటే నన్ను అరెస్ట్‌ చేయండి"</p><div class="en">EN · "Arrest me if you have the courage"</div><div class="who">— Perni Nani (YSRCP), challenging the Naidu govt</div></div>
+      <div class="quote"><p>"Telangana's very existence is in danger."</p><div class="who">— Sabitha Indra Reddy, on Congress rule</div></div>
+    </div>
+    <div>
+      <h2 style="margin-top:6px;"><span class="ix">+</span>Figures Watch</h2>
+      <div class="figs">
+        <div class="fig"><div class="v">₹4.16 cr</div><div class="c">single-day Tirupati offerings</div></div>
+        <div class="fig"><div class="v">15 hrs</div><div class="c">peak darshan wait time</div></div>
+        <div class="fig"><div class="v">₹1</div><div class="c">funds "released" for Palamuru (contested)</div></div>
+        <div class="fig"><div class="v">30 mo</div><div class="c">Congress rule referenced in TG framing</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- I. SOURCE INTELLIGENCE -->
+  <h2><span class="ix">I</span>Source Intelligence</h2>
+  <div class="sub">Where today's picture comes from — reliability, spread, and lean.</div>
+  <table class="heat src">
+    <tr><th>Tier</th><th>Stories</th><th>Outlets</th><th>Read</th></tr>
+    <tr><td><b>Tier 1</b> · established</td><td>95</td><td>27</td><td>The Hindu, Daily Thanthi, Prajavani — anchor reliability.</td></tr>
+    <tr><td><b>Tier 2</b> · regional</td><td>248</td><td>35</td><td>Tupaki, Namasthe Telangana — high volume, more partisan lean.</td></tr>
+    <tr><td><b>Tier 3</b> · long-tail</td><td>73</td><td>14</td><td>Use for breadth; corroborate before relying.</td></tr>
+  </table>
+  <div class="sub" style="margin-top:10px;"><b>Cross-verification:</b> the Mylavaram and Tirupati stories each appear across 3+ independent outlets (corroborated). <b>Bias marker:</b> the day's most adverse framing originates from Tier-2 Telangana outlets with a known anti-Congress lean — weight accordingly. <b>Spread:</b> 76 outlets active, 60% of volume from Tier 2 — a regionally-broad but mid-reliability-weighted day.</div>
+
+  <div class="footer">
+    <span>RIG OSINT · generated 05 Jun 2026 02:40 IST · auto-refreshed daily</span>
+    <span>Andhra Pradesh desk · page 1/1</span>
+  </div>
+
+</div>
+</body>
+</html>

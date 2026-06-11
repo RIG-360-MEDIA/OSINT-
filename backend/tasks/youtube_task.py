@@ -1,96 +1,278 @@
 """
-Celery task: collect YouTube clips from monitored channels.
+Celery tasks: YouTube channel discovery + transcript fetch + clip extraction.
 
-Runs every 6 hours. For each active channel in youtube_channels,
-fetches recent videos, extracts transcripts, detects entity mentions,
-and stores 30-second clip records.
+Pipeline (all driven from Hetzner Beat — no manual laptop steps needed):
+
+  discover_youtube_channels()  [collectors queue, every 30 min]
+    RSS discovery for active channels → upserts into pending_youtube_videos.
+    RSS is not IP-blocked from Hetzner datacenter IPs.
+
+  fetch_youtube_transcripts(limit)  [youtube queue, every 3 min]
+    Claims pending rows, calls fetch_transcript() which routes through
+    YT_RELAY_URL (Tailscale relay on laptop) so the actual YouTube request
+    comes from a residential IP. Writes transcript_json, marks 'transcribed'.
+    Rate: limit=3 every 3 min ≤ 1 req/min average, well under relay 15/min cap.
+
+  run_youtube_extraction(limit)  [youtube queue, every 5 min]
+    Drains 'transcribed' rows → Groq extraction → writes youtube_clips_v2
+    with substrate_status='pending' for the enrich drain.
+
+The laptop relay (backend/collectors/youtube_v2/transcript_relay.py) must be
+running for transcript fetching to work. As long as the relay is up, no other
+manual step is required — the full pipeline is Beat-driven.
 """
 from __future__ import annotations
 
 import asyncio
 import logging
-import os
 
 from backend.celery_app import app
 
 logger = logging.getLogger(__name__)
 
 
-@app.task(
-    name="tasks.collect_youtube",
-    queue="youtube",
-    max_retries=2,
-)
-def collect_youtube() -> None:
-    """Entry point — synchronous wrapper for Celery."""
-    asyncio.run(_collect_youtube())
+# ── Discovery ─────────────────────────────────────────────────────────────────
+
+@app.task(name="tasks.discover_youtube_channels", queue="collectors")
+def discover_youtube_channels() -> dict:
+    """RSS discovery for all active channels → upsert new videos into queue."""
+    return asyncio.run(_discover())
 
 
-async def _collect_youtube() -> None:
+async def _discover() -> dict:
     from sqlalchemy import text
-
-    from backend.collectors.youtube_collector import (
-        fetch_channel_videos,
-        get_api_keys,
-        process_video,
-    )
     from backend.database import get_db
-    from backend.nlp.nlp_entities import _ENTITY_DICT
-
-    api_keys = get_api_keys()
-    if not api_keys:
-        logger.warning("No YOUTUBE_API_KEY* set — skipping YouTube collection")
-        return
-    logger.info("YouTube collection using %d API key(s)", len(api_keys))
+    from backend.collectors.youtube_v2.discovery import (
+        discover_channel_videos, DiscoveryError,
+    )
 
     async with get_db() as db:
-        channels_result = await db.execute(
-            text("SELECT channel_id, channel_name FROM youtube_channels WHERE is_active = TRUE")
-        )
-        channels = channels_result.fetchall()
-
-        if not channels:
-            logger.info("No YouTube channels configured — skipping")
-            return
-
-        entities_result = await db.execute(
-            text("SELECT DISTINCT canonical_name FROM user_entities")
-        )
-        user_entities = [r.canonical_name for r in entities_result.fetchall()]
-
-        if not user_entities:
-            logger.info("No user entities configured — skipping YouTube collection")
-            return
-
-        total_clips = 0
-
-        for channel in channels:
-            logger.info("Checking channel: %s", channel.channel_name)
-
-            videos = await fetch_channel_videos(
-                channel_id=channel.channel_id,
-                api_key=api_keys,
-                since_days=2,
-            )
-            logger.info("Found %d videos for %s", len(videos), channel.channel_name)
-
-            for video in videos:
-                clips = await process_video(
-                    video=video,
-                    channel_id=channel.channel_id,
-                    user_entities=user_entities,
-                    entity_dictionary=_ENTITY_DICT,
-                    db=db,
-                )
-                total_clips += clips
-
+        channels = (
             await db.execute(
-                text("UPDATE youtube_channels SET last_checked_at = NOW() WHERE channel_id = :cid"),
-                {"cid": channel.channel_id},
+                text(
+                    "SELECT channel_id, channel_name, last_checked_at "
+                    "FROM youtube_channels WHERE is_active = TRUE "
+                    "ORDER BY COALESCE(last_checked_at, '1970-01-01') ASC"
+                )
             )
-            # Commit per channel so progress is visible and clips appear immediately
+        ).fetchall()
+
+    if not channels:
+        logger.info("discover_youtube_channels: no active channels")
+        return {"channels": 0, "new_videos": 0}
+
+    total_new = 0
+    for ch in channels:
+        try:
+            videos = await discover_channel_videos(
+                ch.channel_id,
+                since=ch.last_checked_at,
+                max_results=15,
+            )
+        except DiscoveryError as exc:
+            logger.warning("discovery failed channel=%s: %s", ch.channel_id, exc)
+            continue
+
+        inserted = 0
+        async with get_db() as db:
+            for v in videos:
+                from datetime import datetime
+                pub_dt = None
+                if v.published_at:
+                    try:
+                        pub_dt = datetime.fromisoformat(
+                            v.published_at.replace("Z", "+00:00")
+                        )
+                    except (ValueError, AttributeError):
+                        pub_dt = None
+                result = await db.execute(
+                    text(
+                        """
+                        INSERT INTO pending_youtube_videos
+                          (video_id, video_title, channel_id, channel_name,
+                           video_published_at)
+                        VALUES (:vid, :title, :cid, :cname, :pub)
+                        ON CONFLICT (video_id) DO NOTHING
+                        """
+                    ),
+                    {
+                        "vid":   v.video_id,
+                        "title": v.title[:500],
+                        "cid":   v.channel_id,
+                        "cname": v.channel_name[:200],
+                        "pub":   pub_dt,
+                    },
+                )
+                if result.rowcount:
+                    inserted += 1
+            await db.execute(
+                text(
+                    "UPDATE youtube_channels "
+                    "SET last_checked_at = NOW() "
+                    "WHERE channel_id = :cid"
+                ),
+                {"cid": ch.channel_id},
+            )
             await db.commit()
+
+        total_new += inserted
         logger.info(
-            "YouTube collection done: %d new clips from %d channels",
-            total_clips, len(channels),
+            "discovery channel=%s (%s) found=%d new=%d",
+            ch.channel_id, ch.channel_name, len(videos), inserted,
         )
+
+    logger.info(
+        "discover_youtube_channels: channels=%d total_new=%d",
+        len(channels), total_new,
+    )
+    return {"channels": len(channels), "new_videos": total_new}
+
+
+# ── Transcript fetch (via relay on laptop — residential IP hop) ───────────────
+
+@app.task(name="tasks.fetch_youtube_transcripts", queue="youtube")
+def fetch_youtube_transcripts(limit: int = 5) -> dict:
+    """Drain pending videos → fetch transcripts via Tailscale relay → transcribed.
+
+    The relay (backend/collectors/youtube_v2/transcript_relay.py) runs on the
+    laptop at YT_RELAY_URL. Hetzner calls it over Tailscale so the actual
+    YouTube request comes from a residential IP. No separate laptop worker needed
+    as long as the relay is running.
+    """
+    return asyncio.run(_fetch_transcripts(limit))
+
+
+async def _fetch_transcripts(limit: int) -> dict:
+    import asyncio as _asyncio
+    from sqlalchemy import text
+    from backend.database import get_db
+    from backend.collectors.youtube_v2.transcript import fetch_transcript
+    from backend.collectors.youtube_v2.models import Transcript, TranscriptFailure
+    import json
+
+    _MAX_ATTEMPTS = 4
+
+    fetched = transcribed = failed = 0
+    for _ in range(max(1, limit)):
+        # Claim one row atomically — same skip-locked pattern as drain_pending_clips.
+        async with get_db() as db:
+            row = (
+                await db.execute(
+                    text(
+                        """
+                        UPDATE pending_youtube_videos
+                           SET status = 'fetching', updated_at = NOW()
+                         WHERE id = (
+                            SELECT id FROM pending_youtube_videos
+                             WHERE status = 'pending'
+                             ORDER BY discovered_at
+                             FOR UPDATE SKIP LOCKED
+                             LIMIT 1
+                         )
+                        RETURNING id, video_id, attempts
+                        """
+                    )
+                )
+            ).fetchone()
+            await db.commit()
+        if not row:
+            break
+        fetched += 1
+
+        result = await _asyncio.to_thread(fetch_transcript, row.video_id)
+        async with get_db() as db:
+            if isinstance(result, Transcript):
+                transcript_json = json.dumps({
+                    "language": result.language,
+                    "source":   result.source.value,
+                    "segments": [
+                        {"start": s.start, "duration": s.duration, "text": s.text}
+                        for s in result.segments
+                    ],
+                })
+                await db.execute(
+                    text(
+                        """
+                        UPDATE pending_youtube_videos
+                        SET status='transcribed',
+                            transcript_json=CAST(:tj AS JSONB),
+                            transcript_language=:lang,
+                            transcript_source=:src,
+                            transcribed_at=NOW(), updated_at=NOW(),
+                            last_error=NULL
+                        WHERE id=:id
+                        """
+                    ),
+                    {
+                        "tj":   transcript_json,
+                        "lang": result.language,
+                        "src":  result.source.value,
+                        "id":   row.id,
+                    },
+                )
+                transcribed += 1
+                logger.info("transcript ok video=%s lang=%s segs=%d",
+                            row.video_id, result.language, len(result.segments))
+            else:
+                failure: TranscriptFailure = result
+                if failure.reason == "no_transcript":
+                    await db.execute(
+                        text(
+                            "UPDATE pending_youtube_videos "
+                            "SET status='no_transcript', updated_at=NOW(), last_error=:err "
+                            "WHERE id=:id"
+                        ),
+                        {"err": failure.detail, "id": row.id},
+                    )
+                else:
+                    new_attempts = row.attempts + 1
+                    new_status = "failed" if new_attempts >= _MAX_ATTEMPTS else "pending"
+                    await db.execute(
+                        text(
+                            "UPDATE pending_youtube_videos "
+                            "SET attempts=:a, status=:s, last_error=:err, updated_at=NOW() "
+                            "WHERE id=:id"
+                        ),
+                        {
+                            "a":   new_attempts,
+                            "s":   new_status,
+                            "err": f"{failure.reason}: {failure.detail}",
+                            "id":  row.id,
+                        },
+                    )
+                failed += 1
+                logger.warning("transcript %s video=%s: %s",
+                               failure.reason, row.video_id, failure.detail)
+            await db.commit()
+
+    logger.info(
+        "fetch_youtube_transcripts: fetched=%d transcribed=%d failed=%d",
+        fetched, transcribed, failed,
+    )
+    return {"fetched": fetched, "transcribed": transcribed, "failed": failed}
+
+
+# ── Extraction ────────────────────────────────────────────────────────────────
+
+# Compat alias — Hetzner __init__.py (fix/brief-prod-readiness branch) imports this name
+collect_youtube = discover_youtube_channels
+
+
+@app.task(name="tasks.run_youtube_extraction", queue="youtube")
+def run_youtube_extraction(limit: int = 10) -> dict:
+    """Drain transcribed rows → run Groq extraction → write clips."""
+    return asyncio.run(_extract(limit))
+
+
+async def _extract(limit: int) -> dict:
+    from backend.database import get_db
+    from backend.collectors.youtube_v2.pipeline import run_extraction_batch
+
+    async with get_db() as db:
+        result = await run_extraction_batch(db, limit=limit)
+
+    logger.info(
+        "run_youtube_extraction: processed=%d clips_stored=%d",
+        result.get("processed", 0), result.get("clips_stored", 0),
+    )
+    return result

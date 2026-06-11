@@ -354,7 +354,7 @@ _CEREBRAS_KEYS: list[str] = [
 _cerebras_index: int = 0
 
 # Groq model id → Cerebras model id. Same model weights, different naming
-# convention. Anything not in the map falls back to llama3.1-8b.
+# convention. Anything not in the map falls back to zai-glm-4.7.
 _GROQ_TO_CEREBRAS_MODEL: dict[str, str] = {
     # Qwen3 family fallback — Cerebras deprecated qwen-3-235b-a22b-instruct-2507
     # on 2026-05-27 (and free tier no longer exposes any qwen-3-* identifier).
@@ -367,12 +367,12 @@ _GROQ_TO_CEREBRAS_MODEL: dict[str, str] = {
     # zai-glm-4.7 is the strictly better choice here.
     "qwen/qwen3-32b": "zai-glm-4.7",
     # Legacy fallbacks (kept in case env overrides force these):
-    "llama-3.1-8b-instant": "llama3.1-8b",
-    "llama-3.3-70b-versatile": "llama3.1-8b",  # no 70b on Cerebras free
-    "llama-3.1-70b-versatile": "llama3.1-8b",
-    "llama-3.2-3b-preview": "llama3.1-8b",
-    "llama3-8b-8192": "llama3.1-8b",
-    "llama3-70b-8192": "llama3.1-8b",
+    "llama-3.1-8b-instant": "zai-glm-4.7",
+    "llama-3.3-70b-versatile": "zai-glm-4.7",  # no 70b on Cerebras free
+    "llama-3.1-70b-versatile": "zai-glm-4.7",
+    "llama-3.2-3b-preview": "zai-glm-4.7",
+    "llama3-8b-8192": "zai-glm-4.7",
+    "llama3-70b-8192": "zai-glm-4.7",
 }
 
 
@@ -402,7 +402,7 @@ async def _call_cerebras(
     if not _CEREBRAS_KEYS:
         raise GroqQuotaExhausted("No Cerebras keys configured for failover.")
 
-    cerebras_model = _GROQ_TO_CEREBRAS_MODEL.get(groq_model, "llama3.1-8b")
+    cerebras_model = _GROQ_TO_CEREBRAS_MODEL.get(groq_model, "zai-glm-4.7")
     import httpx as _httpx
     # Try up to 3 Cerebras keys before giving up.
     last_exc: Exception | None = None
@@ -917,7 +917,7 @@ async def _call_via_slot(
         return response.choices[0].message.content.strip()
 
     # Cerebras path — reuse _call_cerebras's per-key request shape.
-    cerebras_model = _GROQ_TO_CEREBRAS_MODEL.get(model, "llama3.1-8b")
+    cerebras_model = _GROQ_TO_CEREBRAS_MODEL.get(model, "zai-glm-4.7")
     import httpx as _httpx
     body: dict[str, Any] = {
         "model": cerebras_model,

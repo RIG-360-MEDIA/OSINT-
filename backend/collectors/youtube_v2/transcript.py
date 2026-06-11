@@ -16,6 +16,7 @@ Targets youtube-transcript-api ≥ 1.2 (instance API: ``api.list`` /
 """
 from __future__ import annotations
 
+import itertools
 import logging
 import os
 
@@ -27,6 +28,9 @@ from .models import (
 )
 
 logger = logging.getLogger("youtube_v2")
+
+# Round-robin cursor over the YT_RELAY_URL pool (one entry per distinct-IP relay).
+_relay_rr = itertools.count()
 
 
 def _make_api():
@@ -129,8 +133,13 @@ def fetch_transcript(
     Otherwise fetches directly via youtube-transcript-api (residential IP or
     proxy required).
     """
-    relay_url = os.getenv("YT_RELAY_URL", "").strip()
-    if relay_url:
+    # YT_RELAY_URL may be a COMMA-SEPARATED pool of relays, each running on a
+    # distinct residential IP (desktop, Trijya, a phone on mobile data, …). We
+    # round-robin across them so the relays fetch in parallel — aggregate
+    # throughput scales ~linearly with the number of healthy distinct-IP nodes.
+    relay_pool = [u.strip() for u in os.getenv("YT_RELAY_URL", "").split(",") if u.strip()]
+    if relay_pool:
+        relay_url = relay_pool[next(_relay_rr) % len(relay_pool)]
         return _fetch_via_relay(video_id, relay_url)
 
     try:

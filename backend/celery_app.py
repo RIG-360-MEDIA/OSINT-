@@ -64,6 +64,7 @@ app = Celery(
         "backend.tasks.cluster_importance_task",
         # Hourly entity-mention aggregator (T6)
         "backend.tasks.entity_mention_task",
+        "backend.tasks.embed_fill_task",
         # Nightly v2→v3 upgrade pass (translation + register fields)
         "backend.tasks.v3_upgrade_task",
         # Newspaper clippings: daily collection fan-out + substrate enrichment
@@ -93,6 +94,7 @@ app.config_from_object(
             "tasks.quality.compare": {"queue": "nlp"},
             "tasks.quality.cluster_importance": {"queue": "nlp"},
             "tasks.quality.entity_mentions": {"queue": "nlp"},
+            "tasks.quality.embed_fill": {"queue": "nlp"},
             "tasks.quality.v3_upgrade": {"queue": "nlp"},
             "tasks.fetch_og_images_batch": {"queue": "collectors"},
             "tasks.process_nlp_batch": {"queue": "nlp"},
@@ -332,6 +334,12 @@ app.config_from_object(
             "entity-mentions-every-60-min": {
                 "task": "tasks.quality.entity_mentions",
                 "schedule": timedelta(minutes=60),
+                "options": {"queue": "nlp"},
+            },
+            # Fill missing LaBSE embeddings (substrate pipeline has no embed step)
+            "embed-fill-every-4-min": {
+                "task": "tasks.quality.embed_fill",
+                "schedule": timedelta(minutes=4),
                 "options": {"queue": "nlp"},
             },
             # DISABLED 2026-05-29: the v1→v2 nightly repass (register +

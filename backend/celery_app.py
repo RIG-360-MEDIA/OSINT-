@@ -240,9 +240,14 @@ app.config_from_object(
             # limit 1 / 3 min = ~20/hr — safe for one IP, lets a blocked IP recover.
             # When the desktop heals and rejoins the pool, raise to limit 2 (40/hr,
             # ~20 each). Political/newest first so the important content drains first.
+            # TEMPORARY COOL-DOWN (2026-06-12): both residential IPs got throttled
+            # on YouTube's caption endpoint from a day of debugging fetches. Paused
+            # to ~2/hr so they rest and recover; the occasional probe auto-resumes
+            # flow once an IP clears. Restore to limit 1 / 3 min (~20/hr) once a
+            # live fetch through Trijya succeeds again.
             "fetch-youtube-transcripts-every-3-min": {
                 "task": "tasks.fetch_youtube_transcripts",
-                "schedule": timedelta(minutes=3),
+                "schedule": timedelta(minutes=30),
                 "kwargs": {"limit": 1},
                 "options": {"queue": "youtube"},
             },

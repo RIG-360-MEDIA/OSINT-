@@ -21,39 +21,49 @@ from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
-# best available body text, in preference order (translated > scraped > lead)
-_PICK_TEXT = (
-    "COALESCE(NULLIF(full_text_translated,''), NULLIF(full_text_scraped,''), "
-    "NULLIF(lead_text_translated,''), NULLIF(lead_text_original,''), '')"
-)
+# V4 SSOT eligibility: a translated lead must exist. Embedding pre-translation in the
+# original language craters cross-lingual recall (see embedding_recipe + the
+# cluster-recall README), so we wait for translation rather than embed wrong-language
+# text. Mirrors reembed_0c_v4.py's ELIGIBLE so new vectors match the v4 corpus exactly.
+_V4_ELIGIBLE = "lead_text_translated IS NOT NULL AND length(lead_text_translated) > 50"
 
 
 async def _embed_batch(limit: int = 250) -> int:
-    """Embed up to `limit` newest articles that have good text but no embedding."""
+    """Embed up to `limit` newest articles that have a translated lead but no embedding,
+    using the LOCKED V4 recipe (translated lead + title) so new vectors are byte-identical
+    to the v4 corpus and the clustering pipeline. Writes both the live column and the
+    v4 shadow, and stamps the v4 revision so the recipe-mix can never silently reopen."""
     from backend.database import get_db
-    from backend.nlp.nlp_embedding import get_labse_model, LABSE_MODEL_ID, LABSE_REVISION
+    from backend.nlp.nlp_embedding import get_labse_model
+    from backend.nlp.embedding_recipe import RECIPE, build_embedding_text
 
     async with get_db() as db:
         rows = (await db.execute(text(
-            f"SELECT id::text AS id, left({_PICK_TEXT}, 512) AS txt "
+            f"SELECT id::text AS id, title, lead_text_original AS lo, lead_text_translated AS lt "
             f"FROM articles "
-            f"WHERE labse_embedding IS NULL AND length({_PICK_TEXT}) >= 100 "
+            f"WHERE labse_embedding IS NULL AND {_V4_ELIGIBLE} "
             f"ORDER BY collected_at DESC LIMIT :lim"
         ), {"lim": limit})).fetchall()
         if not rows:
             return 0
 
-        # batch-encode (far faster than one-at-a-time for a backfill)
+        # build V4 input text per row (SSOT recipe), then batch-encode
+        texts = [
+            build_embedding_text(RECIPE, title=r.title, lead_original=r.lo, lead_translated=r.lt)
+            for r in rows
+        ]
         model = get_labse_model()
-        vecs = await asyncio.to_thread(model.encode, [r.txt for r in rows])
+        vecs = await asyncio.to_thread(model.encode, texts)
 
         for r, v in zip(rows, vecs):
+            emb = str(v.tolist())
             await db.execute(text(
                 "UPDATE articles SET labse_embedding = CAST(:emb AS vector), "
+                "labse_embedding_v4 = CAST(:emb AS vector), "
                 "embedded_at = now(), embedding_model = :m, "
-                "embedding_revision = COALESCE(embedding_revision, :rev) "
+                "embedding_revision = :rev "
                 "WHERE id = CAST(:id AS uuid)"
-            ), {"emb": str(v.tolist()), "m": LABSE_MODEL_ID, "rev": LABSE_REVISION, "id": r.id})
+            ), {"emb": emb, "m": RECIPE.model_id, "rev": RECIPE.recipe_version, "id": r.id})
         await db.commit()
         return len(rows)
 

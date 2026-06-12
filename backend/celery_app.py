@@ -247,7 +247,7 @@ app.config_from_object(
             # live fetch through Trijya succeeds again.
             "fetch-youtube-transcripts-every-3-min": {
                 "task": "tasks.fetch_youtube_transcripts",
-                "schedule": timedelta(minutes=30),
+                "schedule": timedelta(minutes=360),
                 "kwargs": {"limit": 1},
                 "options": {"queue": "youtube"},
             },

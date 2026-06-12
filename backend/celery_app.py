@@ -65,6 +65,7 @@ app = Celery(
         # Hourly entity-mention aggregator (T6)
         "backend.tasks.entity_mention_task",
         "backend.tasks.embed_fill_task",
+        "backend.tasks.topic_fill_task",
         # Nightly v2→v3 upgrade pass (translation + register fields)
         "backend.tasks.v3_upgrade_task",
         # Newspaper clippings: daily collection fan-out + substrate enrichment
@@ -95,6 +96,7 @@ app.config_from_object(
             "tasks.quality.cluster_importance": {"queue": "nlp"},
             "tasks.quality.entity_mentions": {"queue": "nlp"},
             "tasks.quality.embed_fill": {"queue": "nlp"},
+            "tasks.quality.topic_fill": {"queue": "nlp"},
             "tasks.quality.v3_upgrade": {"queue": "nlp"},
             "tasks.fetch_og_images_batch": {"queue": "collectors"},
             "tasks.process_nlp_batch": {"queue": "nlp"},
@@ -340,6 +342,12 @@ app.config_from_object(
             "embed-fill-every-4-min": {
                 "task": "tasks.quality.embed_fill",
                 "schedule": timedelta(minutes=4),
+                "options": {"queue": "nlp"},
+            },
+            # Keep topics correct: roll up topic_fine→topic_category + classify any missing topic_fine
+            "topic-fill-every-5-min": {
+                "task": "tasks.quality.topic_fill",
+                "schedule": timedelta(minutes=5),
                 "options": {"queue": "nlp"},
             },
             # DISABLED 2026-05-29: the v1→v2 nightly repass (register +

@@ -50,13 +50,15 @@ Output VALID JSON only — no markdown, no prose — with EXACTLY these keys:
   "quotes": [{{"speaker": "<name>", "text": "<verbatim words, original language ok>", "is_verbatim": false}}],
   "claims": [{{"subject": "<actor>", "predicate": "<action or assertion>", "object": "<target, topic or figure>"}}],
   "stances": [{{"actor": "<real named person/org>", "target": "<entity, policy or topic>", "stance": "supports|opposes|criticises|praises|neutral", "intensity": "high|medium|low"}}],
-  "locations": [{{"country": "<full English name e.g. India>", "region": "<state or null>", "city": "<city or null>"}}]
+  "locations": [{{"country": "<full English name e.g. India>", "region": "<state or null>", "city": "<city or null>"}}],
+  "entities": [{{"name": "<canonical name of a person / party / organisation / place / scheme the clip mentions>", "type": "person|party|org|place|scheme|other"}}]
 }}
 
 RULES:
 - Extract EVERY factual/political assertion as a subject-predicate-object claim. Political speech usually has 2-5.
 - quotes: statements actually made; name the speaker where the transcript allows.
 - stances: who is for/against whom. Use real named actors only — never 'Speaker', 'Anchor', 'Host', 'Unknown'.
+- entities: list EVERY distinct named person, political party, organisation, place or government scheme the clip mentions — NOT only {entity}. Use the full canonical name ('K. Chandrashekar Rao', not 'KCR'). This makes the clip findable by every entity it discusses.
 - Any array with nothing to extract = []. Never invent.
 - The clip is ALREADY chosen — do NOT judge newsworthiness or emit a 'clips' wrapper, just extract these fields."""
 
@@ -195,6 +197,7 @@ async def _enrich_claimed(clip_id: int) -> bool:
     all_quotes: list[dict] = parsed.get("quotes", []) or []
     all_stances: list[dict] = parsed.get("stances", []) or []
     all_locations: list[dict] = parsed.get("locations", []) or []
+    all_entities: list[dict] = parsed.get("entities", []) or []
     segment_type = parsed.get("segment_type") or None
     _sp = parsed.get("speaker")
     speaker = str(_sp).strip() if _sp and str(_sp).strip() else None
@@ -211,6 +214,7 @@ async def _enrich_claimed(clip_id: int) -> bool:
             quotes=all_quotes,
             stances=all_stances,
             locations=all_locations,
+            entities=all_entities,
             topic_fine=topic_fine,
             topic_coarse=topic_coarse,
         )
@@ -288,6 +292,29 @@ async def _classify_topic(
         return None, None
 
 
+def _merge_entities(anchor: str, llm_entities: list[dict]) -> list[dict]:
+    """Anchor first, then every distinct LLM-extracted entity. Deduped
+    case-insensitively by name; keeps optional `type`. Mirrors the
+    article/clipping [{"name": ...}] shape the entity-mention matview reads."""
+    out: list[dict] = []
+    seen: set[str] = set()
+    anchor = (anchor or "").strip()
+    if anchor:
+        out.append({"name": anchor})
+        seen.add(anchor.lower())
+    for e in llm_entities or []:
+        name = str((e or {}).get("name", "")).strip()
+        if not name or name.lower() in seen:
+            continue
+        seen.add(name.lower())
+        item: dict[str, Any] = {"name": name}
+        etype = str((e or {}).get("type", "")).strip()
+        if etype:
+            item["type"] = etype
+        out.append(item)
+    return out
+
+
 # ── Persistence ───────────────────────────────────────────────────────────────
 
 async def _persist(
@@ -300,13 +327,19 @@ async def _persist(
     quotes: list[dict],
     stances: list[dict],
     locations: list[dict],
+    entities: list[dict],
     topic_fine: str | None,
     topic_coarse: str | None,
 ) -> None:
     from sqlalchemy import text
     from backend.database import get_db
 
-    entities_extracted = [{"name": entity}]
+    # Multi-entity (parity with articles/cuttings): every entity the clip's
+    # transcript mentions, with the matched_entity kept FIRST as the anchor and
+    # always present even if the LLM omitted it. matched_entity column stays the
+    # canonical anchor; entities_extracted now powers cross-entity analytics
+    # (co-mentions, "every clip mentioning X", heatmaps).
+    entities_extracted = _merge_entities(entity, entities)
 
     async with get_db() as db:
         await db.execute(

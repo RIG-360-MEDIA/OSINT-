@@ -231,15 +231,19 @@ app.config_from_object(
                 "options": {"queue": "collectors"},
             },
             # YouTube transcript fetch via relay — Hetzner calls the Tailscale
-            # relay pool — currently Trijya-only (fresh Jio IP, circuit closed,
-            # 0 failures). The desktop IP stays deeply blocked and was pulled from
-            # the pool so it gets ZERO traffic and finally cools (re-add once its
-            # block lifts). limit 3 / 3 min = ~60/hr through one clean IP — well
-            # within Jio's tolerance, ~10x the throttled 6/hr. Political/newest first.
+            # relay pool — hard-won rate calibration. EMPIRICAL: a single residential
+            # IP gets YouTube-blocked above ~40/hr (desktop died at ~60/hr; Trijya was
+            # clean at 40/hr in the pool but blocked after 37 fetches when pushed to
+            # 60/hr solo). So the SAFE sustained per-IP rate is ~20/hr. Beat sets the
+            # TOTAL attempt rate, round-robined across the pool, so:
+            #   total_rate = ~20/hr  x  (number of healthy IPs).
+            # limit 1 / 3 min = ~20/hr — safe for one IP, lets a blocked IP recover.
+            # When the desktop heals and rejoins the pool, raise to limit 2 (40/hr,
+            # ~20 each). Political/newest first so the important content drains first.
             "fetch-youtube-transcripts-every-3-min": {
                 "task": "tasks.fetch_youtube_transcripts",
                 "schedule": timedelta(minutes=3),
-                "kwargs": {"limit": 3},
+                "kwargs": {"limit": 1},
                 "options": {"queue": "youtube"},
             },
             # YouTube extraction — drain transcribed rows into clips, every 5 min.

@@ -24,9 +24,7 @@ async def backfill() -> None:
             """
             SELECT id FROM youtube_clips_v2
             WHERE transcript_segment IS NOT NULL AND length(transcript_segment) >= 20
-              AND (entities_extracted IS NULL
-                   OR jsonb_typeof(entities_extracted) <> 'array'
-                   OR jsonb_array_length(entities_extracted) <= 1)
+              AND (extraction_version IS NULL OR extraction_version < 4)
             ORDER BY created_at DESC
             """
         ))).fetchall()

@@ -29,7 +29,7 @@ from backend.celery_app import app
 
 logger = logging.getLogger(__name__)
 
-_EXTRACTION_VERSION = 3
+_EXTRACTION_VERSION = 4   # v4: multi-entity + all-English quotes/claims/stances, no placeholder speakers
 _MIN_SEGMENT_CHARS = 20       # below this the transcript segment is too sparse
 _MAX_SEGMENT_CHARS = 2200     # mirrors extraction.py _MAX_CHUNK_CHARS
 _MAX_OUTPUT_TOKENS = 1500     # TOKEN_LIMITS['transcript_analysis']
@@ -47,17 +47,18 @@ Output VALID JSON only — no markdown, no prose — with EXACTLY these keys:
 {{
   "segment_type": "debate|interview|speech|press_conference|news_report|panel",
   "speaker": "<name of the main speaker, or null>",
-  "quotes": [{{"speaker": "<name>", "text": "<verbatim words, original language ok>", "is_verbatim": false}}],
+  "quotes": [{{"speaker": "<real named speaker, or null — never 'Speaker'/'Anchor'>", "text": "<what was said, TRANSLATED TO ENGLISH>", "is_verbatim": false}}],
   "claims": [{{"subject": "<actor>", "predicate": "<action or assertion>", "object": "<target, topic or figure>"}}],
-  "stances": [{{"actor": "<real named person/org>", "target": "<entity, policy or topic>", "stance": "supports|opposes|criticises|praises|neutral", "intensity": "high|medium|low"}}],
+  "stances": [{{"actor": "<real named person/org>", "target": "<the SPECIFIC person, party, policy, scheme or issue — not a bare state/region>", "stance": "supports|opposes|criticises|praises|neutral", "intensity": "high|medium|low"}}],
   "locations": [{{"country": "<full English name e.g. India>", "region": "<state or null>", "city": "<city or null>"}}],
   "entities": [{{"name": "<canonical name of a person / party / organisation / place / scheme the clip mentions>", "type": "person|party|org|place|scheme|other"}}]
 }}
 
 RULES:
+- ALL output text — quotes, claims (subject/predicate/object), stances (actor/target), locations, entities — MUST be in ENGLISH. Translate/transliterate from the transcript language; NEVER output native script (Telugu/Hindi/Urdu/etc.).
 - Extract EVERY factual/political assertion as a subject-predicate-object claim. Political speech usually has 2-5.
-- quotes: statements actually made; name the speaker where the transcript allows.
-- stances: who is for/against whom. Use real named actors only — never 'Speaker', 'Anchor', 'Host', 'Unknown'.
+- quotes: statements actually made, translated to English; attribute each to a REAL named speaker — if you cannot identify one, use null. NEVER 'Speaker', 'Anchor', 'Host', 'Unknown'.
+- stances: who is for/against whom. Use real named actors only — never 'Speaker', 'Anchor', 'Host', 'Unknown'. The target must be a SPECIFIC person, party, policy, scheme or issue — not a bare state/region name.
 - entities: list EVERY distinct named person, political party, organisation, place or government scheme the clip mentions — NOT only {entity}. Give each one's STANDARD ENGLISH name, translating/transliterating from the transcript language: e.g. 'సుప్రీంకోర్టు' → 'Supreme Court of India', 'కాంగ్రెస్' → 'Indian National Congress', 'బిజెపి' → 'BJP', 'KCR' → 'K. Chandrashekar Rao'. English canonical names ONLY (never native script), so the clip is findable and entities resolve across pillars.
 - Any array with nothing to extract = []. Never invent.
 - The clip is ALREADY chosen — do NOT judge newsworthiness or emit a 'clips' wrapper, just extract these fields."""
@@ -462,7 +463,9 @@ async def _persist_quotes(db, clip_id: int, quotes: list[dict[str, Any]]) -> Non
             continue
         qtext = (q.get("text") or "").strip()
         speaker = (q.get("speaker") or "").strip()
-        if not qtext or not speaker:
+        # Drop placeholder speakers ('Speaker'/'Anchor'/…): a misattributed quote
+        # is worse than none. Mirrors the stance actor filter.
+        if not qtext or not speaker or speaker.lower() in _PLACEHOLDER_ACTORS:
             continue
         qtext = qtext[:4000]
         # is_direct = the quote is a VERBATIM substring of the clip transcript

@@ -169,7 +169,10 @@ def _ydl_opts() -> dict:
         # return the extractor's info (incl. caption tracks) WITHOUT running video
         # format selection, which errors when only image formats exist (no PO token)
         "ignore_no_formats_error": True,
-        "extractor_args": {"youtube": {"player_client": ["web"]}},
+        # On newer yt-dlp the "web"/"mweb" clients are PO-token-walled and return
+        # EMPTY captions; "tv" and "android" still return them. Verified on
+        # yt-dlp 2026.06.09: web/mweb/web_safari -> 0 tracks, tv/android -> 157.
+        "extractor_args": {"youtube": {"player_client": ["tv", "android"]}},
     }
     if COOKIE_FILE and os.path.exists(COOKIE_FILE):
         opts["cookiefile"] = COOKIE_FILE

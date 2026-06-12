@@ -58,7 +58,7 @@ RULES:
 - Extract EVERY factual/political assertion as a subject-predicate-object claim. Political speech usually has 2-5.
 - quotes: statements actually made; name the speaker where the transcript allows.
 - stances: who is for/against whom. Use real named actors only — never 'Speaker', 'Anchor', 'Host', 'Unknown'.
-- entities: list EVERY distinct named person, political party, organisation, place or government scheme the clip mentions — NOT only {entity}. Use the full canonical name ('K. Chandrashekar Rao', not 'KCR'). This makes the clip findable by every entity it discusses.
+- entities: list EVERY distinct named person, political party, organisation, place or government scheme the clip mentions — NOT only {entity}. Give each one's STANDARD ENGLISH name, translating/transliterating from the transcript language: e.g. 'సుప్రీంకోర్టు' → 'Supreme Court of India', 'కాంగ్రెస్' → 'Indian National Congress', 'బిజెపి' → 'BJP', 'KCR' → 'K. Chandrashekar Rao'. English canonical names ONLY (never native script), so the clip is findable and entities resolve across pillars.
 - Any array with nothing to extract = []. Never invent.
 - The clip is ALREADY chosen — do NOT judge newsworthiness or emit a 'clips' wrapper, just extract these fields."""
 

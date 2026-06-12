@@ -166,6 +166,27 @@ async def _enrich_claimed(clipping_id: str) -> bool:
     parsed = sanitize_extraction(parsed)
     _normalize_arrays(parsed)
 
+    # Guard the ~3% model-compliance tail: a substantive article occasionally comes
+    # back with NO entities despite a long body (the LLM silently drops them). One
+    # retry with an explicit nudge recovers nearly all — we never persist a real
+    # article with zero entities without at least asking twice.
+    _ents = parsed.get("entities_extracted")
+    if not (isinstance(_ents, list) and _ents) and len(body) >= 300 \
+            and (parsed.get("article_type") or "other") != "other":
+        retry = await _call_with_retry(
+            call_groq, "newspapers", sys_prompt,
+            user_msg + "\n\nIMPORTANT: your previous extraction returned NO entities_extracted. "
+            "This article names real people / parties / organisations / places — list EVERY one "
+            "(official English names). register must be a full object.",
+            max_tok, TASK_TYPE,
+        )
+        if retry is not None:
+            retry = sanitize_extraction(retry)
+            _normalize_arrays(retry)
+            _r = retry.get("entities_extracted")
+            if isinstance(_r, list) and _r:
+                parsed = retry
+
     # Topic (reuse the article taxonomy) + LaBSE embedding.
     topic_fine, topic_coarse = await _classify_topic(headline, parsed)
     embedding = _embed(headline, parsed)
@@ -304,6 +325,7 @@ async def _persist(
             text(
                 """
                 UPDATE clippings SET
+                    language             = COALESCE(:lng, language),
                     article_type         = :atype,
                     primary_subject      = :ps,
                     body_text_translated = COALESCE(:tr, body_text_translated),
@@ -328,6 +350,7 @@ async def _persist(
             ),
             {
                 "id": clipping_id,
+                "lng": (lang or None),
                 "atype": (parsed.get("article_type") or "other")[:20],
                 "ps": (parsed.get("primary_subject") or None),
                 "tr": translation,

@@ -31,8 +31,8 @@ REQUIRED fields (ALL must be present):
   actor_stances: [{actor: str, stance: supportive|neutral|critical, intensity: 0-1}] max 5, can be []
   claims: [{subject: str, predicate: str, object: str, text: str, claimant: article|<name>, type: attributable|asserted|disputed, verifiable: bool}] max 5, can be []
   numbers: [{value: str, unit: str|null, context: str}] max 5, can be []
-  register: {rhetorical_style: factual|analytical|polemical|sympathetic|mocking|promotional|sensational, primary_emotion: neutral|alarm|approval|mockery|urgency|lament|curiosity|admiration, is_breaking: bool}
-  entities_extracted: [{name: str, type: person|org|geo|event|other}] max 10, can be []
+  register: {rhetorical_style: factual|analytical|polemical|sympathetic|mocking|promotional|sensational, primary_emotion: neutral|alarm|approval|mockery|urgency|lament|curiosity|admiration, is_breaking: bool}  (MANDATORY — always a full object, never null/omitted)
+  entities_extracted: [{name: str, type: person|org|geo|event|other}] max 10 — MANDATORY for any real article; [] ONLY for a contentless notice/filler
 
 OCR / PRINT RULES:
 - Ground STRICTLY in the body. Do NOT invent text to bridge illegible or garbled
@@ -72,6 +72,12 @@ CONTENT RULES:
   "article" or a named source. type: attributable=sourced quote/data,
   asserted=stated as fact, disputed=contradicting claims present.
 - event_type: use ONLY the listed values. NEVER invent new types.
+- entities_extracted is MANDATORY for a real article: extract EVERY distinct named
+  person, party, organisation and place the body mentions (typically 3+). Returning
+  empty entities is allowed ONLY for a pure notice/filler/advert. register is ALWAYS
+  a full object — never null or omitted.
+- locations MUST be non-empty whenever the article concerns any identifiable place;
+  anchor geo to where the story actually happens (its city/region/country).
 - If clipping is empty/junk/notice: article_type=other, all arrays empty,
   register defaults to neutral/factual.
 - NEVER return the literal string "null". Use JSON null.

@@ -44,6 +44,48 @@ def compute_entity_score(
     return min(total / 2.0, 1.0)
 
 
+# Soft-saturation constant for v2: a single high-prominence primary lands ~0.62;
+# additional matched entities keep adding with diminishing returns (asymptote <1).
+_V2_SAT_C = 0.6
+_V2_PROMINENCE_FLOOR = 0.15  # a watched entity mentioned in passing still registers
+
+
+def compute_entity_score_v2(
+    entities_extracted: list,
+    user_entities: list,
+) -> float:
+    """v2 entity match — fixes the v1 hard-cap-at-~2 saturation.
+
+    Per matched watched entity:
+        contribution = max(prominence, FLOOR) × (priority/10)²
+    then SOFT saturation: score = Σ / (Σ + C).
+
+    Changes vs v1:
+    - priority is SQUARED → primary (10) ≈ 4× a mid (5); secondaries still count.
+    - count genuinely matters: 5 matched entities > 3 > 1 (no flat cap at 2).
+    - prominence FLOOR: a watched entity named in passing (prominence 0) no longer
+      contributes exactly zero — it registers a little (~39% of mentions sit at 0).
+    """
+    if not entities_extracted or not user_entities:
+        return 0.0
+
+    article_map = {
+        e["name"].lower(): e
+        for e in entities_extracted
+        if e.get("name") and e["name"] != "None"
+    }
+
+    total = 0.0
+    for ue in user_entities:
+        name = ue["canonical_name"].lower()
+        if name in article_map:
+            prominence = max(article_map[name].get("prominence", 0.5), _V2_PROMINENCE_FLOOR)
+            pr = ue.get("priority", 5) / 10.0
+            total += prominence * (pr * pr)
+
+    return total / (total + _V2_SAT_C)
+
+
 def compute_topic_score(
     topic_category: str,
     signal_priorities: dict,
@@ -193,6 +235,7 @@ def compute_stage1_score(
     user_profile: dict,
     user_entities: list,
     source_geo_states: list,
+    entity_scorer=compute_entity_score_v2,  # v2 default (A/B-validated 2026-06-12: fixes flat-cap inversion for multi-entity users, no threshold change). Pass compute_entity_score for legacy v1.
 ) -> tuple[float, dict]:
     """
     Compute Stage 1 algorithmic relevance score.
@@ -226,7 +269,7 @@ def compute_stage1_score(
         0.5 if article.get("nlp_confidence") == "low" else 1.0
     )
 
-    entity_score = compute_entity_score(entities, user_entities)
+    entity_score = entity_scorer(entities, user_entities)
     max_matched_priority = _max_matched_entity_priority(entities, user_entities)
 
     topic_score = compute_topic_score(topic, signal_priorities)

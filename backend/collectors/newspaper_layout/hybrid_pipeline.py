@@ -566,6 +566,28 @@ def _crop_clip_b64(page, bbox_pts) -> str:
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
+_TEXT_LAYER_MIN_CHARS = 800  # a page with this much embedded text is a digital PDF
+
+
+def _lines_from_text_layer(page, zoom: float) -> list[OCRLine]:
+    """Build OCR-equivalent lines from a digital PDF's embedded text layer, in
+    the same pixel space as the OCR path (PDF points x ocr_zoom). Exact text and
+    positions — no OCR error — so headline/body anchoring matches near-100%.
+    """
+    out: list[OCRLine] = []
+    for block in page.get_text("dict").get("blocks", []):
+        for line in block.get("lines", []):
+            txt = "".join(s.get("text", "") for s in line.get("spans", [])).strip()
+            if not txt:
+                continue
+            x0, y0, x1, y1 = line["bbox"]
+            out.append(
+                OCRLine(text=txt, conf=1.0, x0=x0 * zoom, y0=y0 * zoom,
+                        x1=x1 * zoom, y1=y1 * zoom)
+            )
+    return out
+
+
 def _render_and_ocr(pdf_path: str, page_idx: int, language: str) -> dict:
     """CPU phase (runs in a worker thread): render the page, OCR it, prep the
     Vision image. Opens its own fitz.Document — fitz objects are not safe to
@@ -584,14 +606,24 @@ def _render_and_ocr(pdf_path: str, page_idx: int, language: str) -> dict:
         # high-res Indic scan is never downsampled before OCR.
         ocr_zoom = _ocr_zoom_for_page(doc, page, page_w_pt)
         opix = page.get_pixmap(matrix=fitz.Matrix(ocr_zoom, ocr_zoom), colorspace=fitz.csRGB)
-        oimg = np.frombuffer(opix.samples, dtype=np.uint8).reshape(
-            opix.height, opix.width, 3
-        )
-        lines = [
-            OCRLine(text=t, conf=c, x0=x0, y0=y0, x1=x1, y1=y1)
-            for (t, c, x0, y0, x1, y1) in ocr_lines_best(oimg, lang=language)
-        ]
         ocr_w, ocr_h = float(opix.width), float(opix.height)
+
+        # Prefer the embedded text layer when the page is a DIGITAL PDF (e.g. The
+        # Hindu: ~11k chars/page with exact glyph positions). OCR of the rendered
+        # scan was discarding those pages (~97% unanchored) by garbling the text
+        # the anchor matches on; the text layer gives perfect text + boxes so
+        # headline anchoring lands. Scanned papers (little/no text layer) keep the
+        # OCR path unchanged.
+        if len(page.get_text("text").strip()) >= _TEXT_LAYER_MIN_CHARS:
+            lines = _lines_from_text_layer(page, ocr_zoom)
+        else:
+            oimg = np.frombuffer(opix.samples, dtype=np.uint8).reshape(
+                opix.height, opix.width, 3
+            )
+            lines = [
+                OCRLine(text=t, conf=c, x0=x0, y0=y0, x1=x1, y1=y1)
+                for (t, c, x0, y0, x1, y1) in ocr_lines_best(oimg, lang=language)
+            ]
         _hs = sorted(l.h for l in lines if l.h > 0)
         body_h_px = _hs[len(_hs) // 4] if _hs else 0.0
         block_boxes = [

@@ -197,6 +197,11 @@ async def _enrich_claimed(clipping_id: str) -> bool:
         logger.exception("clipping enrich persist failed for %s", clipping_id)
         await _mark_status(clipping_id, "extract_failed")
         return False
+    # event-driven per-user relevance (mirrors articles' nlp→score_relevance_batch)
+    try:
+        app.send_task("tasks.relevance.score_one_cutting", args=[str(clipping_id)], queue="relevance")
+    except Exception:  # noqa: BLE001
+        logger.debug("relevance dispatch failed for clipping %s (non-fatal)", clipping_id)
     return True
 
 

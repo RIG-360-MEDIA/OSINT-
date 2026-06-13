@@ -70,7 +70,7 @@ _MODEL_FALLBACK = os.getenv("LLM_MODEL_FALLBACK", "1") == "1"
 _PILLAR_CHAINS: dict[str, list[str]] = {
     "articles":   ["qwen/qwen3-32b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
     "youtube":    ["llama-3.3-70b-versatile", "qwen/qwen3-32b", "llama-3.1-8b-instant"],
-    "newspapers": ["openai/gpt-oss-120b", "qwen/qwen3-32b", "llama-3.1-8b-instant"],
+    "newspapers": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "openai/gpt-oss-120b"],
 }
 _DEFAULT_CHAIN: list[str] = [
     "qwen/qwen3-32b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant",

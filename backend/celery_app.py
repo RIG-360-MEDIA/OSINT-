@@ -74,6 +74,8 @@ app = Celery(
         # YouTube clips: discovery + extraction + substrate enrichment drain
         "backend.tasks.youtube_task",
         "backend.tasks.youtube_clip_enrich",
+        # Cross-pillar per-user relevance for clips + cuttings (#9)
+        "backend.tasks.relevance_cross_pillar_task",
     ],
 )
 
@@ -127,6 +129,10 @@ app.config_from_object(
             "tasks.collect_one_newspaper":       {"queue": "documents"},
             "tasks.enrich_clipping":             {"queue": "documents"},
             "tasks.drain_pending_clippings":     {"queue": "documents"},
+            # Cross-pillar per-user relevance (clips + cuttings) on the relevance queue
+            "tasks.relevance.cross_pillar":      {"queue": "relevance"},
+            "tasks.relevance.score_one_clip":    {"queue": "relevance"},
+            "tasks.relevance.score_one_cutting": {"queue": "relevance"},
             # YouTube: discovery on collectors (RSS safe from Hetzner),
             # transcript fetch via relay + extraction + enrichment on youtube.
             "tasks.discover_youtube_channels":    {"queue": "collectors"},
@@ -226,6 +232,15 @@ app.config_from_object(
                 "schedule": timedelta(minutes=10),
                 "kwargs": {"limit": 50},
                 "options": {"queue": "documents"},
+            },
+            # Cross-pillar relevance safety-net — score recent clips + cuttings for
+            # all users every 15 min (event-driven hooks in clip/clipping enrich are
+            # primary; this catches any that missed their event). Mirrors articles.
+            "cross-pillar-relevance-every-15-min": {
+                "task": "tasks.relevance.cross_pillar",
+                "schedule": timedelta(minutes=15),
+                "kwargs": {"limit": 400, "days": 3},
+                "options": {"queue": "relevance"},
             },
             # YouTube discovery — RSS Atom feed per active channel, every 30 min.
             # Safe from Hetzner (RSS not IP-blocked).

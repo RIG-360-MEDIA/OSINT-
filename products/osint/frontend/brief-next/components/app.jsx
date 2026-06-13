@@ -10,6 +10,7 @@ import {
 import {
   SPARK, STORIES, ENTITIES, HORIZON, CLIMBING, BLINDSPOT, RECOMMENDED, nextRefreshAt
 } from '../lib/data.js';
+import { authFetch } from '../lib/supabase.js';
 
 
 // === Live API hook for KPI tiles (Day 1) ===
@@ -75,6 +76,19 @@ function useLiveStories() {
     return () => { cancelled = true; clearInterval(t); };
   }, []);
   return stories;
+}
+
+// Personalized top YouTube clips + newspaper cuttings (per the signed-in persona's
+// watchlist) — powers the home-page pillar toggle. Null until loaded / if signed out.
+function useCrossPillar() {
+  const [data, setData] = React.useState(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    authFetch('/api/brief/cross-pillar')
+      .then(j => { if (j && !cancelled) setData(j); })
+      .catch(() => {});  // signed out / error → stays null (UI shows a sign-in hint)
+  }, []);
+  return data;  // { personalized, clips:[...], cuttings:[...] } | null
 }
 
 
@@ -1025,15 +1039,59 @@ const DefiningStoryRow = ({ s }) => {
   );
 };
 
+const PillarRow = ({ it, kind }) => (
+  <div className="ds-pillar-row" style={{ display: 'flex', gap: 10, alignItems: 'baseline',
+       padding: '9px 0', borderBottom: '1px solid var(--line, rgba(255,255,255,0.08))' }}>
+    <span style={{ fontSize: 11, opacity: 0.6, minWidth: 70, whiteSpace: 'nowrap' }}>
+      {kind === 'clip' ? '▶ clip' : '📰 cutting'}
+    </span>
+    <span style={{ flex: 1, fontSize: 14, lineHeight: 1.4 }}>{it.title}</span>
+    {it.matched ? <span style={{ fontSize: 11, opacity: 0.55, whiteSpace: 'nowrap' }}>{it.matched}</span> : null}
+  </div>
+);
+
 const DefiningStories = () => {
   const _stories = useLiveStories();
   const _list = _stories || DEFINING_STORIES;
+  const xp = useCrossPillar();
+  const [tab, setTab] = useState('stories');
+  const clips = (xp && xp.clips) || [];
+  const cuttings = (xp && xp.cuttings) || [];
+  const TABS = [
+    ['stories', 'Top Stories'],
+    ['clips', `YouTube Clips${clips.length ? ` (${clips.length})` : ''}`],
+    ['cuttings', `Newspaper Cuttings${cuttings.length ? ` (${cuttings.length})` : ''}`],
+  ];
+  const active = tab === 'clips' ? clips : tab === 'cuttings' ? cuttings : null;
   return (
   <section className="container section ds-section">
     <DefiningHeader/>
-    <div className="ds-rows">
-      {_list.slice(0, 3).map((s, i) => <DefiningStoryRow key={i} s={{...s, lens: (s.lens && s.lens.length) ? s.lens : (SOURCE_LENS_DATA[s.rank] || [])}}/>)}
+    <div className="ds-tabs" role="tablist" style={{ display: 'flex', gap: 8, margin: '6px 0 16px', flexWrap: 'wrap' }}>
+      {TABS.map(([k, label]) => (
+        <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+          className={'ds-tab' + (tab === k ? ' is-active' : '')}
+          style={{ padding: '6px 13px', borderRadius: 4, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                   border: '1px solid var(--line, rgba(255,255,255,0.14))',
+                   background: tab === k ? 'var(--accent, #c8a24a)' : 'transparent',
+                   color: tab === k ? '#161616' : 'inherit' }}>{label}</button>
+      ))}
     </div>
+    {tab === 'stories' ? (
+      <div className="ds-rows">
+        {_list.slice(0, 3).map((s, i) => <DefiningStoryRow key={i} s={{...s, lens: (s.lens && s.lens.length) ? s.lens : (SOURCE_LENS_DATA[s.rank] || [])}}/>)}
+      </div>
+    ) : (
+      <div className="ds-pillar-rows">
+        {active.length === 0 ? (
+          <p style={{ opacity: 0.6, fontSize: 13, padding: '10px 0' }}>
+            {xp === null ? 'Sign in to see your personalized clips & cuttings.'
+                         : 'No relevant items in your watch window yet.'}
+          </p>
+        ) : active.slice(0, 8).map((it, i) => (
+          <PillarRow key={i} it={it} kind={tab === 'clips' ? 'clip' : 'cutting'} />
+        ))}
+      </div>
+    )}
     <button type="button" className="ts-cta ds-view-all"><Icon name="doc" size={13}/><span>View All Defining Stories</span></button>
   </section>
 );

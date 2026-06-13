@@ -222,3 +222,75 @@ async def score_relevant(db, prefs: dict[str, Any], window_hours: int = 48, limi
         })
     out.sort(key=lambda x: x["score"], reverse=True)
     return out
+
+
+# ── Cross-pillar: same relevance core over CLIPS (youtube_clips_v2) + CUTTINGS
+# (clippings), reusing build_terms so the night-desk home can show a user's top
+# YouTube clips + newspaper cuttings alongside top stories. Entity-tier + title +
+# (cuttings) geo + freshness; clips carry no geo so they rank on entity/title. ──
+_PILLAR_SQL = """
+WITH win AS (
+  SELECT i.{id} AS id, i.{title} AS title, {summary} AS summary,
+         i.topic_category, {geo} AS geo_primary, i.{date} AS ts,
+         i.entities_extracted, lower(i.{title}) AS lt
+    FROM public.{table} i
+   WHERE i.{date} >= analytics.now_sim() - INTERVAL '{wh} hours'
+     AND i.{date} <= analytics.now_sim()
+     AND i.entities_extracted IS NOT NULL AND jsonb_typeof(i.entities_extracted)='array'
+     AND i.{title} IS NOT NULL AND length(i.{title}) >= 8
+),
+ent AS (SELECT w.id, lower(e->>'name') AS en FROM win w CROSS JOIN LATERAL jsonb_array_elements(w.entities_extracted) e),
+em AS (SELECT id,
+    max(CASE WHEN en LIKE ANY(CAST(:subj AS text[])) THEN 3
+             WHEN en LIKE ANY(CAST(:wlc AS text[])) THEN 2
+             WHEN en LIKE ANY(CAST(:wle AS text[])) THEN 1 ELSE 0 END) AS ent_tier,
+    (array_agg(en) FILTER (WHERE en LIKE ANY(CAST(:subj AS text[])) OR en LIKE ANY(CAST(:wlc AS text[]))
+                              OR en LIKE ANY(CAST(:wle AS text[]))))[1] AS matched
+  FROM ent GROUP BY id),
+sc AS (SELECT w.id, w.title, w.summary, w.topic_category, w.geo_primary, w.ts,
+    COALESCE(em.ent_tier,0) AS ent_tier, em.matched,
+    (CASE WHEN w.lt LIKE ANY(CAST(:subj AS text[])) OR w.lt LIKE ANY(CAST(:wlc AS text[])) THEN 1 ELSE 0 END) AS tc,
+    (CASE WHEN w.geo_primary ILIKE ANY(CAST(:geo AS text[])) THEN 1 ELSE 0 END) AS geo_hit,
+    (CASE WHEN w.lt LIKE ANY(CAST(:kw AS text[])) THEN 1 ELSE 0 END) AS kw_hit,
+    (CASE WHEN w.lt LIKE ANY(CAST(:noise AS text[])) THEN 1 ELSE 0 END) AS noise
+  FROM win w LEFT JOIN em ON em.id = w.id)
+SELECT id, title, summary, topic_category, geo_primary, ts, ent_tier, matched, tc, geo_hit,
+  ROUND((
+    (CASE WHEN ent_tier=3 THEN 6.0 WHEN ent_tier=2 THEN 3.0 WHEN ent_tier=1 AND geo_hit=1 THEN 1.5 ELSE 0 END)
+   + tc*2.0 + kw_hit*1.5
+   + (CASE WHEN geo_hit=1 AND (ent_tier>=2 OR kw_hit=1 OR tc=1) THEN 1.5 WHEN geo_hit=1 THEN 0.7 ELSE 0 END)
+   + (CASE WHEN topic_category = ANY(CAST(:exc AS text[])) THEN -2.0 ELSE 0 END)
+   + (CASE WHEN topic_category = ANY(CAST(:inc AS text[])) THEN 0.5 ELSE 0 END)
+   + noise * -4.0
+  ) * EXP(-EXTRACT(EPOCH FROM (analytics.now_sim() - ts)) / 3600.0 / {hl})::numeric, 2) AS score
+FROM sc
+WHERE ent_tier >= 2 OR tc = 1 OR kw_hit = 1 OR (ent_tier = 1 AND geo_hit = 1) OR geo_hit = 1
+ORDER BY score DESC LIMIT :lim
+"""
+
+_PILLAR_CFG = {
+    "clip": dict(table="youtube_clips_v2", id="id", title="video_title",
+                 summary="COALESCE(NULLIF(i.summary,''), left(i.transcript_segment,400))",
+                 geo="NULL::text", date="video_published_at"),
+    "cutting": dict(table="clippings", id="id", title="headline",
+                    summary="COALESCE(NULLIF(i.summary_preview,''), left(i.body_text_translated,400))",
+                    geo="i.geo_primary", date="edition_date"),
+}
+
+
+async def score_relevant_pillar(db, prefs: dict[str, Any], pillar: str, window_hours: int = 72,
+                                limit: int = 20, half_life_h: float = HALF_LIFE_H) -> list[dict[str, Any]]:
+    """Top clips/cuttings for the user's prefs (same core as score_relevant)."""
+    terms = await build_terms(db, prefs)
+    sql = _PILLAR_SQL.format(wh=int(window_hours), hl=float(half_life_h), **_PILLAR_CFG[pillar])
+    rows = (await db.execute(text(sql), {**terms, "lim": int(limit)})).fetchall()
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        score = float(r.score or 0)
+        if int(r.ent_tier or 0) >= 2 and not int(r.tc or 0) and not int(r.geo_hit or 0):
+            score = round(score * 0.15, 2)  # salience-first demote (passing mention)
+        out.append({"id": str(r.id), "title": r.title, "summary": r.summary,
+                    "topic": r.topic_category, "geo": r.geo_primary, "matched": r.matched,
+                    "pillar": pillar, "score": score})
+    out.sort(key=lambda x: x["score"], reverse=True)
+    return out

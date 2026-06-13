@@ -38,6 +38,25 @@ async def get_home(user: dict[str, str] | None = Depends(get_optional_user)) -> 
         return await get_home_cached(db, user["id"], prefs, display_name)
 
 
+@router.get("/cross-pillar")
+async def get_cross_pillar(
+    user: dict[str, str] | None = Depends(get_optional_user),
+) -> dict[str, Any]:
+    """Top YouTube clips + newspaper cuttings for the persona — same relevance core
+    as the home stories, scored against the user's own watchlist prefs. Powers the
+    home-page toggle (Top stories ⇄ Clips ⇄ Cuttings)."""
+    if not user:
+        return {"personalized": False, "clips": [], "cuttings": []}
+    async with get_db() as db:
+        prefs = await load_prefs(db, user["id"])
+        if not prefs:
+            return {"personalized": False, "clips": [], "cuttings": []}
+        from relevance import score_relevant_pillar
+        clips = await score_relevant_pillar(db, prefs, "clip", window_hours=96, limit=12)
+        cuttings = await score_relevant_pillar(db, prefs, "cutting", window_hours=96, limit=12)
+        return {"personalized": True, "clips": clips, "cuttings": cuttings}
+
+
 async def _bust_cache(db, uid: str) -> None:
     await db.execute(text(
         "DELETE FROM analytics.home_cache WHERE user_id = CAST(:u AS uuid)"

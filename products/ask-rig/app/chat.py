@@ -1,0 +1,393 @@
+"""The unified chat orchestrator — one entry point, no toggles.
+
+Every message runs the same pipeline:
+  1. expand the question into sharper variants (RAG-Fusion)
+  2. fan OUT in parallel: corpus retrieval + live web + (on-demand) entity feed
+  3. fuse everything into one ranked, citable context block
+  4. stream a detailed, structure-adaptive answer grounded ONLY in that context
+
+Entity retrieval fires only when the question clearly names a known person/org/
+place ("depends on the question"). Web and corpus always run. The whole thing is
+an async generator of SSE event dicts so the UI can render status → tokens →
+sources progressively, the way a modern chat assistant feels.
+"""
+from __future__ import annotations
+
+import asyncio
+import logging
+from typing import AsyncIterator, Sequence
+
+from app.answer import build_user_prompt
+from app.config import Settings
+from app.db import connect
+from app.embedding import LabseEmbedder
+from app.entities import clean_entity_query, search_entities, entity_feed
+from app.llm import LLMProvider
+from app.planner import Plan, plan_turn
+from app.reflect import assess_coverage
+from app.retrieval import multi_retrieve_and_curate, retrieve_and_curate
+from app.rewrite import rewrite_query
+from app.schemas import RetrievedDoc
+from app.web.extract import enrich_web_results
+from app.web.fuse import fuse_web_corpus
+from app.web.search import search_web
+
+logger = logging.getLogger("ask-rig.chat")
+
+# The synthesis prompt. Engineered for Claude-style DEPTH + BREADTH: every answer is a
+# mini-brief that covers each part of the question (wide) and layers fact → context →
+# significance → outlook on each point (deep) — but length is CALIBRATED to what the
+# sources actually support, so breadth never becomes padding or invention. Structure is
+# adaptive (the model picks timeline / profile / comparison / explainer), never forced.
+CHAT_SYSTEM = (
+    "You are RIG — a sharp, senior intelligence analyst writing over a live corpus of Indian news "
+    "(English, Telugu, Hindi, Tamil) plus fresh web results. You write the way the best analysts brief "
+    "a decision-maker: comprehensive, specific, and genuinely illuminating. People come to you BECAUSE "
+    "your answers go deeper and wider than a search engine or a generic chatbot would.\n\n"
+
+    "YOUR DEFAULT IS DEPTH AND BREADTH\n"
+    "Unless the question is genuinely narrow, treat every answer as a structured mini-brief, not a "
+    "one-liner. A great answer is WIDE — it covers every distinct development, actor, angle and "
+    "consequence the sources touch — and DEEP — for each one it gives not just the bare fact but the "
+    "context behind it, why it matters, and what may come next. Leave the reader understanding the whole "
+    "picture, not just the headline.\n\n"
+
+    "HOW TO BUILD THE ANSWER\n"
+    "1. DECOMPOSE the question into its parts and the distinct threads in the sources, and address EACH. "
+    "For 'what's the latest in X', the parts are the different developments; for 'compare A and B', the "
+    "parts are each dimension. Surface relevant angles the user didn't think to ask but the sources reveal.\n"
+    "2. LAYER every point. Don't stop at the bare fact. Give: the FACT (with figures, names, dates) → the "
+    "CONTEXT or backstory that makes sense of it → its SIGNIFICANCE or stakes → and, where the sources "
+    "support it, what's planned or likely NEXT. This layering is where real depth comes from.\n"
+    "3. STRUCTURE IT VISUALLY like a modern briefing. Open with a 1-2 sentence direct answer / overview, "
+    "then break the body into labelled markdown sections (##) or bold-led bullets — one per development, "
+    "theme, actor or angle. Use a markdown table for any genuine comparison or set of figures. Headers and "
+    "bullets are not decoration: each is a slot you must fill with real substance.\n"
+    "4. BE CONCRETE. Names, numbers, dates, places, amounts and direct quotes whenever the sources give "
+    "them. Prefer '₹38,595 crore phase-II expansion' over 'a major project'. Specifics are what separate "
+    "a real brief from a vague summary.\n"
+    "5. PREEMPT THE FOLLOW-UP. Address the obvious next questions — the other side of the argument, the "
+    "caveats, who's affected, what's contested, the comparison. Anticipate; don't wait to be asked.\n"
+    "6. SYNTHESISE across sources — organise by IDEA, never walk through sources one at a time. Each bullet "
+    "is a synthesised point that may draw on several sources, never 'what source N said'.\n"
+    "7. For a FOLLOW-UP, build on the conversation so far; don't repeat what you've already covered.\n\n"
+
+    "CALIBRATE LENGTH TO WHAT THE SOURCES SUPPORT (this is the line between thorough and padded)\n"
+    "- When the sources are RICH — many of them, spanning several themes — write a full multi-section "
+    "brief: go long, cover everything, layer every point. This is the NORM for roundups, profiles, "
+    "explainers and comparisons, and it is what readers love you for.\n"
+    "- When the sources are THIN, or the question is narrow, be correspondingly tighter — a focused, "
+    "well-built answer. Depth means more REAL substance, NEVER more words: no filler, no repetition, no "
+    "generic background that isn't grounded in the sources. If part of the question simply isn't covered, "
+    "say so in one honest line and move on — never guess to fill space.\n\n"
+
+    "GROUNDING (non-negotiable — this is what makes you trustworthy)\n"
+    "- Use ONLY facts present in the SOURCES below. Never invent, never reach beyond them, never use "
+    "outside knowledge. Your breadth must come from mining the sources thoroughly, not from imagination.\n"
+    "- Support every factual claim with inline citations like [S1] or [S2][S3]. Cite naturally so the prose "
+    "flows; every claim must trace to a source.\n"
+    "- Read the non-English (Telugu / Hindi / Tamil) sources too and translate what matters into your "
+    "answer — they often carry the local detail the English wire misses.\n\n"
+
+    "SHAPE EXAMPLE (a multi-part 'latest in <place>' question — adapt freely, never force this template)\n"
+    "  <one or two sentences stating the big picture>\n\n"
+    "  ## Infrastructure\n"
+    "  - **<specific development>:** <fact with figures> [S1]. <a line of context — why now, what it "
+    "follows>. <why it matters / who benefits> [S2].\n\n"
+    "  ## Education\n"
+    "  - **<development>:** <synthesised point with specifics> [S5]. <stakes or what's contested> [S6].\n\n"
+    "  ## Politics\n"
+    "  - **<actor + move>:** <what happened> [S7]. <the other side / the reaction> [S8]. <what's expected "
+    "next, if the sources say so>.\n\n"
+    "  <a closing line on the through-line or what to watch — only if the sources support it>\n\n"
+
+    "A single-thread question can stay as tight, layered prose — but a roundup, comparison, profile or "
+    "'explain' answer should use this deep, sectioned shape. When in doubt, default to MORE coverage and "
+    "MORE structure. Be authoritative, neutral, and complete."
+)
+
+# Tunables for the chat path (kept here so the fan-out stays readable).
+_CORPUS_K = 10           # curated corpus docs before fusion
+_ENTITY_FEED_K = 4       # extra recent docs pulled for a named entity
+_ENTITY_MIN_ARTICLES = 3 # ignore barely-covered entity matches (noise)
+_CONTEXT_CAP = 14        # max sources handed to the writer (single pass)
+_HISTORY_TURNS = 4       # prior turns carried for follow-up context
+
+# Agentic escalation: a bounded second retrieval pass for multi-part questions the
+# first pass tends to under-cover. Only these query shapes are worth the extra LLM
+# check + round-trip; profile/specific/followup are usually single-thread.
+_ESCALATE_TYPES = {"broad", "comparison", "explainer"}
+_GAP_K = 6               # docs fetched per escalation (gap) fan-out
+_ESCALATED_CAP = 18      # raised cap when a second pass folds in gap docs
+
+
+def _source_view(doc: RetrievedDoc, index: int) -> dict:
+    """Compact source record for the UI 'Sources' panel (S-number = list order)."""
+    is_web = doc.source_id == "web"
+    return {
+        "marker": f"S{index}",
+        "id": doc.id,
+        "title": doc.title,
+        "url": doc.url,
+        "language": doc.language,
+        "published_at": doc.published_at.isoformat() if doc.published_at else None,
+        "kind": "web" if is_web else "corpus",
+    }
+
+
+def _entity_is_relevant(canonical_name: str, query: str) -> bool:
+    """Only treat an entity match as real if a significant word of its canonical
+    name actually appears in the question — guards against loose ILIKE matches."""
+    q = query.lower()
+    return any(len(w) >= 4 and w in q for w in canonical_name.lower().split())
+
+
+def _merge_unique(primary: list[RetrievedDoc], extra: list[RetrievedDoc]) -> list[RetrievedDoc]:
+    seen = {d.id for d in primary}
+    return primary + [d for d in extra if d.id not in seen]
+
+
+def _build_messages(
+    query: str, context: list[RetrievedDoc], history: Sequence[dict]
+) -> list[dict]:
+    messages: list[dict] = [{"role": "system", "content": CHAT_SYSTEM}]
+    for turn in list(history)[-_HISTORY_TURNS * 2:]:
+        role = turn.get("role")
+        content = (turn.get("content") or "").strip()
+        if role in ("user", "assistant") and content:
+            messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": build_user_prompt(query, context)})
+    return messages
+
+
+async def _stream_llm(llm: LLMProvider, messages: list[dict]) -> AsyncIterator[str]:
+    """Bridge the blocking LLM stream into async: a worker thread feeds a queue."""
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue = asyncio.Queue()
+    sentinel = object()
+
+    def worker() -> None:
+        try:
+            for chunk in llm.stream_messages(messages):
+                loop.call_soon_threadsafe(queue.put_nowait, chunk)
+        except Exception as exc:  # noqa: BLE001 - surface as an error item, never crash the loop
+            loop.call_soon_threadsafe(queue.put_nowait, ("__err__", str(exc)))
+        finally:
+            loop.call_soon_threadsafe(queue.put_nowait, sentinel)
+
+    loop.run_in_executor(None, worker)
+    while True:
+        item = await queue.get()
+        if item is sentinel:
+            break
+        if isinstance(item, tuple) and item and item[0] == "__err__":
+            raise RuntimeError(item[1])
+        yield item
+
+
+async def _resolve_entity_feed(
+    conn, settings: Settings, raw_query: str, entity_hint: str | None
+) -> tuple[list[RetrievedDoc], str | None]:
+    """Find the on-demand entity feed. When the planner names an ``entity_hint`` we
+    trust it and look that up directly; otherwise we fall back to the legacy ILIKE +
+    word-overlap guard against the raw query. Returns (feed_docs, entity_name)."""
+    lookup = entity_hint or raw_query
+    if not entity_hint and len(clean_entity_query(raw_query)) < 4:
+        return [], None
+    cands = await search_entities(conn, lookup, limit=1)
+    if not cands or cands[0].n_articles < _ENTITY_MIN_ARTICLES:
+        return [], None
+    # Planner-named entities skip the overlap guard (it already decided); raw-query
+    # guesses must still prove a real word overlap to avoid loose ILIKE false matches.
+    if not entity_hint and not _entity_is_relevant(cands[0].canonical_name, raw_query):
+        return [], None
+    feed = await entity_feed(conn, settings, cands[0].entity_id, k=_ENTITY_FEED_K)
+    return (feed, cands[0].canonical_name) if feed else ([], None)
+
+
+async def _retrieve(
+    settings: Settings,
+    queries: list[str],
+    qvecs: list[list[float]],
+    raw_query: str,
+    *,
+    entity_enabled: bool = True,
+    entity_hint: str | None = None,
+) -> tuple[list[RetrievedDoc], str | None]:
+    """Corpus fan-out + on-demand entity feed, on one connection. Returns
+    (docs, entity_name) where entity_name is set if a named entity was folded in.
+
+    ``entity_enabled`` / ``entity_hint`` come from the planner: the hint is the
+    canonical name to pull a feed for. With no planner (legacy path) the hint is
+    None and the raw-query guard decides."""
+    entity_name: str | None = None
+    # Chat is the ALWAYS-FAST path: FlashRank runs (rerank_enabled controls the
+    # heavy CrossEncoder only). Deep rerank stays explicit opt-in — never in chat,
+    # or every turn pays ~40s. fast_rerank still fires inside these calls.
+    async with connect(settings) as conn:
+        if len(queries) > 1:
+            docs = await multi_retrieve_and_curate(
+                conn, settings, queries, qvecs, None, _CORPUS_K, rerank_enabled=False
+            )
+        else:
+            docs = await retrieve_and_curate(
+                conn, settings, queries[0], qvecs[0], None, _CORPUS_K, rerank_enabled=False
+            )
+        if entity_enabled:
+            try:
+                feed, entity_name = await _resolve_entity_feed(
+                    conn, settings, raw_query, entity_hint
+                )
+                if feed:
+                    docs = _merge_unique(docs, feed)
+            except Exception as exc:  # noqa: BLE001 - entity path is best-effort enrichment
+                logger.debug("entity enrich skipped: %s", exc)
+                entity_name = None
+    return docs, entity_name
+
+
+async def _retrieve_more(
+    settings: Settings, embedder: LabseEmbedder, gap_queries: list[str]
+) -> list[RetrievedDoc]:
+    """Second-pass corpus fan-out for the reflection gaps. Corpus-only (web already
+    ran in pass 1) and FlashRank-only, to keep the escalation cheap."""
+    if not gap_queries:
+        return []
+    qvecs = [await asyncio.to_thread(embedder.embed, q) for q in gap_queries]
+    async with connect(settings) as conn:
+        if len(gap_queries) > 1:
+            return await multi_retrieve_and_curate(
+                conn, settings, gap_queries, qvecs, None, _GAP_K, rerank_enabled=False
+            )
+        return await retrieve_and_curate(
+            conn, settings, gap_queries[0], qvecs[0], None, _GAP_K, rerank_enabled=False
+        )
+
+
+async def chat_stream(
+    settings: Settings,
+    llm: LLMProvider,
+    embedder: LabseEmbedder,
+    query: str,
+    history: Sequence[dict] | None = None,
+) -> AsyncIterator[dict]:
+    """Drive one chat turn, yielding SSE event dicts:
+    {type: status|sources|token|done|error, ...}."""
+    history = history or []
+    query = query.strip()
+
+    yield {"type": "status", "stage": "plan", "text": "Reading your question"}
+
+    # PLAN: one fast LLM pass decides the shape of this turn (standalone query for
+    # follow-ups, web on/off, which entity to pull, search variants). Best-effort —
+    # None falls back to the legacy "rewrite + always-web + ILIKE-entity" pipeline.
+    plan: Plan | None = await asyncio.to_thread(plan_turn, llm, query, history)
+
+    if plan is not None:
+        search_query = plan.search_query
+        queries = plan.queries
+        needs_web = plan.needs_web and settings.web_enabled
+        entity_enabled = plan.needs_entity
+        entity_hint = plan.entity
+    else:
+        # Legacy RAG-Fusion: sharpen / broaden the raw query. Best-effort; falls back to raw.
+        try:
+            rewritten = await asyncio.to_thread(rewrite_query, llm, query)
+        except Exception:  # noqa: BLE001 - rewriting must never block the search
+            rewritten = []
+        search_query = query
+        queries = [query, *rewritten]
+        needs_web = settings.web_enabled
+        entity_enabled = True
+        entity_hint = None
+
+    # Embed the (resolved) search query and each variant — CPU-bound, off the loop.
+    qvecs = [await asyncio.to_thread(embedder.embed, q) for q in queries]
+
+    yield {"type": "status", "stage": "corpus", "text": "Searching 354K articles"}
+
+    # Web runs concurrently with the corpus fan-out — overlap the two slow paths.
+    # Skip it entirely when the planner judged it unnecessary (saves the slow path).
+    web_task = (
+        asyncio.create_task(search_web(settings, search_query)) if needs_web else None
+    )
+    docs, entity_name = await _retrieve(
+        settings, queries, qvecs, query,
+        entity_enabled=entity_enabled, entity_hint=entity_hint,
+    )
+    if entity_name:
+        yield {"type": "status", "stage": "entity", "text": f"Pulling coverage on {entity_name}"}
+
+    web_results: list = []
+    if web_task is not None:
+        yield {"type": "status", "stage": "web", "text": "Checking the live web"}
+        try:
+            web_results, _web_err = await web_task
+        except Exception:  # noqa: BLE001 - web is optional; degrade to corpus-only
+            web_results = []
+        if web_results:
+            # Phase 3: fetch + extract full article text for the top web hits so the
+            # writer sees whole pages, not snippets. Bounded/cached/best-effort.
+            yield {"type": "status", "stage": "read", "text": "Reading the top web sources"}
+            try:
+                web_results = await enrich_web_results(
+                    settings, web_results, settings.web_extract_top_n
+                )
+            except Exception:  # noqa: BLE001 - enrichment is a bonus; never block the turn
+                pass
+
+    _web_cap = settings.web_extract_max_chars
+    context = docs
+    if web_results:
+        context = fuse_web_corpus(context, web_results, snippet_cap=_web_cap)
+    context = [d for d in context if (d.title or "").strip()][:_CONTEXT_CAP]
+
+    if not context:
+        yield {"type": "sources", "sources": []}
+        yield {
+            "type": "token",
+            "text": "I couldn't find anything in the corpus or on the web for that yet. "
+            "Try rephrasing, or ask about a more specific person, place, or event.",
+        }
+        yield {"type": "done", "faithful": True}
+        return
+
+    # AGENTIC ESCALATION: for multi-part questions, reflect on whether the gathered
+    # headlines cover every part. If a part is unsupported, run ONE more targeted
+    # corpus pass and re-fuse. Bounded (1 round, ≤2 gaps) + best-effort.
+    if plan is not None and plan.query_type in _ESCALATE_TYPES:
+        verdict = await asyncio.to_thread(
+            assess_coverage, llm, query, [d.title or "" for d in context]
+        )
+        if verdict is not None and not verdict.sufficient and verdict.gaps:
+            yield {
+                "type": "status",
+                "stage": "escalate",
+                "text": "Digging deeper: " + "; ".join(verdict.gaps),
+            }
+            gap_docs = await _retrieve_more(settings, embedder, verdict.gaps)
+            if gap_docs:
+                merged = _merge_unique(docs, gap_docs)
+                context = (
+                    fuse_web_corpus(merged, web_results, snippet_cap=_web_cap)
+                    if web_results else merged
+                )
+                context = [d for d in context if (d.title or "").strip()][:_ESCALATED_CAP]
+
+    # Send sources first so the UI can prep the 'Sources' chip before tokens land.
+    yield {
+        "type": "sources",
+        "sources": [_source_view(d, i) for i, d in enumerate(context, start=1)],
+    }
+
+    yield {"type": "status", "stage": "write", "text": "Writing your answer"}
+    messages = _build_messages(query, context, history)
+    try:
+        async for token in _stream_llm(llm, messages):
+            yield {"type": "token", "text": token}
+    except Exception as exc:  # noqa: BLE001 - surface a clean error event to the client
+        logger.warning("chat synthesis failed: %s", exc)
+        yield {"type": "error", "text": f"answer failed: {exc}"}
+        return
+
+    yield {"type": "done", "faithful": True}

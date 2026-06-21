@@ -1,0 +1,11 @@
+# secrets + local state — never commit
+.env
+*.db
+*.db-journal
+*.db-wal
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

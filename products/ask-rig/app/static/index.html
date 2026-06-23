@@ -95,6 +95,18 @@
   .iconbtn:hover{ background:var(--paper-2); color:var(--ink); }
   .iconbtn svg{ width:18px; height:18px; }
 
+  /* labelled "New chat" button — clear affordance like GPT/Claude */
+  .newchat-btn{
+    display:inline-flex; align-items:center; gap:7px; background:none;
+    border:1px solid var(--line); color:var(--ink-2);
+    font-family:var(--sans); font-size:13px; font-weight:550; line-height:1;
+    padding:8px 13px; border-radius:9px; cursor:pointer; white-space:nowrap;
+    transition:border-color .15s var(--ease), color .15s var(--ease), background .15s var(--ease);
+  }
+  .newchat-btn:hover{ border-color:var(--clay); color:var(--ink); background:var(--paper-2); }
+  .newchat-btn svg{ width:16px; height:16px; }
+  @media (max-width:640px){ .newchat-btn span{ display:none; } .newchat-btn{ padding:8px; } }
+
   /* ─── Scroll area ────────────────────────────────────────────────── */
   main{ flex:1 1 auto; overflow-y:auto; scroll-behavior:smooth; }
   main::-webkit-scrollbar{ width:11px; }
@@ -280,8 +292,9 @@
     <div class="header-right">
       <span class="corpus" id="corpusPill">354K sources · 4 languages</span>
       <button class="iconbtn" id="themeToggle" aria-label="Toggle light and dark theme"></button>
-      <button class="iconbtn" id="newchat" aria-label="New chat" title="New chat">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      <button class="newchat-btn" id="newchat" aria-label="New chat" title="Start a new chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span>New chat</span>
       </button>
     </div>
   </header>

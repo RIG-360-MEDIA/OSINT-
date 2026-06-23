@@ -131,11 +131,11 @@ def load_settings() -> Settings:
         ),
         web_enabled=_bool("ASKRIG_WEB_ENABLED", True),
         searxng_url=os.environ.get("ASKRIG_SEARXNG_URL", "http://localhost:8888"),
-        web_max_results=_int("ASKRIG_WEB_MAX_RESULTS", 6),
+        web_max_results=_int("ASKRIG_WEB_MAX_RESULTS", 8),
         web_fetch_timeout=_int("ASKRIG_WEB_FETCH_TIMEOUT", 8),
         web_max_bytes=_int("ASKRIG_WEB_MAX_BYTES", 2_000_000),
         web_extract_enabled=_bool("ASKRIG_WEB_EXTRACT_ENABLED", True),
-        web_extract_top_n=_int("ASKRIG_WEB_EXTRACT_TOP_N", 3),
+        web_extract_top_n=_int("ASKRIG_WEB_EXTRACT_TOP_N", 4),
         web_extract_max_chars=_int("ASKRIG_WEB_EXTRACT_MAX_CHARS", 1600),
         cors_origins=tuple(
             o.strip() for o in os.environ.get("ASKRIG_CORS_ORIGINS", "").split(",") if o.strip()

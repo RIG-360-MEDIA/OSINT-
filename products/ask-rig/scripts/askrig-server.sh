@@ -25,15 +25,16 @@ log(){ echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG"; }
 # to open and uvicorn crash-loops on startup. cd here fixes that.
 cd "$REPO_ROOT" || { log "FATAL: cannot cd to $REPO_ROOT"; exit 1; }
 
-log "askrig-server supervisor starting (:8010, cwd=$REPO_ROOT)"
+PORT="${ASKRIG_PORT:-8020}"   # 8020, not 8010: dodges the stuck 8010 zombie socket
+log "askrig-server supervisor starting (:$PORT, cwd=$REPO_ROOT)"
 while true; do
-  log "launching uvicorn"
+  log "launching uvicorn on :$PORT"
   # No --reload: it proved unreliable here (stale workers + overlapping supervisors
   # holding the port with old code). This is a clean single process; restart it
   # explicitly after code changes (kill the python, the loop relaunches in 3s).
   "$VENV_PY" -m uvicorn app.main:app \
       --app-dir "$APP_DIR" \
-      --host 127.0.0.1 --port 8010 >> "$LOG" 2>&1
+      --host 127.0.0.1 --port "$PORT" >> "$LOG" 2>&1
   log "uvicorn exited ($?) — restarting in 3s"
   sleep 3
 done

@@ -15,17 +15,25 @@ set -u
 
 VENV_PY="/c/Users/Dell/Desktop/rig-surveillance/products/ask-rig/.venv/Scripts/python.exe"
 APP_DIR="/c/Users/Dell/Desktop/rig-surveillance/products/ask-rig"
+REPO_ROOT="/c/Users/Dell/Desktop/rig-surveillance"
 LOG="/c/Users/Dell/.askrig-server.log"
 
 log(){ echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG"; }
 
-log "askrig-server supervisor starting (:8010)"
+# CRITICAL: pin CWD to the repo root. When launched hidden via wscript the CWD is
+# System32 (not writable), so the app's relative SQLite path ./askrig_app.db fails
+# to open and uvicorn crash-loops on startup. cd here fixes that.
+cd "$REPO_ROOT" || { log "FATAL: cannot cd to $REPO_ROOT"; exit 1; }
+
+log "askrig-server supervisor starting (:8010, cwd=$REPO_ROOT)"
 while true; do
   log "launching uvicorn"
+  # No --reload: it proved unreliable here (stale workers + overlapping supervisors
+  # holding the port with old code). This is a clean single process; restart it
+  # explicitly after code changes (kill the python, the loop relaunches in 3s).
   "$VENV_PY" -m uvicorn app.main:app \
       --app-dir "$APP_DIR" \
-      --host 127.0.0.1 --port 8010 \
-      --reload --reload-dir "$APP_DIR/app" >> "$LOG" 2>&1
+      --host 127.0.0.1 --port 8010 >> "$LOG" 2>&1
   log "uvicorn exited ($?) — restarting in 3s"
   sleep 3
 done

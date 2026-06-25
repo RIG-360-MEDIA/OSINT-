@@ -35,6 +35,11 @@ class ChatRequest(BaseModel):
         default_factory=list,
         description="Prior turns for follow-up context (most recent last).",
     )
+    article_id: str | None = Field(
+        default=None,
+        max_length=64,
+        description="When set (from a list card's Explain), drill into this exact article.",
+    )
 
 
 class RetrievedDoc(BaseModel):

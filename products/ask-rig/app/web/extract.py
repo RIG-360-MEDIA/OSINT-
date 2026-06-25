@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import ipaddress
+import re
 import socket
 from urllib.parse import urlparse
 
@@ -18,6 +19,19 @@ from app.config import Settings
 from app.schemas_account import WebResult
 
 _UA = "Mozilla/5.0 (compatible; RIG-Research/1.0; +https://rig360media.com)"
+
+# Navigational / portal junk that SearXNG returns for broad queries — homepages,
+# e-papers, govt portals, login walls, "latest headlines" landing pages. These
+# carry no article content, just crowd out real sources, so we drop them before
+# they reach the writer (titles + URL-shape are far more reliable than content here).
+_JUNK_TITLE = re.compile(
+    r"\b(e[\-\s]?paper|state portal|web ?portal|govt(?:\.|\s)?\s?services|"
+    r"latest .{0,30}headlines|public view|sign\s?in|log\s?in|home\s?page|"
+    r"official (?:website|portal)|citizen services)\b",
+    re.IGNORECASE,
+)
+_JUNK_HOST_HINTS = ("epaper", "epaper", "/portal", "highcourt", "hcourt")
+_HOMEPAGE_PATHS = {"", "home", "index", "index.html", "index.php"}
 
 # Tiny process-wide URL→text cache so a source seen across turns isn't re-fetched.
 # Bounded FIFO (drops the oldest on overflow). None caches a known failure too.
@@ -95,3 +109,33 @@ async def enrich_web_results(
         else:  # failure, exception, or not richer than the snippet → leave as-is
             enriched.append(w)
     return enriched + results[top_n:]
+
+
+def _is_homepage(url: str) -> bool:
+    try:
+        path = urlparse(url).path.strip("/").lower()
+    except Exception:  # noqa: BLE001 - a malformed URL is itself junk
+        return True
+    return path in _HOMEPAGE_PATHS
+
+
+def is_low_value_web(w: WebResult, min_snippet: int = 40) -> bool:
+    """True if a web result is navigational/portal junk rather than an article —
+    a junk title, a bare homepage URL, a portal/e-paper host, or a near-empty
+    snippet. These crowd out real sources and should never reach the writer."""
+    title = (w.title or "").strip()
+    if not title or _JUNK_TITLE.search(title):
+        return True
+    if _is_homepage(w.url):
+        return True
+    if any(hint in (w.url or "").lower() for hint in _JUNK_HOST_HINTS):
+        return True
+    if len((w.snippet or "").strip()) < min_snippet:
+        return True
+    return False
+
+
+def filter_web_results(results: list[WebResult], min_snippet: int = 40) -> list[WebResult]:
+    """Drop navigational/portal junk, preserving order. Run BEFORE enrichment so we
+    don't waste fetches on homepages."""
+    return [w for w in results if not is_low_value_web(w, min_snippet)]

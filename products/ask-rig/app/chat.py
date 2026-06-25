@@ -15,20 +15,23 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from typing import AsyncIterator, Sequence
 
 from app.answer import build_user_prompt
 from app.config import Settings
 from app.db import connect
 from app.embedding import LabseEmbedder
-from app.entities import clean_entity_query, search_entities, entity_feed
+from app.drilldown import DRILLDOWN_SYSTEM, build_drilldown_prompt, get_article
+from app.entities import clean_entity_query, is_uuid, search_entities, entity_feed
+from app.enumerate import classify_list_sentiment, list_articles, parse_list_request
 from app.llm import LLMProvider
 from app.planner import Plan, plan_turn
 from app.reflect import assess_coverage
 from app.retrieval import multi_retrieve_and_curate, retrieve_and_curate
 from app.rewrite import rewrite_query
 from app.schemas import RetrievedDoc
-from app.web.extract import enrich_web_results
+from app.web.extract import enrich_web_results, filter_web_results
 from app.web.fuse import fuse_web_corpus
 from app.web.search import search_web
 
@@ -296,19 +299,133 @@ async def _retrieve_more(
         )
 
 
+# Cheap pre-gate: only spend an LLM parse call when the query LOOKS like an enumerate
+# request. The LLM still makes the real is_list decision; this just avoids the extra
+# call on the ~80% of turns with no list-ish words.
+_LIST_HINT = re.compile(r"\b(all|every|each|list)\b", re.I)
+
+
+def _list_item_view(it) -> dict:
+    return {
+        "id": it.id,
+        "title": it.title,
+        "url": it.url,
+        "published_at": it.published_at.isoformat() if it.published_at else None,
+        "language": it.language,
+        "source_id": it.source_id,
+        "snippet": it.snippet,
+    }
+
+
+async def _enumerate_stream(settings: Settings, llm: LLMProvider, lreq, raw_query: str):
+    """Run the enumerate path: resolve filters → full list → optional live sentiment
+    filter → one 'list' event the UI renders as cards."""
+    yield {"type": "status", "stage": "listing", "text": "Pulling the full list"}
+    entity_id: str | None = None
+    entity_name: str | None = None
+    async with connect(settings) as conn:
+        if lreq.entity_term:
+            cands = await search_entities(conn, lreq.entity_term, limit=1)
+            if cands and cands[0].n_articles >= _ENTITY_MIN_ARTICLES:
+                entity_id = cands[0].entity_id
+                entity_name = cands[0].canonical_name
+        items, total = await list_articles(
+            conn, settings,
+            entity_id=entity_id,
+            keyword=None if entity_id else (lreq.keyword or lreq.entity_term),
+            since_hours=lreq.since_hours,
+            languages=lreq.languages,
+            limit=lreq.limit or 50,
+        )
+
+    scanned = len(items)
+    sentiment_applied = False
+    if lreq.sentiment and items:
+        yield {"type": "status", "stage": "classify",
+               "text": f"Reading each to find the {lreq.sentiment} ones"}
+        items, sentiment_applied = await asyncio.to_thread(
+            classify_list_sentiment, llm, items, lreq.sentiment
+        )
+
+    yield {
+        "type": "list",
+        "subject": entity_name or lreq.keyword or lreq.entity_term,
+        "total": total,
+        "scanned": scanned,
+        "shown": len(items),
+        "filters": {
+            "since_hours": lreq.since_hours,
+            "languages": list(lreq.languages) if lreq.languages else None,
+            "sentiment": lreq.sentiment,
+            "sentiment_applied": sentiment_applied,
+            "matched_by": "entity" if entity_id else "keyword",
+        },
+        "items": [_list_item_view(it) for it in items],
+    }
+    yield {"type": "done", "faithful": True}
+
+
+async def _drilldown_stream(settings: Settings, llm: LLMProvider, article_id: str):
+    """Drill into ONE article by id: fetch its full text + quotes and stream a grounded
+    explanation. Precise — no retrieval, the answer is about exactly this article."""
+    yield {"type": "status", "stage": "fetch", "text": "Opening the article"}
+    async with connect(settings) as conn:
+        art = await get_article(conn, article_id)
+    if art is None:
+        yield {"type": "token",
+               "text": "I couldn't open that article — it may have been removed from the corpus."}
+        yield {"type": "done", "faithful": True}
+        return
+    yield {"type": "sources", "sources": [{
+        "marker": "S1", "id": art.id, "title": art.title, "url": art.url,
+        "language": art.language,
+        "published_at": art.published_at.isoformat() if art.published_at else None,
+        "kind": "corpus",
+    }]}
+    yield {"type": "status", "stage": "write", "text": "Explaining the article"}
+    messages = [
+        {"role": "system", "content": DRILLDOWN_SYSTEM},
+        {"role": "user", "content": build_drilldown_prompt(art)},
+    ]
+    try:
+        async for tok in _stream_llm(llm, messages):
+            yield {"type": "token", "text": tok}
+    except Exception as exc:  # noqa: BLE001
+        yield {"type": "error", "text": f"explanation failed: {exc}"}
+        return
+    yield {"type": "done", "faithful": True}
+
+
 async def chat_stream(
     settings: Settings,
     llm: LLMProvider,
     embedder: LabseEmbedder,
     query: str,
     history: Sequence[dict] | None = None,
+    article_id: str | None = None,
 ) -> AsyncIterator[dict]:
     """Drive one chat turn, yielding SSE event dicts:
-    {type: status|sources|token|done|error, ...}."""
+    {type: status|sources|token|list|done|error, ...}."""
     history = history or []
     query = query.strip()
 
     yield {"type": "status", "stage": "plan", "text": "Reading your question"}
+
+    # DRILL-DOWN: an explicit article_id (from a list card's Explain) → explain THAT
+    # exact article, not a retrieval guess.
+    if article_id and is_uuid(article_id):
+        async for ev in _drilldown_stream(settings, llm, article_id):
+            yield ev
+        return
+
+    # ENUMERATE MODE: 'give me all/every X' is a LIST request, not a synthesis. Detect
+    # it first (gated by a cheap regex) and return the full filtered set as a list.
+    if _LIST_HINT.search(query):
+        lreq = await asyncio.to_thread(parse_list_request, llm, query)
+        if lreq is not None:
+            async for ev in _enumerate_stream(settings, llm, lreq, query):
+                yield ev
+            return
 
     # PLAN: one fast LLM pass decides the shape of this turn (standalone query for
     # follow-ups, web on/off, which entity to pull, search variants). Best-effort —
@@ -357,6 +474,11 @@ async def chat_stream(
             web_results, _web_err = await web_task
         except Exception:  # noqa: BLE001 - web is optional; degrade to corpus-only
             web_results = []
+        if web_results:
+            # Drop navigational/portal junk (homepages, e-papers, "latest headlines"
+            # landing pages) BEFORE enrichment — they carry no article content and
+            # just crowd out real sources.
+            web_results = filter_web_results(web_results)
         if web_results:
             # Phase 3: fetch + extract full article text for the top web hits so the
             # writer sees whole pages, not snippets. Bounded/cached/best-effort.

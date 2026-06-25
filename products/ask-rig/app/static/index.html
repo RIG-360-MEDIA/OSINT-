@@ -231,6 +231,31 @@
   .act.ok{ color:var(--clay); }
   @media (hover:none){ .actions{ opacity:1; transform:none; } }  /* touch: always visible */
 
+  /* ─── Enumerate list (cards) ─────────────────────────────────────── */
+  .listhdr{ font-size:15px; color:var(--ink); margin:0 0 14px; line-height:1.5; }
+  .listhdr b{ font-weight:650; }
+  .listnote{ font-size:13px; color:var(--ink-3); margin-top:4px; }
+  .lcards{ display:flex; flex-direction:column; gap:9px; }
+  .lcard{ display:flex; gap:12px; padding:13px 15px; background:var(--card);
+    border:1px solid var(--line-2); border-radius:12px;
+    transition:border-color .15s var(--ease), box-shadow .15s var(--ease); }
+  .lcard:hover{ border-color:var(--line); box-shadow:var(--shadow); }
+  .lcard-n{ flex:0 0 auto; font-size:12px; font-weight:650; color:var(--ink-3);
+    min-width:20px; text-align:right; margin-top:2px; }
+  .lcard-body{ min-width:0; flex:1; }
+  .lcard-title{ font-size:14.5px; line-height:1.4; }
+  .lcard-title a{ color:var(--ink); text-decoration:none; }
+  .lcard-title a:hover{ color:var(--clay); text-decoration:underline; text-underline-offset:2px; }
+  .lcard-meta{ display:flex; flex-wrap:wrap; gap:8px; margin-top:5px; font-size:11.5px; color:var(--ink-3); }
+  .lcard-meta span{ white-space:nowrap; }
+  .lcard-snip{ font-size:13px; color:var(--ink-2); margin-top:7px; line-height:1.5;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .explain-btn{ margin-top:9px; background:none; border:1px solid var(--line);
+    color:var(--ink-2); font-family:var(--sans); font-size:12px; font-weight:550;
+    padding:5px 11px; border-radius:7px; cursor:pointer;
+    transition:border-color .14s var(--ease), color .14s var(--ease), background .14s var(--ease); }
+  .explain-btn:hover{ border-color:var(--clay); color:var(--clay); background:var(--clay-soft); }
+
   /* ─── Composer ───────────────────────────────────────────────────── */
   .composer-wrap{
     position:fixed; bottom:0; left:0; right:0; padding:16px 22px 22px;
@@ -326,6 +351,7 @@ const root = document.documentElement;
 const main = $("main"), wrap = $("wrap"), hero = $("hero"), input = $("input"), send = $("send");
 let history = [];        // [{role, content}] for follow-ups (LLM contract)
 let transcript = [];     // [{role:'user',content} | {role:'bot',answer,sources}] for persistence/replay
+let lastListItems = [];  // items from the most recent enumerate list (for "explain #N")
 let streaming = false;
 let abortCtl = null;
 
@@ -362,6 +388,19 @@ function renderChips(){
   document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{ input.value=EXAMPLES[c.dataset.i][0]; ask(); });
 }
 renderChips();
+
+/* ── live corpus count for the header pill (replaces the static placeholder) ── */
+async function loadStats(){
+  try{
+    const r = await fetch("/stats"); if(!r.ok) return;
+    const d = await r.json();
+    if(typeof d.surfaceable === "number"){
+      $("corpusPill").textContent = d.surfaceable.toLocaleString() + " sources · " + (d.languages||4) + " languages";
+    }
+  }catch{ /* leave the existing label on any failure */ }
+}
+loadStats();
+setInterval(loadStats, 300000);   // refresh every 5 min (matches server-side cache TTL)
 
 /* ── auto-grow textarea ── */
 input.addEventListener("input", ()=>{ input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,208)+"px"; });
@@ -463,6 +502,43 @@ wrap.addEventListener("click", e=>{
     setTimeout(()=>src.classList.remove("hot"),1800); }
 });
 
+/* ── enumerate list rendering ── */
+function fmtWhen(h){
+  const m={1:"last hour",24:"last 24h",48:"last 48h",168:"last 7 days",720:"last 30 days"};
+  return h ? " · "+(m[h]||("last "+h+"h")) : "";
+}
+function renderList(ev){
+  const f = ev.filters||{};
+  const subj = ev.subject ? esc(ev.subject) : "the corpus";
+  let head = `Found <b>${(ev.total||0).toLocaleString()}</b> article${ev.total===1?"":"s"} on <b>${subj}</b>${fmtWhen(f.since_hours)}`;
+  if(f.languages) head += " · "+f.languages.join("/").toUpperCase();
+  let note="";
+  if(f.sentiment && f.sentiment_applied)
+    note = `Showing the <b>${ev.shown}</b> classified <b>${f.sentiment}</b> among the latest ${ev.scanned}.`;
+  else if(f.sentiment && !f.sentiment_applied)
+    note = `Couldn't auto-classify tone — showing the latest ${ev.shown}.`;
+  else if(ev.shown < ev.total)
+    note = `Showing the latest <b>${ev.shown}</b>.`;
+  if(!ev.items.length) note = "No matching articles.";
+  const cards = ev.items.map((it,i)=>{
+    const date = it.published_at ? it.published_at.slice(0,16).replace("T"," ") : "";
+    const lang = (it.language||"").toUpperCase();
+    const ttl = it.url ? `<a href="${it.url}" target="_blank" rel="noopener">${esc(it.title)}</a>` : esc(it.title);
+    return `<div class="lcard"><div class="lcard-n">${i+1}</div><div class="lcard-body">
+      <div class="lcard-title">${ttl}</div>
+      <div class="lcard-meta">${lang?`<span>${lang}</span>`:""}${date?`<span>${date}</span>`:""}</div>
+      ${it.snippet?`<div class="lcard-snip">${esc(it.snippet)}</div>`:""}
+      <button class="explain-btn" data-id="${it.id}" data-title="${esc(it.title)}">Explain</button>
+    </div></div>`;
+  }).join("");
+  return `<div class="listhdr">${head}${note?`<div class="listnote">${note}</div>`:""}</div><div class="lcards">${cards}</div>`;
+}
+/* clicking Explain on a card asks for a detailed write-up of that article */
+wrap.addEventListener("click", e=>{
+  const btn = e.target.closest(".explain-btn"); if(!btn || streaming) return;
+  ask(`Explain this article: "${btn.dataset.title}"`, {article_id: btn.dataset.id});
+});
+
 function setBusy(b){
   streaming=b; send.innerHTML = b ? STOP : ARROW;
   send.disabled = !b && !input.value.trim();
@@ -514,10 +590,15 @@ function regen(botEl){
 }
 
 /* ── rebuild a finished bot turn (used when replaying saved history) ── */
-function replayBot(q, raw, sources){
+function replayBot(q, raw, sources, listHtml){
   const el=document.createElement("div"); el.className="msg bot";
   el.innerHTML = `<div class="avatar" aria-hidden="true">R</div>
     <div class="turn"><div class="answer" data-answer></div><div data-srcwrap></div></div>`;
+  if(listHtml){
+    el.querySelector("[data-answer]").innerHTML = listHtml;   // enumerate result
+    wrap.appendChild(el);
+    return;
+  }
   el.querySelector("[data-answer]").innerHTML = renderMD(raw);
   wrap.appendChild(el);
   if(sources) renderSources(el, sources);
@@ -531,14 +612,23 @@ function restore(){
   for(let k=0;k<transcript.length;k++){
     const t=transcript[k];
     if(t.role==="user"){ addUser(t.content); history.push({role:"user",content:t.content}); }
-    else { replayBot(transcript[k-1] && transcript[k-1].content || "", t.answer, t.sources);
-           history.push({role:"assistant",content:t.answer}); }
+    else {
+      replayBot(transcript[k-1] && transcript[k-1].content || "", t.answer, t.sources, t.listHtml);
+      history.push({role:"assistant",content:t.answer || "(returned a list of matching articles)"});
+    }
   }
   scrollDown();
 }
 
-async function ask(preset){
+async function ask(preset, opts){
+  opts = opts || {};
   const q = (preset!==undefined ? preset : input.value).trim(); if(!q || streaming) return;
+  // typed "explain #5" → resolve to the 5th item of the last list, if any
+  let articleId = opts.article_id || null;
+  if(!articleId){
+    const m = q.match(/^(?:explain|open|expand|tell me about)\s+#?(\d+)\b/i);
+    if(m && lastListItems[+m[1]-1]) articleId = lastListItems[+m[1]-1].id;
+  }
   hero.style.display="none";
   if(preset===undefined){ input.value=""; input.style.height="auto"; }
   addUser(q);
@@ -547,12 +637,12 @@ async function ask(preset){
   const statusEl = bot.querySelector("[data-status]");
   setBusy(true);
 
-  let raw=""; let gotToken=false; let turnSources=null;
+  let raw=""; let gotToken=false; let turnSources=null; let isList=false; let listHtml="";
   abortCtl = new AbortController();
   try{
     const resp = await fetch("/chat",{
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ query:q, history }), signal:abortCtl.signal
+      body: JSON.stringify({ query:q, history, article_id:articleId }), signal:abortCtl.signal
     });
     if(!resp.ok || !resp.body) throw new Error("HTTP "+resp.status);
     const reader = resp.body.getReader(); const dec=new TextDecoder();
@@ -572,6 +662,10 @@ async function ask(preset){
           if(!gotToken){ gotToken=true; statusEl.remove(); ansEl.style.display="block"; }
           raw += ev.text; draw(); scrollDown();
         }
+        else if(ev.type==="list"){
+          gotToken=true; if(statusEl) statusEl.remove(); ansEl.style.display="block";
+          isList=true; lastListItems=ev.items||[]; listHtml=renderList(ev); ansEl.innerHTML=listHtml; scrollDown();
+        }
         else if(ev.type==="error"){
           if(!gotToken){ statusEl.remove(); ansEl.style.display="block"; }
           raw += (raw?"\n\n":"")+"⚠️ "+ev.text; draw();
@@ -579,15 +673,25 @@ async function ask(preset){
         else if(ev.type==="done"){ /* finalize below */ }
       }
     }
-    ansEl.innerHTML = renderMD(raw);                       // drop the cursor
-    if(raw){
+    if(isList){
+      ansEl.innerHTML = listHtml;                          // keep the list, not markdown
       transcript.push({role:"user",content:q});
-      transcript.push({role:"bot",answer:raw,sources:turnSources});
-      history.push({role:"user",content:q}); history.push({role:"assistant",content:raw});
-      saveTranscript(); addActions(bot, q, raw);
+      transcript.push({role:"bot",listHtml:listHtml});
+      history.push({role:"user",content:q});
+      history.push({role:"assistant",content:"(returned a list of matching articles)"});
+      saveTranscript();
+    } else {
+      ansEl.innerHTML = renderMD(raw);                     // drop the cursor
+      if(raw){
+        transcript.push({role:"user",content:q});
+        transcript.push({role:"bot",answer:raw,sources:turnSources});
+        history.push({role:"user",content:q}); history.push({role:"assistant",content:raw});
+        saveTranscript(); addActions(bot, q, raw);
+      }
     }
   }catch(err){
-    if(err.name!=="AbortError"){
+    if(isList){ ansEl.innerHTML = listHtml; }
+    else if(err.name!=="AbortError"){
       statusEl && statusEl.remove(); ansEl.style.display="block";
       ansEl.innerHTML = renderMD((raw?raw+"\n\n":"")+"⚠️ Connection lost: "+err.message);
     }else{

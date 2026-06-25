@@ -4,11 +4,13 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.answer import DETAILED_SYSTEM, answer_question, answer_with_system
@@ -74,6 +76,39 @@ async def health() -> dict:
     return {"status": "ok" if ok else "degraded", "read_only": True}
 
 
+# Live corpus size for the header badge. Cached so a header badge never fires a
+# count(*) on a ~300K-row filtered set on every page load.
+_STATS_CACHE: dict = {"value": None, "ts": 0.0}
+_STATS_TTL = 300.0  # seconds
+
+
+@app.get("/stats")
+async def stats() -> dict:
+    """Live 'surfaceable' corpus count (substrate_status='ok' AND NOT is_duplicate)
+    — what the chat can actually retrieve. Cached for a few minutes; degrades to the
+    last good value (or a 503) so the badge never breaks the page."""
+    now = time.monotonic()
+    cached = _STATS_CACHE["value"]
+    if cached is not None and (now - _STATS_CACHE["ts"]) < _STATS_TTL:
+        return cached
+    try:
+        async with connect(settings) as conn:
+            result = await conn.execute(
+                text(
+                    "SELECT count(*) FROM articles "
+                    "WHERE substrate_status = 'ok' AND NOT is_duplicate"
+                )
+            )
+            surfaceable = int(result.scalar() or 0)
+        payload = {"surfaceable": surfaceable, "languages": 4}
+        _STATS_CACHE.update(value=payload, ts=now)
+        return payload
+    except Exception as exc:  # noqa: BLE001 - a badge must never take the page down
+        if cached is not None:
+            return cached
+        raise HTTPException(503, f"stats unavailable: {exc}") from exc
+
+
 def _sse(event: dict) -> str:
     """Serialize one event as a Server-Sent-Events frame."""
     return f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
@@ -88,7 +123,8 @@ async def chat(req: ChatRequest) -> StreamingResponse:
     async def event_stream():
         try:
             async for event in chat_stream(
-                settings, get_llm(settings), get_embedder(), req.query, history
+                settings, get_llm(settings), get_embedder(), req.query, history,
+                article_id=req.article_id,
             ):
                 yield _sse(event)
         except Exception as exc:  # noqa: BLE001 - last-resort: tell the client, don't hang

@@ -76,6 +76,30 @@ async def test_kill_switch_returns_unchanged():
     assert out is same  # short-circuits, no fetch
 
 
+def test_filter_drops_portal_junk():
+    from app.web.extract import filter_web_results
+
+    junk = [
+        WebResult(title="Telangana State Portal | Govt Services", url="https://telangana.gov.in/", snippet="x"*200),
+        WebResult(title="Namasthe Telangana e Paper", url="https://epaper.ntnews.com/", snippet="x"*200),
+        WebResult(title="Telangana Today - Latest Telangana News Headlines", url="https://telanganatoday.com/", snippet="x"*200),
+        WebResult(title="Public view", url="https://app.example.com/", snippet="x"*200),
+        WebResult(title="High Court for the State of Telangana", url="https://tshc.gov.in/", snippet="x"*200),
+    ]
+    real = [
+        WebResult(title="Telangana CM warns leaders ahead of SIR", url="https://msn.com/news/telangana-cm-warns-123", snippet="Revanth Reddy warned party leaders of strict action over the SIR campaign in Telangana today."),
+        WebResult(title="Former Sarpanch dies by suicide over unpaid dues", url="https://hyderabadmail.com/2026/06/sarpanch-suicide", snippet="A former sarpanch died by suicide over unpaid government dues, sparking outrage in the district."),
+    ]
+    out = filter_web_results(junk + real)
+    assert [w.title for w in out] == [r.title for r in real]  # all junk dropped, reals kept
+
+
+def test_filter_drops_empty_snippet():
+    from app.web.extract import filter_web_results
+    out = filter_web_results([WebResult(title="Real Article Title", url="https://site.com/a/b/story", snippet="")])
+    assert out == []
+
+
 @pytest.mark.asyncio
 async def test_cache_avoids_refetch():
     calls = {"n": 0}

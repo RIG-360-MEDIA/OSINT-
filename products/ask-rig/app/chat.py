@@ -99,8 +99,10 @@ CHAT_SYSTEM = (
 
     "CALIBRATE LENGTH TO WHAT THE SOURCES SUPPORT (this is the line between thorough and padded)\n"
     "- When the sources are RICH — many of them, spanning several themes — write a full multi-section "
-    "brief: go long, cover everything, layer every point. This is the NORM for roundups, profiles, "
-    "explainers and comparisons, and it is what readers love you for.\n"
+    "brief: go long, cover everything, layer every point. A thorough answer here typically runs "
+    "600-900 words (~4,000-5,500 characters) — don't stop at a few hundred words when the sources "
+    "support more; keep developing each section until every angle is covered. This is the NORM for "
+    "roundups, profiles, explainers and comparisons, and it is what readers love you for.\n"
     "- When the sources are THIN, or the question is narrow, be correspondingly tighter — a focused, "
     "well-built answer. Depth means more REAL substance, NEVER more words: no filler, no repetition, no "
     "generic background that isn't grounded in the sources. If part of the question simply isn't covered, "

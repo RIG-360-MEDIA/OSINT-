@@ -43,6 +43,7 @@ class RotatingProvider:
         self._base_url = settings.llm_base_url
         self._model = model or settings.llm_model
         self._temperature = settings.llm_temperature
+        self._max_tokens = settings.llm_max_tokens
         self._idx = 0
         self._lock = threading.Lock()
         self._clients: dict[str, object] = {}
@@ -110,7 +111,8 @@ class RotatingProvider:
         ]
         resp = self._run(
             lambda c: c.chat.completions.create(
-                model=self._model, temperature=self._temperature, messages=messages
+                model=self._model, temperature=self._temperature,
+                max_tokens=self._max_tokens, messages=messages
             )
         )
         return (resp.choices[0].message.content or "").strip()
@@ -118,7 +120,8 @@ class RotatingProvider:
     def chat(self, messages: list[dict], tools: list[dict] | None = None):
         """Tool-calling chat — returns the assistant message (may carry tool_calls)."""
         def call(client):
-            kwargs: dict = {"model": self._model, "temperature": self._temperature, "messages": messages}
+            kwargs: dict = {"model": self._model, "temperature": self._temperature,
+                            "max_tokens": self._max_tokens, "messages": messages}
             if tools:
                 kwargs["tools"] = tools
                 kwargs["tool_choice"] = "auto"
@@ -148,6 +151,7 @@ class RotatingProvider:
                 stream = client.chat.completions.create(
                     model=self._model,
                     temperature=self._temperature,
+                    max_tokens=self._max_tokens,
                     messages=messages,
                     stream=True,
                 )

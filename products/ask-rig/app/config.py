@@ -62,6 +62,7 @@ class Settings:
     llm_api_keys: tuple[str, ...]
     llm_base_url: str
     llm_temperature: float
+    llm_max_tokens: int   # answer ceiling; generous so long briefs/dossiers aren't cut
     # --- reranker ---
     rerank_enabled: bool
     rerank_model: str
@@ -119,6 +120,7 @@ def load_settings() -> Settings:
         llm_api_keys=key_pool,
         llm_base_url=os.environ.get("ASKRIG_LLM_BASE_URL", "https://api.groq.com/openai/v1"),
         llm_temperature=float(os.environ.get("ASKRIG_LLM_TEMPERATURE", "0.2")),
+        llm_max_tokens=_int("ASKRIG_LLM_MAX_TOKENS", 2048),  # ~8K chars headroom (>5K target)
         rerank_enabled=_bool("ASKRIG_RERANK_ENABLED", True),
         rerank_model=os.environ.get("ASKRIG_RERANK_MODEL", "BAAI/bge-reranker-v2-m3"),
         rerank_fetch_k=_int("ASKRIG_RERANK_FETCH_K", 50),

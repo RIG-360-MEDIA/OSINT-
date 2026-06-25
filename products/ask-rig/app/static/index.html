@@ -567,29 +567,28 @@ function renderChartInto(el, ev){
 function drawChart(canvas, ev){
   const cs = getComputedStyle(document.documentElement);
   const v = (n,f)=> (cs.getPropertyValue(n).trim() || f);
-  const ink = v("--ink-2","#6b675e"), grid = v("--line","#e7e3d8");
-  // negative=clay/red, neutral=muted, positive=blue-green; generic series cycle clay→blue→green
+  const ink = v("--ink-2","#6b675e"), grid = v("--line","#e7e3d8"), paper = v("--card","#ffffff");
   const named = { negative:v("--clay","#be5b36"), neutral:"#9c988c", positive:"#3a8f63", articles:v("--clay","#be5b36") };
-  const cycle = [v("--clay","#be5b36"), "#3a6ea5", "#3a8f63", "#9c988c"];
-  const line = ev.kind === "line";
+  const cycle = [v("--clay","#be5b36"), "#3a6ea5", "#3a8f63", "#9c988c", "#c99a4e", "#7a6fae", "#4aa3a3", "#b5683f"];
+  const kind = ev.kind || "bar";
+  const pieish = (kind === "pie" || kind === "doughnut");
+  const line = kind === "line";
   const ds = (ev.series||[]).map((s,i)=>{
     const col = named[s.label] || cycle[i % cycle.length];
-    return { label:s.label, data:s.data,
-      backgroundColor: line ? "transparent" : col, borderColor: col,
+    if(pieish) return { label:s.label, data:s.data, backgroundColor: s.data.map((_,j)=>cycle[j%cycle.length]), borderColor:paper, borderWidth:2 };
+    return { label:s.label, data:s.data, backgroundColor: line ? "transparent" : col, borderColor: col,
       borderWidth:2, tension:.3, fill:false, pointRadius:3, pointBackgroundColor:col, borderRadius:4 };
   });
-  new Chart(canvas, {
-    type: ev.kind || "bar",
-    data: { labels: ev.labels||[], datasets: ds },
-    options: {
-      responsive:true, maintainAspectRatio:false, animation:{duration:400},
-      plugins:{ legend:{ display:(ev.series||[]).length>1, labels:{ color:ink, boxWidth:12, font:{size:11} } } },
-      scales:{
-        x:{ stacked:!!ev.stacked, ticks:{ color:ink, font:{size:11} }, grid:{ color:grid } },
-        y:{ stacked:!!ev.stacked, beginAtZero:true, ticks:{ color:ink, font:{size:11}, precision:0 }, grid:{ color:grid } },
-      },
-    },
-  });
+  const opts = {
+    responsive:true, maintainAspectRatio:false, animation:{duration:400},
+    plugins:{ legend:{ display: pieish || (ev.series||[]).length>1, position: pieish?"right":"top",
+      labels:{ color:ink, boxWidth:12, font:{size:11} } } },
+  };
+  if(!pieish) opts.scales = {
+    x:{ stacked:!!ev.stacked, ticks:{ color:ink, font:{size:11} }, grid:{ color:grid } },
+    y:{ stacked:!!ev.stacked, beginAtZero:true, ticks:{ color:ink, font:{size:11}, precision:0 }, grid:{ color:grid } },
+  };
+  new Chart(canvas, { type:kind, data:{ labels:ev.labels||[], datasets:ds }, options:opts });
 }
 
 function setBusy(b){

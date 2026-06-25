@@ -36,6 +36,8 @@ class CountRequest:
     trend_days: int | None = None  # 'trend over 30 days' → daily series
     sentiment: str | None = None   # negative/positive (sampled estimate)
     metric: str = "volume"         # 'volume' | 'sentiment' (drives chart type)
+    breakdown: str | None = None   # 'language' | 'outlet' → a doughnut/pie split
+    chart_kind: str | None = None  # explicit user request: 'pie'|'doughnut'|'bar'|'line'
     languages: tuple[str, ...] | None = None
 
 
@@ -124,6 +126,33 @@ async def db_today(conn: AsyncConnection) -> str:
     return str((await conn.execute(text("SELECT (now())::date"))).scalar())
 
 
+_DIM_EXPR = {
+    "language": "upper(a.language_detected)",
+    # readable host from the URL: 'https://www.eenadu.net/x' -> 'eenadu.net'
+    "outlet": "regexp_replace(split_part(split_part(a.url, '//', 2), '/', 1), '^www\\.', '')",
+}
+
+
+async def count_by_dimension(
+    conn: AsyncConnection, entity_id: str, dim: str, since_hours: int | None = None, limit: int = 10
+) -> list[tuple[str, int]]:
+    """Top values of a dimension ('language'|'outlet') for an entity → (label, count).
+    Powers breakdown doughnut/pie charts."""
+    expr = _DIM_EXPR.get(dim)
+    if not expr:
+        return []
+    since = " AND a.published_at > now() - make_interval(hours => :hours)" if since_hours else ""
+    sql = (f"SELECT {expr} AS k, count(*) AS n "
+           "FROM article_entity_mentions m JOIN articles a ON a.id = m.article_id "
+           "WHERE m.entity_id = :eid AND a.substrate_status = 'ok' AND NOT a.is_duplicate "
+           f"AND a.url IS NOT NULL{since} GROUP BY 1 ORDER BY n DESC NULLS LAST LIMIT :k")
+    params: dict = {"eid": entity_id, "k": limit}
+    if since_hours:
+        params["hours"] = int(since_hours)
+    rows = (await conn.execute(text(sql), params)).all()
+    return [(str(r[0]), int(r[1])) for r in rows if r[0]]
+
+
 _PARSE_SYSTEM = (
     "You decide whether a message is a QUANTIFY request — asking HOW MANY / a COUNT / a "
     "TREND / a comparison over time — vs a normal question. Output ONLY JSON.\n"
@@ -136,11 +165,21 @@ _PARSE_SYSTEM = (
     "(set for 'trend/chart over N days' / 'over the last month'=30 / 'over 2 days'=2), "
     "\"metric\": \"volume\"|\"sentiment\" (sentiment if they ask about sentiment/mood/tone/"
     "positivity, e.g. 'sentiment chart'; else volume), \"sentiment\": "
-    "\"negative\"|\"positive\"|null, \"languages\": string[]|null}.\n"
+    "\"negative\"|\"positive\"|null, "
+    "\"breakdown\": \"language\"|\"outlet\"|null (set when they ask to split BY language, or BY "
+    "outlet/source/publication), \"chart_kind\": \"pie\"|\"doughnut\"|\"bar\"|\"line\"|null "
+    "(ONLY when they explicitly name a chart shape, e.g. 'as a pie chart', 'line graph'), "
+    "\"languages\": string[]|null}.\n"
     "Examples:\n"
+    "'coverage of Revanth Reddy by language as a pie chart' -> {\"is_count\":true,\"entity\":"
+    "\"Revanth Reddy\",\"keyword\":null,\"since_hours\":null,\"compare_prev\":false,\"trend_days\":null,"
+    "\"metric\":\"volume\",\"sentiment\":null,\"breakdown\":\"language\",\"chart_kind\":\"pie\",\"languages\":null}\n"
+    "'which outlets cover the Telangana govt the most' -> {\"is_count\":true,\"entity\":"
+    "\"Telangana government\",\"keyword\":null,\"since_hours\":168,\"compare_prev\":false,\"trend_days\":null,"
+    "\"metric\":\"volume\",\"sentiment\":null,\"breakdown\":\"outlet\",\"chart_kind\":null,\"languages\":null}\n"
     "'sentiment chart over the last 2 days for the Telangana govt' -> {\"is_count\":true,"
     "\"entity\":\"Telangana government\",\"keyword\":null,\"since_hours\":null,\"compare_prev\":false,"
-    "\"trend_days\":2,\"metric\":\"sentiment\",\"sentiment\":null,\"languages\":null}\n"
+    "\"trend_days\":2,\"metric\":\"sentiment\",\"sentiment\":null,\"breakdown\":null,\"chart_kind\":null,\"languages\":null}\n"
     "'how many negative articles about the govt this week vs last' -> {\"is_count\":true,"
     "\"entity\":\"Telangana government\",\"keyword\":null,\"since_hours\":168,\"compare_prev\":true,"
     "\"trend_days\":null,\"metric\":\"volume\",\"sentiment\":\"negative\",\"languages\":null}\n"
@@ -204,8 +243,13 @@ def parse_count_request(llm: LLMProvider, query: str) -> CountRequest | None:
     except (ValueError, TypeError):
         trend = None
     metric = "sentiment" if str(data.get("metric", "")).lower() == "sentiment" else "volume"
+    bd = str(data.get("breakdown", "")).lower()
+    breakdown = bd if bd in ("language", "outlet") else None
+    ck = str(data.get("chart_kind", "")).lower()
+    chart_kind = ck if ck in ("pie", "doughnut", "bar", "line") else None
     return CountRequest(
         entity_term=entity, keyword=keyword, since_hours=hours,
         compare_prev=bool(data.get("compare_prev")), trend_days=trend,
-        sentiment=sent, metric=metric, languages=langs,
+        sentiment=sent, metric=metric, breakdown=breakdown, chart_kind=chart_kind,
+        languages=langs,
     )

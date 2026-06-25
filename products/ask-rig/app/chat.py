@@ -28,7 +28,9 @@ from app.entities import clean_entity_query, is_uuid, search_entities, entity_fe
 from app.enumerate import classify_labels, classify_list_sentiment, list_articles, parse_list_request
 from app.llm import LLMProvider
 from app.planner import Plan, plan_turn
-from app.quantify import articles_on_day, count_articles, count_by_day, db_today, parse_count_request
+from app.quantify import (
+    articles_on_day, count_articles, count_by_day, count_by_dimension, db_today, parse_count_request,
+)
 from app.reflect import assess_coverage
 from app.retrieval import multi_retrieve_and_curate, retrieve_and_curate
 from app.rewrite import rewrite_query
@@ -408,7 +410,7 @@ async def _drilldown_stream(settings: Settings, llm: LLMProvider, article_id: st
 
 
 _DOSSIER_HINT = re.compile(r"\b(dossier|profile of|full picture|everything (on|about)|tell me (all|everything) about)\b", re.I)
-_COUNT_HINT = re.compile(r"\b(how many|how much|count|trend|chart|graph|sentiment|number of|vs\.? last|compared to|over the (last|past)|over \d)\b", re.I)
+_COUNT_HINT = re.compile(r"\b(how many|how much|count|trend|chart|graph|sentiment|breakdown|by language|by (outlet|source|publication)|which (outlets|sources)|pie|doughnut|number of|vs\.? last|compared to|over the (last|past)|over \d)\b", re.I)
 _SENTI_SAMPLE_PER_DAY = 22  # articles sampled+classified per day for the sentiment chart
 _QUANTIFY_SYSTEM = (
     "You state corpus statistics for the user in a brief, clear answer. Use ONLY the numbers "
@@ -465,6 +467,20 @@ async def _quantify_stream(settings: Settings, llm: LLMProvider, creq, query: st
                 subject = cands[0].canonical_name
         kw = None if entity_id else creq.keyword
         lines.append(f"SUBJECT: {subject}")
+        # BREAKDOWN → a doughnut/pie split (by language or outlet). Early-return.
+        if creq.breakdown and entity_id:
+            rows = await count_by_dimension(conn, entity_id, creq.breakdown, since_hours=creq.since_hours)
+            dim = "language" if creq.breakdown == "language" else "outlet"
+            yield {
+                "type": "chart", "kind": creq.chart_kind or "doughnut",
+                "title": f"{subject} — coverage by {dim}" + (f" (last {creq.since_hours}h)" if creq.since_hours else ""),
+                "labels": [k for k, _ in rows],
+                "series": [{"label": "articles", "data": [n for _, n in rows]}],
+                "caption": f"Share of coverage about {subject} by {dim} (top {len(rows)}).",
+            }
+            yield {"type": "done", "faithful": True}
+            return
+
         # TREND → a CHART (volume line, or per-day sentiment stacked bar). Early-return.
         if creq.trend_days and entity_id:
             from datetime import date, timedelta
@@ -502,7 +518,7 @@ async def _quantify_stream(settings: Settings, llm: LLMProvider, creq, query: st
                 return
             series = await count_by_day(conn, entity_id, creq.trend_days)
             yield {
-                "type": "chart", "kind": "line",
+                "type": "chart", "kind": creq.chart_kind or "line",
                 "title": f"Daily coverage of {subject} — last {creq.trend_days} days",
                 "labels": [date.fromisoformat(d).strftime("%b %d") for d, _ in series],
                 "series": [{"label": "articles", "data": [n for _, n in series]}],

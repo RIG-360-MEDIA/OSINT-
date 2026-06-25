@@ -312,7 +312,7 @@ async def _retrieve_more(
 # Cheap pre-gate: only spend an LLM parse call when the query LOOKS like an enumerate
 # request. The LLM still makes the real is_list decision; this just avoids the extra
 # call on the ~80% of turns with no list-ish words.
-_LIST_HINT = re.compile(r"\b(all|every|each|list)\b", re.I)
+_LIST_HINT = re.compile(r"\b(all|every|each|list|most recent|recent most|latest|newest)\b", re.I)
 
 
 def _list_item_view(it) -> dict:
@@ -368,7 +368,8 @@ async def _enumerate_stream(settings: Settings, llm: LLMProvider, lreq, raw_quer
             "languages": list(lreq.languages) if lreq.languages else None,
             "sentiment": lreq.sentiment,
             "sentiment_applied": sentiment_applied,
-            "matched_by": "entity" if entity_id else "keyword",
+            "recent": getattr(lreq, "recent", False),
+            "matched_by": "entity" if entity_id else ("recent" if lreq.recent else "keyword"),
         },
         "items": [_list_item_view(it) for it in items],
     }

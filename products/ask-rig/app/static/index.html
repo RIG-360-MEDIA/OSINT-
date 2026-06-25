@@ -510,8 +510,13 @@ function fmtWhen(h){
 }
 function renderList(ev){
   const f = ev.filters||{};
-  const subj = ev.subject ? esc(ev.subject) : "the corpus";
-  let head = `Found <b>${(ev.total||0).toLocaleString()}</b> article${ev.total===1?"":"s"} on <b>${subj}</b>${fmtWhen(f.since_hours)}`;
+  const subj = ev.subject ? esc(ev.subject) : null;
+  let head;
+  if(f.recent){
+    head = `🕒 <b>Most recent</b> article${ev.shown===1?"":"s"}${subj?` on <b>${subj}</b>`:""}${fmtWhen(f.since_hours)}, newest first`;
+  } else {
+    head = `Found <b>${(ev.total||0).toLocaleString()}</b> article${ev.total===1?"":"s"} on <b>${subj||"the corpus"}</b>${fmtWhen(f.since_hours)}`;
+  }
   if(f.languages) head += " · "+f.languages.join("/").toUpperCase();
   let note="";
   if(f.sentiment && f.sentiment_applied)

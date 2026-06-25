@@ -45,6 +45,7 @@ class ListRequest:
     since_hours: int | None = None
     languages: tuple[str, ...] | None = None
     sentiment: str | None = None  # 'negative' | 'positive' | None
+    recent: bool = False          # 'the latest/newest article(s)' — pure recency, no filter needed
     limit: int = 50
 
 
@@ -53,20 +54,26 @@ _PARSE_SYSTEM = (
     "ALL/every article matching some filter — versus a normal question to be answered in prose. "
     "Output ONLY a JSON object, no prose.\n"
     "Enumerate triggers: 'give me all', 'list all', 'show me every', 'all the articles', "
-    "'all negative news about', 'every story on'. A normal 'what is happening' / 'who is' / "
-    "'why' / 'summarise' is NOT enumerate.\n"
-    "Schema: {\"is_list\": bool, \"entity\": string|null (the person/org/place to filter by, "
-    "cleaned to a name), \"keyword\": string|null (topic phrase if there's no clear entity), "
+    "'all negative news about', 'every story on'. ALSO enumerate (set \"recent\":true): asking "
+    "for THE LATEST / MOST RECENT / NEWEST article(s) — they want the actual newest items, "
+    "sorted by time. But a normal 'what is happening' / 'who is' / 'why' / 'summarise', or "
+    "'what's the latest IN/ON <place>' (wants a summary, not a list), is NOT enumerate.\n"
+    "Schema: {\"is_list\": bool, \"recent\": bool (true ONLY for 'latest/most recent/newest "
+    "article' style — newest-first), \"entity\": string|null (person/org/place to filter by), "
+    "\"keyword\": string|null (topic phrase if there's no clear entity), "
     "\"since_hours\": int|null (today/last 24h=24, last 48h=48, this week/7 days=168, last "
     "hour=1, this month=720; null if unspecified), \"sentiment\": \"negative\"|\"positive\"|null, "
     "\"languages\": string[]|null (e.g. [\"te\"] if they ask for Telugu only), \"limit\": int|null}.\n"
     "Examples:\n"
     "'give me all negative articles about the Telangana govt in the last 24 hours' -> "
-    "{\"is_list\":true,\"entity\":\"Telangana government\",\"keyword\":null,\"since_hours\":24,"
-    "\"sentiment\":\"negative\",\"languages\":null,\"limit\":null}\n"
-    "'list every Telugu article on the Hyderabad metro this week' -> "
-    "{\"is_list\":true,\"entity\":null,\"keyword\":\"Hyderabad metro\",\"since_hours\":168,"
-    "\"sentiment\":null,\"languages\":[\"te\"],\"limit\":null}\n"
+    "{\"is_list\":true,\"recent\":false,\"entity\":\"Telangana government\",\"keyword\":null,"
+    "\"since_hours\":24,\"sentiment\":\"negative\",\"languages\":null,\"limit\":null}\n"
+    "'what is the most recent article' / 'show me the latest articles' -> "
+    "{\"is_list\":true,\"recent\":true,\"entity\":null,\"keyword\":null,\"since_hours\":null,"
+    "\"sentiment\":null,\"languages\":null,\"limit\":null}\n"
+    "'the newest articles on the Hyderabad metro' -> {\"is_list\":true,\"recent\":true,"
+    "\"entity\":null,\"keyword\":\"Hyderabad metro\",\"since_hours\":null,\"sentiment\":null,"
+    "\"languages\":null,\"limit\":null}\n"
     "'what is the latest in Telangana' -> {\"is_list\":false}"
 )
 
@@ -108,9 +115,10 @@ def parse_list_request(llm: LLMProvider, query: str) -> ListRequest | None:
     data = _extract_json(raw)
     if not isinstance(data, dict) or not data.get("is_list"):
         return None
+    recent = bool(data.get("recent"))
     entity = (str(data.get("entity")).strip() if data.get("entity") else None) or None
     keyword = (str(data.get("keyword")).strip() if data.get("keyword") else None) or None
-    if not entity and not keyword:
+    if not entity and not keyword and not recent:
         return None  # a list of nothing — fall through to normal answer
     sent = data.get("sentiment")
     sent = sent if sent in ("negative", "positive") else None
@@ -121,12 +129,12 @@ def parse_list_request(llm: LLMProvider, query: str) -> ListRequest | None:
     except (ValueError, TypeError):
         hours = None
     try:
-        limit = int(data["limit"]) if data.get("limit") else 50
+        limit = int(data["limit"]) if data.get("limit") else (10 if recent else 50)
     except (ValueError, TypeError):
-        limit = 50
+        limit = 10 if recent else 50
     return ListRequest(
         entity_term=entity, keyword=keyword, since_hours=hours,
-        languages=langs, sentiment=sent, limit=limit,
+        languages=langs, sentiment=sent, recent=recent, limit=limit,
     )
 
 
@@ -241,7 +249,10 @@ async def list_articles(
         params["kw"] = keyword
         params["cfg"] = settings.fts_config
     else:
-        return [], 0
+        # Recency-only ('the latest/most recent article'): newest surfaceable overall.
+        # published_at <= now() guards against future-dated feeds topping the list.
+        where = ("FROM articles a WHERE a.substrate_status = 'ok' AND NOT a.is_duplicate "
+                 "AND a.published_at <= now()" + since + lang)
 
     total = (await conn.execute(text(f"SELECT count(*) {where}"), params)).scalar() or 0
     rows = (

@@ -25,13 +25,15 @@ from app.embedding import LabseEmbedder
 from app.dossier import DOSSIER_SYSTEM, build_dossier_prompt, gather_dossier, parse_dossier_request
 from app.drilldown import DRILLDOWN_SYSTEM, build_drilldown_prompt, get_article
 from app.entities import clean_entity_query, is_uuid, search_entities, entity_feed
-from app.enumerate import classify_labels, classify_list_sentiment, list_articles, parse_list_request
+from app.enumerate import ListRequest, classify_labels, classify_list_sentiment, list_articles, parse_list_request
 from app.llm import LLMProvider
 from app.planner import Plan, plan_turn
 from app.quantify import (
-    articles_on_day, count_articles, count_by_day, count_by_dimension, db_today, parse_count_request,
+    CountRequest, articles_on_day, count_articles, count_by_day, count_by_dimension, db_today,
+    parse_count_request,
 )
 from app.reflect import assess_coverage
+from app.router import route_turn
 from app.retrieval import multi_retrieve_and_curate, retrieve_and_curate
 from app.rewrite import rewrite_query
 from app.schemas import RetrievedDoc
@@ -591,35 +593,42 @@ async def chat_stream(
             yield ev
         return
 
-    # DOSSIER MODE: 'everything on / dossier on / profile of X' → multi-signal profile.
-    if _DOSSIER_HINT.search(query):
-        dreq = await asyncio.to_thread(parse_dossier_request, llm, query)
-        if dreq is not None:
-            async for ev in _dossier_stream(settings, llm, dreq[0], dreq[1]):
-                yield ev
-            return
+    # ROUTE: ONE LLM call picks the mode AND extracts its fields — replaces the four
+    # sequential parse/plan calls that dominated pre-first-token latency. None → synthesize.
+    route = await asyncio.to_thread(route_turn, llm, query, history)
 
-    # QUANTIFY MODE: 'how many / count / trend / vs last' → real counts, not synthesis.
-    if _COUNT_HINT.search(query):
-        creq = await asyncio.to_thread(parse_count_request, llm, query)
-        if creq is not None:
-            async for ev in _quantify_stream(settings, llm, creq, query):
-                yield ev
-            return
+    if route is not None and route.mode == "dossier" and route.entity:
+        async for ev in _dossier_stream(settings, llm, route.entity, route.days):
+            yield ev
+        return
+    if route is not None and route.mode == "quantify":
+        creq = CountRequest(
+            entity_term=route.entity, keyword=route.keyword, since_hours=route.since_hours,
+            compare_prev=route.compare_prev, trend_days=route.trend_days, sentiment=route.sentiment,
+            metric=route.metric, breakdown=route.breakdown, chart_kind=route.chart_kind,
+            languages=route.languages,
+        )
+        async for ev in _quantify_stream(settings, llm, creq, query):
+            yield ev
+        return
+    if route is not None and route.mode == "enumerate":
+        lreq = ListRequest(
+            entity_term=route.entity, keyword=route.keyword, since_hours=route.since_hours,
+            languages=route.languages, sentiment=route.sentiment, recent=route.recent, limit=route.limit,
+        )
+        async for ev in _enumerate_stream(settings, llm, lreq, query):
+            yield ev
+        return
 
-    # ENUMERATE MODE: 'give me all/every X' is a LIST request, not a synthesis. Detect
-    # it first (gated by a cheap regex) and return the full filtered set as a list.
-    if _LIST_HINT.search(query):
-        lreq = await asyncio.to_thread(parse_list_request, llm, query)
-        if lreq is not None:
-            async for ev in _enumerate_stream(settings, llm, lreq, query):
-                yield ev
-            return
-
-    # PLAN: one fast LLM pass decides the shape of this turn (standalone query for
-    # follow-ups, web on/off, which entity to pull, search variants). Best-effort —
-    # None falls back to the legacy "rewrite + always-web + ILIKE-entity" pipeline.
-    plan: Plan | None = await asyncio.to_thread(plan_turn, llm, query, history)
+    # SYNTHESIZE: build a Plan from the route (the same call already gave us the plan
+    # fields). On a routing miss, plan=None → the legacy rewrite path.
+    plan: Plan | None = None
+    if route is not None:
+        plan = Plan(
+            search_query=route.search_query or query, query_type=route.query_type,
+            is_followup=route.is_followup, needs_web=route.needs_web,
+            needs_entity=route.needs_entity, entity=route.entity, variants=list(route.variants),
+        )
 
     if plan is not None:
         search_query = plan.search_query

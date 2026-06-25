@@ -56,9 +56,20 @@ app.include_router(brief_router.router)
 app.include_router(agent_router.router)
 
 
+async def _warm_embedder() -> None:
+    """Load LaBSE in the background at startup so the FIRST chat query doesn't eat the
+    ~20s cold-load. Best-effort; runs off the event loop, never blocks readiness."""
+    try:
+        await asyncio.to_thread(lambda: get_embedder().embed("warmup"))
+        log.info("embedder warmed")
+    except Exception as exc:  # noqa: BLE001 - warmup is an optimization, never fatal
+        log.warning("embedder warmup skipped: %s", exc)
+
+
 @app.on_event("startup")
 async def _startup() -> None:
     await create_all(settings)  # idempotent — creates the app-DB schema if absent
+    asyncio.create_task(_warm_embedder())  # non-blocking: /health stays instantly up
 
 
 @app.get("/", response_class=HTMLResponse)

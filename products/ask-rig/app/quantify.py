@@ -35,6 +35,7 @@ class CountRequest:
     compare_prev: bool = False     # 'this week vs last week'
     trend_days: int | None = None  # 'trend over 30 days' → daily series
     sentiment: str | None = None   # negative/positive (sampled estimate)
+    metric: str = "volume"         # 'volume' | 'sentiment' (drives chart type)
     languages: tuple[str, ...] | None = None
 
 
@@ -99,23 +100,53 @@ async def count_by_day(conn: AsyncConnection, entity_id: str, days: int) -> list
     return [(str(r[0]), int(r[1])) for r in rows]
 
 
+_DAY_ARTICLES_SQL = """
+SELECT a.title, a.lead_text_translated AS snippet
+FROM article_entity_mentions m JOIN articles a ON a.id = m.article_id
+WHERE m.entity_id = :eid AND a.substrate_status = 'ok' AND NOT a.is_duplicate
+  AND a.published_at >= date_trunc('day', now()) - make_interval(days => :off)
+  AND a.published_at <  date_trunc('day', now()) - make_interval(days => :off) + interval '1 day'
+ORDER BY a.published_at DESC LIMIT :k
+"""
+
+
+async def articles_on_day(
+    conn: AsyncConnection, entity_id: str, day_offset: int, limit: int = 25
+) -> list[tuple[str, str]]:
+    """Title+snippet for one calendar day (0=today, by DB clock). For per-day sentiment."""
+    rows = (await conn.execute(text(_DAY_ARTICLES_SQL),
+                               {"eid": entity_id, "off": day_offset, "k": limit})).all()
+    return [(r[0], r[1]) for r in rows if r[0]]
+
+
+async def db_today(conn: AsyncConnection) -> str:
+    """The corpus DB's current date (YYYY-MM-DD) — anchor for per-day labels."""
+    return str((await conn.execute(text("SELECT (now())::date"))).scalar())
+
+
 _PARSE_SYSTEM = (
     "You decide whether a message is a QUANTIFY request — asking HOW MANY / a COUNT / a "
     "TREND / a comparison over time — vs a normal question. Output ONLY JSON.\n"
-    "Triggers: 'how many', 'count', 'how much coverage', 'trend', 'over the last N days', "
-    "'this week vs last'. NOT quantify: 'what is', 'who is', 'give me all' (that's a list).\n"
+    "Triggers: 'how many', 'count', 'how much coverage', 'trend', 'chart', 'graph', "
+    "'over the last N days', 'this week vs last', 'sentiment chart/trend'. NOT quantify: "
+    "'what is', 'who is', 'give me all' (that's a list).\n"
     "Schema: {\"is_count\": bool, \"entity\": string|null, \"keyword\": string|null, "
     "\"since_hours\": int|null (today/24h=24, this week=168, this month=720), "
     "\"compare_prev\": bool (true for 'vs last week/previous'), \"trend_days\": int|null "
-    "(set for 'trend over N days' / 'over the last month'=30), \"sentiment\": "
+    "(set for 'trend/chart over N days' / 'over the last month'=30 / 'over 2 days'=2), "
+    "\"metric\": \"volume\"|\"sentiment\" (sentiment if they ask about sentiment/mood/tone/"
+    "positivity, e.g. 'sentiment chart'; else volume), \"sentiment\": "
     "\"negative\"|\"positive\"|null, \"languages\": string[]|null}.\n"
     "Examples:\n"
+    "'sentiment chart over the last 2 days for the Telangana govt' -> {\"is_count\":true,"
+    "\"entity\":\"Telangana government\",\"keyword\":null,\"since_hours\":null,\"compare_prev\":false,"
+    "\"trend_days\":2,\"metric\":\"sentiment\",\"sentiment\":null,\"languages\":null}\n"
     "'how many negative articles about the govt this week vs last' -> {\"is_count\":true,"
     "\"entity\":\"Telangana government\",\"keyword\":null,\"since_hours\":168,\"compare_prev\":true,"
-    "\"trend_days\":null,\"sentiment\":\"negative\",\"languages\":null}\n"
-    "'sentiment of Revanth Reddy over the last 30 days' -> {\"is_count\":true,\"entity\":"
+    "\"trend_days\":null,\"metric\":\"volume\",\"sentiment\":\"negative\",\"languages\":null}\n"
+    "'coverage trend of Revanth Reddy over the last 30 days' -> {\"is_count\":true,\"entity\":"
     "\"Revanth Reddy\",\"keyword\":null,\"since_hours\":null,\"compare_prev\":false,"
-    "\"trend_days\":30,\"sentiment\":null,\"languages\":null}\n"
+    "\"trend_days\":30,\"metric\":\"volume\",\"sentiment\":null,\"languages\":null}\n"
     "'what is the latest in Telangana' -> {\"is_count\":false}"
 )
 
@@ -172,8 +203,9 @@ def parse_count_request(llm: LLMProvider, query: str) -> CountRequest | None:
         trend = int(data["trend_days"]) if data.get("trend_days") else None
     except (ValueError, TypeError):
         trend = None
+    metric = "sentiment" if str(data.get("metric", "")).lower() == "sentiment" else "volume"
     return CountRequest(
         entity_term=entity, keyword=keyword, since_hours=hours,
         compare_prev=bool(data.get("compare_prev")), trend_days=trend,
-        sentiment=sent, languages=langs,
+        sentiment=sent, metric=metric, languages=langs,
     )

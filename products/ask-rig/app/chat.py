@@ -25,10 +25,10 @@ from app.embedding import LabseEmbedder
 from app.dossier import DOSSIER_SYSTEM, build_dossier_prompt, gather_dossier, parse_dossier_request
 from app.drilldown import DRILLDOWN_SYSTEM, build_drilldown_prompt, get_article
 from app.entities import clean_entity_query, is_uuid, search_entities, entity_feed
-from app.enumerate import classify_list_sentiment, list_articles, parse_list_request
+from app.enumerate import classify_labels, classify_list_sentiment, list_articles, parse_list_request
 from app.llm import LLMProvider
 from app.planner import Plan, plan_turn
-from app.quantify import count_articles, count_by_day, parse_count_request
+from app.quantify import articles_on_day, count_articles, count_by_day, db_today, parse_count_request
 from app.reflect import assess_coverage
 from app.retrieval import multi_retrieve_and_curate, retrieve_and_curate
 from app.rewrite import rewrite_query
@@ -408,7 +408,8 @@ async def _drilldown_stream(settings: Settings, llm: LLMProvider, article_id: st
 
 
 _DOSSIER_HINT = re.compile(r"\b(dossier|profile of|full picture|everything (on|about)|tell me (all|everything) about)\b", re.I)
-_COUNT_HINT = re.compile(r"\b(how many|how much|count|trend|number of|vs\.? last|compared to|over the (last|past))\b", re.I)
+_COUNT_HINT = re.compile(r"\b(how many|how much|count|trend|chart|graph|sentiment|number of|vs\.? last|compared to|over the (last|past)|over \d)\b", re.I)
+_SENTI_SAMPLE_PER_DAY = 22  # articles sampled+classified per day for the sentiment chart
 _QUANTIFY_SYSTEM = (
     "You state corpus statistics for the user in a brief, clear answer. Use ONLY the numbers "
     "provided below — never invent or estimate beyond them. Lead with the headline number, note "
@@ -464,38 +465,79 @@ async def _quantify_stream(settings: Settings, llm: LLMProvider, creq, query: st
                 subject = cands[0].canonical_name
         kw = None if entity_id else creq.keyword
         lines.append(f"SUBJECT: {subject}")
+        # TREND → a CHART (volume line, or per-day sentiment stacked bar). Early-return.
         if creq.trend_days and entity_id:
+            from datetime import date, timedelta
+            from types import SimpleNamespace
+            base = date.fromisoformat(await db_today(conn))
+            if creq.metric == "sentiment":
+                ndays = max(2, min(creq.trend_days, 14))
+                yield {"type": "status", "stage": "classify",
+                       "text": "Reading each day's coverage for sentiment"}
+                labels, neg, neu, pos = [], [], [], []
+                for off in range(ndays - 1, -1, -1):  # oldest → newest
+                    day_items = await articles_on_day(conn, entity_id, off, _SENTI_SAMPLE_PER_DAY)
+                    labels.append((base - timedelta(days=off)).strftime("%b %d"))
+                    labs = []
+                    if day_items:
+                        labs = await asyncio.to_thread(
+                            classify_labels, llm,
+                            [SimpleNamespace(title=t, snippet=s) for t, s in day_items],
+                        ) or []
+                    pos.append(sum(1 for l in labs if l == "positive"))
+                    neg.append(sum(1 for l in labs if l == "negative"))
+                    neu.append(sum(1 for l in labs if l == "neutral"))
+                yield {
+                    "type": "chart", "kind": "bar", "stacked": True,
+                    "title": f"Sentiment of {subject} — last {ndays} days",
+                    "labels": labels,
+                    "series": [{"label": "negative", "data": neg},
+                               {"label": "neutral", "data": neu},
+                               {"label": "positive", "data": pos}],
+                    "caption": f"Per-day sentiment of coverage about {subject} over the last {ndays} days.",
+                    "note": (f"Sampled estimate: ~{_SENTI_SAMPLE_PER_DAY} articles/day classified live. "
+                             "News skews neutral — read the negative/positive bars, not the neutral mass."),
+                }
+                yield {"type": "done", "faithful": True}
+                return
             series = await count_by_day(conn, entity_id, creq.trend_days)
-            lines.append(f"DAILY ARTICLE COUNTS, last {creq.trend_days} days:")
-            lines += [f"  {d}: {n}" for d, n in series]
-            lines.append(f"TOTAL over window: {sum(n for _, n in series)}")
-        else:
-            hours = creq.since_hours or 168
-            cur = await count_articles(conn, settings, entity_id=entity_id, keyword=kw,
-                                       since_hours=hours, languages=creq.languages)
-            lines.append(f"WINDOW: last {hours} hours")
-            lines.append(f"COUNT: {cur} articles")
-            if creq.compare_prev:
-                prev = await count_articles(conn, settings, entity_id=entity_id, keyword=kw,
-                                            since_hours=hours, prev_window=True, languages=creq.languages)
-                lines.append(f"PREVIOUS equal window: {prev} (change {cur - prev:+d})")
-            if creq.sentiment and (entity_id or kw):
-                items, _t = await list_articles(conn, settings, entity_id=entity_id, keyword=kw,
-                                                since_hours=hours, limit=_QUANTIFY_SAMPLE)
-                kept, applied = await asyncio.to_thread(classify_list_sentiment, llm, items, creq.sentiment)
-                if applied and items:
-                    rate = len(kept) / len(items)
-                    lines.append(
-                        f"SENTIMENT (SAMPLED ESTIMATE): of the latest {len(items)} classified, "
-                        f"{len(kept)} were {creq.sentiment} (~{round(rate * 100)}%) -> roughly "
-                        f"~{round(rate * cur)} of {cur} total — an estimate from a sample, not exact."
-                    )
-                else:
-                    lines.append(
-                        f"SENTIMENT: the {creq.sentiment} breakdown could not be computed right now "
-                        "(tone classifier was busy) — report the total count and say the "
-                        f"{creq.sentiment} split is unavailable this time; suggest retrying."
-                    )
+            yield {
+                "type": "chart", "kind": "line",
+                "title": f"Daily coverage of {subject} — last {creq.trend_days} days",
+                "labels": [date.fromisoformat(d).strftime("%b %d") for d, _ in series],
+                "series": [{"label": "articles", "data": [n for _, n in series]}],
+                "caption": f"Daily article volume mentioning {subject}.",
+            }
+            yield {"type": "done", "faithful": True}
+            return
+
+        # NON-TREND → counts (text summary)
+        hours = creq.since_hours or 168
+        cur = await count_articles(conn, settings, entity_id=entity_id, keyword=kw,
+                                   since_hours=hours, languages=creq.languages)
+        lines.append(f"WINDOW: last {hours} hours")
+        lines.append(f"COUNT: {cur} articles")
+        if creq.compare_prev:
+            prev = await count_articles(conn, settings, entity_id=entity_id, keyword=kw,
+                                        since_hours=hours, prev_window=True, languages=creq.languages)
+            lines.append(f"PREVIOUS equal window: {prev} (change {cur - prev:+d})")
+        if creq.sentiment and (entity_id or kw):
+            items, _t = await list_articles(conn, settings, entity_id=entity_id, keyword=kw,
+                                            since_hours=hours, limit=_QUANTIFY_SAMPLE)
+            kept, applied = await asyncio.to_thread(classify_list_sentiment, llm, items, creq.sentiment)
+            if applied and items:
+                rate = len(kept) / len(items)
+                lines.append(
+                    f"SENTIMENT (SAMPLED ESTIMATE): of the latest {len(items)} classified, "
+                    f"{len(kept)} were {creq.sentiment} (~{round(rate * 100)}%) -> roughly "
+                    f"~{round(rate * cur)} of {cur} total — an estimate from a sample, not exact."
+                )
+            else:
+                lines.append(
+                    f"SENTIMENT: the {creq.sentiment} breakdown could not be computed right now "
+                    "(tone classifier was busy) — report the total count and say the "
+                    f"{creq.sentiment} split is unavailable this time; suggest retrying."
+                )
     stats = "\n".join(lines)
     yield {"type": "status", "stage": "write", "text": "Writing the summary"}
     messages = [

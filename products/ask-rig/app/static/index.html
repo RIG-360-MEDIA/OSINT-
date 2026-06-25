@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300..700;1,400..600&family=Newsreader:opsz,wght@6..72,400..600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   /* ─────────────────────────────────────────────────────────────────────
      AXIOM · "Reading Room"
@@ -255,6 +256,13 @@
     padding:5px 11px; border-radius:7px; cursor:pointer;
     transition:border-color .14s var(--ease), color .14s var(--ease), background .14s var(--ease); }
   .explain-btn:hover{ border-color:var(--clay); color:var(--clay); background:var(--clay-soft); }
+
+  /* ─── Charts (Chart.js) ──────────────────────────────────────────── */
+  .chart-title{ font-size:14.5px; font-weight:600; color:var(--ink); margin:2px 0 10px; }
+  .chart-wrap{ position:relative; height:300px; width:100%;
+    background:var(--card); border:1px solid var(--line-2); border-radius:12px; padding:12px; }
+  .chart-note{ font-size:12px; color:var(--ink-3); margin-top:8px; line-height:1.45; }
+  .answer > p + .chart-title{ margin-top:14px; }
 
   /* ─── Composer ───────────────────────────────────────────────────── */
   .composer-wrap{
@@ -545,6 +553,45 @@ wrap.addEventListener("click", e=>{
   ask(`Explain this article: "${btn.dataset.title}"`, {article_id: btn.dataset.id});
 });
 
+/* ── chart rendering (Chart.js, themed to the palette) ── */
+function renderChartInto(el, ev){
+  el.innerHTML =
+    (ev.caption ? `<p>${inline(ev.caption)}</p>` : "") +
+    (ev.title ? `<div class="chart-title">${esc(ev.title)}</div>` : "") +
+    `<div class="chart-wrap"><canvas></canvas></div>` +
+    (ev.note ? `<div class="chart-note">${esc(ev.note)}</div>` : "");
+  const cv = el.querySelector("canvas");
+  if(typeof Chart === "undefined"){ cv.parentElement.innerHTML = "<em>chart library still loading — refresh</em>"; return; }
+  drawChart(cv, ev);
+}
+function drawChart(canvas, ev){
+  const cs = getComputedStyle(document.documentElement);
+  const v = (n,f)=> (cs.getPropertyValue(n).trim() || f);
+  const ink = v("--ink-2","#6b675e"), grid = v("--line","#e7e3d8");
+  // negative=clay/red, neutral=muted, positive=blue-green; generic series cycle clay→blue→green
+  const named = { negative:v("--clay","#be5b36"), neutral:"#9c988c", positive:"#3a8f63", articles:v("--clay","#be5b36") };
+  const cycle = [v("--clay","#be5b36"), "#3a6ea5", "#3a8f63", "#9c988c"];
+  const line = ev.kind === "line";
+  const ds = (ev.series||[]).map((s,i)=>{
+    const col = named[s.label] || cycle[i % cycle.length];
+    return { label:s.label, data:s.data,
+      backgroundColor: line ? "transparent" : col, borderColor: col,
+      borderWidth:2, tension:.3, fill:false, pointRadius:3, pointBackgroundColor:col, borderRadius:4 };
+  });
+  new Chart(canvas, {
+    type: ev.kind || "bar",
+    data: { labels: ev.labels||[], datasets: ds },
+    options: {
+      responsive:true, maintainAspectRatio:false, animation:{duration:400},
+      plugins:{ legend:{ display:(ev.series||[]).length>1, labels:{ color:ink, boxWidth:12, font:{size:11} } } },
+      scales:{
+        x:{ stacked:!!ev.stacked, ticks:{ color:ink, font:{size:11} }, grid:{ color:grid } },
+        y:{ stacked:!!ev.stacked, beginAtZero:true, ticks:{ color:ink, font:{size:11}, precision:0 }, grid:{ color:grid } },
+      },
+    },
+  });
+}
+
 function setBusy(b){
   streaming=b; send.innerHTML = b ? STOP : ARROW;
   send.disabled = !b && !input.value.trim();
@@ -605,17 +652,15 @@ function regen(botEl){
 }
 
 /* ── rebuild a finished bot turn (used when replaying saved history) ── */
-function replayBot(q, raw, sources, listHtml){
+function replayBot(q, raw, sources, listHtml, chart){
   const el=document.createElement("div"); el.className="msg bot";
   el.innerHTML = `<div class="avatar" aria-hidden="true">R</div>
     <div class="turn"><div class="answer" data-answer></div><div data-srcwrap></div></div>`;
-  if(listHtml){
-    el.querySelector("[data-answer]").innerHTML = listHtml;   // enumerate result
-    wrap.appendChild(el);
-    return;
-  }
-  el.querySelector("[data-answer]").innerHTML = renderMD(raw);
   wrap.appendChild(el);
+  const ans = el.querySelector("[data-answer]");
+  if(chart){ renderChartInto(ans, chart); return; }       // chart result
+  if(listHtml){ ans.innerHTML = listHtml; return; }        // enumerate result
+  ans.innerHTML = renderMD(raw);
   if(sources) renderSources(el, sources);
   addActions(el, q, raw);
 }
@@ -628,8 +673,8 @@ function restore(){
     const t=transcript[k];
     if(t.role==="user"){ addUser(t.content); history.push({role:"user",content:t.content}); }
     else {
-      replayBot(transcript[k-1] && transcript[k-1].content || "", t.answer, t.sources, t.listHtml);
-      history.push({role:"assistant",content:t.answer || "(returned a list of matching articles)"});
+      replayBot(transcript[k-1] && transcript[k-1].content || "", t.answer, t.sources, t.listHtml, t.chart);
+      history.push({role:"assistant",content:t.answer || (t.chart ? "(returned a chart)" : "(returned a list of matching articles)")});
     }
   }
   scrollDown();
@@ -652,7 +697,7 @@ async function ask(preset, opts){
   const statusEl = bot.querySelector("[data-status]");
   setBusy(true);
 
-  let raw=""; let gotToken=false; let turnSources=null; let isList=false; let listHtml="";
+  let raw=""; let gotToken=false; let turnSources=null; let isList=false; let listHtml=""; let isChart=false; let chartSpec=null;
   abortCtl = new AbortController();
   try{
     const resp = await fetch("/chat",{
@@ -681,6 +726,10 @@ async function ask(preset, opts){
           gotToken=true; if(statusEl) statusEl.remove(); ansEl.style.display="block";
           isList=true; lastListItems=ev.items||[]; listHtml=renderList(ev); ansEl.innerHTML=listHtml; scrollDown();
         }
+        else if(ev.type==="chart"){
+          gotToken=true; if(statusEl) statusEl.remove(); ansEl.style.display="block";
+          isChart=true; chartSpec=ev; renderChartInto(ansEl, ev); scrollDown();
+        }
         else if(ev.type==="error"){
           if(!gotToken){ statusEl.remove(); ansEl.style.display="block"; }
           raw += (raw?"\n\n":"")+"⚠️ "+ev.text; draw();
@@ -688,7 +737,13 @@ async function ask(preset, opts){
         else if(ev.type==="done"){ /* finalize below */ }
       }
     }
-    if(isList){
+    if(isChart){
+      transcript.push({role:"user",content:q});
+      transcript.push({role:"bot",chart:chartSpec});
+      history.push({role:"user",content:q});
+      history.push({role:"assistant",content:"(returned a chart)"});
+      saveTranscript();
+    } else if(isList){
       ansEl.innerHTML = listHtml;                          // keep the list, not markdown
       transcript.push({role:"user",content:q});
       transcript.push({role:"bot",listHtml:listHtml});
@@ -705,7 +760,8 @@ async function ask(preset, opts){
       }
     }
   }catch(err){
-    if(isList){ ansEl.innerHTML = listHtml; }
+    if(isChart){ /* chart already rendered — leave it */ }
+    else if(isList){ ansEl.innerHTML = listHtml; }
     else if(err.name!=="AbortError"){
       statusEl && statusEl.remove(); ansEl.style.display="block";
       ansEl.innerHTML = renderMD((raw?raw+"\n\n":"")+"⚠️ Connection lost: "+err.message);

@@ -22,11 +22,13 @@ from app.answer import build_user_prompt
 from app.config import Settings
 from app.db import connect
 from app.embedding import LabseEmbedder
+from app.dossier import DOSSIER_SYSTEM, build_dossier_prompt, gather_dossier, parse_dossier_request
 from app.drilldown import DRILLDOWN_SYSTEM, build_drilldown_prompt, get_article
 from app.entities import clean_entity_query, is_uuid, search_entities, entity_feed
 from app.enumerate import classify_list_sentiment, list_articles, parse_list_request
 from app.llm import LLMProvider
 from app.planner import Plan, plan_turn
+from app.quantify import count_articles, count_by_day, parse_count_request
 from app.reflect import assess_coverage
 from app.retrieval import multi_retrieve_and_curate, retrieve_and_curate
 from app.rewrite import rewrite_query
@@ -396,6 +398,110 @@ async def _drilldown_stream(settings: Settings, llm: LLMProvider, article_id: st
     yield {"type": "done", "faithful": True}
 
 
+_DOSSIER_HINT = re.compile(r"\b(dossier|profile of|full picture|everything (on|about)|tell me (all|everything) about)\b", re.I)
+_COUNT_HINT = re.compile(r"\b(how many|how much|count|trend|number of|vs\.? last|compared to|over the (last|past))\b", re.I)
+_QUANTIFY_SYSTEM = (
+    "You state corpus statistics for the user in a brief, clear answer. Use ONLY the numbers "
+    "provided below — never invent or estimate beyond them. Lead with the headline number, note "
+    "the comparison or trend if given, and keep it to a few sentences. If a figure is marked an "
+    "estimate or a sample, say so plainly."
+)
+_QUANTIFY_SAMPLE = 40  # latest N classified for a sentiment-rate estimate
+
+
+async def _dossier_stream(settings: Settings, llm: LLMProvider, entity_term: str, days: int):
+    """Gather multi-signal coverage on one entity and stream a structured, cited dossier."""
+    yield {"type": "status", "stage": "profile", "text": "Building the dossier"}
+    async with connect(settings) as conn:
+        cands = await search_entities(conn, entity_term, limit=1)
+        if not cands or cands[0].n_articles < _ENTITY_MIN_ARTICLES:
+            yield {"type": "token",
+                   "text": f"I don't have enough coverage on \"{entity_term}\" to build a dossier."}
+            yield {"type": "done", "faithful": True}
+            return
+        ent = cands[0]
+        yield {"type": "status", "stage": "gather", "text": f"Gathering coverage on {ent.canonical_name}"}
+        dos = await gather_dossier(conn, settings, ent.entity_id, ent.canonical_name, days)
+    yield {"type": "sources", "sources": [{
+        "marker": f"S{i}", "id": it.id, "title": it.title, "url": it.url, "language": it.language,
+        "published_at": it.published_at.isoformat() if it.published_at else None, "kind": "corpus",
+    } for i, it in enumerate(dos.recent, 1)]}
+    yield {"type": "status", "stage": "write", "text": "Writing the dossier"}
+    messages = [
+        {"role": "system", "content": DOSSIER_SYSTEM},
+        {"role": "user", "content": build_dossier_prompt(dos)},
+    ]
+    try:
+        async for tok in _stream_llm(llm, messages):
+            yield {"type": "token", "text": tok}
+    except Exception as exc:  # noqa: BLE001
+        yield {"type": "error", "text": f"dossier failed: {exc}"}
+        return
+    yield {"type": "done", "faithful": True}
+
+
+async def _quantify_stream(settings: Settings, llm: LLMProvider, creq, query: str):
+    """Compute real corpus counts/trends, then stream a short answer grounded in those
+    numbers (never invented). Sentiment counts are a clearly-labelled sampled estimate."""
+    yield {"type": "status", "stage": "counting", "text": "Counting the coverage"}
+    lines: list[str] = []
+    async with connect(settings) as conn:
+        entity_id: str | None = None
+        subject = creq.keyword or creq.entity_term
+        if creq.entity_term:
+            cands = await search_entities(conn, creq.entity_term, limit=1)
+            if cands and cands[0].n_articles >= _ENTITY_MIN_ARTICLES:
+                entity_id = cands[0].entity_id
+                subject = cands[0].canonical_name
+        kw = None if entity_id else creq.keyword
+        lines.append(f"SUBJECT: {subject}")
+        if creq.trend_days and entity_id:
+            series = await count_by_day(conn, entity_id, creq.trend_days)
+            lines.append(f"DAILY ARTICLE COUNTS, last {creq.trend_days} days:")
+            lines += [f"  {d}: {n}" for d, n in series]
+            lines.append(f"TOTAL over window: {sum(n for _, n in series)}")
+        else:
+            hours = creq.since_hours or 168
+            cur = await count_articles(conn, settings, entity_id=entity_id, keyword=kw,
+                                       since_hours=hours, languages=creq.languages)
+            lines.append(f"WINDOW: last {hours} hours")
+            lines.append(f"COUNT: {cur} articles")
+            if creq.compare_prev:
+                prev = await count_articles(conn, settings, entity_id=entity_id, keyword=kw,
+                                            since_hours=hours, prev_window=True, languages=creq.languages)
+                lines.append(f"PREVIOUS equal window: {prev} (change {cur - prev:+d})")
+            if creq.sentiment and (entity_id or kw):
+                items, _t = await list_articles(conn, settings, entity_id=entity_id, keyword=kw,
+                                                since_hours=hours, limit=_QUANTIFY_SAMPLE)
+                kept, applied = await asyncio.to_thread(classify_list_sentiment, llm, items, creq.sentiment)
+                if applied and items:
+                    rate = len(kept) / len(items)
+                    lines.append(
+                        f"SENTIMENT (SAMPLED ESTIMATE): of the latest {len(items)} classified, "
+                        f"{len(kept)} were {creq.sentiment} (~{round(rate * 100)}%) -> roughly "
+                        f"~{round(rate * cur)} of {cur} total — an estimate from a sample, not exact."
+                    )
+                else:
+                    lines.append(
+                        f"SENTIMENT: the {creq.sentiment} breakdown could not be computed right now "
+                        "(tone classifier was busy) — report the total count and say the "
+                        f"{creq.sentiment} split is unavailable this time; suggest retrying."
+                    )
+    stats = "\n".join(lines)
+    yield {"type": "status", "stage": "write", "text": "Writing the summary"}
+    messages = [
+        {"role": "system", "content": _QUANTIFY_SYSTEM},
+        {"role": "user", "content": f"Statistics:\n{stats}\n\nUser asked: {query}\n\nState the answer:"},
+    ]
+    try:
+        async for tok in _stream_llm(llm, messages):
+            yield {"type": "token", "text": tok}
+    except Exception as exc:  # noqa: BLE001
+        yield {"type": "error", "text": f"count failed: {exc}"}
+        return
+    yield {"type": "done", "faithful": True}
+
+
 async def chat_stream(
     settings: Settings,
     llm: LLMProvider,
@@ -417,6 +523,22 @@ async def chat_stream(
         async for ev in _drilldown_stream(settings, llm, article_id):
             yield ev
         return
+
+    # DOSSIER MODE: 'everything on / dossier on / profile of X' → multi-signal profile.
+    if _DOSSIER_HINT.search(query):
+        dreq = await asyncio.to_thread(parse_dossier_request, llm, query)
+        if dreq is not None:
+            async for ev in _dossier_stream(settings, llm, dreq[0], dreq[1]):
+                yield ev
+            return
+
+    # QUANTIFY MODE: 'how many / count / trend / vs last' → real counts, not synthesis.
+    if _COUNT_HINT.search(query):
+        creq = await asyncio.to_thread(parse_count_request, llm, query)
+        if creq is not None:
+            async for ev in _quantify_stream(settings, llm, creq, query):
+                yield ev
+            return
 
     # ENUMERATE MODE: 'give me all/every X' is a LIST request, not a synthesis. Detect
     # it first (gated by a cheap regex) and return the full filtered set as a list.

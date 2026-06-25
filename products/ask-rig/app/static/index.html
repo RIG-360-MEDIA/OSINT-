@@ -363,6 +363,7 @@ const STOP = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="7" wid
 const COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>';
 const CHECK= '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 const REGEN= '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>';
+const DLOAD= '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>';
 const LS_KEY = "askrig-transcript";
 
 /* ── theme: stored pref, else system ── */
@@ -557,10 +558,19 @@ function addActions(botEl, q, raw){
   const bar = document.createElement("div"); bar.className="actions";
   bar.innerHTML =
     `<button class="act" data-a="copy" title="Copy answer">${COPY}<span>Copy</span></button>
+     <button class="act" data-a="dl" title="Download as Markdown">${DLOAD}<span>Export</span></button>
      <button class="act" data-a="regen" title="Regenerate this answer">${REGEN}<span>Retry</span></button>`;
   bar.querySelector('[data-a="copy"]').onclick = ()=> copyAnswer(bar, raw);
+  bar.querySelector('[data-a="dl"]').onclick = ()=> downloadAnswer(raw);
   bar.querySelector('[data-a="regen"]').onclick = ()=> regen(botEl);
   turn.appendChild(bar);
+}
+function downloadAnswer(raw){
+  const blob = new Blob([raw], {type:"text/markdown;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "rig-export-" + new Date().toISOString().slice(0,10) + ".md";
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 function copyAnswer(bar, raw){
   const btn = bar.querySelector('[data-a="copy"]'), span = btn.querySelector("span");

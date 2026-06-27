@@ -49,7 +49,7 @@ async def report_send(
 ) -> dict[str, Any]:
     if not user:
         raise HTTPException(status_code=401, detail="Not signed in")
-    recipient = (to or user.get("email") or "").strip()
+    recipient = (user.get("email") or "").strip()  # security: always self; to= override ignored
     if not recipient:
         raise HTTPException(status_code=400, detail="No recipient email on file")
     r = await _build(user["id"])

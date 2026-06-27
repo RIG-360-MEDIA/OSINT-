@@ -121,6 +121,11 @@ async def build_terms(db, prefs: dict[str, Any]) -> dict[str, Any]:
         "noise": NOISE,
         "inc": topics.get("include") or [],
         "exc": topics.get("exclude") or [],
+        # Watchlist entity ids — used to PRE-FILTER the article window via the
+        # article_entity_mentions matview (indexed) before the per-row jsonb
+        # entity scan, so the query scales with article volume. All matched
+        # tiers (subj/wlc/wle) derive from these ids, so this is scoring-safe.
+        "wl_ids": ids or ["00000000-0000-0000-0000-000000000000"],
     }
 
 
@@ -145,6 +150,17 @@ WITH win AS (
      AND a.collected_at <= analytics.now_sim()
      AND a.entities_extracted IS NOT NULL AND jsonb_typeof(a.entities_extracted) = 'array'
      AND a.title IS NOT NULL AND length(a.title) >= 16
+     -- Candidate pre-filter: only articles that mention a watchlist entity
+     -- (indexed matview) or hit the user's geo. Shrinks the set the jsonb
+     -- entity scan below runs over from ~all-in-window to a few hundred, so
+     -- the query stays well under statement_timeout as article volume grows.
+     AND ( EXISTS (SELECT 1 FROM public.article_entity_mentions m
+                    WHERE m.article_id = a.id AND m.entity_id = ANY(CAST(:wl_ids AS uuid[])))
+        OR a.geo_primary ILIKE ANY(CAST(:geo AS text[]))
+        OR EXISTS (SELECT 1 FROM public.article_districts ad
+                     JOIN public.districts dm ON dm.id = ad.district_id
+                    WHERE ad.article_id = a.id
+                      AND dm.state_code = ANY(CAST(:state_codes AS text[]))) )
 ),
 ent AS (
   SELECT w.id, lower(e->>'name') AS en, COALESCE((e->>'confidence')::float, 0) AS conf
@@ -232,14 +248,17 @@ _PILLAR_SQL = """
 WITH win AS (
   SELECT i.{id} AS id, i.{title} AS title, {summary} AS summary,
          i.topic_category, {geo} AS geo_primary, i.{date} AS ts,
+         {url} AS url, {source} AS source, {thumb} AS thumb,
          i.entities_extracted, lower(i.{title}) AS lt
     FROM public.{table} i
    WHERE i.{date} >= analytics.now_sim() - INTERVAL '{wh} hours'
      AND i.{date} <= analytics.now_sim()
-     AND i.entities_extracted IS NOT NULL AND jsonb_typeof(i.entities_extracted)='array'
      AND i.{title} IS NOT NULL AND length(i.{title}) >= 8
 ),
-ent AS (SELECT w.id, lower(e->>'name') AS en FROM win w CROSS JOIN LATERAL jsonb_array_elements(w.entities_extracted) e),
+ent AS (SELECT w.id, lower(e->>'name') AS en FROM win w
+        CROSS JOIN LATERAL jsonb_array_elements(
+            CASE WHEN jsonb_typeof(w.entities_extracted)='array' THEN w.entities_extracted ELSE '[]'::jsonb END
+        ) e),
 em AS (SELECT id,
     max(CASE WHEN en LIKE ANY(CAST(:subj AS text[])) THEN 3
              WHEN en LIKE ANY(CAST(:wlc AS text[])) THEN 2
@@ -247,14 +266,14 @@ em AS (SELECT id,
     (array_agg(en) FILTER (WHERE en LIKE ANY(CAST(:subj AS text[])) OR en LIKE ANY(CAST(:wlc AS text[]))
                               OR en LIKE ANY(CAST(:wle AS text[]))))[1] AS matched
   FROM ent GROUP BY id),
-sc AS (SELECT w.id, w.title, w.summary, w.topic_category, w.geo_primary, w.ts,
+sc AS (SELECT w.id, w.title, w.summary, w.topic_category, w.geo_primary, w.ts, w.url, w.source, w.thumb,
     COALESCE(em.ent_tier,0) AS ent_tier, em.matched,
     (CASE WHEN w.lt LIKE ANY(CAST(:subj AS text[])) OR w.lt LIKE ANY(CAST(:wlc AS text[])) THEN 1 ELSE 0 END) AS tc,
     (CASE WHEN w.geo_primary ILIKE ANY(CAST(:geo AS text[])) THEN 1 ELSE 0 END) AS geo_hit,
     (CASE WHEN w.lt LIKE ANY(CAST(:kw AS text[])) THEN 1 ELSE 0 END) AS kw_hit,
     (CASE WHEN w.lt LIKE ANY(CAST(:noise AS text[])) THEN 1 ELSE 0 END) AS noise
   FROM win w LEFT JOIN em ON em.id = w.id)
-SELECT id, title, summary, topic_category, geo_primary, ts, ent_tier, matched, tc, geo_hit,
+SELECT id, title, summary, topic_category, geo_primary, ts, url, source, thumb, ent_tier, matched, tc, geo_hit,
   ROUND((
     (CASE WHEN ent_tier=3 THEN 6.0 WHEN ent_tier=2 THEN 3.0 WHEN ent_tier=1 AND geo_hit=1 THEN 1.5 ELSE 0 END)
    + tc*2.0 + kw_hit*1.5
@@ -271,10 +290,15 @@ ORDER BY score DESC LIMIT :lim
 _PILLAR_CFG = {
     "clip": dict(table="youtube_clips_v2", id="id", title="video_title",
                  summary="COALESCE(NULLIF(i.summary,''), left(i.transcript_segment,400))",
-                 geo="NULL::text", date="video_published_at"),
+                 geo="NULL::text", date="video_published_at",
+                 url="i.video_url", source="i.channel_name",
+                 thumb="'https://i.ytimg.com/vi/' || i.video_id || '/hqdefault.jpg'"),
     "cutting": dict(table="clippings", id="id", title="headline",
-                    summary="COALESCE(NULLIF(i.summary_preview,''), left(i.body_text_translated,400))",
-                    geo="i.geo_primary", date="edition_date"),
+                    summary="COALESCE(NULLIF(i.summary_executive,''), NULLIF(i.summary_snippet,''), "
+                            "NULLIF(i.summary_preview,''), left(i.body_text_translated,400))",
+                    geo="i.geo_primary", date="edition_date",
+                    url="NULL::text", source="COALESCE(i.clip_source, '')",
+                    thumb="NULL::text"),
 }
 
 
@@ -287,10 +311,15 @@ async def score_relevant_pillar(db, prefs: dict[str, Any], pillar: str, window_h
     out: list[dict[str, Any]] = []
     for r in rows:
         score = float(r.score or 0)
-        if int(r.ent_tier or 0) >= 2 and not int(r.tc or 0) and not int(r.geo_hit or 0):
+        tier = int(r.ent_tier or 0)
+        if tier >= 2 and not int(r.tc or 0) and not int(r.geo_hit or 0):
             score = round(score * 0.15, 2)  # salience-first demote (passing mention)
+        elif int(r.geo_hit or 0) and tier < 2 and not int(r.tc or 0):
+            score = round(score * 0.35, 2)  # #9: pure-geo (local but NOT a watched-entity story)
         out.append({"id": str(r.id), "title": r.title, "summary": r.summary,
                     "topic": r.topic_category, "geo": r.geo_primary, "matched": r.matched,
+                    "url": r.url, "source": r.source, "thumb": r.thumb,
+                    "ts": r.ts.isoformat() if r.ts else None,
                     "pillar": pillar, "score": score})
     out.sort(key=lambda x: x["score"], reverse=True)
     return out

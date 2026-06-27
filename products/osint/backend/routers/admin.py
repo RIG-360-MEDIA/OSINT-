@@ -6,6 +6,8 @@ Endpoints:
     POST /api/admin/orgs             — create an org (call before issuing first invite for it)
     GET  /api/admin/orgs             — list orgs
     POST /api/admin/bootstrap        — one-shot: seed the FIRST super-admin user row
+    GET  /api/admin/users            — list all users (super_user dashboard)
+    PATCH /api/admin/users/{uid}/role — change a user's role
 """
 from __future__ import annotations
 
@@ -200,3 +202,61 @@ async def bootstrap_super_admin(
             })
 
     return {"status": "bootstrapped", "user_id": user["id"], "email": user["email"], "org_id": org_id}
+
+
+# ─── User management (super_user dashboard) ──────────────────────────────────
+
+class PatchRoleIn(BaseModel):
+    role: str = Field(pattern="^(super_user|admin|client)$")
+
+
+@router.get("/users")
+async def list_users(
+    _: dict[str, Any] = Depends(require_super_admin),
+) -> dict[str, Any]:
+    """Return all analytics.users rows for the super-user dashboard."""
+    async with get_db() as db:
+        rows = (await db.execute(text("""
+            SELECT u.id::text AS id,
+                   u.email, u.full_name, u.designation,
+                   u.role, u.is_super_admin,
+                   u.onboarded_at,
+                   o.name AS org_name, o.role_template
+              FROM analytics.users u
+              LEFT JOIN analytics.orgs o ON o.id = u.org_id
+             ORDER BY u.role DESC, u.email ASC
+        """))).fetchall()
+    return {"users": [{
+        "id": r.id,
+        "email": r.email,
+        "full_name": r.full_name,
+        "designation": r.designation,
+        "role": r.role or "client",
+        "is_super_admin": bool(r.is_super_admin),
+        "org_name": r.org_name,
+        "role_template": r.role_template,
+        "onboarded": r.onboarded_at is not None,
+    } for r in rows]}
+
+
+@router.patch("/users/{uid}/role")
+async def set_user_role(
+    uid: str,
+    body: PatchRoleIn,
+    principal: dict[str, Any] = Depends(require_super_admin),
+) -> dict[str, Any]:
+    """Change the role of any user. super_user only."""
+    if uid == principal["id"] and body.role != "super_user":
+        raise HTTPException(status_code=400, detail="Cannot demote yourself")
+    async with get_db() as db:
+        async with db.begin():
+            row = (await db.execute(text("""
+                UPDATE analytics.users
+                   SET role = :role,
+                       is_super_admin = (:role = 'super_user')
+                 WHERE id = CAST(:uid AS uuid)
+                RETURNING id::text AS id, email, role
+            """), {"role": body.role, "uid": uid})).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"id": row.id, "email": row.email, "role": row.role}

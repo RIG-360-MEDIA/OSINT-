@@ -280,6 +280,21 @@ async def build_war_room(db, prefs: dict[str, Any]) -> dict[str, Any]:
         "personalized": True,
         "station": {
             "desk": pname,
+            # keys the frontend stat header reads
+            "activeAttacks": len(cables),
+            "serious": critical,
+            "negStories": wp.get("negative_signals", 0),
+            "trendLabel": (
+                "▲ elevated" if round(wp.get("pressure", 0)) >= 80
+                else "▼ easing" if round(wp.get("pressure", 0)) < 30
+                else "→ moderate"
+            ),
+            "trendTone": (
+                "neg" if round(wp.get("pressure", 0)) >= 80
+                else "pos" if round(wp.get("pressure", 0)) < 30
+                else "neu"
+            ),
+            # legacy / extra fields kept for backward compatibility
             "open": len(cables),
             "critical": critical,
             "pressure": round(wp.get("pressure", 0)),

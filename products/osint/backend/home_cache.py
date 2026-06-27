@@ -124,6 +124,12 @@ async def get_page(db, uid: str, page: str, builder, *, max_age_min: float = FRE
         raise
 
 
+async def _bg_top_articles(db, prefs, _dn):
+    # Lazy import breaks the routers.top_articles ⇄ home_cache import cycle.
+    from routers.top_articles import build_top_articles
+    return await build_top_articles(db, prefs, 8, 72)
+
+
 # Per-persona builders for the precompute batch: (page-key, callable(db, prefs, full_name)).
 _PAGES = (
     ("home", lambda db, prefs, dn: build_home(db, prefs, display_name=dn)),
@@ -131,6 +137,7 @@ _PAGES = (
     ("analytics", lambda db, prefs, dn: build_analytics(db, prefs)),
     ("map_mine", lambda db, prefs, dn: build_map(db, prefs, "mine")),
     ("map_global", lambda db, prefs, dn: build_map(db, prefs, "global")),
+    ("top_articles", _bg_top_articles),
 )
 
 

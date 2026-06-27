@@ -135,73 +135,100 @@ def _diversify(ranked: list[dict[str, Any]], limit: int,
     return chosen[:limit]
 
 
+async def build_top_articles(db, prefs: dict[str, Any], limit: int = 8,
+                             window_hours: int = 72) -> dict[str, Any]:
+    """Compute the persona's top-N relevance-ranked ARTICLES (no caching here).
+
+    Pure builder so it can be driven both by the request path (via the page
+    cache) and the 30-min background precompute. The heavy relevance query runs
+    under whatever statement_timeout the caller set (the cache wrappers raise it
+    to 60s/180s), so it never hits the 20s request default.
+    """
+    # Over-fetch a wider pool, then DIVERSIFY (de-dup same-event headlines +
+    # cap any single entity) so the row isn't one principal story repeated.
+    # A faster half-life (20h) keeps the set rotating with fresh news.
+    ranked = await score_relevant(db, prefs, window_hours=window_hours,
+                                  limit=max(limit * 6, 60), half_life_h=20.0)
+    # Primary-state token (e.g. "andhra") + principal name tokens drive the
+    # Andhra-first ordering and the principal-protected de-duplication.
+    _states = (prefs.get("regions") or {}).get("states") or []
+    primary_tok = next((w for w in re.findall(r"[a-z]+", (_states[0] if _states else "").lower())
+                        if len(w) >= 4 and w not in _STOP), "")
+    _pname = ((prefs.get("primary_subject_meta") or {}).get("name") or "").lower()
+    principal_toks = frozenset(w for w in re.findall(r"[a-z]+", _pname) if len(w) >= 6)
+    top = _diversify(ranked, limit, primary_tok=primary_tok, principal_toks=principal_toks)
+    if not top:
+        return {"personalized": True, "articles": [], "window_hours": window_hours}
+
+    ids = [r["id"] for r in top]
+    meta = {r.id: r for r in (await db.execute(text("""
+        SELECT a.id::text AS id, a.thumbnail_url, a.url, a.language_iso,
+               EXTRACT(EPOCH FROM (analytics.now_sim() - a.collected_at)) / 3600.0 AS age_h
+          FROM articles a WHERE a.id = ANY(CAST(:ids AS uuid[]))
+    """), {"ids": ids})).fetchall()}
+
+    stances: dict[str, list[float]] = {}
+    for row in (await db.execute(text("""
+        SELECT article_id::text AS id, intensity FROM article_stances
+         WHERE article_id = ANY(CAST(:ids AS uuid[])) AND intensity IS NOT NULL
+    """), {"ids": ids})).fetchall():
+        stances.setdefault(row.id, []).append(float(row.intensity))
+
+    articles = []
+    for i, r in enumerate(top):
+        m = meta.get(r["id"])
+        articles.append({
+            "rank": i + 1,
+            "id": r["id"],
+            "headline": r["title"],
+            "summary": r.get("summary"),
+            "source": r["source"],
+            "age": _age(float(m.age_h) if m and m.age_h is not None else None),
+            "tone": _tone(stances.get(r["id"], [])),
+            "matched": r.get("matched"),
+            "topic": r.get("topic"),
+            "geo": r.get("geo"),
+            "score": r["score"],
+            "lang": (m.language_iso if m else None),
+            "url": (m.url if m else None),
+            "thumbnail": (m.thumbnail_url if m else None),
+        })
+    await i18n.attach_en(db, articles, "headline")
+    # Summaries must render in English too. The stored "translated" lead text
+    # is still Telugu for ~84% of te articles, so translate the chosen summary
+    # (cached in analytics.text_en) and surface the English as the card text.
+    await i18n.attach_en(db, articles, "summary")
+    for a in articles:
+        if a.get("summary_en"):
+            a["summary"] = a["summary_en"]
+    return {"personalized": True, "articles": articles, "window_hours": window_hours}
+
+
+# How many articles we cache (a small superset the default Home call slices).
+_CACHE_LIMIT = 8
+
+
 @router.get("/top-articles")
 async def get_top_articles(
     limit: int = Query(default=8, ge=1, le=20),
     window_hours: int = Query(default=72, ge=6, le=2160),
     user: dict[str, str] | None = Depends(get_optional_user),
 ) -> dict[str, Any]:
-    """Top-N relevance-ranked articles for the authenticated persona."""
+    """Top-N relevance-ranked articles for the authenticated persona.
+
+    The default-window call (what Home makes) is served from the page cache,
+    which raises the statement_timeout to 60s/180s and precomputes every 30 min
+    — so the heavy relevance query never hits the 20s request default and the
+    row loads instantly. Non-default windows compute live.
+    """
     async with get_db() as db:
         prefs = await load_prefs(db, user["id"]) if user else None
         if not prefs:
             return {"personalized": False, "articles": []}
-
-        # Over-fetch a wider pool, then DIVERSIFY (de-dup same-event headlines +
-        # cap any single entity) so the row isn't one principal story repeated.
-        # A faster half-life (20h) keeps the set rotating with fresh news.
-        ranked = await score_relevant(db, prefs, window_hours=window_hours,
-                                      limit=max(limit * 6, 60), half_life_h=20.0)
-        # Primary-state token (e.g. "andhra") + principal name tokens drive the
-        # Andhra-first ordering and the principal-protected de-duplication.
-        _states = (prefs.get("regions") or {}).get("states") or []
-        primary_tok = next((w for w in re.findall(r"[a-z]+", (_states[0] if _states else "").lower())
-                            if len(w) >= 4 and w not in _STOP), "")
-        _pname = ((prefs.get("primary_subject_meta") or {}).get("name") or "").lower()
-        principal_toks = frozenset(w for w in re.findall(r"[a-z]+", _pname) if len(w) >= 6)
-        top = _diversify(ranked, limit, primary_tok=primary_tok, principal_toks=principal_toks)
-        if not top:
-            return {"personalized": True, "articles": [], "window_hours": window_hours}
-
-        ids = [r["id"] for r in top]
-        meta = {r.id: r for r in (await db.execute(text("""
-            SELECT a.id::text AS id, a.thumbnail_url, a.url, a.language_iso,
-                   EXTRACT(EPOCH FROM (analytics.now_sim() - a.collected_at)) / 3600.0 AS age_h
-              FROM articles a WHERE a.id = ANY(CAST(:ids AS uuid[]))
-        """), {"ids": ids})).fetchall()}
-
-        stances: dict[str, list[float]] = {}
-        for row in (await db.execute(text("""
-            SELECT article_id::text AS id, intensity FROM article_stances
-             WHERE article_id = ANY(CAST(:ids AS uuid[])) AND intensity IS NOT NULL
-        """), {"ids": ids})).fetchall():
-            stances.setdefault(row.id, []).append(float(row.intensity))
-
-        articles = []
-        for i, r in enumerate(top):
-            m = meta.get(r["id"])
-            articles.append({
-                "rank": i + 1,
-                "id": r["id"],
-                "headline": r["title"],
-                "summary": r.get("summary"),
-                "source": r["source"],
-                "age": _age(float(m.age_h) if m and m.age_h is not None else None),
-                "tone": _tone(stances.get(r["id"], [])),
-                "matched": r.get("matched"),
-                "topic": r.get("topic"),
-                "geo": r.get("geo"),
-                "score": r["score"],
-                "lang": (m.language_iso if m else None),
-                "url": (m.url if m else None),
-                "thumbnail": (m.thumbnail_url if m else None),
-            })
-        await i18n.attach_en(db, articles, "headline")
-        # Summaries must render in English too. The stored "translated" lead text
-        # is still Telugu for ~84% of te articles, so translate the chosen summary
-        # (cached in analytics.text_en) and surface the English as the card text.
-        await i18n.attach_en(db, articles, "summary")
-        for a in articles:
-            if a.get("summary_en"):
-                a["summary"] = a["summary_en"]
-        return {"personalized": True, "articles": articles, "window_hours": window_hours}
+        if window_hours == 72:
+            from home_cache import get_page  # lazy import: avoids a circular import
+            payload = await get_page(db, user["id"], "top_articles",
+                                     lambda d: build_top_articles(d, prefs, _CACHE_LIMIT, 72))
+            payload = {**payload, "articles": (payload.get("articles") or [])[:limit]}
+            return payload
+        return await build_top_articles(db, prefs, limit, window_hours)

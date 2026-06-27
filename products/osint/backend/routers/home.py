@@ -10,7 +10,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+import base64
+
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 from sqlalchemy import text
 
@@ -52,9 +54,36 @@ async def get_cross_pillar(
         if not prefs:
             return {"personalized": False, "clips": [], "cuttings": []}
         from relevance import score_relevant_pillar
-        clips = await score_relevant_pillar(db, prefs, "clip", window_hours=96, limit=12)
-        cuttings = await score_relevant_pillar(db, prefs, "cutting", window_hours=96, limit=12)
+        clips = await score_relevant_pillar(db, prefs, "clip", window_hours=96, limit=6)
+        cuttings = await score_relevant_pillar(db, prefs, "cutting", window_hours=96, limit=6)
         return {"personalized": True, "clips": clips, "cuttings": cuttings}
+
+
+@router.get("/clipping-image/{clipping_id}")
+async def clipping_image(clipping_id: str) -> Response:
+    """Serve a newspaper clipping's snapshot image by id (decoded from clipping_image_b64).
+    Unauthenticated: it's published newspaper content, and an <img> tag can't carry the
+    bearer token. Which clippings a persona SEES stays auth-gated via /cross-pillar; this
+    only serves the image bytes for an id the client already holds. Cached 1 day."""
+    async with get_db() as db:
+        row = (await db.execute(
+            text("SELECT clipping_image_b64 AS b64 FROM clippings WHERE id = CAST(:id AS uuid)"),
+            {"id": clipping_id},
+        )).fetchone()
+    if not row or not row.b64:
+        raise HTTPException(status_code=404, detail="No image")
+    b64 = row.b64
+    media = "image/jpeg"
+    if b64.startswith("data:"):
+        head, _, b64 = b64.partition(",")
+        if "png" in head:
+            media = "image/png"
+    try:
+        raw = base64.b64decode(b64)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Bad image")
+    return Response(content=raw, media_type=media,
+                    headers={"Cache-Control": "public, max-age=86400"})
 
 
 async def _bust_cache(db, uid: str) -> None:

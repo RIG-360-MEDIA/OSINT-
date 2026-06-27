@@ -48,6 +48,20 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
            AND a.collected_at >= analytics.now_sim() - make_interval(hours => :wh)
     """), {"ids": ids, "wh": WH})
     await db.execute(text("CREATE INDEX ON _univ (id)"))
+    # For quote/claim/figure detail cards, restrict to articles that specifically
+    # name the principal entity — not just any watchlist co-mention — to block
+    # national stories that pass through only because they reference KCR or BRS.
+    detail_table = "_univ"
+    if pid:
+        await db.execute(text("DROP TABLE IF EXISTS _detail"))
+        await db.execute(text("""
+            CREATE TEMP TABLE _detail AS
+            SELECT u.* FROM _univ u
+            WHERE EXISTS (SELECT 1 FROM article_entity_mentions m
+                          WHERE m.article_id = u.id AND m.entity_id = CAST(:pid AS uuid))
+        """), {"pid": pid})
+        await db.execute(text("CREATE INDEX ON _detail (id)"))
+        detail_table = "_detail"
     base = (await db.execute(text("SELECT count(*) FROM _univ"))).scalar() or 0
     now = (await db.execute(text("SELECT analytics.now_sim() AS n"))).scalar()
     asof = f"AS OF {now.day:02d} {_MONTHS[now.month]} {now.year}" if now else ""
@@ -258,9 +272,9 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
         "count grouped by event_type", "article_events", ["event typing"])))
 
     # 17 — quotes (quotes)
-    qt = await _rows(db, """SELECT q.quote_text q, NULLIF(q.quote_text_en,'') qen,
+    qt = await _rows(db, f"""SELECT q.quote_text q, NULLIF(q.quote_text_en,'') qen,
             COALESCE(q.speaker_name_en,q.speaker_name) who, s.name src
-          FROM article_quotes q JOIN _univ u ON u.id=q.article_id JOIN sources s ON s.id=u.source_id
+          FROM article_quotes q JOIN {detail_table} u ON u.id=q.article_id JOIN sources s ON s.id=u.source_id
          WHERE length(COALESCE(q.quote_text_en,q.quote_text)) BETWEEN 24 AND 220 AND q.speaker_name IS NOT NULL
          ORDER BY u.collected_at DESC LIMIT 4""")
     qt_items = [{"q": r.q, "q_en": (r.qen if (r.qen and r.qen != r.q) else None), "who": r.who or "—", "role": "", "src": r.src} for r in qt]
@@ -273,8 +287,8 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
         "article_quotes", ["latest 4, English preferred"])))
 
     # 18 — claims (claims)
-    cl = await _rows(db, """SELECT c.predicate pred, COALESCE(c.object_text,c.claim_text) tx, s.name src
-          FROM article_claims c JOIN _univ u ON u.id=c.article_id JOIN sources s ON s.id=u.source_id
+    cl = await _rows(db, f"""SELECT c.predicate pred, COALESCE(c.object_text,c.claim_text) tx, s.name src
+          FROM article_claims c JOIN {detail_table} u ON u.id=c.article_id JOIN sources s ON s.id=u.source_id
          WHERE COALESCE(c.object_text,c.claim_text) IS NOT NULL ORDER BY u.collected_at DESC LIMIT 4""")
     cl_items = [{"pred": (r.pred or "claim"), "text": (r.tx or '')[:150], "src": r.src} for r in cl]
     await i18n.attach_en(db, cl_items, "text")
@@ -285,8 +299,8 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
         "article_claims", ["no true/false verdict applied"])))
 
     # 19 — figures (figures)
-    fg = await _rows(db, """SELECT n.value || COALESCE(' '||NULLIF(n.unit,''),'') val, n.context ctx
-          FROM article_numbers n JOIN _univ u ON u.id=n.article_id
+    fg = await _rows(db, f"""SELECT n.value || COALESCE(' '||NULLIF(n.unit,''),'') val, n.context ctx
+          FROM article_numbers n JOIN {detail_table} u ON u.id=n.article_id
          WHERE n.value IS NOT NULL AND length(COALESCE(n.context,''))>8 ORDER BY u.collected_at DESC LIMIT 6""")
     fg_items = [{"value": r.val, "ctx": (r.ctx or '')[:70]} for r in fg]
     await i18n.attach_en(db, fg_items, "ctx")
@@ -324,6 +338,7 @@ async def build_analytics(db, prefs: dict[str, Any]) -> dict[str, Any]:
         len(pic_items), "high", _verify("Hero images attached to your coverage.", "article_media WHERE is_hero",
         "article_media", ["one hero image per article"])))
 
+    await db.execute(text("DROP TABLE IF EXISTS _detail"))
     await db.execute(text("DROP TABLE IF EXISTS _univ"))
     return {"personalized": True, "base": f"{base:,}", "window": f"{round(WH/24)}-DAY WINDOW",
             "asOf": asof, "modules": mods}

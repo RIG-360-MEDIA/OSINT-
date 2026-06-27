@@ -35,8 +35,10 @@ def _primary_state(prefs) -> str:
 async def _gate_district(db, prefs, did: str) -> None:
     """A persona may only open districts within their own region states."""
     sc = (await db.execute(text("SELECT state_code FROM districts WHERE id = :d"), {"d": did})).scalar()
+    if not sc:
+        raise HTTPException(status_code=404, detail="Unknown district")
     allowed = _allowed_states(prefs)
-    if sc and allowed and sc not in allowed:
+    if allowed and sc not in allowed:
         raise HTTPException(status_code=403, detail="District outside your region")
 
 

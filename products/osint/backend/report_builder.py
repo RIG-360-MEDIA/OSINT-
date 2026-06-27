@@ -115,25 +115,24 @@ async def build_report(db, prefs: dict[str, Any]) -> dict[str, Any]:
     # Block geo_primary markers of every state EXCEPT the persona's, plus foreign.
     block = sorted({m for s, ms in STATE_MARKERS.items() if s != sc for m in ms} | FOREIGN_GEO)
 
-    # Universe = district-tagged to the state AND from an outlet that actually covers
-    # the state (sources.geo_states contains the state name). The geo_states filter is
-    # what separates Andhra Pradesh from Telangana — both publish in Telugu, so language
-    # can't, but Telangana-only outlets (Namasthe/Mana Telangana) lack the state in
-    # geo_states. This removes the cross-state stories the district tagger mis-attributes.
+    # Universe = articles from outlets that explicitly cover this state
+    # (sources.geo_states @> [state_name]). This is the gate that separates
+    # AP from TG — both Telugu, but each state's outlets list only their state.
+    # The old article_districts join was the district tagger (which lags: 0/1702
+    # tagged in 24h in production), so we gate on source geo_states alone.
     await db.execute(text("DROP TABLE IF EXISTS _rep"))
     await db.execute(text(f"""
         CREATE TEMP TABLE _rep AS
         SELECT DISTINCT a.id, a.topic_category tc, a.collected_at ca, a.title, a.language_iso lang,
                a.url, a.thumbnail_url thumb, a.summary_preview sp, a.geo_primary geo, a.source_id,
                (SELECT avg(({POL}) * st.intensity) FROM article_stances st WHERE st.article_id = a.id) lean
-          FROM article_districts ad JOIN districts d ON d.id = ad.district_id
-          JOIN articles a ON a.id = ad.article_id
+          FROM articles a
           JOIN sources src ON src.id = a.source_id
-         WHERE d.state_code = :sc AND a.source_country = 'IN'
+         WHERE a.source_country = 'IN'
            AND src.geo_states @> ARRAY[:state_full]::text[]
            AND (a.geo_primary IS NULL OR lower(trim(a.geo_primary)) <> ALL(:block))
            AND a.collected_at >= {N} - interval '48 hours'
-    """), {"sc": sc, "state_full": state_name, "block": block})
+    """), {"state_full": state_name, "block": block})
     await db.execute(text("CREATE INDEX ON _rep (ca)"))
 
     n24 = int(await _scalar(db, f"SELECT count(*) FROM _rep WHERE ca >= {N} - interval '24 hours'") or 0)

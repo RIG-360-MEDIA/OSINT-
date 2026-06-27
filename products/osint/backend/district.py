@@ -5,6 +5,7 @@ datelined to the district via article_districts. Source-grounded; bilingual.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import text
@@ -144,6 +145,9 @@ async def build_district_file(db, did: str) -> dict[str, Any]:
 
 
 async def district_articles(db, did: str, cursor: str | None, limit: int) -> dict[str, Any]:
+    # Cursor arrives as an ISO string from the URL; asyncpg needs a real
+    # datetime for the timestamptz comparison (a str raises DataError).
+    cur = datetime.fromisoformat(cursor) if cursor else None
     rows = (await db.execute(text(f"""
         SELECT a.id::text id, a.title, a.language_iso lang, s.name src, a.url, a.thumbnail_url thumb,
                a.collected_at,
@@ -152,7 +156,7 @@ async def district_articles(db, did: str, cursor: str | None, limit: int) -> dic
          WHERE ad.district_id = :d AND a.source_country = 'IN'
            AND (CAST(:cursor AS timestamptz) IS NULL OR a.collected_at < CAST(:cursor AS timestamptz))
          ORDER BY a.collected_at DESC LIMIT :limit
-    """), {"d": did, "cursor": cursor, "limit": limit})).fetchall()
+    """), {"d": did, "cursor": cur, "limit": limit})).fetchall()
     items = [{"id": r.id, "headline": r.title, "lang": r.lang, "source": r.src, "url": r.url,
               "thumbnail": r.thumb, "collected_at": str(r.collected_at) if r.collected_at else None,
               "tone": "supportive" if (r.lean or 0) >= 0.1 else "hostile" if (r.lean or 0) <= -0.1 else "neutral"}

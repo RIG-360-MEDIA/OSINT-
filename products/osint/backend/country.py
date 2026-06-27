@@ -4,6 +4,7 @@ Universe = articles whose source_country = the ISO-2 code. Source-grounded; bili
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import text
@@ -119,6 +120,8 @@ async def build_country_file(db, iso: str) -> dict[str, Any]:
 
 async def country_articles(db, iso: str, cursor: str | None, limit: int) -> dict[str, Any]:
     iso = (iso or "").strip().upper()
+    # asyncpg needs a real datetime for the timestamptz cursor compare, not a str.
+    cur = datetime.fromisoformat(cursor) if cursor else None
     rows = (await db.execute(text(f"""
         SELECT a.id::text id, a.title, a.language_iso lang, s.name src, a.url, a.thumbnail_url thumb, a.collected_at,
                (SELECT round(avg(({POL}) * st.intensity)::numeric, 2) FROM article_stances st WHERE st.article_id = a.id) lean
@@ -126,7 +129,7 @@ async def country_articles(db, iso: str, cursor: str | None, limit: int) -> dict
          WHERE a.source_country = :c
            AND (CAST(:cursor AS timestamptz) IS NULL OR a.collected_at < CAST(:cursor AS timestamptz))
          ORDER BY a.collected_at DESC LIMIT :limit
-    """), {"c": iso, "cursor": cursor, "limit": limit})).fetchall()
+    """), {"c": iso, "cursor": cur, "limit": limit})).fetchall()
     items = [{"id": r.id, "headline": r.title, "lang": r.lang, "source": r.src, "url": r.url,
               "thumbnail": r.thumb, "collected_at": str(r.collected_at) if r.collected_at else None,
               "tone": "supportive" if (r.lean or 0) >= 0.1 else "hostile" if (r.lean or 0) <= -0.1 else "neutral"}

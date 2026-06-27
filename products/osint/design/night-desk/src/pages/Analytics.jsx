@@ -31,8 +31,12 @@ function CardSources({ m }) {
 const TONE = { gold: 'var(--gold)', cool: 'var(--cool)', supportive: 'var(--supportive)', hostile: 'var(--hostile)', muted: 'var(--muted)' };
 const BANDS = ['THE BIG PICTURE', 'WHO & WHERE', 'THE DETAIL'];
 
+// Shown in a viz block when its data array is empty, so the card body isn't blank.
+const Empty = () => <div className="dash-empty" style={{ color: 'var(--faint)', fontSize: '0.78rem', padding: '8px 2px' }}>No data in this window.</div>;
+
 /* ── per-viz blocks ──────────────────────────────────────────────────────── */
 const SmallMult = ({ rows }) => (
+  !rows || !rows.length ? <Empty /> :
   <div className="smallmult">
     {rows.map((r) => (
       <div className="dsm" key={r.label}>
@@ -44,6 +48,7 @@ const SmallMult = ({ rows }) => (
   </div>
 );
 const RankList = ({ items, unit }) => (
+  !items || !items.length ? <Empty /> :
   <div className="ranklist">
     {items.map((it, i) => (
       <div className="drl" key={it.label}>
@@ -62,6 +67,7 @@ const DonutBlock = ({ d }) => (
   </div>
 );
 const EventCal = ({ items }) => (
+  !items || !items.length ? <Empty /> :
   <div className="eventcal">{items.map((e, i) => {
     const row = <><span className="dec-d">{e.date}</span><span className="dec-l">{e.label}{e.label_en && <span className="en-gloss"><b>EN</b>{e.label_en}</span>}</span><span className="dec-t">{e.type}</span></>;
     return e.url
@@ -70,6 +76,7 @@ const EventCal = ({ items }) => (
   })}</div>
 );
 const QuotesBlock = ({ items }) => (
+  !items || !items.length ? <Empty /> :
   <div className="qblock">{items.map((q, i) => {
     const row = <><p className="dqb-q">“{q.q}”</p>{q.q_en && <div className="en-gloss"><b>EN</b>{q.q_en}</div>}<div className="dqb-m"><b>{q.who}</b> · {q.role}<span>{q.src}</span></div></>;
     return q.url
@@ -78,16 +85,19 @@ const QuotesBlock = ({ items }) => (
   })}</div>
 );
 const ClaimsBlock = ({ items }) => (
+  !items || !items.length ? <Empty /> :
   <div className="cblock">{items.map((c, i) => (
     <div className="dcb" key={i}><span className="dcb-p">{c.pred}</span><p className="dcb-t">{c.text}</p>{c.text_en && <div className="en-gloss"><b>EN</b>{c.text_en}</div>}<span className="dcb-s">{c.src}</span></div>
   ))}</div>
 );
 const FiguresBlock = ({ items }) => (
+  !items || !items.length ? <Empty /> :
   <div className="figblock">{items.map((f, i) => (<div className="dfig" key={i}><div className="dfig-v">{f.value}</div><div className="dfig-c">{f.ctx}{f.ctx_en && <div className="en-gloss"><b>EN</b>{f.ctx_en}</div>}</div></div>))}</div>
 );
 const IMG_TINT = { hostile: 'oklch(0.5 0.2 25 / .5)', supportive: 'oklch(0.55 0.15 165 / .45)', neutral: 'oklch(0.42 0.02 270 / .4)', gold: 'oklch(0.72 0.14 85 / .45)' };
 const FALLBACK_BG = 'repeating-linear-gradient(125deg, oklch(0.17 0.014 270) 0 8px, oklch(0.12 0.012 270) 8px 16px)';
 const ImagesBlock = ({ items }) => (
+  !items || !items.length ? <Empty /> :
   <div className="imgwall">{items.map((im, i) => (
     <a key={i} href={im.url || im.src || '#'} target="_blank" rel="noreferrer" className="diw"
       style={{ position: 'relative', display: 'block', overflow: 'hidden', background: FALLBACK_BG, textDecoration: 'none' }}>
@@ -105,7 +115,7 @@ const ImagesBlock = ({ items }) => (
 );
 
 function Viz({ m }) {
-  const d = m.data;
+  const d = m.data || {};
   switch (m.viz) {
     case 'area': return <><AreaTrend data={d.series} labels={d.labels} color="cool" h={118} /><div className="dash-note">{d.note}</div></>;
     case 'rank': return <RankBars items={d.items} color={m.id === 'tone' ? 'gold' : 'cool'} />;
@@ -120,7 +130,7 @@ function Viz({ m }) {
     case 'claims': return <ClaimsBlock items={d.items} />;
     case 'figures': return <FiguresBlock items={d.items} />;
     case 'images': return <ImagesBlock items={d.items} />;
-    default: return null;
+    default: return <div className="dash-empty" style={{ color: 'var(--faint)', fontSize: '0.78rem', padding: '8px 2px' }}>—</div>;
   }
 }
 
@@ -134,8 +144,6 @@ function DashCard({ m }) {
         </div>
       </div>
       <div className="dash-viz"><Viz m={m} /></div>
-      <div className="dash-src">{m.source} · n={m.metric.n.toLocaleString()}</div>
-      {m.data.foot && <div className="dash-foot">{m.data.foot}</div>}
       <CardSources m={m} />
     </div>
   );

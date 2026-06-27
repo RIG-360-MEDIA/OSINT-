@@ -40,6 +40,12 @@ export const supabase = createClient(URL || '', ANON || '', {
 
 export const API_BASE = import.meta.env.VITE_BRIEF_API || 'http://localhost:8002';
 
+// Module-level impersonation target — set by ImpersonationContext when a
+// super_user enters "view as" mode. authFetch reads this on every call so
+// the header is included transparently without prop-drilling.
+let _impersonateId = null;
+export function setImpersonationTarget(userId) { _impersonateId = userId || null; }
+
 function withTimeout(promise, ms, label) {
   let timer;
   const timeout = new Promise((_, reject) => {
@@ -83,6 +89,7 @@ export async function authFetch(path, opts = {}) {
   const timer = setTimeout(() => controller.abort(), 30000);
   let r;
   try {
+    const extraHeaders = _impersonateId ? { 'X-Impersonate': _impersonateId } : {};
     r = await fetch(`${API_BASE}${path}`, {
       ...opts,
       signal: controller.signal,
@@ -90,6 +97,7 @@ export async function authFetch(path, opts = {}) {
         ...(opts.headers || {}),
         Authorization: `Bearer ${token}`,
         'Content-Type': opts.headers?.['Content-Type'] || 'application/json',
+        ...extraHeaders,
       },
     });
   } catch (e) {

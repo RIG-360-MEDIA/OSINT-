@@ -16,23 +16,56 @@ async function logout() {
   window.location.assign(LOGIN_PATH);
 }
 
-const NAV = [
+const ALL_NAV = [
   { k: 'Home', ic: 'home' },
   { k: 'War Room', ic: 'warroom' },
   { k: 'Analytics', ic: 'analytics' },
   { k: 'Dossier', ic: 'dossier' },
   { k: 'Map', ic: 'map' },
   { k: 'Dispatch', ic: 'dispatch' },
+  { k: 'Ask', ic: 'ask' },
 ];
 
-export default function Sidebar({ i, setI, onCollapse }) {
+export default function Sidebar({ i, setI, onCollapse, effectiveRole, viewingAs, onExitImpersonation }) {
   const { me } = useMe();
   const email = me?.email || null;
+
+  // Client users don't see the Ask nav item
+  const NAV = effectiveRole === 'client' ? ALL_NAV.slice(0, 6) : ALL_NAV;
+
   return (
     <nav className="rail">
       <div className="brand"><span className="r">RIG</span><span className="o">OSINT</span>
         {onCollapse && <button className="rail-collapse" title="Collapse menu" onClick={onCollapse}>«</button>}
       </div>
+
+      {/* Impersonation banner */}
+      {viewingAs && (
+        <div style={{
+          margin: '0 0 8px', padding: '8px 10px', borderRadius: 8,
+          background: 'var(--gold, #e9c46a)18',
+          border: '1px solid var(--gold, #e9c46a)40',
+          fontSize: '0.62rem', letterSpacing: '0.08em',
+        }}>
+          <div style={{ color: 'var(--gold, #e9c46a)', marginBottom: 4, fontFamily: 'var(--mono, monospace)' }}>
+            VIEWING AS
+          </div>
+          <div style={{ color: 'var(--ink, #f8f5ef)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 6 }}>
+            {viewingAs.full_name || viewingAs.email}
+          </div>
+          <button
+            onClick={onExitImpersonation}
+            style={{
+              width: '100%', padding: '4px 0', borderRadius: 5, border: '1px solid var(--gold, #e9c46a)60',
+              background: 'transparent', color: 'var(--gold, #e9c46a)', cursor: 'pointer',
+              fontSize: '0.6rem', letterSpacing: '0.12em', fontFamily: 'inherit',
+            }}
+          >
+            ← EXIT
+          </button>
+        </div>
+      )}
+
       {NAV.map((n, ix) => (
         <div key={n.k} className={'navitem' + (ix === i ? ' on' : '')} onClick={() => setI(ix)}>
           {ix === i && <motion.span layoutId="navpill" className="pill" transition={{ type: 'spring', stiffness: 380, damping: 32 }} />}

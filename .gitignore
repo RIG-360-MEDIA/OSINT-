@@ -37,3 +37,12 @@ infrastructure/Dockerfile.frontend.prod.tmp-*
 *.bak
 *.backup
 secrets/
+
+# Local dev databases (e.g. Ask-RIG SQLite app db)
+*.db
+
+# Eval run outputs
+products/ask-rig/eval/qa_results.json
+
+# Local agent/editor config
+.claude/launch.json

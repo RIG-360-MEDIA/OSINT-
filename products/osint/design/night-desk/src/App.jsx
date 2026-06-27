@@ -46,10 +46,12 @@ function AppShell() {
   const { viewingAs, exitImpersonation } = useImpersonation();
 
   // Page access follows the VIEWER's own privilege, not the impersonated
-  // target. A super_user "acts as admin" for any user they view, so they keep
-  // full page access (including Ask/RAG). Data is scoped to the impersonated
-  // user separately via the X-Impersonate header on the backend.
-  const effectiveRole = me?.role || 'client';
+  // target. While impersonating, `me` itself resolves to the target (the
+  // X-Impersonate header is on /api/me too), so me.role would read 'client'.
+  // `viewingAs` is the reliable signal that the real viewer is a super_user,
+  // who "acts as admin" for any user → full page access (including Ask/RAG).
+  // Data stays scoped to the target via the backend header.
+  const effectiveRole = viewingAs ? 'admin' : (me?.role || 'client');
   const { pages: PAGES, slugs: SLUGS } = useMemo(() => pagesForRole(effectiveRole), [effectiveRole]);
 
   const [i, setIState] = useState(() => pathToIndex(window.location.pathname, SLUGS));

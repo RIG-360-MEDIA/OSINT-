@@ -651,7 +651,7 @@ async def chat_stream(
     # Embed the (resolved) search query and each variant — CPU-bound, off the loop.
     qvecs = [await asyncio.to_thread(embedder.embed, q) for q in queries]
 
-    yield {"type": "status", "stage": "corpus", "text": "Searching 354K articles"}
+    yield {"type": "status", "stage": "corpus", "text": "Searching the live news corpus"}
 
     # Web runs concurrently with the corpus fan-out — overlap the two slow paths.
     # Skip it entirely when the planner judged it unnecessary (saves the slow path).

@@ -1,0 +1,450 @@
+[
+{
+"name": "Hill Vani",
+"domain": "hillvani.com",
+"language": "hi",
+"tier": 1,
+"category": "digital_native_state",
+"url": "https://hillvani.com"
+},
+{
+"name": "ETV Bharat Uttarakhand",
+"domain": "etvbharat.com",
+"language": "hi",
+"tier": 1,
+"category": "national_flagship_state",
+"url": "https://etvbharat.com"
+},
+{
+"name": "Devbhoomi Khabar",
+"domain": "devbhoomikhabar.com",
+"language": "hi",
+"tier": 2,
+"category": "digital_native_state",
+"url": "https://devbhoomikhabar.com"
+},
+{
+"name": "Garhwal Post",
+"domain": "garhwalpost.in",
+"language": "en",
+"tier": 2,
+"category": "digital_native_state",
+"url": "https://garhwalpost.in"
+},
+{
+"name": "The Pioneer State Editions",
+"domain": "dailypioneer.com",
+"language": "en",
+"tier": 2,
+"category": "english_state_edition",
+"url": "https://dailypioneer.com"
+},
+{
+"name": "Times Now Uttarakhand",
+"domain": "timesnownews.com",
+"language": "en",
+"tier": 2,
+"category": "national_flagship_state",
+"url": "https://timesnownews.com"
+},
+{
+"name": "DD News Uttarakhand",
+"domain": "ddnews.gov.in",
+"language": "hi",
+"tier": 2,
+"category": "state_media",
+"url": "https://ddnews.gov.in"
+},
+{
+"name": "Dehradun News",
+"domain": "dehradunnews.com",
+"language": "en",
+"tier": 3,
+"category": "digital_native_dehradun",
+"url": "https://dehradunnews.com"
+},
+{
+"name": "Doon Mirror",
+"domain": "doonmirror.com",
+"language": "en",
+"tier": 3,
+"category": "digital_native_dehradun",
+"url": "https://doonmirror.com"
+},
+{
+"name": "Doon Today",
+"domain": "doontoday.com",
+"language": "en",
+"tier": 3,
+"category": "digital_native_dehradun",
+"url": "https://doontoday.com"
+},
+{
+"name": "Doonite",
+"domain": "doonite.com",
+"language": "en",
+"tier": 3,
+"category": "digital_native_dehradun",
+"url": "https://doonite.com"
+},
+{
+"name": "Apna Uttarakhand",
+"domain": "apnauttarakhand.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://apnauttarakhand.com"
+},
+{
+"name": "Devbhoomi Live",
+"domain": "devbhoomilive.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://devbhoomilive.com"
+},
+{
+"name": "Devbhoomi Samvad",
+"domain": "devbhoomisamvad.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://devbhoomisamvad.com"
+},
+{
+"name": "Devbhoomi Today",
+"domain": "devbhoomitoday.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://devbhoomitoday.com"
+},
+{
+"name": "Hill Post",
+"domain": "hillpost.in",
+"language": "en",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://hillpost.in"
+},
+{
+"name": "Khabar Devbhoomi",
+"domain": "khabardevbhoomi.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://khabardevbhoomi.com"
+},
+{
+"name": "Pahad Khabar",
+"domain": "pahadkhabar.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://pahadkhabar.com"
+},
+{
+"name": "Uttarakhand Express",
+"domain": "uttarakhandexpress.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://uttarakhandexpress.com"
+},
+{
+"name": "Uttarakhand News Network",
+"domain": "uttarakhandnewsnetwork.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://uttarakhandnewsnetwork.com"
+},
+{
+"name": "Uttarakhand Post",
+"domain": "uttarakhandpost.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://uttarakhandpost.com"
+},
+{
+"name": "Uttarakhand Sandesh",
+"domain": "uttarakhandsandesh.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://uttarakhandsandesh.com"
+},
+{
+"name": "The Statesman Uttarakhand",
+"domain": "thestatesman.com",
+"language": "en",
+"tier": 3,
+"category": "english_state_edition",
+"url": "https://thestatesman.com"
+},
+{
+"name": "Khabar Lahariya",
+"domain": "khabarlahariya.org",
+"language": "hi",
+"tier": 3,
+"category": "investigative_state",
+"url": "https://khabarlahariya.org"
+},
+{
+"name": "News Click Uttarakhand",
+"domain": "newsclick.in",
+"language": "en",
+"tier": 3,
+"category": "investigative_state",
+"url": "https://newsclick.in"
+},
+{
+"name": "India TV Uttarakhand",
+"domain": "indiatv.in",
+"language": "en",
+"tier": 3,
+"category": "national_flagship_state",
+"url": "https://indiatv.in"
+},
+{
+"name": "News Nation Uttarakhand",
+"domain": "newsnationtv.com",
+"language": "hi",
+"tier": 3,
+"category": "national_flagship_state",
+"url": "https://newsnationtv.com"
+},
+{
+"name": "Chamoli News",
+"domain": "chamolinews.in",
+"language": "hi",
+"tier": 3,
+"category": "regional_chamoli",
+"url": "https://chamolinews.in"
+},
+{
+"name": "Champawat News",
+"domain": "champawatnews.com",
+"language": "hi",
+"tier": 3,
+"category": "regional_champawat",
+"url": "https://champawatnews.com"
+},
+{
+"name": "Haldwani Live",
+"domain": "haldwanilive.com",
+"language": "hi",
+"tier": 3,
+"category": "regional_haldwani",
+"url": "https://haldwanilive.com"
+},
+{
+"name": "Haridwar Times",
+"domain": "haridwartimes.com",
+"language": "hi",
+"tier": 3,
+"category": "regional_haridwar",
+"url": "https://haridwartimes.com"
+},
+{
+"name": "Haridwar Today",
+"domain": "haridwartoday.com",
+"language": "hi",
+"tier": 3,
+"category": "regional_haridwar",
+"url": "https://haridwartoday.com"
+},
+{
+"name": "Mussoorie Times",
+"domain": "mussoorietimes.com",
+"language": "en",
+"tier": 3,
+"category": "regional_mussoorie",
+"url": "https://mussoorietimes.com"
+},
+{
+"name": "Pauri Khabar",
+"domain": "pauritimes.com",
+"language": "hi",
+"tier": 3,
+"category": "regional_pauri",
+"url": "https://pauritimes.com"
+},
+{
+"name": "Roorkee News",
+"domain": "roorkeenews.com",
+"language": "hi",
+"tier": 3,
+"category": "regional_roorkee",
+"url": "https://roorkeenews.com"
+},
+{
+"name": "Roorkee Times",
+"domain": "roorkeetimes.com",
+"language": "hi",
+"tier": 3,
+"category": "regional_roorkee",
+"url": "https://roorkeetimes.com"
+},
+{
+"name": "Rudrapur News",
+"domain": "rudrapurnews.com",
+"language": "hi",
+"tier": 3,
+"category": "regional_rudrapur",
+"url": "https://rudrapurnews.com"
+},
+{
+"name": "Rudrapur Today",
+"domain": "rudrapurtoday.com",
+"language": "hi",
+"tier": 3,
+"category": "regional_rudrapur",
+"url": "https://rudrapurtoday.com"
+},
+{
+"name": "Akashvani Dehradun",
+"domain": "newsonair.gov.in",
+"language": "hi",
+"tier": 3,
+"category": "state_media",
+"url": "https://newsonair.gov.in"
+},
+{
+"name": "Char Dham Yatra",
+"domain": "chardhamyatra.in",
+"language": "en",
+"tier": 3,
+"category": "tourism_focused",
+"url": "https://chardhamyatra.in"
+},
+{
+"name": "Garhwali Sanskar Cultural",
+"domain": "garhwali.in",
+"language": "hi",
+"tier": 3,
+"category": "vernacular_garhwali",
+"url": "https://garhwali.in"
+},
+{
+"name": "Pahad Media",
+"domain": "pahad.in",
+"language": "hi",
+"tier": 3,
+"category": "vernacular_pahari",
+"url": "https://pahad.in"
+},
+{
+"name": "Pahar Magazine",
+"domain": "pahar.com",
+"language": "hi",
+"tier": 3,
+"category": "vernacular_pahari",
+"url": "https://pahar.com"
+},
+{
+"name": "Pahar.in",
+"domain": "pahar.in",
+"language": "hi",
+"tier": 3,
+"category": "vernacular_pahari",
+"url": "https://pahar.in"
+},
+{
+"name": "Devbhoomi Express",
+"domain": "devbhoomiexpress.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://devbhoomiexpress.com"
+},
+{
+"name": "Devbhoomi Media",
+"domain": "devbhoomimedia.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://devbhoomimedia.com"
+},
+{
+"name": "Trishul News Uttarakhand",
+"domain": "trishulnews.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://trishulnews.com"
+},
+{
+"name": "Uttarakhand Mirror",
+"domain": "uttarakhandmirror.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://uttarakhandmirror.com"
+},
+{
+"name": "Uttarakhand News Live",
+"domain": "uttarakhandnewslive.com",
+"language": "hi",
+"tier": 3,
+"category": "digital_native_state",
+"url": "https://uttarakhandnewslive.com"
+},
+{
+"name": "Uttarakhand Crime",
+"domain": "uttarakhandcrime.com",
+"language": "hi",
+"tier": 3,
+"category": "investigative_state",
+"url": "https://uttarakhandcrime.com"
+},
+{
+"name": "Almora Today",
+"domain": "almoratoday.com",
+"language": "hi",
+"tier": 3,
+"category": "regional_almora",
+"url": "https://almoratoday.com"
+},
+{
+"name": "Haldwani Today",
+"domain": "haldwanitoday.com",
+"language": "hi",
+"tier": 3,
+"category": "regional_haldwani",
+"url": "https://haldwanitoday.com"
+},
+{
+"name": "Rishikesh Today",
+"domain": "rishikeshtoday.com",
+"language": "en",
+"tier": 3,
+"category": "regional_rishikesh",
+"url": "https://rishikeshtoday.com"
+},
+{
+"name": "Garhwali Magazine",
+"domain": "garhwali.com",
+"language": "hi",
+"tier": 3,
+"category": "vernacular_garhwali",
+"url": "https://garhwali.com"
+},
+{
+"name": "Kafal",
+"domain": "kafal.in",
+"language": "hi",
+"tier": 3,
+"category": "vernacular_kumaoni",
+"url": "https://kafal.in"
+},
+{
+"name": "Apna Pahad",
+"domain": "apnapahad.com",
+"language": "hi",
+"tier": 3,
+"category": "vernacular_pahari",
+"url": "https://apnapahad.com"
+}
+]

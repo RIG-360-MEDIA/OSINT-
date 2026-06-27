@@ -1,0 +1,294 @@
+{
+  "tag": "edge-features-new.csv",
+  "total_rows": 1839,
+  "trainable": 1836,
+  "grayzone_heldout": 3,
+  "regimes": {
+    "en-en": {
+      "n": 1186,
+      "positives": 815,
+      "negatives": 371,
+      "metrics": {
+        "n": 1186,
+        "positives": 815,
+        "negatives": 371,
+        "low_threshold": 0.0052903178559401045,
+        "high_threshold": 0.6683219461792291,
+        "gray_fraction": 0.433389544688027,
+        "gray_count": 514,
+        "same_band_precision": 0.9508196721311475,
+        "diff_band_precision": 1,
+        "same_source_neg": 77,
+        "same_source_false_merge": 10,
+        "same_source_false_merge_rate": 0.12987012987012986
+      },
+      "weights": {
+        "trgm_subject": -0.008418731666839534,
+        "trgm_title": -0.2943562870917803,
+        "shared_actors": 1.5477525979602458,
+        "shared_speakers": 0,
+        "shared_locations": 1.375992635989819,
+        "shared_primary_loc": 0.6298577907471173,
+        "idf_loc_score": 0,
+        "canonical_url_match": 0.316719518334736,
+        "event_date_match": 0.49540384723937575,
+        "length_ratio": -0.19168678614947512,
+        "time_diff_hours": -0.19560246089133473,
+        "same_source": -1.2220703645022133,
+        "shared_numbers": 0.6275209285265165
+      },
+      "intercept": 1.9355513343562605,
+      "scaler": {
+        "mean": {
+          "trgm_subject": 0.28531988766357513,
+          "trgm_title": 0.25548778728912297,
+          "shared_actors": 0.7242833052276559,
+          "shared_speakers": 0,
+          "shared_locations": 0.6720067453625632,
+          "shared_primary_loc": 0.28836424957841483,
+          "idf_loc_score": 0,
+          "canonical_url_match": 0.021922428330522766,
+          "event_date_match": 0.4730185497470489,
+          "length_ratio": 5.051264755480613,
+          "time_diff_hours": 23.356239460370954,
+          "same_source": 0.10286677908937605,
+          "shared_numbers": 1.0472175379426645
+        },
+        "std": {
+          "trgm_subject": 0.21846044962224442,
+          "trgm_title": 0.2444637699873584,
+          "shared_actors": 1.0053988498230457,
+          "shared_speakers": 1,
+          "shared_locations": 0.9671722241943146,
+          "shared_primary_loc": 0.4530014449684389,
+          "idf_loc_score": 1,
+          "canonical_url_match": 0.14643030924851616,
+          "event_date_match": 0.49927147058713905,
+          "length_ratio": 26.498918542043594,
+          "time_diff_hours": 26.530760390608325,
+          "same_source": 0.3037848002273185,
+          "shared_numbers": 1.719679716904072
+        }
+      }
+    },
+    "en-indic": {
+      "n": 221,
+      "positives": 117,
+      "negatives": 104,
+      "metrics": {
+        "n": 221,
+        "positives": 117,
+        "negatives": 104,
+        "low_threshold": 0.2915960249314332,
+        "high_threshold": 0.4457883823526201,
+        "gray_fraction": 0.02262443438914027,
+        "gray_count": 5,
+        "same_band_precision": 0.9565217391304348,
+        "diff_band_precision": 0.9504950495049505,
+        "same_source_neg": 1,
+        "same_source_false_merge": 0,
+        "same_source_false_merge_rate": 0
+      },
+      "weights": {
+        "trgm_subject": 3.371577743637552,
+        "trgm_title": 2.0371822410025966,
+        "shared_actors": 0.2467737055577598,
+        "shared_speakers": 0,
+        "shared_locations": 1.1559836440353783,
+        "shared_primary_loc": 0.5297042489243056,
+        "idf_loc_score": 0,
+        "canonical_url_match": 0,
+        "event_date_match": -0.5082201176924454,
+        "length_ratio": 0.7651658791045027,
+        "time_diff_hours": -1.029867446639962,
+        "same_source": -0.34325565747882647,
+        "shared_numbers": 2.621309238935154
+      },
+      "intercept": 2.450669644144828,
+      "scaler": {
+        "mean": {
+          "trgm_subject": 0.20480325290950221,
+          "trgm_title": 0.04633978691945699,
+          "shared_actors": 0.18552036199095023,
+          "shared_speakers": 0,
+          "shared_locations": 0.03619909502262444,
+          "shared_primary_loc": 0.2398190045248869,
+          "idf_loc_score": 0,
+          "canonical_url_match": 0,
+          "event_date_match": 0.3665158371040724,
+          "length_ratio": 5.165158371040727,
+          "time_diff_hours": 28.69049773755657,
+          "same_source": 0.00904977375565611,
+          "shared_numbers": 1.1809954751131222
+        },
+        "std": {
+          "trgm_subject": 0.1773668324653441,
+          "trgm_title": 0.10328205533710759,
+          "shared_actors": 0.6068748861284705,
+          "shared_speakers": 1,
+          "shared_locations": 0.20961510989865165,
+          "shared_primary_loc": 0.42697289093521956,
+          "idf_loc_score": 1,
+          "canonical_url_match": 1,
+          "event_date_match": 0.4818526520171634,
+          "length_ratio": 12.746565808367581,
+          "time_diff_hours": 26.10807073819912,
+          "same_source": 0.09469886668079809,
+          "shared_numbers": 1.908258049317477
+        }
+      }
+    },
+    "en-other": {
+      "n": 266,
+      "positives": 249,
+      "negatives": 17,
+      "metrics": {
+        "n": 266,
+        "positives": 249,
+        "negatives": 17,
+        "low_threshold": 0.15147322511337893,
+        "high_threshold": 0.7507006923221248,
+        "gray_fraction": 0.07894736842105263,
+        "gray_count": 21,
+        "same_band_precision": 0.9510204081632653,
+        "diff_band_precision": null,
+        "same_source_neg": 4,
+        "same_source_false_merge": 3,
+        "same_source_false_merge_rate": 0.75
+      },
+      "weights": {
+        "trgm_subject": 2.0802761097845455,
+        "trgm_title": -0.04377844352313564,
+        "shared_actors": -0.581182613055935,
+        "shared_speakers": 0,
+        "shared_locations": 0.02527579948550874,
+        "shared_primary_loc": -0.04759008336104565,
+        "idf_loc_score": 0,
+        "canonical_url_match": 0.24536055715582242,
+        "event_date_match": -0.0552666109678989,
+        "length_ratio": -0.06325660606016206,
+        "time_diff_hours": 0.7837249418988088,
+        "same_source": -0.6985184735010809,
+        "shared_numbers": -0.44212149028875347
+      },
+      "intercept": 4.022439307235467,
+      "scaler": {
+        "mean": {
+          "trgm_subject": 0.3227826625112784,
+          "trgm_title": 0.2305060647368419,
+          "shared_actors": 0.2556390977443609,
+          "shared_speakers": 0,
+          "shared_locations": 1.1466165413533835,
+          "shared_primary_loc": 0.31954887218045114,
+          "idf_loc_score": 0,
+          "canonical_url_match": 0.0037593984962406013,
+          "event_date_match": 0.41353383458646614,
+          "length_ratio": 2.296616541353386,
+          "time_diff_hours": 23.349624060150383,
+          "same_source": 0.08646616541353383,
+          "shared_numbers": 1.3984962406015038
+        },
+        "std": {
+          "trgm_subject": 0.15549058224036225,
+          "trgm_title": 0.16140319540006026,
+          "shared_actors": 0.5573046754949293,
+          "shared_speakers": 1,
+          "shared_locations": 1.024661974131053,
+          "shared_primary_loc": 0.46630182335977843,
+          "idf_loc_score": 1,
+          "canonical_url_match": 0.061198573669547895,
+          "event_date_match": 0.49246685394925893,
+          "length_ratio": 2.3582736731815306,
+          "time_diff_hours": 21.780149353797064,
+          "same_source": 0.2810511833318145,
+          "shared_numbers": 1.6403733740758026
+        }
+      },
+      "positiveOnlyViolations": [
+        {
+          "feature": "shared_numbers",
+          "weight": -0.44212149028875347
+        }
+      ]
+    },
+    "indic-indic": {
+      "n": 46,
+      "positives": 27,
+      "negatives": 19,
+      "metrics": {
+        "n": 46,
+        "positives": 27,
+        "negatives": 19,
+        "low_threshold": 0.2908491423427296,
+        "high_threshold": 0.2908491423427296,
+        "gray_fraction": 0,
+        "gray_count": 0,
+        "same_band_precision": 0.9642857142857143,
+        "diff_band_precision": 1,
+        "same_source_neg": 13,
+        "same_source_false_merge": 1,
+        "same_source_false_merge_rate": 0.07692307692307693
+      },
+      "weights": {
+        "trgm_subject": -1.0928261269082025,
+        "trgm_title": 0.17127453488932715,
+        "shared_actors": 0.554574797635473,
+        "shared_speakers": 0,
+        "shared_locations": -1.2069728028955051,
+        "shared_primary_loc": 0.7610926883580492,
+        "idf_loc_score": 0,
+        "canonical_url_match": 0,
+        "event_date_match": 1.6599468870512417,
+        "length_ratio": 0.8359829179651284,
+        "time_diff_hours": -3.9081516486697097,
+        "same_source": -2.0146540540554807,
+        "shared_numbers": 0.8571038509092512
+      },
+      "intercept": 1.1171288783031244,
+      "scaler": {
+        "mean": {
+          "trgm_subject": 0.3977506929347826,
+          "trgm_title": 0.21748384432608694,
+          "shared_actors": 0.2608695652173913,
+          "shared_speakers": 0,
+          "shared_locations": 0.043478260869565216,
+          "shared_primary_loc": 0.3695652173913043,
+          "idf_loc_score": 0,
+          "canonical_url_match": 0,
+          "event_date_match": 0.5217391304347826,
+          "length_ratio": 1.732608695652174,
+          "time_diff_hours": 23.495652173913044,
+          "same_source": 0.34782608695652173,
+          "shared_numbers": 1.391304347826087
+        },
+        "std": {
+          "trgm_subject": 0.2504183218227469,
+          "trgm_title": 0.21604670074562687,
+          "shared_actors": 0.7642780796194331,
+          "shared_speakers": 1,
+          "shared_locations": 0.20393111999232305,
+          "shared_primary_loc": 0.4826870285037937,
+          "idf_loc_score": 1,
+          "canonical_url_match": 1,
+          "event_date_match": 0.4995271866554808,
+          "length_ratio": 1.529145022244398,
+          "time_diff_hours": 28.374751150195817,
+          "same_source": 0.47628048478710083,
+          "shared_numbers": 1.9390524453024138
+        }
+      }
+    },
+    "indic-other": {
+      "n": 18,
+      "positives": 13,
+      "negatives": 5,
+      "status": "INSUFFICIENT_DATA (need >=10 pos and >=10 neg)"
+    },
+    "other-other": {
+      "n": 99,
+      "positives": 99,
+      "negatives": 0,
+      "status": "INSUFFICIENT_DATA (need >=10 pos and >=10 neg)"
+    }
+  }
+}

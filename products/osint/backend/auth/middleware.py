@@ -111,15 +111,23 @@ async def get_current_user(
 
 
 async def get_optional_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict[str, str] | None:
-    """Return user if authenticated, None otherwise (no 401)."""
+    """Return user if authenticated, None otherwise (no 401).
+
+    Honors `X-Impersonate: <uuid>` when the authenticated caller is a
+    super_user. Data endpoints resolve identity through this dependency, so
+    the swap here is what makes impersonation actually scope the DATA — not
+    just `/api/me` (which has its own substitution in get_current_principal).
+    """
     if not credentials:
         return None
     try:
-        return await get_current_user(credentials)
+        base = await get_current_user(credentials)
     except HTTPException:
         return None
+    return await _effective_user(request, base)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -165,6 +173,28 @@ async def _load_principal_row(uid: str) -> dict[str, Any]:
         "role_template": row.role_template,
         "onboarded": row.onboarded_at is not None,
     }
+
+
+async def _effective_user(
+    request: Request, base: dict[str, str] | None
+) -> dict[str, str] | None:
+    """Apply X-Impersonate substitution for super_user callers.
+
+    A missing header, a non-super caller, self-impersonation, or an unknown
+    target are all no-ops that return the original identity unchanged.
+    """
+    if not base:
+        return base
+    target_id = request.headers.get("X-Impersonate", "").strip()
+    if not target_id or target_id == base["id"]:
+        return base
+    caller = await _load_principal_row(base["id"])
+    if not (caller.get("is_super_admin") or caller.get("role") == "super_user"):
+        return base  # only super_users may impersonate; ignore header
+    target = await _load_principal_row(target_id)
+    if not target.get("email"):
+        return base  # unknown target (stub row) → no-op
+    return {"id": target_id, "email": target["email"]}
 
 
 async def _ensure_super_user_row(uid: str, email: str) -> None:

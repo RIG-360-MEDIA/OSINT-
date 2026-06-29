@@ -629,6 +629,25 @@ async def _quantify_stream(settings: Settings, llm: LLMProvider, creq, query: st
             s_items, _st = await list_articles(conn, settings, entity_id=entity_id, keyword=kw,
                                                since_hours=hours, limit=_QUANTIFY_SAMPLE)
             s_labs = ((await asyncio.to_thread(classify_labels, llm, s_items)) or []) if s_items else []
+            # When the user asked for a CHART/GRAPH, draw the snapshot split as a
+            # doughnut (the trend path covers 'over N days'); else report it as text.
+            wants_chart = bool(creq.chart_kind) or "chart" in query.lower() or "graph" in query.lower()
+            if s_labs and wants_chart:
+                npos, nneg, nneu = s_labs.count("positive"), s_labs.count("negative"), s_labs.count("neutral")
+                # A sentiment SNAPSHOT is categorical (pos/neu/neg) — line/area make no
+                # sense here (those are for the trend path), so only honour pie/doughnut/bar.
+                snap_kind = creq.chart_kind if creq.chart_kind in ("pie", "doughnut", "bar") else "doughnut"
+                yield {
+                    "type": "chart", "kind": snap_kind,
+                    "title": f"Sentiment of {subject} coverage" + (f" (last {hours}h)" if hours else ""),
+                    "labels": ["positive", "neutral", "negative"],
+                    "series": [{"label": "articles", "data": [npos, nneu, nneg]}],
+                    "caption": (f"Sampled estimate: latest {len(s_labs)} articles classified live "
+                                f"(~{round(100 * npos / len(s_labs))}% positive, "
+                                f"~{round(100 * nneg / len(s_labs))}% negative). News skews neutral."),
+                }
+                yield {"type": "done", "faithful": True}
+                return
             if s_labs:
                 npos, nneg, nneu = s_labs.count("positive"), s_labs.count("negative"), s_labs.count("neutral")
                 lines.append(

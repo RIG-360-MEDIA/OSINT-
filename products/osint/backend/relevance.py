@@ -297,7 +297,9 @@ _PILLAR_CFG = {
                     summary="COALESCE(NULLIF(i.summary_executive,''), NULLIF(i.summary_snippet,''), "
                             "NULLIF(i.summary_preview,''), left(i.body_text_translated,400))",
                     geo="i.geo_primary", date="edition_date",
-                    url="NULL::text", source="COALESCE(i.clip_source, '')",
+                    url="NULL::text",
+                    source="COALESCE((SELECT ns.name FROM newspaper_sources ns "
+                           "WHERE ns.id = i.newspaper_source_id), 'Newspaper')",
                     thumb="NULL::text"),
 }
 

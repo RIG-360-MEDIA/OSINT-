@@ -84,10 +84,26 @@ export default function Ask() {
     return () => { alive = false; };
   }, []);
 
-  // Keep the latest turn in view as tokens stream in.
+  // Auto-scroll: keep the newest tokens in view, but only while the user is
+  // already pinned to the bottom — never yank them back if they scrolled up to
+  // read. requestAnimationFrame defers the scroll until after layout settles,
+  // which removes the up/down jitter caused by markdown/chart reflow on each
+  // streamed token.
+  const pinnedRef = useRef(true);
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (!el) return undefined;
+    const onScroll = () => {
+      pinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !pinnedRef.current) return undefined;
+    const id = requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+    return () => cancelAnimationFrame(id);
   }, [turns]);
 
   const submit = () => {

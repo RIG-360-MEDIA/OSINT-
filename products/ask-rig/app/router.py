@@ -63,11 +63,14 @@ _SYSTEM = (
     "MODES:\n"
     "- enumerate: 'give me all/every X', 'list …', or 'the latest/most recent/newest article(s)'. "
     "Returns a LIST of articles.\n"
-    "- quantify: 'how many / count / trend / chart / graph / sentiment chart / X this week vs last / "
-    "by language / which outlets'. Returns numbers or a CHART.\n"
+    "- quantify: 'how many / count / trend / a sentiment CHART or TREND over N days / X this week "
+    "vs last / by language / which outlets'. Returns numbers or a CHART. A bare 'how is the "
+    "sentiment/mood/tone' with NO chart or number ask is NOT quantify — route it to synthesize.\n"
     "- dossier: 'everything on / dossier on / profile of X'. A full profile.\n"
     "- synthesize: everything else — a normal question to answer in prose ('what is/who is/why/"
-    "what's the latest in <place>/explain/compare ideas').\n\n"
+    "what's the latest in <place>/explain/compare ideas), OR a prose read on coverage tone: "
+    "'how is the sentiment/mood for X', 'how are they being covered', 'is coverage positive or "
+    "negative'. For these, set needs_entity and write a search_query that pulls the coverage.\n\n"
     "Resolve follow-ups using the conversation: rewrite 'what about his metro stance?' into a "
     "standalone search_query like 'Revanth Reddy Hyderabad metro stance'.\n\n"
     "Schema (include only what's relevant; defaults are fine for the rest):\n"
@@ -93,6 +96,10 @@ _SYSTEM = (
     'M: "what is the most recent article" -> {"mode":"enumerate","recent":true}\n'
     'M: "sentiment chart over the last 7 days for the Telangana govt" -> {"mode":"quantify",'
     '"entity":"Telangana government","trend_days":7,"metric":"sentiment"}\n'
+    'M: "how is the current sentiment going for the Telangana government" -> {"mode":"synthesize",'
+    '"search_query":"Telangana government coverage tone — supportive vs critical, recent",'
+    '"query_type":"broad","needs_web":false,"needs_entity":true,"entity":"Telangana government",'
+    '"since_hours":168,"variants":["Telangana government criticism opposition","Telangana government praise achievements"]}\n'
     'M: "which outlets cover Revanth Reddy the most" -> {"mode":"quantify","entity":"Revanth Reddy",'
     '"since_hours":168,"breakdown":"outlet"}\n'
     'M: "how many articles on the metro this week vs last" -> {"mode":"quantify","keyword":"Hyderabad metro",'

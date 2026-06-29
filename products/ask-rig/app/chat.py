@@ -14,6 +14,7 @@ sources progressively, the way a modern chat assistant feels.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 from typing import AsyncIterator, Sequence
@@ -169,6 +170,12 @@ _ESCALATE_TYPES = {"broad", "comparison", "explainer"}
 _GAP_K = 6               # docs fetched per escalation (gap) fan-out
 _ESCALATED_CAP = 18      # raised cap when a second pass folds in gap docs
 
+# DEEP fan-out: a broad or long multi-part question is decomposed into many facets,
+# each retrieved separately, so the writer sees the whole corpus — not a shallow top-k.
+_DEEP_TRIGGER_LEN = 700  # queries longer than this are treated as broad/multi-part
+_DEEP_MAX_FACETS = 10    # max sub-queries a question is split into
+_DEEP_CAP = 30           # max sources handed to the writer in deep mode
+
 
 def _source_view(doc: RetrievedDoc, index: int) -> dict:
     """Compact source record for the UI 'Sources' panel (S-number = list order)."""
@@ -196,10 +203,29 @@ def _merge_unique(primary: list[RetrievedDoc], extra: list[RetrievedDoc]) -> lis
     return primary + [d for d in extra if d.id not in seen]
 
 
+# Applied to EVERY synthesis — stops the model padding empty topics with confident
+# filler and mis-citing (the "hospitals functioning normally [S16]" failure mode).
+_HONESTY_RULE = (
+    "GROUNDING RULES (critical): use ONLY the numbered sources. If the sources do not cover "
+    "something the user asked about, say so plainly — e.g. 'No coverage found in the sources "
+    "for this.' NEVER invent a status like 'functioning normally / no issues reported' for a "
+    "topic with no sources, and NEVER attach a [S#] to a claim its source does not actually "
+    "support. A short honest answer is better than a padded one."
+)
+# Added only for deep (broad / multi-part) questions.
+_DEEP_RULE = (
+    "This is a broad, multi-part request. Organize the answer under the specific sections / "
+    "parts the user asked for, most-important first. Answer each part STRICTLY from the sources "
+    "and cite [S#] for every concrete claim; for any part with no supporting source, write "
+    "'No coverage found.' Do not pad thin sections."
+)
+
+
 def _build_messages(
-    query: str, context: list[RetrievedDoc], history: Sequence[dict]
+    query: str, context: list[RetrievedDoc], history: Sequence[dict], deep: bool = False
 ) -> list[dict]:
-    messages: list[dict] = [{"role": "system", "content": CHAT_SYSTEM}]
+    system = CHAT_SYSTEM + "\n\n" + _HONESTY_RULE + (("\n\n" + _DEEP_RULE) if deep else "")
+    messages: list[dict] = [{"role": "system", "content": system}]
     for turn in list(history)[-_HISTORY_TURNS * 2:]:
         role = turn.get("role")
         content = (turn.get("content") or "").strip()
@@ -311,6 +337,62 @@ async def _retrieve_more(
         return await retrieve_and_curate(
             conn, settings, gap_queries[0], qvecs[0], None, _GAP_K, rerank_enabled=False
         )
+
+
+def _extract_json_array(raw: str) -> list | None:
+    """Pull the first balanced JSON array out of an LLM response."""
+    if not raw:
+        return None
+    s = raw.find("[")
+    if s == -1:
+        return None
+    depth = 0
+    for i in range(s, len(raw)):
+        if raw[i] == "[":
+            depth += 1
+        elif raw[i] == "]":
+            depth -= 1
+            if depth == 0:
+                try:
+                    return json.loads(raw[s : i + 1])
+                except json.JSONDecodeError:
+                    return None
+    return None
+
+
+_DECOMPOSE_SYSTEM = (
+    "Break the user's request into the distinct FACETS it is really asking about, so each can "
+    "be searched separately over an Indian news corpus. Return ONLY a JSON array of 3-12 short, "
+    "standalone search queries — each targeting one facet/topic/section the user wants, each "
+    "keeping the key entity/place from the request. JSON array only, no prose.\n"
+    "Example: 'CM briefing for Telangana — law & order, economy, agriculture, Hyderabad' -> "
+    '["Telangana law and order crime protests", "Telangana economy GST revenue investment", '
+    '"Telangana agriculture rainfall crops farmers", "Hyderabad traffic metro GHMC flooding"]'
+)
+
+
+def decompose_query(llm: LLMProvider, query: str, max_facets: int = _DEEP_MAX_FACETS) -> list[str]:
+    """Split a broad/multi-part question into focused sub-queries (facets) so each can be
+    retrieved separately. Best-effort: [] on any failure → caller keeps the single pass."""
+    query = (query or "").strip()
+    if not query:
+        return []
+    try:
+        raw = llm.complete(_DECOMPOSE_SYSTEM, f"Request: {query}\n\nJSON array:")
+    except Exception as exc:  # noqa: BLE001 - decomposition must never break a turn
+        logger.debug("decompose failed: %s", exc)
+        return []
+    arr = _extract_json_array(raw)
+    if not isinstance(arr, list):
+        return []
+    seen: set[str] = set()
+    facets: list[str] = []
+    for x in arr:
+        s = str(x).strip()
+        if s and s.lower() not in seen:
+            seen.add(s.lower())
+            facets.append(s)
+    return facets[:max_facets]
 
 
 # Cheap pre-gate: only spend an LLM parse call when the query LOOKS like an enumerate
@@ -683,6 +765,19 @@ async def chat_stream(
     if entity_name:
         yield {"type": "status", "stage": "entity", "text": f"Pulling coverage on {entity_name}"}
 
+    # DEEP fan-out: a broad or long multi-part question gets decomposed into facets, each
+    # retrieved separately, so the writer sees the whole corpus picture rather than a shallow
+    # top-k. Best-effort — a decompose/retrieve miss just falls back to the single pass.
+    deep = (plan is not None and plan.query_type == "broad") or len(query) > _DEEP_TRIGGER_LEN
+    if deep:
+        facets = await asyncio.to_thread(decompose_query, llm, query)
+        if facets:
+            yield {"type": "status", "stage": "decompose",
+                   "text": f"Breaking this into {len(facets)} angles and searching each"}
+            facet_docs = await _retrieve_more(settings, embedder, facets)
+            if facet_docs:
+                docs = _merge_unique(docs, facet_docs)
+
     web_results: list = []
     if web_task is not None:
         yield {"type": "status", "stage": "web", "text": "Checking the live web"}
@@ -710,7 +805,7 @@ async def chat_stream(
     context = docs
     if web_results:
         context = fuse_web_corpus(context, web_results, snippet_cap=_web_cap)
-    context = [d for d in context if (d.title or "").strip()][:_CONTEXT_CAP]
+    context = [d for d in context if (d.title or "").strip()][:(_DEEP_CAP if deep else _CONTEXT_CAP)]
 
     if not context:
         yield {"type": "sources", "sources": []}
@@ -725,7 +820,7 @@ async def chat_stream(
     # AGENTIC ESCALATION: for multi-part questions, reflect on whether the gathered
     # headlines cover every part. If a part is unsupported, run ONE more targeted
     # corpus pass and re-fuse. Bounded (1 round, ≤2 gaps) + best-effort.
-    if plan is not None and plan.query_type in _ESCALATE_TYPES:
+    if not deep and plan is not None and plan.query_type in _ESCALATE_TYPES:
         verdict = await asyncio.to_thread(
             assess_coverage, llm, query, [d.title or "" for d in context]
         )
@@ -751,7 +846,7 @@ async def chat_stream(
     }
 
     yield {"type": "status", "stage": "write", "text": "Writing your answer"}
-    messages = _build_messages(query, context, history)
+    messages = _build_messages(query, context, history, deep=deep)
     try:
         async for token in _stream_llm(llm, messages):
             yield {"type": "token", "text": token}

@@ -539,6 +539,24 @@ async def _quantify_stream(settings: Settings, llm: LLMProvider, creq, query: st
             prev = await count_articles(conn, settings, entity_id=entity_id, keyword=kw,
                                         since_hours=hours, prev_window=True, languages=creq.languages)
             lines.append(f"PREVIOUS equal window: {prev} (change {cur - prev:+d})")
+        # General 'how is the sentiment' (metric=sentiment, no specific +/- target and no
+        # trend chart): classify a live sample of the window and report the full
+        # pos/neu/neg split, so quantify never hands the writer a bare count for a
+        # sentiment question.
+        if creq.metric == "sentiment" and not creq.sentiment and (entity_id or kw):
+            s_items, _st = await list_articles(conn, settings, entity_id=entity_id, keyword=kw,
+                                               since_hours=hours, limit=_QUANTIFY_SAMPLE)
+            s_labs = ((await asyncio.to_thread(classify_labels, llm, s_items)) or []) if s_items else []
+            if s_labs:
+                npos, nneg, nneu = s_labs.count("positive"), s_labs.count("negative"), s_labs.count("neutral")
+                lines.append(
+                    f"SENTIMENT (SAMPLED ESTIMATE — latest {len(s_labs)} classified live): "
+                    f"{npos} positive / {nneu} neutral / {nneg} negative "
+                    f"(~{round(100 * npos / len(s_labs))}% positive, ~{round(100 * nneg / len(s_labs))}% negative). "
+                    "An estimate from a sample, not exact — news skews neutral, so weigh positive vs negative.")
+            else:
+                lines.append("SENTIMENT: the tone classifier was busy — give the count and say the "
+                             "sentiment split is unavailable this time; suggest retrying.")
         if creq.sentiment and (entity_id or kw):
             items, _t = await list_articles(conn, settings, entity_id=entity_id, keyword=kw,
                                             since_hours=hours, limit=_QUANTIFY_SAMPLE)

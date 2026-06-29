@@ -65,24 +65,8 @@ export default function Ask() {
   const { turns, busy, ask, stop, reset } = useAskStream();
   const [value, setValue] = useState('');
   const [citeState, setCiteState] = useState({ turnId: null, marker: null });
-  const [corpus, setCorpus] = useState('Live news corpus');
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
-
-  // Live corpus stat for the header pill (matches the standalone app). Best-effort:
-  // falls back to the generic label if /ask/stats is unreachable.
-  useEffect(() => {
-    let alive = true;
-    fetch('/ask/stats')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (alive && d && d.surfaceable) {
-          setCorpus(`${Number(d.surfaceable).toLocaleString('en-IN')} sources · ${d.languages || 4} languages`);
-        }
-      })
-      .catch(() => { /* keep fallback */ });
-    return () => { alive = false; };
-  }, []);
 
   // Auto-scroll: keep the newest tokens in view, but only while the user is
   // already pinned to the bottom — never yank them back if they scrolled up to
@@ -150,7 +134,6 @@ export default function Ask() {
           <span className="ask-wordmark">Ask RIG</span>
         </div>
         <div className="ask-head-right">
-          <span className="ask-corpus">{corpus}</span>
           <button
             type="button"
             className="ask-newchat"

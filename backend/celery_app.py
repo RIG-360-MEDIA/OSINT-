@@ -44,6 +44,8 @@ app = Celery(
         "backend.tasks.collectors.tgspdcl_power_task",
         "backend.tasks.collectors.welfare_coverage_task",
         "backend.tasks.collectors.acled_sink_task",
+        # Article substrate drain — LLM summary/claims for every new article
+        "backend.tasks.substrate_drain_task",
         # Periodic byline backfill — runs every 6h, HTML-only, no LLM cost
         "backend.tasks.substrate.byline_periodic_task",
         # 5-min journalist-name extractor — parses byline → author_name, no LLM
@@ -187,6 +189,14 @@ app.config_from_object(
                 "schedule": timedelta(seconds=30),
                 "options": {"queue": "nlp"},
             },
+            # Substrate drain — keeps article summary/claims current at 30k/day intake.
+            # 4 NLP workers × 200 articles/tick × 30 ticks/hr = 24k articles/hr headroom.
+            # FOR UPDATE SKIP LOCKED in run_corpus_pass means concurrent ticks never collide.
+            "drain-article-substrate-every-2-minutes": {
+                "task": "tasks.substrate_drain",
+                "schedule": timedelta(minutes=2),
+                "options": {"queue": "nlp"},
+            },
             "enrich-journalist-every-5-minutes": {
                 "task": "tasks.enrich_journalist_batch",
                 "schedule": timedelta(minutes=5),
@@ -259,14 +269,14 @@ app.config_from_object(
             # limit 1 / 3 min = ~20/hr — safe for one IP, lets a blocked IP recover.
             # When the desktop heals and rejoins the pool, raise to limit 2 (40/hr,
             # ~20 each). Political/newest first so the important content drains first.
-            # TEMPORARY COOL-DOWN (2026-06-12): both residential IPs got throttled
-            # on YouTube's caption endpoint from a day of debugging fetches. Paused
-            # to ~2/hr so they rest and recover; the occasional probe auto-resumes
-            # flow once an IP clears. Restore to limit 1 / 3 min (~20/hr) once a
-            # live fetch through Trijya succeeds again.
+            # Cool-down (2026-06-12) cleared — relay /health shows circuit:closed +
+            # authenticated. RESTORED 2026-06-29 to the calibrated limit 1 / 3 min
+            # (~20/hr) — the safe sustained per-IP rate; the relay's own rate limiter
+            # + circuit breaker are the backstop. Raise to limit 2 (40/hr) only when
+            # a second residential IP rejoins the pool.
             "fetch-youtube-transcripts-every-3-min": {
                 "task": "tasks.fetch_youtube_transcripts",
-                "schedule": timedelta(minutes=360),
+                "schedule": timedelta(minutes=3),
                 "kwargs": {"limit": 1},
                 "options": {"queue": "youtube"},
             },
@@ -341,12 +351,14 @@ app.config_from_object(
                 "schedule": crontab(hour=22, minute=0),
                 "options": {"queue": "nlp"},
             },
-            # Event-cluster importance refresh every 30 min
-            "cluster-importance-every-30-min": {
-                "task": "tasks.quality.cluster_importance",
-                "schedule": timedelta(minutes=30),
-                "options": {"queue": "nlp"},
-            },
+            # DISABLED 2026-06-14: the oldest/middle story engines (event_clusters +
+            # analytics.story_*) were archived; this task read them and now no-ops/errors.
+            # Re-enable only against the _v8 keeper once it's wired.
+            # "cluster-importance-every-30-min": {
+            #     "task": "tasks.quality.cluster_importance",
+            #     "schedule": timedelta(minutes=30),
+            #     "options": {"queue": "nlp"},
+            # },
             # Entity-mention aggregator every 60 min
             "entity-mentions-every-60-min": {
                 "task": "tasks.quality.entity_mentions",

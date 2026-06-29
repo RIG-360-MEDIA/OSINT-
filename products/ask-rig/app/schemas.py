@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 
 class AskRequest(BaseModel):
-    query: str = Field(..., min_length=2, max_length=2000)
+    query: str = Field(..., min_length=2, max_length=20000)
     top_k: int = Field(default=8, ge=1, le=25)
     languages: list[str] | None = Field(
         default=None,
@@ -30,7 +30,7 @@ class ChatTurn(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    query: str = Field(..., min_length=1, max_length=2000)
+    query: str = Field(..., min_length=1, max_length=20000)
     history: list[ChatTurn] = Field(
         default_factory=list,
         description="Prior turns for follow-up context (most recent last).",

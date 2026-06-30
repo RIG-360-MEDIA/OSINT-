@@ -71,6 +71,11 @@ _PILLAR_CHAINS: dict[str, list[str]] = {
     "articles":   ["qwen/qwen3-32b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
     "youtube":    ["llama-3.3-70b-versatile", "qwen/qwen3-32b", "llama-3.1-8b-instant"],
     "newspapers": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "openai/gpt-oss-120b"],
+    # Social: led by gpt-oss-120b — proven in the social extraction bake-off
+    # (63/63 parse, judge 4.77) AND a separate quota universe from the 3 heavy
+    # pillars, so social never starves article/youtube/newspaper throughput.
+    # The unified pool maps these onto Cerebras slots automatically.
+    "social":     ["openai/gpt-oss-120b", "llama-3.3-70b-versatile", "qwen/qwen3-32b"],
 }
 _DEFAULT_CHAIN: list[str] = [
     "qwen/qwen3-32b", "llama-3.3-70b-versatile", "llama-3.1-8b-instant",
@@ -90,7 +95,12 @@ def _resolve_chain(model: str | None, pillar: str | None, task_type: str) -> lis
             return [model]
         return [FAST_MODEL if task_type in _FAST_TASK_TYPES else QUALITY_MODEL]
     if task_type in _FAST_TASK_TYPES:
-        return [FAST_MODEL]
+        # Fast tasks (translation/classification) used to pin ONLY qwen3-32b. When its
+        # shared 500k-TPD bucket dried up, those calls had no fallback and jammed in
+        # 429 retry loops — which stalled the NLP entity drain on 2026-06-13. Lead with
+        # the cheap, high-TPM llama models that have TPD headroom; keep qwen3 as the
+        # backstop so it re-engages automatically once its daily quota resets.
+        return ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", FAST_MODEL]
     if model is not None:
         return [model] + [m for m in _FALLBACK_TAIL if m != model]
     return _PILLAR_CHAINS.get(pillar or "", _DEFAULT_CHAIN)
@@ -113,6 +123,20 @@ class GroqCallFailed(Exception):
 
 
 # ── Key Manager ────────────────────────────────────────────────────────────────
+
+def _loop_bound_lock(holder: object) -> "asyncio.Lock":
+    """Return ``holder._lock`` bound to the CURRENT running event loop, recreating it whenever
+    the loop has changed. Celery prefork workers run a fresh ``asyncio.run()`` per task, so a
+    lock created in one task's loop is, on the next task, attached to a now-closed loop —
+    acquiring it then **silently deadlocks the worker** (the NLP-worker hang root cause,
+    2026-06-14). Same loop reuses the lock (concurrency within a task stays serialised); a new
+    loop always gets a fresh one. Requires ``holder._lock`` and ``holder._lock_loop`` attrs."""
+    loop = asyncio.get_running_loop()
+    if holder._lock is None or holder._lock_loop is not loop:  # type: ignore[attr-defined]
+        holder._lock = asyncio.Lock()  # type: ignore[attr-defined]
+        holder._lock_loop = loop  # type: ignore[attr-defined]
+    return holder._lock  # type: ignore[attr-defined,return-value]
+
 
 class GroqKeyManager:
     """
@@ -164,14 +188,13 @@ class GroqKeyManager:
         self._max_cooldown_seconds: float = 300.0
         self._clients: dict[int, "groq_sdk.AsyncGroq"] = {}
         self._lock: asyncio.Lock | None = None
+        self._lock_loop: object | None = None  # event loop the lock was bound to (see _loop_bound_lock)
 
     # ── Internal helpers ───────────────────────────────────────────────────────
 
     def _get_lock(self) -> asyncio.Lock:
-        """Lazy lock init — avoids event loop binding issues at import time."""
-        if self._lock is None:
-            self._lock = asyncio.Lock()
-        return self._lock
+        """Lazy, LOOP-AWARE lock — avoids import-time binding AND cross-loop reuse deadlocks."""
+        return _loop_bound_lock(self)
 
     def _get_client(self, key_index: int) -> "groq_sdk.AsyncGroq":
         """
@@ -545,11 +568,10 @@ class _TokenBucket:
         self.tokens = capacity
         self.last_refill = _time.monotonic()
         self._lock: asyncio.Lock | None = None
+        self._lock_loop: object | None = None  # event loop the lock was bound to (see _loop_bound_lock)
 
     def _get_lock(self) -> asyncio.Lock:
-        if self._lock is None:
-            self._lock = asyncio.Lock()
-        return self._lock
+        return _loop_bound_lock(self)
 
     async def acquire(self, tokens: float = 1.0) -> None:
         """Block until `tokens` are available, then consume them."""
@@ -684,6 +706,7 @@ class _UnifiedPool:
         self._cooldown_seconds: float = 15.0  # 2026-05-28: was 60s; Groq's TPM 429s often resolve in 5-15s per the "try again in N.NNs" hint, so 60s held keys out 4x too long → cut to 15s for faster pool recovery
         self._max_cooldown_seconds: float = 300.0
         self._lock: asyncio.Lock | None = None
+        self._lock_loop: object | None = None  # event loop the lock was bound to (see _loop_bound_lock)
         # Concurrency cap on local slot — protects Ollama from being
         # hammered by N workers grabbing the same slot in parallel.
         self._local_inflight: int = 0
@@ -694,9 +717,7 @@ class _UnifiedPool:
         )
 
     def _get_lock(self) -> asyncio.Lock:
-        if self._lock is None:
-            self._lock = asyncio.Lock()
-        return self._lock
+        return _loop_bound_lock(self)
 
     async def get_slot(self) -> tuple[int, _UnifiedSlot]:
         """Return (slot_index, _UnifiedSlot). Local slot is preferred when

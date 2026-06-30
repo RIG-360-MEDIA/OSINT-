@@ -78,6 +78,9 @@ app = Celery(
         "backend.tasks.youtube_clip_enrich",
         # Cross-pillar per-user relevance for clips + cuttings (#9)
         "backend.tasks.relevance_cross_pillar_task",
+        # Social pillar: collectors + substrate drain (the 'social' queue)
+        "backend.tasks.social_collect",
+        "backend.tasks.social_enrich",
     ],
 )
 
@@ -142,8 +145,45 @@ app.config_from_object(
             "tasks.run_youtube_extraction":       {"queue": "youtube"},
             "tasks.enrich_clip":                  {"queue": "youtube"},
             "tasks.drain_pending_clips":          {"queue": "youtube"},
+            # Social pillar — collectors + substrate drain all on the 'social' queue.
+            # Extraction goes to cloud (pillar 'social' → Cerebras/Groq); scrapers
+            # carry their own ban-safe pacing.
+            "tasks.social.collect_twitter":   {"queue": "social"},
+            "tasks.social.collect_reddit":    {"queue": "social"},
+            "tasks.social.collect_telegram":  {"queue": "social"},
+            "tasks.social.collect_instagram": {"queue": "social"},
+            "tasks.enrich_social_post":       {"queue": "social"},
+            "tasks.drain_pending_social":     {"queue": "social"},
         },
         "beat_schedule": {
+            # ── Social pillar: forward collection + substrate drain ──
+            # Lean cadence (~20k posts/day target). Scrapers + watchlist
+            # next_check_at govern actual rate; these just trigger the walk.
+            "social-collect-twitter-15min": {
+                "task": "tasks.social.collect_twitter",
+                "schedule": timedelta(minutes=15),
+                "options": {"queue": "social"},
+            },
+            "social-collect-reddit-15min": {
+                "task": "tasks.social.collect_reddit",
+                "schedule": timedelta(minutes=15),
+                "options": {"queue": "social"},
+            },
+            "social-collect-telegram-15min": {
+                "task": "tasks.social.collect_telegram",
+                "schedule": timedelta(minutes=15),
+                "options": {"queue": "social"},
+            },
+            "social-collect-instagram-30min": {
+                "task": "tasks.social.collect_instagram",
+                "schedule": timedelta(minutes=30),
+                "options": {"queue": "social"},
+            },
+            "social-drain-every-2min": {
+                "task": "tasks.drain_pending_social",
+                "schedule": timedelta(minutes=2),
+                "options": {"queue": "social"},
+            },
             "collect-rss-every-15-min": {
                 "task": "tasks.collect_rss",
                 "schedule": timedelta(minutes=15),

@@ -234,7 +234,12 @@ class InstagramScraper:
         if r.status_code != 200:
             logger.warning("IG web_profile_info @%s -> HTTP %s", username, r.status_code)
             return None
-        uid = str(r.json()["data"]["user"]["id"])
+        try:
+            uid = str(r.json()["data"]["user"]["id"])
+        except (KeyError, TypeError, ValueError):
+            # IG returns a non-standard body (rate-limited / checkpoint / empty) — don't crash
+            logger.warning("IG web_profile_info @%s -> unexpected body (rate-limited?)", username)
+            return None
         self._uid_cache[username] = uid
         return uid
 

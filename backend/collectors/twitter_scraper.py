@@ -82,8 +82,10 @@ def _normalise(tweet: Any) -> dict[str, Any]:
             "lang": tweet.lang,
             "is_retweet": tweet.retweetedTweet is not None,
             "is_reply": tweet.inReplyToTweetId is not None,
-            "hashtags": [h.text for h in (tweet.hashtags or [])],
-            "mentions": [m.username for m in (tweet.mentionedUsers or [])],
+            # twscrape returns hashtags as plain strings and mentions as objects;
+            # be defensive in case either shape changes across versions.
+            "hashtags": [getattr(h, "text", h) for h in (tweet.hashtags or [])],
+            "mentions": [getattr(m, "username", m) for m in (tweet.mentionedUsers or [])],
         },
     }
 

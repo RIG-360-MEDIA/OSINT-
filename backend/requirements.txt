@@ -98,6 +98,10 @@ telethon==1.36.0
 # Twitter scraper — cookie-based, no API key needed (see twitter_scraper.py)
 twscrape==0.19.1
 
+# Reddit scraper — session-cookie + Chrome TLS impersonation, bypasses the
+# Cloudflare JS challenge that 403s the anonymous .json API (see reddit_scraper.py)
+curl_cffi>=0.7.0
+
 # Utilities
 python-dotenv==1.2.2  # security: CVE-2026-28684
 python-jose[cryptography]==3.4.0  # security: PYSEC-2024-232, PYSEC-2024-233

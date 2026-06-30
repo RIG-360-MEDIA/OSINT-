@@ -17,7 +17,12 @@ import os
 ENVIRONMENT: str = os.getenv("OSINT_ENVIRONMENT", os.getenv("ENVIRONMENT", "production")).lower()
 
 # HMAC secret that hashes raw API keys. NEVER commit a real value.
+# Resolution order: env var, then a secret FILE (so the secret can be deployed
+# the same baked-safe way as the code — docker cp + restart — without a
+# container recreate that could revert un-baked hot-patches).
 _HASH_SECRET: str = os.getenv("OSINT_APIKEY_HASH_SECRET", "")
+_HASH_SECRET_FILE: str = os.getenv("OSINT_APIKEY_HASH_SECRET_FILE", "/app/secrets/apikey_hash_secret")
+_cached_secret: str | None = None
 
 # Defaults; per-key overrides live in analytics.api_keys.
 DEFAULT_RATE_LIMIT_PER_MIN: int = int(os.getenv("OSINT_V1_RATE_LIMIT", "120"))
@@ -36,12 +41,30 @@ _DEV_FALLBACK_SECRET = "dev-insecure-apikey-secret-do-not-use-in-prod"
 
 
 def hash_secret() -> str:
-    """Return the HMAC secret, or fail closed in production if it's missing."""
+    """Return the HMAC secret, or fail closed in production if it's missing.
+
+    Order: env var -> secret file -> (prod: raise / dev: fallback). The resolved
+    real secret is cached for the process lifetime (it never changes at runtime;
+    deploying a new one means a restart anyway).
+    """
+    global _cached_secret
+    if _cached_secret is not None:
+        return _cached_secret
     if _HASH_SECRET:
-        return _HASH_SECRET
+        _cached_secret = _HASH_SECRET
+        return _cached_secret
+    try:
+        if _HASH_SECRET_FILE and os.path.exists(_HASH_SECRET_FILE):
+            with open(_HASH_SECRET_FILE, "r", encoding="utf-8") as fh:
+                val = fh.read().strip()
+            if val:
+                _cached_secret = val
+                return _cached_secret
+    except OSError:
+        pass
     if ENVIRONMENT == "production":
         raise RuntimeError(
-            "OSINT_APIKEY_HASH_SECRET not configured — refusing to run the "
-            "client /v1 API in production without a key-hash secret."
+            "OSINT_APIKEY_HASH_SECRET (or _FILE) not configured — refusing to "
+            "run the client /v1 API in production without a key-hash secret."
         )
     return _DEV_FALLBACK_SECRET

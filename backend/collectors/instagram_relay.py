@@ -262,6 +262,223 @@ def _fetch_profile(username: str, limit: int) -> list[dict[str, Any]]:
     return []
 
 
+# ── shortcode helper ──────────────────────────────────────────────────────────
+
+_SC_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+
+def _shortcode_to_media_id(shortcode: str) -> int:
+    """Convert an Instagram post shortcode (from /p/<code>/) to its numeric media id."""
+    mid = 0
+    for ch in shortcode:
+        mid = mid * 64 + _SC_ALPHABET.index(ch)
+    return mid
+
+
+def _comment_to_post(c: dict[str, Any], shortcode: str) -> dict[str, Any]:
+    user = c.get("user") or {}
+    ts = c.get("created_at", 0)
+    return {
+        "platform": "instagram",
+        "platform_post_id": str(c.get("pk") or ""),
+        "author_username": user.get("username", ""),
+        "author_name": user.get("full_name"),
+        "post_text": (c.get("text") or "").strip()[:4000],
+        "post_url": f"https://www.instagram.com/p/{shortcode}/",
+        "posted_at": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat() if ts else None,
+        "likes": c.get("comment_like_count"),
+        "comments": None,
+        "shares": None,
+        "upvotes": None,
+        "has_media": False,
+        "media_urls": [],
+        "raw": {"parent_shortcode": shortcode},
+    }
+
+
+# ── parity fetch helpers (profile_info / post / comments / hashtag / location / stories)
+
+def _guarded(fn, *args):
+    """Run a fetch under the shared lock + rate-limit + circuit-breaker + 4x backoff."""
+    with _lock:
+        if _circuit_open():
+            raise RuntimeError(
+                f"Circuit open until {time.strftime('%H:%M:%S', time.localtime(_cb_open_until))}"
+            )
+        backoff = 10.0
+        last_exc: Exception | None = None
+        for attempt in range(4):
+            try:
+                _wait_for_slot()
+                result = fn(*args)
+                _record_success()
+                return result
+            except (_req.HTTPError, _req.ConnectionError) as exc:
+                last_exc = exc
+                _record_failure()
+                if _circuit_open():
+                    raise RuntimeError("Circuit opened mid-retry") from exc
+                time.sleep(backoff)
+                backoff = min(backoff * 2, 80)
+            except Exception:
+                _record_failure()
+                raise
+        if last_exc:
+            raise last_exc
+        return None
+
+
+def _fetch_profile_info(username: str) -> dict[str, Any]:
+    def _do():
+        s = _web_session()
+        r = s.get(
+            f"https://www.instagram.com/api/v1/users/web_profile_info/?username={username}",
+            timeout=15,
+        )
+        r.raise_for_status()
+        u = r.json()["data"]["user"]
+        return {
+            "platform": "instagram",
+            "username": u.get("username", username),
+            "full_name": u.get("full_name"),
+            "bio": (u.get("biography") or "").strip(),
+            "followers": (u.get("edge_followed_by") or {}).get("count"),
+            "following": (u.get("edge_follow") or {}).get("count"),
+            "posts": (u.get("edge_owner_to_timeline_media") or {}).get("count"),
+            "verified": u.get("is_verified"),
+            "private": u.get("is_private"),
+            "profile_pic": u.get("profile_pic_url_hd") or u.get("profile_pic_url"),
+            "external_url": u.get("external_url"),
+            "category": u.get("category_name"),
+            "id": u.get("id"),
+        }
+    return _guarded(_do)
+
+
+def _fetch_post(shortcode: str) -> dict[str, Any] | None:
+    media_id = _shortcode_to_media_id(shortcode)
+
+    def _do():
+        r = _req.get(
+            f"https://i.instagram.com/api/v1/media/{media_id}/info/",
+            headers=_MOBILE_HEADERS, cookies=_mobile_cookies(), timeout=20,
+        )
+        r.raise_for_status()
+        items = r.json().get("items", [])
+        if not items:
+            return None
+        it = items[0]
+        return _item_to_post(it, (it.get("user") or {}).get("username", ""))
+    return _guarded(_do)
+
+
+def _fetch_comments(shortcode: str, limit: int) -> list[dict[str, Any]]:
+    media_id = _shortcode_to_media_id(shortcode)
+
+    def _do():
+        r = _req.get(
+            f"https://i.instagram.com/api/v1/media/{media_id}/comments/",
+            params={"can_support_threading": "true", "permalink_enabled": "false"},
+            headers=_MOBILE_HEADERS, cookies=_mobile_cookies(), timeout=20,
+        )
+        r.raise_for_status()
+        comments = r.json().get("comments", [])[:limit]
+        return [_comment_to_post(c, shortcode) for c in comments]
+    return _guarded(_do)
+
+
+def _medias_from_sections(sections: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
+    """Flatten the medias out of a hashtag/location 'sections' structure."""
+    posts: list[dict[str, Any]] = []
+    for sec in sections:
+        medias = ((sec.get("layout_content") or {}).get("medias")) or []
+        for m in medias:
+            media = m.get("media") or {}
+            posts.append(_item_to_post(media, (media.get("user") or {}).get("username", "")))
+            if len(posts) >= limit:
+                return posts
+    return posts
+
+
+def _fetch_hashtag(tag: str, limit: int) -> list[dict[str, Any]]:
+    tag = tag.lstrip("#")
+
+    def _do():
+        s = _web_session()
+        r = s.get(
+            f"https://www.instagram.com/api/v1/tags/web_info/?tag_name={tag}",
+            timeout=15,
+        )
+        r.raise_for_status()
+        data = r.json().get("data", {})
+        posts: list[dict[str, Any]] = []
+        for key in ("top", "recent"):
+            sections = (data.get(key) or {}).get("sections") or []
+            posts.extend(_medias_from_sections(sections, limit - len(posts)))
+            if len(posts) >= limit:
+                break
+        return posts[:limit]
+    return _guarded(_do)
+
+
+def _fetch_location(location_id: str, limit: int) -> list[dict[str, Any]]:
+    def _do():
+        r = _req.post(
+            f"https://i.instagram.com/api/v1/locations/{location_id}/sections/",
+            data={"tab": "recent"},
+            headers=_MOBILE_HEADERS, cookies=_mobile_cookies(), timeout=20,
+        )
+        r.raise_for_status()
+        sections = r.json().get("sections") or []
+        return _medias_from_sections(sections, limit)
+    return _guarded(_do)
+
+
+def _fetch_stories(username: str) -> list[dict[str, Any]]:
+    user_id = _get_user_id(username)
+
+    def _do():
+        r = _req.get(
+            "https://i.instagram.com/api/v1/feed/reels_media/",
+            params={"reel_ids": user_id},
+            headers=_MOBILE_HEADERS, cookies=_mobile_cookies(), timeout=20,
+        )
+        r.raise_for_status()
+        reel = (r.json().get("reels") or {}).get(str(user_id)) or {}
+        out: list[dict[str, Any]] = []
+        for it in reel.get("items", [])[:50]:
+            ts = it.get("taken_at", 0)
+            media_urls: list[str] = []
+            if it.get("video_versions"):
+                media_urls.append(it["video_versions"][0]["url"])
+            elif it.get("image_versions2"):
+                cands = it["image_versions2"].get("candidates", [])
+                if cands:
+                    media_urls.append(cands[0]["url"])
+            out.append({
+                "platform": "instagram",
+                "platform_post_id": str(it.get("pk") or it.get("id") or ""),
+                "author_username": username,
+                "author_name": None,
+                "post_text": "",  # stories rarely have caption text
+                "post_url": f"https://www.instagram.com/stories/{username}/{it.get('pk','')}/",
+                "posted_at": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat() if ts else None,
+                "likes": None,
+                "comments": None,
+                "shares": None,
+                "upvotes": None,
+                "has_media": bool(media_urls),
+                "media_urls": media_urls,
+                "raw": {
+                    "is_story": True,
+                    "expiring_at": it.get("expiring_at"),
+                    "media_type": it.get("media_type"),
+                },
+            })
+        return out
+    return _guarded(_do)
+
+
 # ── routes ────────────────────────────────────────────────────────────────────
 
 @app.get("/health")
@@ -287,6 +504,66 @@ def profile_endpoint():
     except Exception as exc:
         logger.error("profile fetch failed @%s: %s", username, exc)
         return jsonify({"ok": False, "error": str(exc), "posts": []}), 503
+
+
+def _json_or_error(fetch_fn, label: str):
+    """Run a relay fetch, returning the standard {ok, ...} envelope."""
+    try:
+        return jsonify({"ok": True, "data": fetch_fn()})
+    except Exception as exc:
+        logger.error("%s failed: %s", label, exc)
+        return jsonify({"ok": False, "error": str(exc), "data": None}), 503
+
+
+@app.get("/instagram/profile_info")
+def profile_info_endpoint():
+    username = request.args.get("username", "").strip().lstrip("@")
+    if not username:
+        return jsonify({"error": "username required"}), 400
+    return _json_or_error(lambda: _fetch_profile_info(username), f"profile_info @{username}")
+
+
+@app.get("/instagram/post")
+def post_endpoint():
+    shortcode = request.args.get("shortcode", "").strip()
+    if not shortcode:
+        return jsonify({"error": "shortcode required"}), 400
+    return _json_or_error(lambda: _fetch_post(shortcode), f"post {shortcode}")
+
+
+@app.get("/instagram/comments")
+def comments_endpoint():
+    shortcode = request.args.get("shortcode", "").strip()
+    if not shortcode:
+        return jsonify({"error": "shortcode required"}), 400
+    limit = min(int(request.args.get("limit", 25)), 50)
+    return _json_or_error(lambda: _fetch_comments(shortcode, limit), f"comments {shortcode}")
+
+
+@app.get("/instagram/hashtag")
+def hashtag_endpoint():
+    tag = request.args.get("tag", "").strip().lstrip("#")
+    if not tag:
+        return jsonify({"error": "tag required"}), 400
+    limit = min(int(request.args.get("limit", 25)), 50)
+    return _json_or_error(lambda: _fetch_hashtag(tag, limit), f"hashtag #{tag}")
+
+
+@app.get("/instagram/location")
+def location_endpoint():
+    location_id = request.args.get("location_id", "").strip()
+    if not location_id:
+        return jsonify({"error": "location_id required"}), 400
+    limit = min(int(request.args.get("limit", 25)), 50)
+    return _json_or_error(lambda: _fetch_location(location_id, limit), f"location {location_id}")
+
+
+@app.get("/instagram/stories")
+def stories_endpoint():
+    username = request.args.get("username", "").strip().lstrip("@")
+    if not username:
+        return jsonify({"error": "username required"}), 400
+    return _json_or_error(lambda: _fetch_stories(username), f"stories @{username}")
 
 
 # ── startup ───────────────────────────────────────────────────────────────────

@@ -93,6 +93,13 @@ app.include_router(me.router)
 app.include_router(admin.router)
 app.include_router(onboarding.router)
 
+# Client-facing /v1 API gateway (key auth, per-org scope, rate limit,
+# metering). Self-contained package; one call wires router + middleware +
+# error handler. Isolated from the JWT dashboard surface above.
+from v1 import install_v1  # noqa: E402  (after app + settings exist)
+
+install_v1(app)
+
 
 @app.get("/health", tags=["meta"])
 async def health() -> dict[str, str]:

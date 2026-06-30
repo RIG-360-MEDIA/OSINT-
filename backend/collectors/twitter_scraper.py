@@ -128,8 +128,8 @@ class TwitterScraper:
             email_password="placeholder",
             cookies=cookies,
         )
-        # login_all() is a no-op when cookies are already valid
-        await pool.login_all()
+        # Do NOT call login_all() — programmatic login is Cloudflare-blocked on
+        # datacenter IPs. Browser-extracted cookies are already valid; skip re-auth.
         self._api = API(pool)
         logger.info("TwitterScraper ready (pool_db=%s account=%s)", self._pool_db, self._username)
 
@@ -202,9 +202,9 @@ class TwitterScraper:
         Fetch trending topics. woeid=1 = worldwide, 23424848 = India.
         Returns list of {name, tweet_volume, url}.
 
-        NOTE: Twitter restricts the trends endpoint to accounts with established
-        history. New/burner accounts get a -1 Internal server error and return [].
-        Use an aged account or fall back to search() with keyword monitoring.
+        NOTE: trends() is non-functional via scraping regardless of account age —
+        Twitter's web API returns -1 Internal server error for all cookie-based
+        scrapers on this endpoint. Use search() with monitored keywords instead.
         """
         self._check()
         results: list[dict[str, str]] = []

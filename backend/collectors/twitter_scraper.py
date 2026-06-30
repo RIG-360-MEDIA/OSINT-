@@ -24,6 +24,8 @@ import os
 from datetime import datetime, timezone
 from typing import Any
 
+import httpx
+
 logger = logging.getLogger(__name__)
 
 _POOL_DB = os.getenv("TWITTER_POOL_DB", ".twscrape.db")
@@ -197,27 +199,45 @@ class TwitterScraper:
             logger.exception("twitter tweet_by_id failed (id=%s)", tweet_id)
             return None
 
-    async def trends(self, woeid: int = 1) -> list[dict[str, str]]:
+    async def trends(self, region: str = "india") -> list[dict[str, str]]:
         """
-        Fetch trending topics. woeid=1 = worldwide, 23424848 = India.
-        Returns list of {name, tweet_volume, url}.
+        Fetch Twitter trending topics by scraping trends24.in (no auth needed).
 
-        NOTE: trends() is non-functional via scraping regardless of account age —
-        Twitter's web API returns -1 Internal server error for all cookie-based
-        scrapers on this endpoint. Use search() with monitored keywords instead.
+        region: "india", "worldwide", "united-states", "united-kingdom", etc.
+                (any slug from trends24.in/<region>/)
+        Returns list of {name, url} for the most recent trend window (~50 items).
+        tweet_volume is not available (JS-rendered on trends24.in).
         """
-        self._check()
-        results: list[dict[str, str]] = []
+        if region in ("world", "worldwide", "global"):
+            target = "https://www.trends24.in/"
+        else:
+            target = f"https://www.trends24.in/{region}/"
         try:
-            async for trend in self._api.trends(woeid):
-                results.append({
-                    "name": trend.name,
-                    "tweet_volume": str(trend.tweetVolume or ""),
-                    "url": f"https://x.com/search?q={trend.name.replace(' ', '%20')}",
-                })
+            async with httpx.AsyncClient(
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=15,
+                follow_redirects=True,
+            ) as client:
+                r = await client.get(target)
+                r.raise_for_status()
+
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(r.text, "html.parser")
+            cards = soup.select("ol.trend-card__list")
+            if not cards:
+                logger.warning("trends24: no trend cards found for region=%s", region)
+                return []
+
+            results: list[dict[str, str]] = []
+            for a in cards[0].select("li a.trend-link"):
+                name = a.get_text(strip=True)
+                url = a.get("href", f"https://x.com/search?q={name.replace(' ', '%20')}")
+                if name:
+                    results.append({"name": name, "tweet_volume": "", "url": url})
+            return results
         except Exception:
-            logger.exception("twitter trends failed (woeid=%d)", woeid)
-        return results
+            logger.exception("trends24 scrape failed (region=%s)", region)
+            return []
 
     async def user_by_username(self, username: str) -> dict[str, Any] | None:
         """Fetch a user profile."""

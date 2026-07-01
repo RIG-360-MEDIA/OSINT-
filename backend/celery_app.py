@@ -159,9 +159,9 @@ app.config_from_object(
             # ── Social pillar: forward collection + substrate drain ──
             # Lean cadence (~20k posts/day target). Scrapers + watchlist
             # next_check_at govern actual rate; these just trigger the walk.
-            "social-collect-twitter-15min": {
+            "social-collect-twitter-30min": {
                 "task": "tasks.social.collect_twitter",
-                "schedule": timedelta(minutes=15),
+                "schedule": timedelta(minutes=30),  # ban-safety: eased from 15; load split across pooled accounts
                 "options": {"queue": "social"},
             },
             "social-collect-reddit-15min": {

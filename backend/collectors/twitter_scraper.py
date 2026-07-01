@@ -124,14 +124,34 @@ class TwitterScraper:
             )
 
         pool = AccountsPool(self._pool_db)
-        cookies = f"auth_token={self._auth_token}; ct0={self._ct0}"
-        await pool.add_account(
-            username=self._username or "rig_scraper",
-            password="placeholder",
-            email="placeholder@rig.local",
-            email_password="placeholder",
-            cookies=cookies,
-        )
+
+        # Account pool: the primary (from TWITTER_*) plus any numbered extras
+        # (TWITTER_AUTH_TOKEN_2 / _CT0_2 / _USERNAME_2, _3, ...). twscrape rotates
+        # across all accounts automatically → spreads load, halving per-account
+        # ban risk. Ban-safety: never hammer one account.
+        accounts = [(self._username, self._auth_token, self._ct0)]
+        i = 2
+        while os.getenv(f"TWITTER_AUTH_TOKEN_{i}"):
+            accounts.append((
+                os.getenv(f"TWITTER_USERNAME_{i}", f"rig_scraper_{i}"),
+                os.getenv(f"TWITTER_AUTH_TOKEN_{i}", ""),
+                os.getenv(f"TWITTER_CT0_{i}", ""),
+            ))
+            i += 1
+
+        added = 0
+        for uname, auth_token, ct0 in accounts:
+            if not auth_token or not ct0:
+                continue
+            await pool.add_account(
+                username=uname or f"rig_scraper_{added + 1}",
+                password="placeholder",
+                email=f"placeholder{added}@rig.local",
+                email_password="placeholder",
+                cookies=f"auth_token={auth_token}; ct0={ct0}",
+            )
+            added += 1
+        logger.info("TwitterScraper: %d account(s) in pool", added)
         # Do NOT call login_all() — programmatic login is Cloudflare-blocked on
         # datacenter IPs. Browser-extracted cookies are already valid; skip re-auth.
         self._api = API(pool)

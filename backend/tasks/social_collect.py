@@ -175,8 +175,13 @@ def _parse_dt(s: Any) -> datetime | None:
         return None
 
 
+_IG_MEDIA = {1: "photo", 2: "video", 8: "carousel"}
+
+
 def _engagement(post: dict) -> dict[str, Any]:
     raw = post.get("raw") or {}
+    mt = raw.get("media_type")
+    media_type = _IG_MEDIA.get(mt, str(mt)) if mt is not None else None
     return {
         "likes": post.get("likes"),
         "comments_count": post.get("comments"),
@@ -188,7 +193,7 @@ def _engagement(post: dict) -> dict[str, Any]:
         "is_reply": bool(raw.get("is_reply", False)),
         "forwarded_from": raw.get("forwarded_from"),
         "lang": raw.get("lang"),
-        "media_type": raw.get("media_type"),
+        "media_type": media_type,
     }
 
 

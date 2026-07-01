@@ -48,5 +48,26 @@ INSERT INTO social_watchlist (platform, target_type, target_value, label, source
 ('instagram','handle','indiatoday','India Today IG (v)','corpus',3)
 ON CONFLICT (platform, target_type, target_value) DO NOTHING;
 
+-- ── Telangana + Andhra Pradesh specific (real handles/subreddits) ──
+INSERT INTO social_watchlist (platform, target_type, target_value, label, source, priority) VALUES
+('twitter','handle','RevanthReddy','Telangana CM A Revanth Reddy','corpus',2),
+('twitter','handle','TelanganaCMO','Telangana CMO','corpus',3),
+('twitter','handle','KTRBRS','KT Rama Rao (BRS)','corpus',3),
+('twitter','handle','ncbn','AP CM N Chandrababu Naidu','corpus',2),
+('twitter','handle','ysjagan','YS Jagan Mohan Reddy','corpus',3),
+('twitter','handle','PawanKalyan','AP Dy CM Pawan Kalyan','corpus',3),
+('twitter','handle','CMOAndhra','AP CMO','corpus',3),
+('twitter','keyword','Telangana','Telangana topic','corpus',4),
+('twitter','keyword','Amaravati','AP capital','corpus',4),
+('reddit','subreddit','hyderabad','r/hyderabad','corpus',3),
+('reddit','subreddit','andhrapradesh','r/andhrapradesh','corpus',4),
+('reddit','subreddit','Vizag','r/Vizag','corpus',4),
+-- ── International (India-relevant geopolitics/world wires) ──
+('twitter','handle','Reuters','Reuters world wire','corpus',4),
+('twitter','handle','BBCWorld','BBC World','corpus',4),
+('twitter','keyword','India US relations','India geopolitics','corpus',4),
+('twitter','keyword','India China','India geopolitics','corpus',4)
+ON CONFLICT (platform, target_type, target_value) DO NOTHING;
+
 -- summary
 SELECT platform, count(*) AS targets FROM social_watchlist GROUP BY platform ORDER BY platform;

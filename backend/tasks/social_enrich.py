@@ -306,15 +306,30 @@ def _embed(text_body: str) -> list[float] | None:
         return None
 
 
+_LANG_MAP = {
+    "english": "en", "hindi": "hi", "telugu": "te", "tamil": "ta", "bengali": "bn",
+    "marathi": "mr", "urdu": "ur", "kannada": "kn", "malayalam": "ml",
+    "gujarati": "gu", "punjabi": "pa", "odia": "or", "assamese": "as",
+}
+
+
+def _norm_lang(v: Any) -> str | None:
+    """Normalize language to a 2-letter ISO code (LLM emits both 'en' and 'English')."""
+    if not v:
+        return None
+    s = str(v).strip().lower()
+    if len(s) == 2:
+        return s
+    return _LANG_MAP.get(s, s[:2] if s else None)
+
+
 async def _classify_topic(parsed: dict[str, Any], text_body: str) -> tuple[str | None, str | None]:
-    from backend.nlp.nlp_topic import classify_topic_fine, coarse_from_fine
-    lead = parsed.get("primary_subject") or text_body[:300]
-    try:
-        fine = await classify_topic_fine(lead, None)
-        return fine, coarse_from_fine(fine)
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("social topic classify failed: %s", exc)
-        return parsed.get("topic_category"), None
+    # Trust the LLM's own topic_category. The article classifier (nlp_topic) misfits
+    # social content — it returned SPORTS for a Business post and OTHER for ~95%, and
+    # OVERRODE the LLM's correct topic. So we skip it for social entirely.
+    t = (parsed.get("topic_category") or "").strip()
+    topic = t.upper() if t else None
+    return topic, None
 
 
 # ── Persistence ───────────────────────────────────────────────────────────────
@@ -358,7 +373,7 @@ async def _persist(
             ),
             {
                 "id": post_id,
-                "lng": (parsed.get("language") or None),
+                "lng": _norm_lang(parsed.get("language")),
                 "lc": _as_float(parsed.get("language_confidence")),
                 "sent": (parsed.get("sentiment") or None),
                 "sscore": _as_float(parsed.get("sentiment_score")),

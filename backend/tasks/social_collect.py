@@ -162,6 +162,19 @@ def _clean_text(s: str) -> str:
     return _WS.sub(" ", s).strip()
 
 
+def _parse_dt(s: Any) -> datetime | None:
+    """ISO string -> tz-aware datetime (asyncpg needs a datetime, not a str)."""
+    if not s:
+        return None
+    if isinstance(s, datetime):
+        return s if s.tzinfo else s.replace(tzinfo=timezone.utc)
+    try:
+        dt = datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        return None
+
+
 def _engagement(post: dict) -> dict[str, Any]:
     raw = post.get("raw") or {}
     return {
@@ -205,8 +218,8 @@ async def _land_posts(posts: list[dict], watchlist_id: int) -> list[int]:
                            lang, has_media, media_type, media_urls, watchlist_id, raw)
                         VALUES
                           (:platform, :ppid, :aid, :cid, :txt, :clean, :url,
-                           CAST(:posted AS timestamptz),
-                           (CAST(:posted AS timestamptz) AT TIME ZONE 'Asia/Kolkata'),
+                           :posted,
+                           (:posted AT TIME ZONE 'Asia/Kolkata'),
                            :likes, :comments, :shares, :upvotes, :views, :ratio,
                            :rt, :rep, :fwd, :lang, :hasm, :mtype,
                            CAST(:murls AS JSONB), :wl, CAST(:raw AS JSONB))
@@ -221,7 +234,7 @@ async def _land_posts(posts: list[dict], watchlist_id: int) -> list[int]:
                         "txt": (post.get("post_text") or "")[:8000],
                         "clean": _clean_text(post.get("post_text") or "")[:8000],
                         "url": post.get("post_url"),
-                        "posted": post.get("posted_at"),
+                        "posted": _parse_dt(post.get("posted_at")),
                         "likes": eng["likes"], "comments": eng["comments_count"],
                         "shares": eng["shares"], "upvotes": eng["upvotes"],
                         "views": eng["views"], "ratio": eng["upvote_ratio"],

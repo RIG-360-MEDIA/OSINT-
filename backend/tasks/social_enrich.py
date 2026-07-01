@@ -29,6 +29,7 @@ import hashlib
 import json
 import logging
 import re
+from datetime import datetime, timezone
 from typing import Any
 
 from backend.celery_app import app
@@ -91,7 +92,12 @@ async def _drain(limit: int) -> dict:
                 break
             pid = int(row.id)
             await db.commit()
-        outcome = await _enrich_claimed(pid)
+        try:
+            outcome = await _enrich_claimed(pid)
+        except Exception:  # noqa: BLE001 — never leave a claimed post wedged in 'processing'
+            logger.exception("social drain: enrich crashed for %s", pid)
+            await _mark_status(pid, "extract_failed")
+            outcome = "failed"
         if outcome == "ok":
             done += 1
         elif outcome == "skipped":
@@ -197,34 +203,67 @@ async def _enrich_claimed(post_id: int) -> str:
 
 # ── LLM call with 2-attempt retry + robust parse ──────────────────────────────
 
-async def _call_with_retry(sys_prompt: str, user_msg: str) -> dict[str, Any] | None:
-    from backend.nlp.groq_client import call_groq, GroqCallFailed, GroqQuotaExhausted
+# Social extraction goes DIRECT to cloud (Groq primary → Cerebras fallback), NOT
+# through the shared local-first unified pool — social must be reliable (user
+# decision) and the local TabbyAPI tunnel is flaky. Mirrors the proven trial/
+# bake-off path (gpt-oss-120b, 63/63). Every failure is swallowed → None so the
+# drain NEVER crashes/wedges; the caller marks extract_failed.
 
+_GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+_CEREBRAS_URL = "https://api.cerebras.ai/v1/chat/completions"
+_GROQ_MODEL = "openai/gpt-oss-120b"
+_CEREBRAS_MODEL = "llama-3.3-70b"
+
+
+async def _cloud_call(sys_prompt: str, user_msg: str) -> str | None:
+    """Direct cloud chat-completion with key rotation. Returns content str or None."""
+    import os
+    import httpx
+
+    def _body(model: str) -> dict:
+        return {
+            "model": model, "temperature": 0, "max_tokens": _MAX_TOK,
+            "response_format": {"type": "json_object"},
+            "messages": [{"role": "system", "content": sys_prompt},
+                         {"role": "user", "content": user_msg}],
+        }
+
+    providers = [
+        (_GROQ_URL, _GROQ_MODEL, os.getenv("GROQ_API_KEYS", "")),
+        (_CEREBRAS_URL, _CEREBRAS_MODEL, os.getenv("CEREBRAS_API_KEYS", "")),
+    ]
+    async with httpx.AsyncClient(timeout=60) as client:
+        for url, model, keys_csv in providers:
+            keys = [k.strip() for k in keys_csv.split(",") if k.strip()]
+            body = _body(model)
+            for key in keys:
+                try:
+                    r = await client.post(
+                        url, json=body,
+                        headers={"Authorization": "Bearer %s" % key,
+                                 "User-Agent": "rig-social/1.0"},
+                    )
+                    if r.status_code in (401, 403, 429):
+                        continue  # bad/exhausted key → rotate
+                    r.raise_for_status()
+                    return r.json()["choices"][0]["message"]["content"]
+                except Exception:  # noqa: BLE001 — any error → try next key/provider
+                    continue
+    return None
+
+
+async def _call_with_retry(sys_prompt: str, user_msg: str) -> dict[str, Any] | None:
     for attempt in range(2):
         try:
-            raw = await call_groq(
-                system=sys_prompt,
-                user=user_msg,
-                pillar=_PILLAR,
-                task_type=_TASK_TYPE,
-                json_response=True,
-                max_tokens_override=_MAX_TOK,
-            )
-        except (GroqCallFailed, GroqQuotaExhausted) as exc:
-            logger.warning("social enrich: groq failed (attempt %d): %s", attempt + 1, exc)
-            if attempt == 0:
-                continue
-            return None
-
-        if isinstance(raw, dict):
-            return raw
+            raw = await _cloud_call(sys_prompt, user_msg)
+        except Exception:  # noqa: BLE001 — never let the LLM call crash the drain
+            raw = None
         parsed = _loads_lenient(raw)
         if parsed is not None:
             return parsed
         if attempt == 0:
             continue
-        logger.warning("social enrich: json parse failed after 2 attempts; raw[:200]=%r",
-                       (raw or "")[:200] if isinstance(raw, str) else raw)
+        logger.warning("social enrich: extraction failed/unparseable after 2 attempts")
     return None
 
 
@@ -349,6 +388,19 @@ def _as_float(v: Any) -> float | None:
     try:
         return float(v)
     except (TypeError, ValueError):
+        return None
+
+
+def _parse_dt(s: Any) -> datetime | None:
+    """ISO string -> tz-aware datetime (asyncpg needs a datetime for timestamptz)."""
+    if not s:
+        return None
+    if isinstance(s, datetime):
+        return s if s.tzinfo else s.replace(tzinfo=timezone.utc)
+    try:
+        dt = datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
         return None
 
 
@@ -504,7 +556,6 @@ async def _persist_events(db, pid: int, events: list[dict[str, Any]]) -> None:
         mention = (e.get("mention") or "").strip()
         if not mention:
             continue
-        resolved = (e.get("resolved") or None)
         await db.execute(
             text(
                 """
@@ -513,7 +564,7 @@ async def _persist_events(db, pid: int, events: list[dict[str, Any]]) -> None:
                 VALUES (:id, :mn, :rs, :cf)
                 """
             ),
-            {"id": pid, "mn": mention[:200], "rs": (resolved if resolved else None),
+            {"id": pid, "mn": mention[:200], "rs": _parse_dt(e.get("resolved")),
              "cf": _as_float(e.get("confidence")) or 0.3},
         )
 

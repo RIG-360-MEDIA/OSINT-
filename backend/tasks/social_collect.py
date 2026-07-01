@@ -34,30 +34,33 @@ _WS = re.compile(r"\s+")
 
 # ── Celery entry points (one per platform) ────────────────────────────────────
 
+# client defaults to 'india_govt' (current product); the corporate product fires
+# these with client='tridel' (etc.) so each scrapes ONLY its own watchlist rows.
+
 @app.task(name="tasks.social.collect_twitter", queue="social")
-def collect_twitter(limit_per_target: int = 25) -> dict:
-    return asyncio.run(_collect_platform("twitter", limit_per_target))
+def collect_twitter(limit_per_target: int = 25, client: str = "india_govt") -> dict:
+    return asyncio.run(_collect_platform("twitter", limit_per_target, client))
 
 
 @app.task(name="tasks.social.collect_reddit", queue="social")
-def collect_reddit(limit_per_target: int = 25) -> dict:
-    return asyncio.run(_collect_platform("reddit", limit_per_target))
+def collect_reddit(limit_per_target: int = 25, client: str = "india_govt") -> dict:
+    return asyncio.run(_collect_platform("reddit", limit_per_target, client))
 
 
 @app.task(name="tasks.social.collect_telegram", queue="social")
-def collect_telegram(limit_per_target: int = 25) -> dict:
-    return asyncio.run(_collect_platform("telegram", limit_per_target))
+def collect_telegram(limit_per_target: int = 25, client: str = "india_govt") -> dict:
+    return asyncio.run(_collect_platform("telegram", limit_per_target, client))
 
 
 @app.task(name="tasks.social.collect_instagram", queue="social")
-def collect_instagram(limit_per_target: int = 12) -> dict:
-    return asyncio.run(_collect_platform("instagram", limit_per_target))
+def collect_instagram(limit_per_target: int = 12, client: str = "india_govt") -> dict:
+    return asyncio.run(_collect_platform("instagram", limit_per_target, client))
 
 
 # ── Orchestration ─────────────────────────────────────────────────────────────
 
-async def _collect_platform(platform: str, limit: int) -> dict:
-    targets = await _active_targets(platform)
+async def _collect_platform(platform: str, limit: int, client: str = "india_govt") -> dict:
+    targets = await _active_targets(platform, client)
     if not targets:
         logger.info("social collect %s: no active watchlist targets", platform)
         return {"platform": platform, "targets": 0, "new_posts": 0}
@@ -67,6 +70,7 @@ async def _collect_platform(platform: str, limit: int) -> dict:
         logger.warning("social collect %s: scraper unavailable (creds?)", platform)
         return {"platform": platform, "targets": len(targets), "new_posts": 0, "error": "no_scraper"}
 
+    logger.info("social collect %s (client=%s): %d targets", platform, client, len(targets))
     total_new = 0
     for tgt in targets:
         try:
@@ -86,7 +90,7 @@ async def _collect_platform(platform: str, limit: int) -> dict:
     return {"platform": platform, "targets": len(targets), "new_posts": total_new}
 
 
-async def _active_targets(platform: str) -> list[dict[str, Any]]:
+async def _active_targets(platform: str, client: str) -> list[dict[str, Any]]:
     from sqlalchemy import text
     from backend.database import get_db
     async with get_db() as db:
@@ -96,13 +100,13 @@ async def _active_targets(platform: str) -> list[dict[str, Any]]:
                     """
                     SELECT id, target_type, target_value, last_seen_id, fetch_limit
                     FROM social_watchlist
-                    WHERE platform = :p AND is_active = TRUE
+                    WHERE client = :client AND platform = :p AND is_active = TRUE
                       AND (next_check_at IS NULL OR next_check_at <= NOW())
                     ORDER BY priority ASC, next_check_at ASC NULLS FIRST
                     LIMIT 200
                     """
                 ),
-                {"p": platform},
+                {"client": client, "p": platform},
             )
         ).fetchall()
     return [dict(r._mapping) for r in rows]

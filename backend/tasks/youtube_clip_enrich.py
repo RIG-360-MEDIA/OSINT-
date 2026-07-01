@@ -32,7 +32,10 @@ logger = logging.getLogger(__name__)
 _EXTRACTION_VERSION = 4   # v4: multi-entity + all-English quotes/claims/stances, no placeholder speakers
 _MIN_SEGMENT_CHARS = 20       # below this the transcript segment is too sparse
 _MAX_SEGMENT_CHARS = 2200     # mirrors extraction.py _MAX_CHUNK_CHARS
-_MAX_OUTPUT_TOKENS = 1500     # TOKEN_LIMITS['transcript_analysis']
+_MAX_OUTPUT_TOKENS = 4000     # was 1500 — too low: multi-field English-translated
+                              # extraction of long/Indic transcripts overflowed it,
+                              # so strict json_object mode returned truncated → 400 →
+                              # cloud chain exhausted → 0 clips. 4000 fits the output.
 
 # Intensity string → numeric (TRANSCRIPT_SYS emits high/medium/low strings)
 _INTENSITY_MAP = {"high": 0.9, "medium": 0.5, "low": 0.3}
@@ -110,7 +113,14 @@ async def _drain(limit: int) -> dict:
                 break
             cid: int = int(row.id)
             await db.commit()
-        ok = await _enrich_claimed(cid)
+        try:
+            ok = await _enrich_claimed(cid)
+        except Exception:  # noqa: BLE001
+            # Never let one bad row kill the loop and leave it wedged in
+            # 'processing'. Mark it failed (retryable) and move on.
+            logger.exception("clip enrich crashed for %s; marking extract_failed", cid)
+            await _mark_status(cid, "extract_failed")
+            ok = False
         if ok:
             done += 1
         else:
@@ -237,11 +247,32 @@ async def _call_with_retry(
     call_groq, pillar: str, sys_prompt: str,
     user_msg: str, max_tok: int, task_type: str,
 ) -> dict[str, Any] | None:
-    import json
-    import re
-    from backend.nlp.groq_client import GroqCallFailed, GroqQuotaExhausted
+    """Try the cheap local-first pool; on ANY failure fall back to cloud-direct.
 
-    raw_for_parse = ""
+    The unified pool prefers local TabbyAPI slots and raises ConnectError when
+    the local tunnel is down (rather than falling back), which otherwise stalls
+    the clip backlog. Cloud fallback (Groq gpt-oss-120b → Cerebras) keeps rows
+    processing when local is flaky; local is still preferred when up.
+    """
+    import os
+    from backend.nlp.groq_client import GroqCallFailed, GroqQuotaExhausted
+    from backend.nlp.cloud_fallback import cloud_call
+
+    # Backfill mode: route extraction straight to cloud (parallel) instead of
+    # queuing behind the one saturated local GPU. Runs IN the worker (LaBSE
+    # cached → no OOM). Toggle with DRAIN_CLOUD_FIRST=1.
+    if os.getenv("DRAIN_CLOUD_FIRST") == "1":
+        for attempt in range(2):
+            try:
+                raw = await cloud_call(sys_prompt, user_msg, max_tok)
+            except Exception:  # noqa: BLE001
+                raw = None
+            parsed = _loads_lenient(raw)
+            if parsed is not None:
+                return parsed
+        return None
+
+    # 1) local-first pool (2 attempts)
     for attempt in range(2):
         try:
             raw = await call_groq(
@@ -253,40 +284,64 @@ async def _call_with_retry(
                 max_tokens_override=max_tok,
             )
         except (GroqCallFailed, GroqQuotaExhausted) as exc:
-            logger.warning("clip enrich: groq failed (attempt %d): %s", attempt + 1, exc)
-            if attempt == 0:
-                continue
-            return None
-
+            logger.warning("clip enrich: groq pool failed (attempt %d): %s", attempt + 1, exc)
+            break  # pool unhealthy → go straight to cloud fallback
+        except Exception as exc:  # noqa: BLE001
+            # Wedge-proofing: ANY error (e.g. httpx.ConnectError when the local
+            # LLM tunnel is down) must NOT propagate; fall through to cloud.
+            logger.warning("clip enrich: pool call errored (attempt %d): %s", attempt + 1, exc)
+            break
         if isinstance(raw, dict):
             return raw
-        raw_for_parse = (raw or "").strip() if isinstance(raw, str) else ""
+        parsed = _loads_lenient(raw)
+        if parsed is not None:
+            return parsed
+        if attempt == 0:
+            continue
+
+    # 2) cloud-direct fallback (Groq → Cerebras, key rotation; never raises)
+    try:
+        raw = await cloud_call(sys_prompt, user_msg, max_tok)
+    except Exception:  # noqa: BLE001
+        raw = None
+    parsed = _loads_lenient(raw)
+    if parsed is None:
+        logger.warning("clip enrich: pool + cloud fallback both failed")
+    return parsed
+
+
+def _loads_lenient(raw: Any) -> dict[str, Any] | None:
+    """Parse a JSON object from a possibly-fenced / prose-wrapped LLM string."""
+    import json
+    import re
+
+    if not isinstance(raw, str):
+        return None
+    s = raw.strip()
+    try:
+        return json.loads(s)
+    except (TypeError, ValueError):
+        pass
+    if s.startswith("```"):
+        s = re.sub(r"^```(?:json)?\s*", "", s)
+        s = re.sub(r"\s*```\s*$", "", s)
+    first, last = s.find("{"), s.rfind("}")
+    if first >= 0 and last > first:
         try:
-            return json.loads(raw_for_parse)
+            return json.loads(s[first:last + 1])
         except (TypeError, ValueError):
-            cleaned = raw_for_parse
-            if cleaned.startswith("```"):
-                cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
-                cleaned = re.sub(r"\s*```\s*$", "", cleaned)
-            first, last = cleaned.find("{"), cleaned.rfind("}")
-            if first >= 0 and last > first:
-                cleaned = cleaned[first:last + 1]
-            try:
-                return json.loads(cleaned)
-            except (TypeError, ValueError):
-                if attempt == 0:
-                    continue
-                logger.warning(
-                    "clip enrich: json parse failed after 2 attempts. raw[:200]=%r",
-                    raw_for_parse[:200],
-                )
-                return None
+            return None
     return None
 
 
 async def _classify_topic(
     summary: str, entity: str,
 ) -> tuple[str | None, str | None]:
+    import os
+    # Backfill mode: skip the extra local topic call (queues behind the
+    # saturated local node). COALESCE preserves any existing topic.
+    if os.getenv("DRAIN_CLOUD_FIRST") == "1":
+        return None, None
     from backend.nlp.nlp_topic import classify_topic_fine, coarse_from_fine
 
     lead = f"{entity}: {summary[:400]}" if summary else entity

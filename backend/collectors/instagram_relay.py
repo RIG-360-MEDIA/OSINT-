@@ -208,6 +208,44 @@ def _item_to_post(item: dict[str, Any], username: str) -> dict[str, Any]:
     }
 
 
+def _web_node_to_post(node: dict[str, Any], username: str) -> dict[str, Any]:
+    """Map a web_profile_info timeline edge node to the common post shape.
+
+    The mobile feed endpoint (i.instagram.com/api/v1/feed/user) is rate-limited
+    to 401 ('please wait a few minutes', require_login) even with a valid
+    session, so we read the recent posts inline from web_profile_info instead —
+    the same endpoint that resolves the user id, which returns 200 cookie-only.
+    """
+    cap_edges = (node.get("edge_media_to_caption") or {}).get("edges", [])
+    text = cap_edges[0]["node"].get("text", "") if cap_edges else ""
+    ts = node.get("taken_at_timestamp", 0)
+    posted_at = datetime.fromtimestamp(ts, tz=timezone.utc).isoformat() if ts else None
+    shortcode = node.get("shortcode", "")
+    post_url = f"https://www.instagram.com/p/{shortcode}/" if shortcode else ""
+    is_video = bool(node.get("is_video"))
+    media_urls = [node["display_url"]] if node.get("display_url") else []
+    return {
+        "platform": "instagram",
+        "platform_post_id": str(node.get("id") or ""),
+        "author_username": username,
+        "author_name": None,
+        "post_text": (text or "").strip(),
+        "post_url": post_url,
+        "posted_at": posted_at,
+        "likes": (node.get("edge_liked_by") or {}).get("count"),
+        "comments": (node.get("edge_media_to_comment") or {}).get("count"),
+        "shares": None,
+        "upvotes": None,
+        "has_media": bool(media_urls),
+        "media_urls": media_urls[:4],
+        "raw": {
+            "media_type": "video" if is_video else "photo",
+            "view_count": node.get("video_view_count") if is_video else None,
+            "is_video": is_video,
+        },
+    }
+
+
 def _fetch_profile(username: str, limit: int) -> list[dict[str, Any]]:
     cache_key = f"profile:{username}:{limit}"
     now = time.time()
@@ -228,21 +266,18 @@ def _fetch_profile(username: str, limit: int) -> list[dict[str, Any]]:
         for attempt in range(4):
             try:
                 _wait_for_slot()
-                user_id = _get_user_id(username)
-                _wait_for_slot()
-                r = _req.get(
-                    f"https://i.instagram.com/api/v1/feed/user/{user_id}/",
-                    params={"count": min(limit, 12), "rank_token": uuid.uuid4().hex},
-                    headers=_MOBILE_HEADERS,
-                    cookies=_mobile_cookies(),
+                s = _web_session()
+                r = s.get(
+                    f"https://www.instagram.com/api/v1/users/web_profile_info/?username={username}",
                     timeout=20,
                 )
                 r.raise_for_status()
-                items = r.json().get("items", [])[:limit]
-                posts = [_item_to_post(it, username) for it in items]
+                user = r.json()["data"]["user"]
+                edges = (user.get("edge_owner_to_timeline_media") or {}).get("edges", [])
+                posts = [_web_node_to_post(e["node"], username) for e in edges[:limit]]
                 _record_success()
                 _cache[cache_key] = (now + CACHE_TTL, posts)
-                logger.info("fetched %d posts @%s", len(posts), username)
+                logger.info("fetched %d posts @%s (web)", len(posts), username)
                 return posts
 
             except (_req.HTTPError, _req.ConnectionError) as exc:

@@ -1013,6 +1013,12 @@ async def _call_unified_pool(
         except groq_sdk.BadRequestError as exc:
             _log_response_body("UnifiedPool/groq 400", exc)
             err = str(exc).lower()
+            if "organization_restricted" in err or "organization has been restricted" in err:
+                # Groq org suspended (keys valid but the org is blocked). Cool this
+                # slot hard so the pool stops picking Groq and routes to Cerebras.
+                await pool.mark_exhausted(slot_idx, 300)
+                last_exc = exc
+                continue
             if "json_validate_failed" in err or "failed to generate json" in err:
                 # Transient model flake; rotate to next slot.
                 last_exc = exc

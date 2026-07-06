@@ -12,14 +12,18 @@ import Dossier from './pages/Dossier';
 import MapPage from './pages/MapPage';
 import Dispatch from './pages/Dispatch';
 import Ask from './pages/Ask';
+import Keywords from './pages/Keywords';
 import Login from './pages/Login';
 import Landing from './pages/Landing';
 import SuperUserDashboard from './pages/SuperUserDashboard';
 import { useMe } from './lib/useMe';
 import { ImpersonationProvider, useImpersonation } from './lib/ImpersonationContext';
+import ProductPicker, { canSeeCompany } from './pages/company/ProductPicker';
+import CompanyApp from './pages/company/CompanyApp';
+import './styles/company.css';
 
-const ALL_PAGES = [Home, WarRoom, Analytics, Dossier, MapPage, Dispatch, Ask];
-const ALL_SLUGS = ['home', 'war-room', 'analytics', 'dossier', 'map', 'dispatch', 'ask'];
+const ALL_PAGES = [Home, WarRoom, Analytics, Dossier, MapPage, Dispatch, Ask, Keywords];
+const ALL_SLUGS = ['home', 'war-room', 'analytics', 'dossier', 'map', 'dispatch', 'ask', 'keywords'];
 const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, ''); // '' at root, '/desk' on subpath
 
 // Client users cannot access the Ask/RAG page (index 6).
@@ -114,6 +118,15 @@ function AuthGate() {
   const { loading, me } = useMe();
   const { viewingAs } = useImpersonation();
 
+  // Which product the user is in. Only 'company' is persisted (so a refresh
+  // stays put and the in-app "Switch product" button is the escape hatch);
+  // 'political' is left transient so a refresh returns to the picker.
+  const [product, setProduct] = useState(() => { try { return localStorage.getItem('nd-product'); } catch { return null; } });
+  const pickProduct = (p) => {
+    setProduct(p);
+    try { if (p === 'company') localStorage.setItem('nd-product', 'company'); else localStorage.removeItem('nd-product'); } catch { /* ignore */ }
+  };
+
   const [path, setPath] = useState(() => window.location.pathname);
   useEffect(() => {
     const onPop = () => setPath(window.location.pathname);
@@ -139,6 +152,15 @@ function AuthGate() {
   }
   if (onRoot && !me) return <Landing onEnter={enterApp} />;
   if (!me) return <Login />;
+
+  // Post-login product picker — only for accounts allowed to see the Windlass
+  // Company OSINT demo. Everyone else falls straight through to the political
+  // desk exactly as before (no behaviour change for real political clients).
+  const canCompany = canSeeCompany(me);
+  if (canCompany && !product) return <ProductPicker me={me} onPick={pickProduct} />;
+  if (canCompany && product === 'company') return <CompanyApp me={me} onSwitchProduct={() => pickProduct(null)} />;
+
+  // Political desk (default).
   // Super-user with no active impersonation → user-picker dashboard
   if (me.role === 'super_user' && !viewingAs) return <SuperUserDashboard />;
   return <AppShell />;

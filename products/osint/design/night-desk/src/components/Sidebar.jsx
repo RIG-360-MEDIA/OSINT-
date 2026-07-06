@@ -24,6 +24,7 @@ const ALL_NAV = [
   { k: 'Map', ic: 'map' },
   { k: 'Dispatch', ic: 'dispatch' },
   { k: 'Ask', ic: 'ask' },
+  { k: 'Keywords', ic: 'dossier' },
 ];
 
 export default function Sidebar({ i, setI, onCollapse, effectiveRole, viewingAs, onExitImpersonation }) {

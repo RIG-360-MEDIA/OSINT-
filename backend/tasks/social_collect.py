@@ -57,6 +57,15 @@ def collect_instagram(limit_per_target: int = 12, client: str = "india_govt") ->
     return asyncio.run(_collect_platform("instagram", limit_per_target, client))
 
 
+# TikTok via the cheap_stack collector (tikwm). Handle-driven (entity-tracking),
+# keyword/entity model — only collects tiktok watchlist rows that were provisioned,
+# never a standing firehose. Invoke on-demand (send_task) or from a beat entry once
+# tiktok targets exist; no beat row added here so it stays inert until provisioned.
+@app.task(name="tasks.social.collect_tiktok", queue="social")
+def collect_tiktok(limit_per_target: int = 15, client: str = "india_govt") -> dict:
+    return asyncio.run(_collect_platform("tiktok", limit_per_target, client))
+
+
 # ── Orchestration ─────────────────────────────────────────────────────────────
 
 async def _collect_platform(platform: str, limit: int, client: str = "india_govt") -> dict:
@@ -126,9 +135,52 @@ async def _get_scraper(platform: str):
         if platform == "instagram":
             from backend.collectors.instagram_scraper import get_scraper
             return get_scraper()
+        if platform == "tiktok":
+            return _CheapStackAdapter("tiktok")
     except Exception:
         logger.exception("social collect: cannot init %s scraper", platform)
     return None
+
+
+class _CheapStackAdapter:
+    """Async wrapper over the sync cheap_stack collectors so they slot into the
+    same _collect_platform flow. Lazy-imports the collector inside the method, so
+    a cheap_stack import problem degrades to an empty pull — never a module-load
+    crash that would take down the whole worker (and thus all ingest)."""
+
+    def __init__(self, platform: str) -> None:
+        self.platform = platform
+
+    async def user_posts(self, handle: str, limit: int) -> list[dict]:
+        try:
+            from backend.collectors.cheap_stack.pipeline_adapter import (
+                collect_tiktok_posts,
+            )
+            raw = await asyncio.to_thread(collect_tiktok_posts, handle, limit=limit)
+        except Exception:
+            logger.exception("cheap_stack %s pull failed for %s", self.platform, handle)
+            return []
+        return [_normalize_cheap(p) for p in (raw or []) if isinstance(p, dict)]
+
+
+def _normalize_cheap(p: dict) -> dict:
+    """Map a cheap_stack post-dict (upvotes/comment_count, no raw) to the shape
+    _land_posts / _engagement expect (likes/comments/raw)."""
+    return {
+        "platform": p.get("platform"),
+        "platform_post_id": p.get("platform_post_id"),
+        "author_username": p.get("author_username"),
+        "author_name": p.get("author_username"),
+        "post_text": p.get("post_text"),
+        "post_url": p.get("post_url"),
+        "posted_at": p.get("posted_at"),
+        "likes": p.get("upvotes"),          # tiktok digg_count ~ likes
+        "comments": p.get("comment_count"),
+        "upvotes": p.get("upvotes"),
+        "has_media": True,                   # tiktok posts are videos
+        "media_urls": [],
+        "raw": {"source": "cheap_stack"},
+    }
 
 
 async def _scrape_target(scraper, platform: str, tgt: dict, limit: int) -> list[dict]:
@@ -151,6 +203,8 @@ async def _scrape_target(scraper, platform: str, tgt: dict, limit: int) -> list[
         if ttype == "hashtag":
             return await scraper.hashtag(val, limit=n)     # gated until bearer login
         return await scraper.profile(val, limit=n)         # handle
+    if platform == "tiktok":
+        return await scraper.user_posts(val, limit=n)      # handle (tikwm)
     return []
 
 

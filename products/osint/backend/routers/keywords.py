@@ -15,9 +15,16 @@ from db import get_db
 from keyword_dossier import build_keyword_dossier
 from keyword_alerts import evaluate_watch
 from keyword_tracking import list_alerts, list_tracked, track_keyword, untrack_keyword
+from academic_collector import academic_lookup
+from archive_collector import web_archive
+from company_collector import company_lookup
+from gdelt_collector import gdelt_coverage
+from geo_collector import geo_lookup
 from infra_collector import domain_infra
 from perspective import build_perspective
+from stats_collector import country_stats
 from tasking_brain import build_task_plan
+from wiki_collector import wiki_lookup
 
 router = APIRouter(prefix="/api/keywords", tags=["keywords"])
 
@@ -59,6 +66,50 @@ async def infra(
 ) -> dict[str, Any]:
     """Domain/Infra source — registration (RDAP) + live DNS for a domain."""
     return await domain_infra(domain)
+
+
+# ── Phase-7 non-social OSINT sources (free, no-key; on-demand per keyword) ──
+
+@router.get("/academic")
+async def academic(q: str = Query(..., min_length=2, max_length=120)) -> dict[str, Any]:
+    """Academic/research footprint via OpenAlex (papers, authors, institutions)."""
+    return await academic_lookup(q)
+
+
+@router.get("/stats")
+async def stats(country: str = Query(..., min_length=2, max_length=3, description="ISO2 country code")) -> dict[str, Any]:
+    """Country indicators (GDP/population/growth/inflation) via World Bank."""
+    return await country_stats(country)
+
+
+@router.get("/geo")
+async def geo(q: str = Query(..., min_length=2, max_length=200)) -> dict[str, Any]:
+    """Geolocation of a place via OpenStreetMap Nominatim."""
+    return await geo_lookup(q)
+
+
+@router.get("/archive")
+async def archive(domain: str = Query(..., min_length=3, max_length=253)) -> dict[str, Any]:
+    """Web history (first-seen + snapshot count) via the Wayback Machine."""
+    return await web_archive(domain)
+
+
+@router.get("/wiki")
+async def wiki(q: str = Query(..., min_length=2, max_length=120)) -> dict[str, Any]:
+    """Encyclopedic profile + Wikidata ID via Wikipedia."""
+    return await wiki_lookup(q)
+
+
+@router.get("/gdelt")
+async def gdelt(q: str = Query(..., min_length=2, max_length=120)) -> dict[str, Any]:
+    """Worldwide news coverage volume + tone via GDELT (beyond the India corpus)."""
+    return await gdelt_coverage(q)
+
+
+@router.get("/company")
+async def company(q: str = Query(..., min_length=2, max_length=120)) -> dict[str, Any]:
+    """Official legal-entity registration via GLEIF (LEI, jurisdiction, status)."""
+    return await company_lookup(q)
 
 
 @router.get("/perspective")

@@ -15,6 +15,7 @@ from db import get_db
 from keyword_dossier import build_keyword_dossier
 from keyword_alerts import evaluate_watch
 from keyword_tracking import list_alerts, list_tracked, track_keyword, untrack_keyword
+from infra_collector import domain_infra
 from perspective import build_perspective
 from tasking_brain import build_task_plan
 
@@ -50,6 +51,14 @@ async def keyword_search(
         dossier["perspective_default"] = plan["perspective_default"]
         dossier["source_plan"] = plan["source_plan"]
         return dossier
+
+
+@router.get("/infra")
+async def infra(
+    domain: str = Query(..., min_length=3, max_length=253, description="a domain, e.g. ril.com"),
+) -> dict[str, Any]:
+    """Domain/Infra source — registration (RDAP) + live DNS for a domain."""
+    return await domain_infra(domain)
 
 
 @router.get("/perspective")

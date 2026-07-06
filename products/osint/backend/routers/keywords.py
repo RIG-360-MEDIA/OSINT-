@@ -22,6 +22,7 @@ from gdelt_collector import gdelt_coverage
 from geo_collector import geo_lookup
 from infra_collector import domain_infra
 from perspective import build_perspective
+from social_live import social_live
 from stats_collector import country_stats
 from tasking_brain import build_task_plan
 from wiki_collector import wiki_lookup
@@ -110,6 +111,15 @@ async def gdelt(q: str = Query(..., min_length=2, max_length=120)) -> dict[str, 
 async def company(q: str = Query(..., min_length=2, max_length=120)) -> dict[str, Any]:
     """Official legal-entity registration via GLEIF (LEI, jurisdiction, status)."""
     return await company_lookup(q)
+
+
+@router.get("/social-live")
+async def social_live_endpoint(
+    q: str = Query(..., min_length=2, max_length=120),
+    limit: int = Query(default=10, ge=1, le=30),
+) -> dict[str, Any]:
+    """On-demand keyword-driven social — TikTok + WeChat, fetched live (Phase 3)."""
+    return await social_live(q, limit)
 
 
 @router.get("/perspective")

@@ -15,6 +15,7 @@ from db import get_db
 from keyword_dossier import build_keyword_dossier
 from keyword_alerts import evaluate_watch
 from keyword_tracking import list_alerts, list_tracked, track_keyword, untrack_keyword
+from perspective import build_perspective
 from tasking_brain import build_task_plan
 
 router = APIRouter(prefix="/api/keywords", tags=["keywords"])
@@ -49,6 +50,17 @@ async def keyword_search(
         dossier["perspective_default"] = plan["perspective_default"]
         dossier["source_plan"] = plan["source_plan"]
         return dossier
+
+
+@router.get("/perspective")
+async def perspective(
+    q: str = Query(..., min_length=1, max_length=120),
+    days: int = Query(default=7, ge=1, le=90),
+) -> dict[str, Any]:
+    """Perspective Lens — framing divergence across languages/origins for a keyword."""
+    async with get_db() as db:
+        await db.execute(text("SET statement_timeout='30s'"))
+        return await build_perspective(db, q, days)
 
 
 @router.post("/track")

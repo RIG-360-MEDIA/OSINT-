@@ -72,7 +72,10 @@ export default function Keywords() {
   const series = data?.volume?.series?.map((p) => p.count) || [];
   const labels = data?.volume?.series?.map((p) => p.date.slice(5)) || [];
   const dist = data?.sentiment?.distribution || {};
-  const sentSegments = Object.entries(dist).map(([k, v]) => ({ label: k, value: v, color: STANCE_COLOR[k] || 'muted' }));
+  const sentTotal = Object.values(dist).reduce((a, b) => a + b, 0) || 1;
+  const sentSegments = Object.entries(dist).map(([k, v]) => ({
+    label: k, value: Math.round((v / sentTotal) * 100), color: STANCE_COLOR[k] || 'muted',
+  }));
   const socialByPlatform = data?.social?.by_platform || {};
 
   return (
@@ -113,7 +116,7 @@ export default function Keywords() {
           </Panel>
 
           <Panel title="Sentiment" sub={`${data.sentiment.label} · lean ${data.sentiment.lean ?? '—'} · n=${data.sentiment.n}`}>
-            {sentSegments.length ? <StackBar segments={sentSegments.map((s) => ({ ...s, value: s.value }))} /> : <div style={{ color: 'var(--faint)' }}>No stance data.</div>}
+            {sentSegments.length ? <StackBar segments={sentSegments} /> : <div style={{ color: 'var(--faint)' }}>No stance data.</div>}
           </Panel>
 
           <Panel title="Social" sub={`${data.social.total} posts across platforms`}>

@@ -13,7 +13,8 @@ from sqlalchemy import text
 from auth.middleware import get_optional_user
 from db import get_db
 from keyword_dossier import build_keyword_dossier
-from keyword_tracking import list_tracked, track_keyword, untrack_keyword
+from keyword_alerts import evaluate_watch
+from keyword_tracking import list_alerts, list_tracked, track_keyword, untrack_keyword
 from tasking_brain import build_task_plan
 
 router = APIRouter(prefix="/api/keywords", tags=["keywords"])
@@ -88,3 +89,15 @@ async def tracked(
         return {"tracked": []}
     async with get_db() as db:
         return {"tracked": await list_tracked(db, user["id"])}
+
+
+@router.get("/alerts")
+async def alerts(
+    unseen: bool = Query(default=False),
+    user: dict[str, str] | None = Depends(get_optional_user),
+) -> dict[str, Any]:
+    """Alerts across the user's tracked keywords (newest first)."""
+    if not user:
+        return {"alerts": []}
+    async with get_db() as db:
+        return {"alerts": await list_alerts(db, user["id"], unseen)}

@@ -44,6 +44,26 @@ async def untrack_keyword(db, user_id: str, keyword: str) -> bool:
     return (res.rowcount or 0) > 0
 
 
+async def list_alerts(db, user_id: str, unseen_only: bool = False,
+                      limit: int = 50) -> list[dict[str, Any]]:
+    """List alerts across a user's tracked keywords (newest first)."""
+    rows = (await db.execute(text("""
+        SELECT a.id, a.alert_type, a.payload, a.fired_at, a.seen_at,
+               w.keyword
+          FROM analytics.keyword_alerts a
+          JOIN analytics.keyword_watch w ON w.id = a.watch_id
+         WHERE w.user_id = :u
+           AND (:unseen = FALSE OR a.seen_at IS NULL)
+         ORDER BY a.fired_at DESC LIMIT :lim
+    """), {"u": user_id, "unseen": unseen_only, "lim": limit})).fetchall()
+    return [{
+        "id": r.id, "keyword": r.keyword, "type": r.alert_type,
+        "payload": r.payload,
+        "fired_at": r.fired_at.isoformat() if r.fired_at else None,
+        "seen": r.seen_at is not None,
+    } for r in rows]
+
+
 async def list_tracked(db, user_id: str) -> list[dict[str, Any]]:
     """List a user's active tracked keywords + unseen-alert counts."""
     rows = (await db.execute(text("""

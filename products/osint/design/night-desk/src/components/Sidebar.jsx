@@ -23,16 +23,16 @@ const ALL_NAV = [
   { k: 'Dossier', ic: 'dossier' },
   { k: 'Map', ic: 'map' },
   { k: 'Dispatch', ic: 'dispatch' },
-  { k: 'Ask', ic: 'ask' },
   { k: 'Keywords', ic: 'dossier' },
+  { k: 'Ask', ic: 'ask' },
 ];
 
 export default function Sidebar({ i, setI, onCollapse, effectiveRole, viewingAs, onExitImpersonation }) {
   const { me } = useMe();
   const email = me?.email || null;
 
-  // Client users don't see the Ask nav item
-  const NAV = effectiveRole === 'client' ? ALL_NAV.slice(0, 6) : ALL_NAV;
+  // Client users don't see the Ask nav item (now last); Keywords IS shown.
+  const NAV = effectiveRole === 'client' ? ALL_NAV.slice(0, 7) : ALL_NAV;
 
   return (
     <nav className="rail">

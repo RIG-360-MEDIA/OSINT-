@@ -22,14 +22,15 @@ import ProductPicker, { canSeeCompany } from './pages/company/ProductPicker';
 import CompanyApp from './pages/company/CompanyApp';
 import './styles/company.css';
 
-const ALL_PAGES = [Home, WarRoom, Analytics, Dossier, MapPage, Dispatch, Ask, Keywords];
-const ALL_SLUGS = ['home', 'war-room', 'analytics', 'dossier', 'map', 'dispatch', 'ask', 'keywords'];
+const ALL_PAGES = [Home, WarRoom, Analytics, Dossier, MapPage, Dispatch, Keywords, Ask];
+const ALL_SLUGS = ['home', 'war-room', 'analytics', 'dossier', 'map', 'dispatch', 'keywords', 'ask'];
 const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, ''); // '' at root, '/desk' on subpath
 
-// Client users cannot access the Ask/RAG page (index 6).
+// Client users get everything except the Ask/RAG page (now the last, index 7).
+// Keywords (index 6) IS available to clients — it's the core product surface.
 function pagesForRole(role) {
   if (role === 'client') {
-    return { pages: ALL_PAGES.slice(0, 6), slugs: ALL_SLUGS.slice(0, 6) };
+    return { pages: ALL_PAGES.slice(0, 7), slugs: ALL_SLUGS.slice(0, 7) };
   }
   return { pages: ALL_PAGES, slugs: ALL_SLUGS };
 }

@@ -17,6 +17,7 @@ from backend.collectors.cheap_stack.keyword_search import (
     KeywordSearchResult,
     _reddit_row_to_social_post,
     _tiktok_vid_to_social_post,
+    _twitter_row_to_social_post,
     _yt_int,
     _yt_relative_to_iso,
     _yt_renderer_to_social_post,
@@ -189,6 +190,32 @@ def test_yt_missing_channel_id_and_badge_safe():
           "ownerText": {"runs": [{"text": "no-nav"}]}}
     out = _yt_renderer_to_social_post(vr, "q")
     assert out["channel_id"] == "" and out["verified"] is False
+
+
+# ── Twitter normalizer ──────────────────────────────────────────────────────
+
+def test_twitter_normalizer_maps_engagement_and_enrichment():
+    row = {
+        "platform_post_id": "1234", "author_username": "etvtelangana",
+        "post_text": "Telangana phone tapping case update",
+        "post_url": "https://x.com/etvtelangana/status/1234",
+        "posted_at": "2026-07-07T07:44:23+00:00",
+        "likes": 12, "comments": 3, "shares": 7,
+        "media_urls": ["https://pbs.twimg.com/x.jpg"],
+        "raw": {"view_count": 9000, "lang": "te", "is_retweet": False, "is_reply": True},
+    }
+    out = _twitter_row_to_social_post(row, "Telangana")
+    assert out["platform"] == "twitter"
+    assert out["upvotes"] == 12 and out["comment_count"] == 3   # likes/replies
+    assert out["shares"] == 7 and out["views"] == 9000
+    assert out["lang"] == "te" and out["is_reply"] is True
+    assert out["matched_keyword"] == "Telangana"
+
+
+def test_twitter_normalizer_coerces_missing_counts():
+    out = _twitter_row_to_social_post({"platform_post_id": "1"}, "q")
+    assert out["upvotes"] == 0 and out["comment_count"] == 0 and out["views"] == 0
+    assert isinstance(out["shares"], int)
 
 
 # ── quality metrics ────────────────────────────────────────────────────────

@@ -445,6 +445,83 @@ async def search_youtube(
     )
 
 
+# ── Twitter / X ─────────────────────────────────────────────────────────────
+
+# Lazily-initialised twscrape wrapper (adds the cookie account to a pool DB once).
+_twitter_scraper: Any = None
+
+
+async def _get_twitter_scraper() -> Any:
+    global _twitter_scraper
+    if _twitter_scraper is None:
+        from ..twitter_scraper import TwitterScraper
+
+        scraper = TwitterScraper()
+        await scraper.init()
+        _twitter_scraper = scraper
+    return _twitter_scraper
+
+
+def _twitter_row_to_social_post(row: dict[str, Any], query: str) -> dict[str, Any]:
+    """Map a TwitterScraper post to the normalized social_posts shape.
+
+    Twitter has no upvotes; likes map to `upvotes`, replies to `comment_count`,
+    retweets kept as `shares`. Views/lang/media are enriched extras.
+    """
+    raw = row.get("raw") or {}
+    return {
+        "platform": "twitter",
+        "platform_post_id": row.get("platform_post_id") or "",
+        "author_username": row.get("author_username") or "",
+        "post_text": row.get("post_text") or "",
+        "post_url": row.get("post_url") or "",
+        "upvotes": int(row.get("likes") or 0),
+        "comment_count": int(row.get("comments") or 0),
+        "posted_at": row.get("posted_at") or "",
+        "matched_keyword": query,
+        # enriched
+        "shares": int(row.get("shares") or 0),
+        "views": int(raw.get("view_count") or 0),
+        "lang": raw.get("lang") or "",
+        "media_urls": list(row.get("media_urls") or []),
+        "is_retweet": bool(raw.get("is_retweet")),
+        "is_reply": bool(raw.get("is_reply")),
+    }
+
+
+async def search_twitter(
+    query: str, *, limit: int = 25, product: str = "Latest",
+) -> KeywordSearchResult:
+    """Free-text keyword search over Twitter/X via twscrape (cookie-based).
+
+    NOT the dead paid API — twscrape reuses a logged-in session cookie
+    (TWITTER_AUTH_TOKEN + TWITTER_CT0). Fails honestly (ok=False) when the cookie
+    is absent, so a missing session never looks like a genuine zero-match.
+    """
+    method = "twscrape_search"
+    started = time.monotonic()
+    if not (os.getenv("TWITTER_AUTH_TOKEN") and os.getenv("TWITTER_CT0")):
+        return KeywordSearchResult(
+            platform="twitter", method=method, query=query, ok=False,
+            error="no TWITTER_AUTH_TOKEN/TWITTER_CT0 cookie set",
+            elapsed_s=time.monotonic() - started,
+        )
+    try:
+        scraper = await _get_twitter_scraper()
+        rows = await scraper.search(query, limit=limit, product=product)
+    except Exception as exc:
+        return KeywordSearchResult(
+            platform="twitter", method=method, query=query, ok=False,
+            error=f"{type(exc).__name__}: {exc}",
+            elapsed_s=time.monotonic() - started,
+        )
+    posts = tuple(_twitter_row_to_social_post(r, query) for r in rows)
+    return KeywordSearchResult(
+        platform="twitter", method=method, query=query, ok=True,
+        posts=posts, elapsed_s=time.monotonic() - started,
+    )
+
+
 # ── registry ────────────────────────────────────────────────────────────────
 
 # Each entry: platform -> async keyword-search callable. Add a line per platform
@@ -455,4 +532,5 @@ REGISTRY: dict[str, KeywordCollector] = {
     "reddit": search_reddit,
     "tiktok": search_tiktok,
     "youtube": search_youtube,
+    "twitter": search_twitter,
 }

@@ -1,10 +1,19 @@
 // Keyword Intelligence — type any keyword, get a live cross-source dossier.
 // Backed by GET /api/keywords/search (classification, volume, sentiment, social,
 // top/harmful accounts, related entities, top articles) + POST /api/keywords/track.
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { authFetch } from '../lib/supabase.js';
 import { AreaTrend, RankBars, StackBar } from '../lib/charts.jsx';
+
+// Which Tasking-brain-planned source endpoints to surface per classified type.
+// [endpoint, queryParam, label] — each card lazy-fetches its own endpoint.
+const SOURCE_CARDS = {
+  person: [['wiki', 'q', 'Wikipedia'], ['gdelt', 'q', 'Worldwide news'], ['social-live', 'q', 'On-demand social']],
+  organization: [['company', 'q', 'Registry (GLEIF)'], ['wiki', 'q', 'Wikipedia'], ['gdelt', 'q', 'Worldwide news'], ['social-live', 'q', 'On-demand social']],
+  location: [['geo', 'q', 'Location'], ['wiki', 'q', 'Wikipedia'], ['gdelt', 'q', 'Worldwide news']],
+  topic: [['gdelt', 'q', 'Worldwide news'], ['academic', 'q', 'Research'], ['wiki', 'q', 'Wikipedia'], ['social-live', 'q', 'On-demand social']],
+};
 
 const TONE = { supportive: 'var(--supportive)', hostile: 'var(--hostile)', neutral: 'var(--muted)' };
 const STANCE_COLOR = {
@@ -35,6 +44,79 @@ function ClassBadge({ c, perspective }) {
       {c.canonical && c.canonical.toLowerCase() !== '' && <span style={{ fontSize: '0.8rem', color: 'var(--faint)' }}>{c.canonical}</span>}
       <span className="mono" style={{ fontSize: '0.62rem', color: 'var(--muted)', marginLeft: 'auto' }}>perspective: {perspective}</span>
     </div>
+  );
+}
+
+// A lazy-loading card for one Tasking-brain source endpoint. Renders the
+// endpoint's `summary` object generically (works for wiki/company/geo/gdelt/…).
+function SourceCard({ endpoint, param, label, query }) {
+  const [state, setState] = useState({ loading: true });
+  useEffect(() => {
+    let alive = true;
+    setState({ loading: true });
+    authFetch(`/api/keywords/${endpoint}?${param}=${encodeURIComponent(query)}`)
+      .then((d) => alive && setState({ loading: false, data: d }))
+      .catch((e) => alive && setState({ loading: false, error: e?.message || 'unavailable' }));
+    return () => { alive = false; };
+  }, [endpoint, param, query]);
+
+  const summary = state.data?.summary || {};
+  const rows = Object.entries(summary).filter(([k]) => k !== 'note').slice(0, 5);
+  return (
+    <div className="panel" style={{ padding: '14px 16px' }}>
+      <div className="mono" style={{ fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>{label}</div>
+      {state.loading ? <div style={{ color: 'var(--faint)', fontSize: '0.8rem' }}>loading…</div>
+        : state.error || !rows.length ? <div style={{ color: 'var(--faint)', fontSize: '0.78rem' }}>{state.error ? 'unavailable' : 'no data'}</div>
+          : <div style={{ display: 'grid', gap: 5 }}>
+            {rows.map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: '0.82rem' }}>
+                <span style={{ color: 'var(--faint)' }}>{k.replace(/_/g, ' ')}</span>
+                <span style={{ textAlign: 'right', color: 'var(--ink)' }}>{String(v).slice(0, 42)}</span>
+              </div>
+            ))}
+          </div>}
+    </div>
+  );
+}
+
+// Perspective Lens — framing divergence across the languages covering a keyword.
+function PerspectivePanel({ query }) {
+  const [state, setState] = useState({ loading: true });
+  useEffect(() => {
+    let alive = true;
+    setState({ loading: true });
+    authFetch(`/api/keywords/perspective?q=${encodeURIComponent(query)}`)
+      .then((d) => alive && setState({ loading: false, data: d }))
+      .catch((e) => alive && setState({ loading: false, error: e?.message || 'unavailable' }));
+    return () => { alive = false; };
+  }, [query]);
+
+  const langs = state.data?.framing_by_language || [];
+  return (
+    <section className="panel" style={{ gridColumn: 'span 2', padding: '18px 20px' }}>
+      <div className="mono" style={{ fontSize: '0.62rem', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Perspective — framing by language</div>
+      <div style={{ fontSize: '0.78rem', color: 'var(--faint)', marginBottom: 12 }}>
+        {state.data?.divergence != null ? `divergence ${state.data.divergence} (spread of stance across languages)` : 'how differently each language frames this'}
+      </div>
+      {state.loading ? <div style={{ color: 'var(--faint)' }}>loading…</div>
+        : !langs.length ? <div style={{ color: 'var(--faint)', fontSize: '0.8rem' }}>Not enough stance data across languages.</div>
+          : <div style={{ display: 'grid', gap: 8 }}>
+            {langs.map((l) => (
+              <div key={l.lang} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.84rem' }}>
+                <span className="mono" style={{ width: 34, color: 'var(--muted)', textTransform: 'uppercase' }}>{l.lang}</span>
+                <span style={{ width: 60, color: 'var(--faint)', fontSize: '0.74rem' }}>{l.articles} arts</span>
+                <div style={{ flex: 1, height: 7, background: 'oklch(0.25 0.02 270 / .6)', borderRadius: 4, position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, background: 'var(--line)' }} />
+                  <div style={{ position: 'absolute', top: 0, bottom: 0, borderRadius: 4,
+                    background: (l.lean ?? 0) < 0 ? 'var(--hostile)' : 'var(--supportive)',
+                    width: `${Math.min(Math.abs(l.lean ?? 0), 100) / 2}%`,
+                    left: (l.lean ?? 0) < 0 ? `${50 - Math.min(Math.abs(l.lean ?? 0), 100) / 2}%` : '50%' }} />
+                </div>
+                <span className="mono" style={{ width: 44, textAlign: 'right', color: (l.lean ?? 0) < 0 ? 'var(--hostile)' : 'var(--supportive)' }}>{(l.lean ?? 0) > 0 ? '+' : ''}{l.lean ?? '—'}</span>
+              </div>
+            ))}
+          </div>}
+    </section>
   );
 }
 
@@ -162,6 +244,19 @@ export default function Keywords() {
               ))}
             </div>
           </Panel>
+
+          <PerspectivePanel query={data.query} />
+
+          <div style={{ gridColumn: 'span 2', marginTop: 4 }}>
+            <div className="mono" style={{ fontSize: '0.6rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
+              Sources searched for this {data.classification?.type || 'keyword'}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+              {(SOURCE_CARDS[data.classification?.type] || SOURCE_CARDS.topic).map(([ep, p, label]) => (
+                <SourceCard key={ep} endpoint={ep} param={p} label={label} query={data.query} />
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

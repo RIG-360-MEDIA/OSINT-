@@ -93,6 +93,13 @@ def _child_to_post(child: dict[str, Any]) -> dict[str, Any] | None:
             mid = item.get("media_id")
             if mid:
                 media_urls.append(f"https://i.redd.it/{mid}.jpg")
+    # Reddit-hosted video: the mp4 fallback lives under (secure_)media.reddit_video.
+    reddit_video = (
+        (data.get("secure_media") or data.get("media") or {}) or {}
+    ).get("reddit_video") or {}
+    fallback = reddit_video.get("fallback_url")
+    if fallback:
+        media_urls.append(fallback)
 
     return {
         "platform": "reddit",
@@ -118,6 +125,13 @@ def _child_to_post(child: dict[str, Any]) -> dict[str, Any] | None:
             "upvote_ratio": data.get("upvote_ratio"),
             "awards": data.get("total_awards_received"),
             "crossposts": data.get("num_crossposts"),
+            # OSINT context: the shared link, community size, stable author id, flags.
+            "external_url": data.get("url"),
+            "domain": data.get("domain"),
+            "over_18": data.get("over_18"),
+            "subreddit_subscribers": data.get("subreddit_subscribers"),
+            "author_fullname": data.get("author_fullname"),
+            "edited": data.get("edited"),
         },
     }
 

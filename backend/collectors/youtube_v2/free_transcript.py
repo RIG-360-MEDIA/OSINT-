@@ -20,12 +20,17 @@ plain transcript text or None.
 """
 from __future__ import annotations
 
+import html
 import itertools
 import logging
+import re
 from dataclasses import dataclass
 from typing import Callable, Optional
 
 logger = logging.getLogger("youtube_v2")
+
+_TAG_RE = re.compile(r"<[^>]+>")
+_VTT_TIMING_RE = re.compile(r"\d\d:\d\d:\d\d[.,]\d+\s*-->.*")
 
 _provider_rr = itertools.count()
 
@@ -79,8 +84,62 @@ def _kome(video_id: str) -> Optional[tuple[str, bool]]:
     return (text, bool(data.get("hasMore"))) if text else None
 
 
+def _strip_caption_markup(raw: str) -> str:
+    """TTML / timedtext-XML / VTT caption blob -> plain text.
+
+    Piped returns captions as TTML (`<tt><p ...>text</p>`); we also handle bare
+    timedtext XML and WebVTT. Strip tags, drop VTT timing lines, unescape
+    entities, collapse whitespace.
+    """
+    text = _VTT_TIMING_RE.sub(" ", raw)
+    text = _TAG_RE.sub(" ", text)
+    text = html.unescape(text)
+    text = re.sub(r"\bWEBVTT\b", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+# Piped mirrors (open-source, many instances) — proxy captions via the instance
+# IP. Independent of kome, so real redundancy. Ordered; first healthy one wins.
+_PIPED_INSTANCES = [
+    "https://api.piped.private.coffee",
+    "https://pipedapi.ducks.party",
+    "https://pipedapi.kavin.rocks",
+    "https://pipedapi.leptons.xyz",
+    "https://pipedapi.r4fo.com",
+]
+
+
+def _piped(video_id: str) -> Optional[tuple[str, bool]]:
+    """Piped /streams -> subtitle track (prefer English) -> stripped text."""
+    from curl_cffi.requests import Session
+
+    sess = Session()
+    for base in _PIPED_INSTANCES:
+        try:
+            r = sess.get(f"{base}/streams/{video_id}", timeout=12, impersonate="chrome")
+            if r.status_code != 200:
+                continue
+            subs = r.json().get("subtitles") or []
+            if not subs:
+                continue
+            pick = next((x for x in subs if (x.get("code") or "").startswith("en")), subs[0])
+            sub_url = pick.get("url")
+            if not sub_url:
+                continue
+            tr = sess.get(sub_url, timeout=12, impersonate="chrome")
+            if tr.status_code != 200:
+                continue
+            text = _strip_caption_markup(tr.text)
+            if len(text) >= _MIN_CHARS:
+                return (text, False)
+        except Exception:
+            continue  # try the next instance
+    return None
+
+
 _PROVIDERS: list[tuple[str, Callable[[str], Optional[tuple[str, bool]]]]] = [
     ("kome.ai", _kome),
+    ("piped", _piped),
 ]
 
 

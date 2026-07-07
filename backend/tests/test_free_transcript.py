@@ -12,8 +12,27 @@ import backend.collectors.youtube_v2.free_transcript as ft
 from backend.collectors.youtube_v2.free_transcript import (
     FreeTranscript,
     _looks_like_transcript,
+    _strip_caption_markup,
     fetch_free_transcript,
 )
+
+
+# ── caption markup stripping (Piped TTML / VTT) ──────────────────────────────
+
+def test_strip_ttml():
+    ttml = '<tt xml:lang="en"><body><div><p begin="0s">Hello&#39;s world</p>' \
+           '<p begin="2s">second line</p></div></body></tt>'
+    out = _strip_caption_markup(ttml)
+    assert "Hello's world" in out and "second line" in out
+    assert "<" not in out
+
+
+def test_strip_vtt_drops_timing():
+    vtt = "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nOperation Sindoor\n\n" \
+          "00:00:04.000 --> 00:00:06.000\nwas launched"
+    out = _strip_caption_markup(vtt)
+    assert "Operation Sindoor was launched" in out
+    assert "-->" not in out and "WEBVTT" not in out
 
 
 # ── content guard ────────────────────────────────────────────────────────────

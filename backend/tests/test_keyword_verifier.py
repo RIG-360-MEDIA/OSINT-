@@ -17,6 +17,9 @@ from backend.collectors.cheap_stack.keyword_search import (
     KeywordSearchResult,
     _reddit_row_to_social_post,
     _tiktok_vid_to_social_post,
+    _yt_int,
+    _yt_relative_to_iso,
+    _yt_renderer_to_social_post,
 )
 from backend.collectors.cheap_stack.verify_keyword_collectors import (
     assess,
@@ -121,6 +124,71 @@ def test_tiktok_normalizer_keeps_video_media():
 
 def test_tiktok_normalizer_skips_video_without_id():
     assert _tiktok_vid_to_social_post({"title": "no id"}, "q") is None
+
+
+# ── YouTube parsers ─────────────────────────────────────────────────────────
+
+def test_yt_int_parses_view_count():
+    assert _yt_int("5,002,904 views") == 5002904
+    assert _yt_int(None) == 0
+    assert _yt_int("No views") == 0
+
+
+def test_yt_relative_time_is_approximate_iso_and_recent_for_recent():
+    from datetime import datetime, timezone
+    iso = _yt_relative_to_iso("3 days ago")
+    dt = datetime.fromisoformat(iso)
+    delta_days = (datetime.now(timezone.utc) - dt).days
+    assert 2 <= delta_days <= 4          # ~3 days back
+    assert _yt_relative_to_iso("") == ""
+    assert _yt_relative_to_iso("just now") == ""   # unparseable -> empty, not faked
+
+
+def test_yt_renderer_normalizes_and_keeps_snippet():
+    vr = {
+        "videoId": "abc123",
+        "title": {"runs": [{"text": "Dassault Rafale in Action"}]},
+        "detailedMetadataSnippets": [
+            {"snippetText": {"runs": [{"text": "French fighter jet Rafale demo"}]}}],
+        "ownerText": {"runs": [{"text": "Haci Productions"}]},
+        "viewCountText": {"simpleText": "5,002,904 views"},
+        "publishedTimeText": {"simpleText": "7 years ago"},
+        "lengthText": {"simpleText": "4:16"},
+        "thumbnail": {"thumbnails": [{"url": "https://i.ytimg.com/vi/abc123/hq.jpg"}]},
+    }
+    out = _yt_renderer_to_social_post(vr, "Rafale")
+    assert out["platform_post_id"] == "abc123"
+    assert out["post_url"] == "https://www.youtube.com/watch?v=abc123"
+    assert out["author_username"] == "Haci Productions"
+    assert out["views"] == 5002904
+    assert out["duration"] == "4:16"
+    assert "Rafale" in out["post_text"]
+    assert out["published_text"] == "7 years ago"   # raw label preserved
+    assert out["upvotes"] == 0 and out["comment_count"] == 0   # not available from search
+
+
+def test_yt_renderer_skips_without_video_id():
+    assert _yt_renderer_to_social_post({"title": {"runs": [{"text": "x"}]}}, "q") is None
+
+
+def test_yt_channel_id_and_verified_extracted():
+    vr = {
+        "videoId": "v", "title": {"runs": [{"text": "t"}]},
+        "ownerText": {"runs": [{"text": "Zee News", "navigationEndpoint":
+                     {"browseEndpoint": {"browseId": "UCzee123"}}}]},
+        "ownerBadges": [{"metadataBadgeRenderer":
+                        {"style": "BADGE_STYLE_TYPE_VERIFIED", "tooltip": "Verified"}}],
+    }
+    out = _yt_renderer_to_social_post(vr, "q")
+    assert out["channel_id"] == "UCzee123"     # bridges into RSS discovery
+    assert out["verified"] is True
+
+
+def test_yt_missing_channel_id_and_badge_safe():
+    vr = {"videoId": "v", "title": {"runs": [{"text": "t"}]},
+          "ownerText": {"runs": [{"text": "no-nav"}]}}
+    out = _yt_renderer_to_social_post(vr, "q")
+    assert out["channel_id"] == "" and out["verified"] is False
 
 
 # ── quality metrics ────────────────────────────────────────────────────────

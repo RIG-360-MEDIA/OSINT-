@@ -17,6 +17,7 @@ distinction is the whole point: a silent empty must never look like success.
 from __future__ import annotations
 
 import os
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -280,6 +281,170 @@ async def search_tiktok(
     )
 
 
+# ── YouTube ─────────────────────────────────────────────────────────────────
+
+# Public YouTube WEB innertube key — a constant shipped in every youtube.com page,
+# not a secret. Search needs no login and no PO token (only the player does).
+_YT_INNERTUBE_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
+_YT_CLIENT = {"clientName": "WEB", "clientVersion": "2.20240101.00.00",
+              "hl": "en", "gl": "US"}
+
+_YT_INT_RE = re.compile(r"[\d,]+")
+_YT_REL_RE = re.compile(
+    r"(\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago")
+_YT_UNIT_DAYS = {"second": 1 / 86400, "minute": 1 / 1440, "hour": 1 / 24,
+                 "day": 1, "week": 7, "month": 30, "year": 365}
+
+
+def _yt_int(text: Optional[str]) -> int:
+    if not text:
+        return 0
+    m = _YT_INT_RE.search(text)
+    return int(m.group(0).replace(",", "")) if m else 0
+
+
+def _yt_relative_to_iso(text: Optional[str]) -> str:
+    """Best-effort: YouTube search gives only relative time ('7 years ago').
+
+    Approximate an ISO timestamp from it so downstream sorting/sanity works.
+    The exact time is genuinely unavailable from search — the raw label is kept
+    alongside in `published_text`, so this is an approximation, never a claim.
+    """
+    if not text:
+        return ""
+    m = _YT_REL_RE.search(text.lower())
+    if not m:
+        return ""
+    from datetime import timedelta
+
+    days = int(m.group(1)) * _YT_UNIT_DAYS[m.group(2)]
+    return (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+
+
+def _runs_text(node: dict[str, Any]) -> str:
+    if not node:
+        return ""
+    if "simpleText" in node:
+        return node["simpleText"]
+    return "".join(r.get("text", "") for r in node.get("runs", []) or [])
+
+
+def _yt_channel_id(vr: dict[str, Any]) -> str:
+    """UC… channel id — bridges a keyword hit into the RSS discovery pipeline."""
+    try:
+        return (vr["ownerText"]["runs"][0]["navigationEndpoint"]
+                ["browseEndpoint"]["browseId"]) or ""
+    except (KeyError, IndexError, TypeError):
+        return ""
+
+
+def _yt_verified(vr: dict[str, Any]) -> bool:
+    for badge in vr.get("ownerBadges") or []:
+        if (badge.get("metadataBadgeRenderer") or {}).get("style") == \
+                "BADGE_STYLE_TYPE_VERIFIED":
+            return True
+    return False
+
+
+def _yt_renderer_to_social_post(vr: dict[str, Any], query: str) -> Optional[dict[str, Any]]:
+    vid = vr.get("videoId")
+    if not vid:
+        return None
+    title = _runs_text(vr.get("title", {}))
+    # search snippet often carries the keyword when the title doesn't
+    snippet = " ".join(
+        _runs_text(s.get("snippetText", {}))
+        for s in vr.get("detailedMetadataSnippets", []) or []
+    )
+    channel = _runs_text(vr.get("ownerText", {})) or _runs_text(vr.get("longBylineText", {}))
+    published_text = _runs_text(vr.get("publishedTimeText", {}))
+    thumbs = (vr.get("thumbnail", {}) or {}).get("thumbnails", []) or []
+    return {
+        "platform": "youtube",
+        "platform_post_id": vid,
+        "author_username": channel,
+        "post_text": (title + ((" — " + snippet) if snippet else "")).strip()[:2000],
+        "post_url": f"https://www.youtube.com/watch?v={vid}",
+        # search exposes neither likes nor comment counts — 0 = not available here.
+        "upvotes": 0,
+        "comment_count": 0,
+        "posted_at": _yt_relative_to_iso(published_text),
+        "matched_keyword": query,
+        "views": _yt_int(_runs_text(vr.get("viewCountText", {}))),
+        "duration": _runs_text(vr.get("lengthText", {})),
+        "thumbnail": thumbs[-1].get("url") if thumbs else "",
+        "published_text": published_text,   # raw relative label (approximation source)
+        # enriched: stable channel id (feeds RSS discovery) + credibility badge
+        "channel_id": _yt_channel_id(vr),
+        "verified": _yt_verified(vr),
+    }
+
+
+def _yt_walk_renderers(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Pull videoRenderer nodes from the innertube search response, defensively."""
+    out: list[dict[str, Any]] = []
+    try:
+        sections = (
+            data["contents"]["twoColumnSearchResultsRenderer"]["primaryContents"]
+            ["sectionListRenderer"]["contents"]
+        )
+    except (KeyError, TypeError):
+        return out
+    for sec in sections:
+        for item in (sec.get("itemSectionRenderer", {}) or {}).get("contents", []) or []:
+            vr = item.get("videoRenderer")
+            if vr:
+                out.append(vr)
+    return out
+
+
+async def search_youtube(
+    query: str, *, limit: int = 25,
+) -> KeywordSearchResult:
+    """Free-text keyword search over YouTube via the innertube search endpoint.
+
+    No API key/quota (uses the public WEB client key), no login. RSS — the only
+    datacenter-safe YouTube path — has no search, so this contacts Google
+    directly; if the datacenter IP is challenged it fails honestly (ok=False)
+    rather than looking like a genuine zero-match. Results are relevance-sorted,
+    not recency-sorted, and carry no like/comment counts (search limitation).
+    """
+    method = "youtube_innertube_search"
+    started = time.monotonic()
+    try:
+        from curl_cffi.requests import AsyncSession
+
+        body = {"context": {"client": dict(_YT_CLIENT)}, "query": query}
+        async with AsyncSession() as s:
+            r = await s.post(
+                f"https://www.youtube.com/youtubei/v1/search?key={_YT_INNERTUBE_KEY}",
+                json=body, impersonate="chrome", timeout=25,
+            )
+        if r.status_code != 200:
+            return KeywordSearchResult(
+                platform="youtube", method=method, query=query, ok=False,
+                error=f"innertube HTTP {r.status_code} "
+                      f"(datacenter IP may be challenged — RSS-safe, search is not)",
+                elapsed_s=time.monotonic() - started,
+            )
+        renderers = _yt_walk_renderers(r.json())
+    except Exception as exc:
+        return KeywordSearchResult(
+            platform="youtube", method=method, query=query, ok=False,
+            error=f"{type(exc).__name__}: {exc}",
+            elapsed_s=time.monotonic() - started,
+        )
+
+    posts = tuple(
+        p for p in (_yt_renderer_to_social_post(vr, query) for vr in renderers[:limit])
+        if p is not None
+    )
+    return KeywordSearchResult(
+        platform="youtube", method=method, query=query, ok=True,
+        posts=posts, elapsed_s=time.monotonic() - started,
+    )
+
+
 # ── registry ────────────────────────────────────────────────────────────────
 
 # Each entry: platform -> async keyword-search callable. Add a line per platform
@@ -289,4 +454,5 @@ KeywordCollector = Callable[..., Awaitable[KeywordSearchResult]]
 REGISTRY: dict[str, KeywordCollector] = {
     "reddit": search_reddit,
     "tiktok": search_tiktok,
+    "youtube": search_youtube,
 }

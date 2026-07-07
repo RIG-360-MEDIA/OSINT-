@@ -29,26 +29,54 @@ from .models import (
 
 logger = logging.getLogger("youtube_v2")
 
-# Round-robin cursor over the YT_RELAY_URL pool (one entry per distinct-IP relay).
+# Round-robin cursors: one over the YT_RELAY_URL relay pool, one over the
+# Webshare account pool. Each free Webshare account carries its own ~1GB/month
+# allowance, so pooling accounts stacks bandwidth linearly (like GROQ_API_KEYS).
 _relay_rr = itertools.count()
+_webshare_rr = itertools.count()
 
 
-def _make_api():
+def _webshare_accounts() -> list[tuple[str, str]]:
+    """Return the Webshare account pool as [(user, pass), ...], de-duplicated.
+
+    Sources, in order:
+      - WEBSHARE_ACCOUNTS: comma-separated ``user:pass`` pairs (the pool).
+      - WEBSHARE_USER + WEBSHARE_PASS: the legacy single account (still honored).
+
+    Malformed entries are skipped, never raised — a bad pair must not take the
+    whole pool down.
+    """
+    accounts: list[tuple[str, str]] = []
+    for entry in os.getenv("WEBSHARE_ACCOUNTS", "").split(","):
+        entry = entry.strip()
+        if not entry or ":" not in entry:
+            continue
+        user, _, pw = entry.partition(":")
+        user, pw = user.strip(), pw.strip()
+        if user and pw:
+            accounts.append((user, pw))
+    legacy_user = os.getenv("WEBSHARE_USER", "").strip()
+    legacy_pass = os.getenv("WEBSHARE_PASS", "").strip()
+    if legacy_user and legacy_pass:
+        accounts.append((legacy_user, legacy_pass))
+    # de-dupe, preserving order
+    seen: set[tuple[str, str]] = set()
+    return [a for a in accounts if not (a in seen or seen.add(a))]
+
+
+def _make_api(account: tuple[str, str] | None = None):
+    """Build a YouTubeTranscriptApi. With a Webshare account, route through it;
+    else fall back to a generic YT_PROXY; else direct (residential only)."""
     from youtube_transcript_api import YouTubeTranscriptApi
 
-    webshare_user = os.getenv("WEBSHARE_USER", "").strip()
-    webshare_pass = os.getenv("WEBSHARE_PASS", "").strip()
-    yt_proxy      = os.getenv("YT_PROXY", "").strip()
-
-    if webshare_user and webshare_pass:
+    if account:
         from youtube_transcript_api.proxies import WebshareProxyConfig
-        logger.debug("youtube_v2 transcript using Webshare proxy")
+        user, pw = account
+        logger.debug("youtube_v2 transcript via Webshare account=%s", user[:4])
         return YouTubeTranscriptApi(
-            proxy_config=WebshareProxyConfig(
-                proxy_username=webshare_user,
-                proxy_password=webshare_pass,
-            )
+            proxy_config=WebshareProxyConfig(proxy_username=user, proxy_password=pw)
         )
+    yt_proxy = os.getenv("YT_PROXY", "").strip()
     if yt_proxy:
         from youtube_transcript_api.proxies import GenericProxyConfig
         logger.debug("youtube_v2 transcript using generic proxy %s", yt_proxy[:30])
@@ -142,11 +170,43 @@ def fetch_transcript(
         relay_url = relay_pool[next(_relay_rr) % len(relay_pool)]
         return _fetch_via_relay(video_id, relay_url)
 
-    try:
-        api = _make_api()
-    except ImportError as exc:  # pragma: no cover - env guard
-        return TranscriptFailure(video_id, "error", f"library missing: {exc}")
+    # Direct path — rotate across the Webshare account pool with failover. A
+    # retryable failure (ip_blocked / error, e.g. an account's gig exhausted)
+    # rolls to the next account; a terminal one (no captions / unplayable)
+    # returns immediately since another account cannot change it.
+    accounts = _webshare_accounts()
+    if accounts:
+        start = next(_webshare_rr)
+        ordered: list[tuple[str, str] | None] = [
+            accounts[(start + i) % len(accounts)] for i in range(len(accounts))
+        ]
+    else:
+        ordered = [None]  # no pool: single generic-proxy / direct attempt
 
+    last: TranscriptFailure | None = None
+    for account in ordered:
+        try:
+            api = _make_api(account)
+        except ImportError as exc:  # pragma: no cover - env guard
+            return TranscriptFailure(video_id, "error", f"library missing: {exc}")
+        result = _fetch_direct(api, video_id, preferred_langs)
+        if isinstance(result, Transcript):
+            return result
+        last = result
+        if result.reason in ("no_transcript", "unplayable"):
+            return result  # terminal — another account won't help
+        # ip_blocked / error -> try the next account in the pool
+        if len(ordered) > 1:
+            logger.info(
+                "youtube_v2 transcript video=%s account failover (%s) -> next",
+                video_id, result.reason,
+            )
+    return last or TranscriptFailure(video_id, "error", "no Webshare account available")
+
+
+def _fetch_direct(api, video_id: str, preferred_langs: tuple[str, ...]):
+    """One direct fetch attempt with a given api instance. Returns a Transcript
+    or a typed TranscriptFailure (never a bare None / raw exception)."""
     try:
         listing = api.list(video_id)
     except Exception as exc:  # noqa: BLE001 - classify below

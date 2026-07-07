@@ -173,6 +173,34 @@ def _safe(s: Any, n: int) -> str:
     return txt[:n].encode("ascii", "replace").decode()
 
 
+def render_transcripts(result: KeywordSearchResult, top: int) -> None:
+    """Opt-in: fetch transcripts for the top-N YouTube hits and report quality.
+
+    Reuses the existing youtube_v2.fetch_transcript, which routes via a
+    residential relay (YT_RELAY_URL) / proxy when set, else direct. From the
+    Hetzner box with no relay this HONESTLY reports ip_blocked — the caption
+    endpoint blocks datacenter IPs (unlike search). Never inline in the
+    collector: it's rate-limited and residential-only.
+    """
+    if top <= 0 or result.platform != "youtube" or not result.posts:
+        return
+    try:
+        from backend.collectors.youtube_v2.free_transcript import fetch_free_transcript
+    except Exception as exc:
+        print(f"        transcripts: unavailable ({type(exc).__name__})")
+        return
+    n = min(top, len(result.posts))
+    print(f"        transcripts (top {n}, box-native via free provider — no relay/proxy):")
+    for row in result.posts[:n]:
+        vid = row.get("platform_post_id")
+        ft = fetch_free_transcript(vid)
+        if ft is not None:
+            more = " (+more)" if ft.truncated else ""
+            print(f"          [OK]   {vid} via {ft.provider} chars={ft.chars}{more}")
+        else:
+            print(f"          [MISS] {vid} no free transcript (no captions or all providers down)")
+
+
 def render(result: KeywordSearchResult, q: Quality, tag: str, reason: str) -> None:
     head = f"[{tag}] {result.platform:<9} q={result.query!r:<12} method={result.method}"
     print(head)
@@ -198,8 +226,10 @@ def render(result: KeywordSearchResult, q: Quality, tag: str, reason: str) -> No
             media = row.get("media_url") or next(iter(row.get("media_urls") or []), "")
             bits = []
             if media:
-                dur = f" {row['duration']}s" if row.get("duration") else ""
-                bits.append(f"media={_safe(media, 58)}{dur}")
+                bits.append(f"media={_safe(media, 58)}")
+            dur = row.get("duration")
+            if dur:
+                bits.append(f"{dur}s" if isinstance(dur, int) else _safe(dur, 8))
             ext = row.get("external_url")
             if ext and ext != media:      # don't repeat a media URL as a link
                 bits.append(f"link={_safe(ext, 46)} ({_safe(row.get('domain'), 20)})")
@@ -211,7 +241,8 @@ def render(result: KeywordSearchResult, q: Quality, tag: str, reason: str) -> No
 
 # ── runner ─────────────────────────────────────────────────────────────────────
 
-async def run(keywords: list[str], platforms: list[str], limit: int) -> int:
+async def run(keywords: list[str], platforms: list[str], limit: int,
+              transcripts: int = 0) -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
@@ -237,6 +268,7 @@ async def run(keywords: list[str], platforms: list[str], limit: int) -> int:
             q = assess(kw, result.posts)
             tag, reason = verdict(result, q)
             render(result, q, tag, reason)
+            render_transcripts(result, transcripts)
             print()
             if tag in ("FAIL", "SUSPECT"):
                 all_ok = False
@@ -253,11 +285,14 @@ def main() -> int:
     ap.add_argument("--platform", action="append", dest="platforms",
                     help="restrict to platform(s); default = all registered")
     ap.add_argument("--limit", type=int, default=25)
+    ap.add_argument("--transcripts", type=int, default=0,
+                    help="YouTube only: fetch transcripts for the top-N hits "
+                         "(residential/relay required — off by default)")
     args = ap.parse_args()
 
     keywords = args.keywords or list(DEFAULT_KEYWORDS)
     platforms = args.platforms or list(REGISTRY.keys())
-    return asyncio.run(run(keywords, platforms, args.limit))
+    return asyncio.run(run(keywords, platforms, args.limit, args.transcripts))
 
 
 if __name__ == "__main__":

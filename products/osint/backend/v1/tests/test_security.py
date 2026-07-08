@@ -158,7 +158,11 @@ def test_serialize_article_whitelist() -> None:
         "substrate_status": "processing", "source_id": "secret-uuid",
     }
     out = serialize_article(row)
-    assert set(out) == {"id", "headline", "summary", "source", "language", "url", "geo", "published_at"}
+    assert set(out) == {"id", "headline", "summary", "full_text", "source", "language", "url",
+                        "geo", "story_id", "sentiment", "source_flags", "api_ready",
+                        "published_at", "last_updated"}
+    # sanity: whitelist matches the serializer's documented shape
+    assert out["story_id"] is None and out["sentiment"] is None
     for leak in ("collected_at", "labse_embedding", "substrate_status", "source_id"):
         assert leak not in out
     assert len(out["summary"]) <= 400  # truncated

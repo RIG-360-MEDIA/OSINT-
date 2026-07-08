@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from html import unescape
 from typing import Any, Awaitable, Callable, Optional
+from urllib.parse import unquote
 
 from .osint_sources import all_telegram_channels
 
@@ -702,6 +703,181 @@ async def search_telegram(
     )
 
 
+# ── Instagram (global keyword search via search-engine index) ───────────────
+# IG has no free global caption search and hashtag needs a login. But search
+# engines INDEX instagram.com captions, so `site:instagram.com "keyword"` on
+# DuckDuckGo returns global keyword-matched posts — no login, no account set.
+# IG's own og:description ("N likes, M comments - user on DATE: caption") is
+# indexed too, so the snippet often yields author/engagement/date for free.
+
+_DDG_BLOCK_RE = re.compile(
+    r'result__a[^>]+href="([^"]+)"[^>]*>(.*?)</a>.*?result__snippet[^>]*>(.*?)</a>',
+    re.DOTALL)
+_IG_SHORTCODE_RE = re.compile(r"instagram\.com/(?:p|reel|tv)/([A-Za-z0-9_-]+)")
+_UDDG_RE = re.compile(r"uddg=([^&]+)")
+_IG_META_RE = re.compile(
+    r"^\s*([\d.,KMB]+)\s+likes?,\s*([\d.,KMB]+)\s+comments?\s*-\s*([\w.]+)\s+on\s+"
+    r"([A-Za-z]+ \d+, \d{4}):\s*(.*)$", re.DOTALL)
+
+
+def _ig_parse_date(text: str) -> str:
+    for fmt in ("%B %d, %Y", "%b %d, %Y"):
+        try:
+            return datetime.strptime(text, fmt).replace(tzinfo=timezone.utc).isoformat()
+        except ValueError:
+            continue
+    return ""
+
+
+def _ddg_ig_to_post(url: str, snippet: str, query: str) -> Optional[dict[str, Any]]:
+    """Map one DDG instagram.com result to the social_posts shape.
+
+    Parses IG's indexed og:description for author/likes/comments/date when
+    present; otherwise the snippet IS the caption and engagement is unknown (0).
+    """
+    sc = _IG_SHORTCODE_RE.search(url)
+    if not sc:
+        return None
+    caption, author, likes, comments, posted = snippet, "", 0, 0, ""
+    m = _IG_META_RE.match(snippet)
+    if m:
+        likes = _tg_views_to_int(m.group(1))       # handles 64K / 1.2M
+        comments = _tg_views_to_int(m.group(2))
+        author = m.group(3)
+        posted = _ig_parse_date(m.group(4))
+        caption = m.group(5).strip().strip('"').strip()
+    return {
+        "platform": "instagram",
+        "platform_post_id": sc.group(1),
+        "author_username": author,
+        "post_text": caption[:2000],
+        "post_url": f"https://www.instagram.com/p/{sc.group(1)}/",
+        "upvotes": likes,
+        "comment_count": comments,
+        "posted_at": posted,
+        "matched_keyword": query,
+    }
+
+
+_IG_OG_RE = re.compile(r'og:description"\s+content="([^"]+)"')
+_IG_UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+_SEARXNG_URL = os.getenv("SEARXNG_URL", "http://rig-searxng:8080")
+
+
+async def _ig_discover(query: str, session: Any, want: int) -> list[str]:
+    """Return IG shortcodes for a keyword. SearXNG (self-hosted, no direct
+    rate-limit) first; DuckDuckGo direct as fallback (e.g. on dev, no SearXNG)."""
+    codes: list[str] = []
+    # 1) SearXNG meta-search — try exact phrase AND broad (each surfaces
+    #    different posts; broad also catches /tv/ and reel URLs)
+    for phrase in (f'site:instagram.com "{query}"', f"site:instagram.com {query}"):
+        try:
+            r = await session.get(
+                _SEARXNG_URL + "/search",
+                params={"q": phrase, "format": "json"}, timeout=15,
+            )
+            if r.status_code == 200 and r.text.lstrip().startswith("{"):
+                for item in r.json().get("results", []):
+                    m = _IG_SHORTCODE_RE.search(item.get("url") or "")
+                    if m:
+                        codes.append(m.group(1))
+        except Exception:
+            continue
+    if len(codes) < want:   # 2) DuckDuckGo direct fallback / top-up
+        try:
+            q = f'site:instagram.com "{query}"'.replace(" ", "+")
+            r = await session.get(
+                "https://html.duckduckgo.com/html/?q=" + q,
+                headers=_IG_UA, impersonate="chrome", timeout=20,
+            )
+            if r.status_code == 200:
+                for href, _t, _s in _DDG_BLOCK_RE.findall(r.text):
+                    mu = _UDDG_RE.search(href)
+                    m = _IG_SHORTCODE_RE.search(unquote(mu.group(1)) if mu else href)
+                    if m:
+                        codes.append(m.group(1))
+        except Exception:
+            pass
+    seen: set[str] = set()
+    return [c for c in codes if not (c in seen or seen.add(c))][:want * 2]
+
+
+async def _ig_fetch_og(shortcode: str, session: Any) -> Optional[str]:
+    """Fetch a post's og:description ('N likes, M comments - user on DATE:
+    caption') — works cookie-free from the datacenter."""
+    try:
+        r = await session.get(
+            f"https://www.instagram.com/p/{shortcode}/",
+            headers=_IG_UA, impersonate="chrome", timeout=15,
+        )
+        if r.status_code != 200:
+            return None
+        m = _IG_OG_RE.search(r.text)
+        return unescape(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
+async def search_instagram(
+    query: str, *, limit: int = 25,
+) -> KeywordSearchResult:
+    """Global keyword search over Instagram — NO login, NO curated accounts,
+    NO hashtag session.
+
+    Two cookie-free stages, both proven from the datacenter box:
+      1) DISCOVER post URLs via SearXNG (self-hosted meta-search; DDG fallback)
+         — search engines index instagram.com captions, so this is global.
+      2) ENRICH each post via its og:description (author, likes, comments, date,
+         caption).
+
+    Honest scope: only PUBLIC posts a search engine has INDEXED (not real-time;
+    niche terms may be sparse).
+    """
+    method = "searxng_discover+og_enrich"
+    started = time.monotonic()
+    note = ("global keyword search via search-index (SearXNG/DDG) + og:description "
+            "enrich — login-free, but indexed public posts only (not real-time)")
+    tokens = re.findall(r"[a-z0-9]+", query.lower())
+
+    try:
+        from curl_cffi.requests import AsyncSession
+
+        async with AsyncSession() as s:
+            codes = await _ig_discover(query, s, limit)
+            sem = asyncio.Semaphore(6)
+
+            async def _one(sc: str) -> Optional[dict[str, Any]]:
+                async with sem:
+                    og = await _ig_fetch_og(sc, s)
+                    if not og:
+                        return None
+                    return _ddg_ig_to_post(
+                        f"https://www.instagram.com/p/{sc}/", og, query)
+
+            results = await asyncio.gather(*[_one(c) for c in codes])
+    except Exception as exc:
+        return KeywordSearchResult(
+            platform="instagram", method=method, query=query, ok=False,
+            error=f"{type(exc).__name__}: {exc}", note=note,
+            elapsed_s=time.monotonic() - started,
+        )
+
+    posts: dict[str, dict[str, Any]] = {}
+    for post in results:
+        if not post:
+            continue
+        haystack = (post["post_text"] + " " + post["author_username"]).lower()
+        if tokens and not any(t in haystack for t in tokens):
+            continue
+        posts.setdefault(post["platform_post_id"], post)
+
+    return KeywordSearchResult(
+        platform="instagram", method=method, query=query, ok=True,
+        posts=tuple(list(posts.values())[:limit]), note=note,
+        elapsed_s=time.monotonic() - started,
+    )
+
+
 # ── registry ────────────────────────────────────────────────────────────────
 
 # Each entry: platform -> async keyword-search callable. Add a line per platform
@@ -714,4 +890,5 @@ REGISTRY: dict[str, KeywordCollector] = {
     "youtube": search_youtube,
     "twitter": search_twitter,
     "telegram": search_telegram,
+    "instagram": search_instagram,
 }

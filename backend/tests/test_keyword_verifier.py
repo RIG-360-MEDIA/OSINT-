@@ -15,6 +15,7 @@ import pytest
 
 from backend.collectors.cheap_stack.keyword_search import (
     KeywordSearchResult,
+    _ddg_ig_to_post,
     _parse_telegram,
     _reddit_row_to_social_post,
     _tg_views_to_int,
@@ -268,6 +269,50 @@ _TG_LINK_HTML = (
     "style=\"background-image:url('https://cdn.tg/photo123.jpg')\"></a>"
     '<time datetime="2026-05-01T08:32:41+00:00"></time>'
 )
+
+
+# ── Instagram (DDG search-index) parser ──────────────────────────────────────
+
+def test_ig_parses_meta_snippet():
+    # Instagram's indexed og:description carries author/likes/comments/date
+    post = _ddg_ig_to_post(
+        "https://www.instagram.com/p/DaeaZDwj3PB/",
+        '4 likes, 2 comments - cctv on July 6, 2026: "The Chinese PLA Navy drill"',
+        "PLA Navy",
+    )
+    assert post["platform"] == "instagram"
+    assert post["platform_post_id"] == "DaeaZDwj3PB"
+    assert post["author_username"] == "cctv"
+    assert post["upvotes"] == 4 and post["comment_count"] == 2
+    assert post["posted_at"].startswith("2026-07-06")
+    assert post["post_text"] == "The Chinese PLA Navy drill"   # prefix stripped
+
+
+def test_ig_meta_with_km_suffix_counts():
+    post = _ddg_ig_to_post(
+        "https://www.instagram.com/p/ABC123/",
+        '64K likes, 1.2M comments - indiannavy on November 30, 2025: "Fleet review"',
+        "Indian Navy",
+    )
+    assert post["upvotes"] == 64000 and post["comment_count"] == 1_200_000
+    assert post["author_username"] == "indiannavy"
+    assert post["post_text"] == "Fleet review"
+
+
+def test_ig_plain_snippet_without_meta():
+    post = _ddg_ig_to_post(
+        "https://www.instagram.com/reel/DP6HFT2jM6I/",
+        "The Chinese PLA Navy's 83rd taskforce arrived in Thailand",
+        "PLA Navy",
+    )
+    assert post["platform_post_id"] == "DP6HFT2jM6I"
+    assert post["upvotes"] == 0 and post["comment_count"] == 0   # unknown
+    assert "83rd taskforce" in post["post_text"]
+    assert post["post_url"] == "https://www.instagram.com/p/DP6HFT2jM6I/"
+
+
+def test_ig_non_ig_url_is_none():
+    assert _ddg_ig_to_post("https://example.com/x", "snippet", "q") is None
 
 
 def test_parse_telegram_extracts_links_and_media():

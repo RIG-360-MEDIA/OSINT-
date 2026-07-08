@@ -17,6 +17,8 @@ from backend.collectors.cheap_stack.keyword_search import (
     KeywordSearchResult,
     _ddg_ig_to_post,
     _parse_telegram,
+    _wechat_parse,
+    _wx_post_id,
     _reddit_row_to_social_post,
     _tg_views_to_int,
     _tiktok_vid_to_social_post,
@@ -313,6 +315,39 @@ def test_ig_plain_snippet_without_meta():
 
 def test_ig_non_ig_url_is_none():
     assert _ddg_ig_to_post("https://example.com/x", "snippet", "q") is None
+
+
+# ── WeChat parser ────────────────────────────────────────────────────────────
+
+_WX_HTML = (
+    '<meta property="og:title" content="India Navy commissions new frigate" />'
+    '<a id="js_name">DefenseObserver</a>'
+    '<script>var ct = "1766394466";</script>'
+    '<div class="rich_media_content" id="js_content" style="visibility:hidden">'
+    '<p>The Indian Navy commissioned INS Mahendragiri today.</p>'
+    '<section>A Project 17A stealth frigate.</section></div>'
+    '<script>more</script>'
+)
+
+
+def test_wechat_parse_extracts_fields():
+    p = _wechat_parse("https://mp.weixin.qq.com/s/AbC123", _WX_HTML, "India Navy")
+    assert p["platform"] == "wechat"
+    assert p["platform_post_id"] == "wx_AbC123"
+    assert p["title"] == "India Navy commissions new frigate"
+    assert p["account"] == "DefenseObserver"
+    assert p["posted_at"].startswith("2025-12-")           # from var ct
+    assert "Mahendragiri" in p["content"] and "stealth frigate" in p["content"]
+    assert "<" not in p["content"]                          # tags stripped
+
+
+def test_wx_post_id_from_biz_url():
+    pid = _wx_post_id("https://mp.weixin.qq.com/s?__biz=MzI3&mid=224761&idx=2")
+    assert pid == "wx_224761_2"
+
+
+def test_wechat_parse_empty_html_is_none():
+    assert _wechat_parse("https://mp.weixin.qq.com/s/x", "<html></html>", "q") is None
 
 
 def test_parse_telegram_extracts_links_and_media():

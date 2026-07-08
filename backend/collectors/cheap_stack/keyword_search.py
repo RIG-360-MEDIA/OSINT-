@@ -923,6 +923,150 @@ async def search_instagram(
     )
 
 
+# ── WeChat (public Official-Account articles) ───────────────────────────────
+# China's public press/state-media space — highest-differentiation source.
+# DISCOVER via search-index (site:mp.weixin.qq.com — no China IP needed) +
+# FETCH each article's full content via curl_cffi (proven from datacenter).
+# Chinese-language. Moments / private accounts / DMs are OFF-LIMITS.
+
+_WX_TITLE_RE = re.compile(r'property="og:title" content="([^"]*)"')
+_WX_ACCT_RE = re.compile(r'id="js_name">\s*([^<]+)')
+_WX_CT_RE = re.compile(r'var ct = "(\d+)"')
+_WX_CONTENT_RE = re.compile(r'id="js_content"[^>]*>(.*)', re.DOTALL)
+
+
+def _wx_post_id(url: str) -> str:
+    m = re.search(r"/s/([A-Za-z0-9_-]+)", url)
+    if m:
+        return "wx_" + m.group(1)
+    mid = re.search(r"mid=(\d+)", url)
+    idx = re.search(r"idx=(\d+)", url)
+    if mid:
+        return f"wx_{mid.group(1)}_{idx.group(1) if idx else '1'}"
+    return "wx_" + url[-24:]
+
+
+def _wechat_parse(url: str, html: str, query: str) -> Optional[dict[str, Any]]:
+    tm = _WX_TITLE_RE.search(html)
+    title = unescape(tm.group(1)).strip() if tm else ""
+    am = _WX_ACCT_RE.search(html)
+    account = unescape(am.group(1)).strip() if am else ""
+    cm = _WX_CT_RE.search(html)
+    posted = _iso(int(cm.group(1))) if cm else ""
+    content = ""
+    com = _WX_CONTENT_RE.search(html)
+    if com:
+        content = unescape(_TG_STRIP.sub(" ", com.group(1)[:80000]))
+        content = re.sub(r"\s+", " ", content).strip()[:6000]
+    if not title and not content:
+        return None
+    return {
+        "platform": "wechat",
+        "platform_post_id": _wx_post_id(url),
+        "author_username": account,
+        "post_text": (title + ((" — " + content[:400]) if content else ""))[:2000],
+        "post_url": url,
+        "upvotes": 0,
+        "comment_count": 0,
+        "posted_at": posted,
+        "matched_keyword": query,
+        "account": account,          # the Official Account
+        "title": title,
+        "content": content,          # full article body (the differentiator)
+    }
+
+
+async def _wechat_discover(query: str, session: Any, want: int) -> list[str]:
+    """mp.weixin.qq.com article URLs for a keyword. SearXNG (retry) then DDG."""
+    urls: list[str] = []
+    for _ in range(2):
+        try:
+            r = await session.get(
+                _SEARXNG_URL + "/search",
+                params={"q": f"site:mp.weixin.qq.com {query}", "format": "json"},
+                timeout=15,
+            )
+            if r.status_code == 200 and r.text.lstrip().startswith("{"):
+                for x in r.json().get("results", []):
+                    u = x.get("url") or ""
+                    if "mp.weixin.qq.com/s" in u:
+                        urls.append(u)
+                if urls:
+                    break
+        except Exception:
+            continue
+    if not urls:
+        try:
+            q = f"site:mp.weixin.qq.com {query}".replace(" ", "+")
+            r = await session.get("https://html.duckduckgo.com/html/?q=" + q,
+                                  headers=_IG_UA, impersonate="chrome", timeout=20)
+            if r.status_code == 200:
+                for m in re.findall(r'uddg=([^&"]+)', r.text):
+                    u = unquote(m)
+                    if "mp.weixin.qq.com/s" in u:
+                        urls.append(u)
+        except Exception:
+            pass
+    seen: set[str] = set()
+    return [u for u in urls if not (u in seen or seen.add(u))][:want]
+
+
+async def search_wechat(
+    query: str, *, limit: int = 25,
+) -> KeywordSearchResult:
+    """Keyword search over PUBLIC WeChat Official-Account articles.
+
+    DISCOVER via search-index (`site:mp.weixin.qq.com`, no China IP) + FETCH each
+    article's full content (curl_cffi, works from datacenter). Chinese-language.
+    Moments / private accounts / DMs are OFF-LIMITS.
+    """
+    method = "searxng_discover+content_fetch"
+    started = time.monotonic()
+    note = ("public WeChat Official-Account articles via search-index (no China "
+            "IP) + full-content fetch; Chinese-language; Moments/private OFF-LIMITS")
+    ql = query.lower().strip()
+    toks = [t for t in re.findall(r"[\w一-鿿]+", ql) if len(t) >= 2]
+
+    try:
+        from curl_cffi.requests import AsyncSession
+
+        async with AsyncSession() as s:
+            urls = await _wechat_discover(query, s, limit)
+            sem = asyncio.Semaphore(5)
+
+            async def _one(u: str) -> Optional[dict[str, Any]]:
+                async with sem:
+                    try:
+                        r = await s.get(u, impersonate="chrome", timeout=20)
+                        return _wechat_parse(u, r.text, query) if r.status_code == 200 else None
+                    except Exception:
+                        return None
+
+            results = await asyncio.gather(*[_one(u) for u in urls])
+    except Exception as exc:
+        return KeywordSearchResult(
+            platform="wechat", method=method, query=query, ok=False,
+            error=f"{type(exc).__name__}: {exc}", note=note,
+            elapsed_s=time.monotonic() - started,
+        )
+
+    posts: dict[str, dict[str, Any]] = {}
+    for p in results:
+        if not p:
+            continue
+        hay = (p["title"] + " " + p["content"] + " " + p["account"]).lower()
+        if ql and ql not in hay and not any(t in hay for t in toks):
+            continue
+        posts.setdefault(p["platform_post_id"], p)
+
+    ordered = sorted(posts.values(), key=lambda x: x.get("posted_at") or "", reverse=True)
+    return KeywordSearchResult(
+        platform="wechat", method=method, query=query, ok=True,
+        posts=tuple(ordered[:limit]), note=note,
+        elapsed_s=time.monotonic() - started,
+    )
+
+
 # ── registry ────────────────────────────────────────────────────────────────
 
 # Each entry: platform -> async keyword-search callable. Add a line per platform
@@ -936,4 +1080,5 @@ REGISTRY: dict[str, KeywordCollector] = {
     "twitter": search_twitter,
     "telegram": search_telegram,
     "instagram": search_instagram,
+    "wechat": search_wechat,
 }

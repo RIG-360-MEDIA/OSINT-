@@ -976,9 +976,62 @@ def _wechat_parse(url: str, html: str, query: str) -> Optional[dict[str, Any]]:
     }
 
 
+_WX_UA = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/124 Safari/537.36",
+    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+}
+
+
+async def _wechat_discover_sogou(query: str, session: Any, want: int) -> list[str]:
+    """Discover mp.weixin.qq.com articles via Sogou Weixin — Tencent's OFFICIAL
+    WeChat search index (reliable, indexes WeChat properly, unlike western
+    engines). Works from the datacenter with cookie-priming + Chrome TLS.
+
+    Flow: prime cookies → article search (type=2) → each result links via a
+    /link?url= redirect whose real URL is assembled in JS `url += '...'` pieces.
+    """
+    try:
+        await session.get("https://weixin.sogou.com/", headers=_WX_UA,
+                          impersonate="chrome", timeout=15)
+        r = await session.get(
+            "https://weixin.sogou.com/weixin",
+            params={"type": "2", "query": query, "ie": "utf8", "s_from": "input"},
+            headers={**_WX_UA, "Referer": "https://weixin.sogou.com/"},
+            impersonate="chrome", timeout=20,
+        )
+        if r.status_code != 200:
+            return []
+        hrefs = re.findall(r'<h3>\s*<a[^>]*href="(/link\?url=[^"]+)"', r.text)
+    except Exception:
+        return []
+
+    sem = asyncio.Semaphore(6)
+
+    async def _resolve(href: str) -> Optional[str]:
+        async with sem:
+            try:
+                lr = await session.get(
+                    "https://weixin.sogou.com" + href.replace("&amp;", "&"),
+                    headers={**_WX_UA, "Referer": "https://weixin.sogou.com/"},
+                    impersonate="chrome", timeout=15,
+                )
+                real = "".join(re.findall(r"url \+= '([^']*)'", lr.text))
+                return real if "mp.weixin.qq.com" in real else None
+            except Exception:
+                return None
+
+    resolved = await asyncio.gather(*[_resolve(h) for h in hrefs[:want]])
+    seen: set[str] = set()
+    return [u for u in resolved if u and not (u in seen or seen.add(u))]
+
+
 async def _wechat_discover(query: str, session: Any, want: int) -> list[str]:
-    """mp.weixin.qq.com article URLs for a keyword. SearXNG (retry) then DDG."""
-    urls: list[str] = []
+    """mp.weixin.qq.com article URLs. Sogou Weixin (reliable) first, then
+    search-index (SearXNG/DDG) as fallback."""
+    urls = await _wechat_discover_sogou(query, session, want)
+    if urls:
+        return urls[:want]
     for _ in range(2):
         try:
             r = await session.get(
@@ -1020,10 +1073,11 @@ async def search_wechat(
     article's full content (curl_cffi, works from datacenter). Chinese-language.
     Moments / private accounts / DMs are OFF-LIMITS.
     """
-    method = "searxng_discover+content_fetch"
+    method = "sogou_weixin+content_fetch"
     started = time.monotonic()
-    note = ("public WeChat Official-Account articles via search-index (no China "
-            "IP) + full-content fetch; Chinese-language; Moments/private OFF-LIMITS")
+    note = ("public WeChat Official-Account articles via Sogou Weixin (Tencent's "
+            "official WeChat search; search-index fallback) + full-content fetch; "
+            "Chinese-language; Moments/private OFF-LIMITS")
     ql = query.lower().strip()
     toks = [t for t in re.findall(r"[\w一-鿿]+", ql) if len(t) >= 2]
 

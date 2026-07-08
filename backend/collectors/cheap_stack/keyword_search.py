@@ -16,12 +16,16 @@ distinction is the whole point: a silent empty must never look like success.
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from html import unescape
 from typing import Any, Awaitable, Callable, Optional
+
+from .osint_sources import all_telegram_channels
 
 # Normalized post keys expected by the `social_posts` pipeline shape.
 SOCIAL_POST_KEYS = (
@@ -522,6 +526,129 @@ async def search_twitter(
     )
 
 
+# ── Telegram (curated channel-set search — NOT global) ──────────────────────
+
+_TG_STRIP = re.compile(r"<[^>]+>")
+_TG_TEXT_RE = re.compile(
+    r'<div class="tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>', re.DOTALL)
+_TG_TIME_RE = re.compile(r'<time[^>]*datetime="([^"]+)"')
+_TG_VIEWS_RE = re.compile(r'tgme_widget_message_views"[^>]*>([^<]+)<')
+
+
+def _tg_views_to_int(text: Optional[str]) -> int:
+    """'1.2K' / '3.4M' / '512' -> int."""
+    if not text:
+        return 0
+    t = text.strip().upper().replace(",", "")
+    mult = {"K": 1_000, "M": 1_000_000, "B": 1_000_000_000}
+    try:
+        if t and t[-1] in mult:
+            return int(float(t[:-1]) * mult[t[-1]])
+        return int(float(t))
+    except ValueError:
+        return 0
+
+
+def _parse_telegram(html: str, channel: str, query: str) -> list[dict[str, Any]]:
+    """Parse matched messages from a t.me/s/{channel}?q= preview page.
+
+    Splits per-message on data-post; local keyword re-check belts-and-braces
+    Telegram's own filter.
+    """
+    tokens = [t for t in re.findall(r"[a-z0-9]+", query.lower())]
+    posts: list[dict[str, Any]] = []
+    for chunk in html.split('data-post="')[1:]:
+        end = chunk.find('"')
+        if end == -1:
+            continue
+        pid = chunk[:end]                       # e.g. "rybar/12345"
+        m_text = _TG_TEXT_RE.search(chunk)
+        if not m_text:
+            continue
+        text = unescape(_TG_STRIP.sub(" ", m_text.group(1))).strip()
+        if not text:
+            continue
+        haystack = text.lower()
+        if tokens and not any(t in haystack for t in tokens):
+            continue
+        m_time = _TG_TIME_RE.search(chunk)
+        m_views = _TG_VIEWS_RE.search(chunk)
+        posts.append({
+            "platform": "telegram",
+            "platform_post_id": pid,
+            "author_username": channel,
+            "post_text": text[:3000],
+            "post_url": f"https://t.me/{pid}",
+            "upvotes": 0,
+            "comment_count": 0,
+            "posted_at": (m_time.group(1) if m_time else ""),
+            "matched_keyword": query,
+            "views": _tg_views_to_int(m_views.group(1) if m_views else None),
+            "channel": channel,
+        })
+    return posts
+
+
+async def search_telegram(
+    query: str, *, limit: int = 25,
+) -> KeywordSearchResult:
+    """Keyword search across a CURATED Telegram channel set (t.me/s/?q=).
+
+    NOT global Telegram search (which is paid-only). Each channel's public
+    preview is searched concurrently, no bot token. Always labelled with its
+    honest scope so an empty result is a real 'nothing in these channels', not a
+    silent failure.
+    """
+    method = "tme_channel_set_search"
+    started = time.monotonic()
+    channels = all_telegram_channels()
+    note = f"within {len(channels)} curated channels (NOT global Telegram search)"
+
+    sem = asyncio.Semaphore(8)
+
+    async def _one(channel: str) -> list[dict[str, Any]]:
+        async with sem:
+            try:
+                from curl_cffi.requests import AsyncSession
+
+                async with AsyncSession() as s:
+                    r = await s.get(
+                        f"https://t.me/s/{channel}", params={"q": query},
+                        impersonate="chrome", timeout=15,
+                    )
+                if r.status_code != 200:
+                    return []
+                return _parse_telegram(r.text, channel, query)
+            except Exception:
+                return []
+
+    try:
+        batches = await asyncio.gather(*[_one(c) for c in channels])
+    except Exception as exc:
+        return KeywordSearchResult(
+            platform="telegram", method=method, query=query, ok=False,
+            error=f"{type(exc).__name__}: {exc}", note=note,
+            elapsed_s=time.monotonic() - started,
+        )
+
+    seen: set[str] = set()
+    merged: list[dict[str, Any]] = []
+    for post in sorted(
+        (p for batch in batches for p in batch),
+        key=lambda x: x["posted_at"], reverse=True,
+    ):
+        if post["platform_post_id"] in seen:
+            continue
+        seen.add(post["platform_post_id"])
+        merged.append(post)
+
+    return KeywordSearchResult(
+        platform="telegram", method=method, query=query, ok=True,
+        posts=tuple(merged[:limit]), note=note,
+        elapsed_s=time.monotonic() - started,
+    )
+
+
 # ── registry ────────────────────────────────────────────────────────────────
 
 # Each entry: platform -> async keyword-search callable. Add a line per platform
@@ -533,4 +660,5 @@ REGISTRY: dict[str, KeywordCollector] = {
     "tiktok": search_tiktok,
     "youtube": search_youtube,
     "twitter": search_twitter,
+    "telegram": search_telegram,
 }

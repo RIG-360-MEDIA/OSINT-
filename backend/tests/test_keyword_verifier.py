@@ -15,7 +15,9 @@ import pytest
 
 from backend.collectors.cheap_stack.keyword_search import (
     KeywordSearchResult,
+    _parse_telegram,
     _reddit_row_to_social_post,
+    _tg_views_to_int,
     _tiktok_vid_to_social_post,
     _twitter_row_to_social_post,
     _yt_int,
@@ -216,6 +218,42 @@ def test_twitter_normalizer_coerces_missing_counts():
     out = _twitter_row_to_social_post({"platform_post_id": "1"}, "q")
     assert out["upvotes"] == 0 and out["comment_count"] == 0 and out["views"] == 0
     assert isinstance(out["shares"], int)
+
+
+# ── Telegram parser ─────────────────────────────────────────────────────────
+
+def test_tg_views_to_int():
+    assert _tg_views_to_int("12.3K") == 12300
+    assert _tg_views_to_int("3.4M") == 3_400_000
+    assert _tg_views_to_int("512") == 512
+    assert _tg_views_to_int(None) == 0 and _tg_views_to_int("n/a") == 0
+
+
+_TG_HTML = (
+    'data-post="rybar/12345" class="x">'
+    '<div class="tgme_widget_message_text js-message_text">'
+    'PLA Navy conducted a drill near <b>Taiwan</b></div>'
+    '<a class="tgme_widget_message_date"><time datetime="2026-07-08T10:00:00+00:00">'
+    '</time></a><span class="tgme_widget_message_views">12.3K</span>'
+    'data-post="rybar/12346" class="x">'
+    '<div class="tgme_widget_message_text js-message_text">unrelated football post</div>'
+    '<time datetime="2026-07-08T09:00:00+00:00"></time>'
+)
+
+
+def test_parse_telegram_filters_and_extracts():
+    posts = _parse_telegram(_TG_HTML, "rybar", "PLA Navy")
+    assert len(posts) == 1                       # football post filtered out
+    p = posts[0]
+    assert p["platform_post_id"] == "rybar/12345"
+    assert p["post_url"] == "https://t.me/rybar/12345"
+    assert "Taiwan" in p["post_text"] and "<b>" not in p["post_text"]
+    assert p["views"] == 12300
+    assert p["channel"] == "rybar" and p["platform"] == "telegram"
+
+
+def test_parse_telegram_empty_when_no_match():
+    assert _parse_telegram(_TG_HTML, "rybar", "Zimbabwe") == []
 
 
 # ── quality metrics ────────────────────────────────────────────────────────

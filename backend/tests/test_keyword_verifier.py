@@ -256,6 +256,36 @@ def test_parse_telegram_empty_when_no_match():
     assert _parse_telegram(_TG_HTML, "rybar", "Zimbabwe") == []
 
 
+_TG_LINK_HTML = (
+    'data-post="theprintindia/26382" class="x">'
+    '<div class="tgme_widget_message_text js-message_text">'
+    'New promo video by PLA Navy teaser '
+    '<a href="https://youtu.be/CWkY9fk2gbM">Watch</a> also http://example.com/report'
+    ' and internal <a href="https://t.me/theprintindia/1">link</a>'
+    ' <a href="?q=%23EyeOnChina">#EyeOnChina</a>'          # relative -> drop
+    ' <a href="https://ko-fi.com/ddgeo">donate</a></div>'  # promo -> drop
+    '<a class="tgme_widget_message_photo_wrap" '
+    "style=\"background-image:url('https://cdn.tg/photo123.jpg')\"></a>"
+    '<time datetime="2026-05-01T08:32:41+00:00"></time>'
+)
+
+
+def test_parse_telegram_extracts_links_and_media():
+    posts = _parse_telegram(_TG_LINK_HTML, "theprintindia", "PLA Navy")
+    assert len(posts) == 1
+    p = posts[0]
+    # outbound links captured, telegram-internal link excluded
+    assert "https://youtu.be/CWkY9fk2gbM" in p["external_urls"]
+    assert "http://example.com/report" in p["external_urls"]
+    assert all("t.me/" not in u for u in p["external_urls"])
+    assert all("ko-fi" not in u for u in p["external_urls"])       # promo dropped
+    assert all(u.startswith("http") for u in p["external_urls"])   # no relative ?q=
+    assert p["external_url"] == "https://youtu.be/CWkY9fk2gbM"     # first real link
+    # photo media captured
+    assert p["media_urls"] == ["https://cdn.tg/photo123.jpg"]
+    assert p["has_media"] is True
+
+
 # ── quality metrics ────────────────────────────────────────────────────────
 
 def test_assess_perfect_batch():

@@ -533,6 +533,51 @@ _TG_TEXT_RE = re.compile(
     r'<div class="tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>', re.DOTALL)
 _TG_TIME_RE = re.compile(r'<time[^>]*datetime="([^"]+)"')
 _TG_VIEWS_RE = re.compile(r'tgme_widget_message_views"[^>]*>([^<]+)<')
+# link + media extraction
+_TG_HREF_RE = re.compile(r'href="([^"]+)"')
+_TG_URL_RE = re.compile(r'https?://[^\s"<>]+')
+_TG_PHOTO_RE = re.compile(r"tgme_widget_message_photo_wrap[^>]*?url\('([^']+)'\)")
+_TG_VIDEOTHUMB_RE = re.compile(r"tgme_widget_message_video_thumb[^>]*?url\('([^']+)'\)")
+_TG_VIDEOSRC_RE = re.compile(r'<video[^>]+src="([^"]+)"')
+
+
+def _dedupe(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    return [x for x in items if not (x in seen or seen.add(x))]
+
+
+# Donation / promo domains channels stamp on every post — boilerplate, not content.
+_TG_PROMO_DOMAINS = (
+    "ko-fi.com", "patreon.com", "buymeacoffee.com", "paypal.me", "boosty.to",
+    "donate", "streamlabs.com",
+)
+
+
+def _tg_extract_links(text_html: str, clean_text: str) -> list[str]:
+    """Outbound content links from a message: absolute http(s) <a href> +
+    plaintext URLs, minus telegram-internal links, relative hrefs (#hashtag,
+    ?q=…), and donation/promo boilerplate."""
+    urls = [unescape(u) for u in _TG_HREF_RE.findall(text_html)]
+    urls += _TG_URL_RE.findall(clean_text)
+    out: list[str] = []
+    for u in urls:
+        if not u.startswith(("http://", "https://")):   # drop relative (#, ?q=, /)
+            continue
+        if u.startswith(("https://t.me/", "http://t.me/")):
+            continue
+        low = u.lower()
+        if any(d in low for d in _TG_PROMO_DOMAINS):
+            continue
+        out.append(u)
+    return _dedupe(out)
+
+
+def _tg_extract_media(chunk: str) -> list[str]:
+    """Photo / video-thumb / video-src URLs from a message block."""
+    media = (_TG_PHOTO_RE.findall(chunk)
+             + _TG_VIDEOTHUMB_RE.findall(chunk)
+             + _TG_VIDEOSRC_RE.findall(chunk))
+    return _dedupe([unescape(m) for m in media])
 
 
 def _tg_views_to_int(text: Optional[str]) -> int:
@@ -565,7 +610,8 @@ def _parse_telegram(html: str, channel: str, query: str) -> list[dict[str, Any]]
         m_text = _TG_TEXT_RE.search(chunk)
         if not m_text:
             continue
-        text = unescape(_TG_STRIP.sub(" ", m_text.group(1))).strip()
+        text_html = m_text.group(1)
+        text = unescape(_TG_STRIP.sub(" ", text_html)).strip()
         if not text:
             continue
         haystack = text.lower()
@@ -573,6 +619,8 @@ def _parse_telegram(html: str, channel: str, query: str) -> list[dict[str, Any]]
             continue
         m_time = _TG_TIME_RE.search(chunk)
         m_views = _TG_VIEWS_RE.search(chunk)
+        links = _tg_extract_links(text_html, text)
+        media = _tg_extract_media(chunk)
         posts.append({
             "platform": "telegram",
             "platform_post_id": pid,
@@ -585,6 +633,11 @@ def _parse_telegram(html: str, channel: str, query: str) -> list[dict[str, Any]]
             "matched_keyword": query,
             "views": _tg_views_to_int(m_views.group(1) if m_views else None),
             "channel": channel,
+            # enriched: outbound links + media pulled out of the message
+            "external_urls": links,
+            "external_url": links[0] if links else "",
+            "media_urls": media,
+            "has_media": bool(media),
         })
     return posts
 

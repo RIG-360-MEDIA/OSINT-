@@ -81,6 +81,8 @@ app = Celery(
         # Social pillar: collectors + substrate drain (the 'social' queue)
         "backend.tasks.social_collect",
         "backend.tasks.social_enrich",
+        # On-demand keyword collection (Phase 2) — same 'social' queue, no new beat
+        "backend.tasks.keyword_collect",
     ],
 )
 

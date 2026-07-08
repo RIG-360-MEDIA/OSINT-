@@ -818,43 +818,92 @@ async def _ig_fetch_og(shortcode: str, session: Any) -> Optional[str]:
         return None
 
 
+# Persist-from-use (in-process): keyword -> relevant author handles, so repeat
+# searches refresh the same accounts (fresher + faster). Grows during a session.
+_ig_author_cache: dict[str, set[str]] = {}
+_IG_MAX_ACCOUNTS = 12   # bound the real-time fan-out (web_profile_info ~200/hr/IP)
+
+
 async def search_instagram(
     query: str, *, limit: int = 25,
 ) -> KeywordSearchResult:
-    """Global keyword search over Instagram — NO login, NO curated accounts,
-    NO hashtag session.
+    """Global + real-time keyword search over Instagram — free, NO login, NO
+    ban risk, NO manually-preset account set.
 
-    Two cookie-free stages, both proven from the datacenter box:
-      1) DISCOVER post URLs via SearXNG (self-hosted meta-search; DDG fallback)
-         — search engines index instagram.com captions, so this is global.
-      2) ENRICH each post via its og:description (author, likes, comments, date,
-         caption).
+    Hybrid of two cookie-free techniques, both proven from the datacenter box:
+      1) DISCOVER (global): search-index (SearXNG/DDG) `site:instagram.com "kw"`
+         → post URLs; og:description → caption + the AUTHOR handle. This finds
+         who-posts-about-this anywhere on IG (no preset accounts — the keyword
+         builds the account list).
+      2) REFRESH (real-time): web_profile_info on those auto-discovered accounts
+         → their NEWEST posts → keyword-filter. Fresh, cookie-free, no account.
+      Merge (dedupe by shortcode; real-time overrides stale index copy).
 
-    Honest scope: only PUBLIC posts a search engine has INDEXED (not real-time;
-    niche terms may be sparse).
+    Honest gap: catches real-time posts from any account the index has EVER seen
+    on-topic (news orgs, official/known handles) — not a brand-new, never-indexed
+    account's post the instant it's made (that needs the login-walled firehose).
     """
-    method = "searxng_discover+og_enrich"
+    method = "searxng_discover+web_profile_realtime"
     started = time.monotonic()
-    note = ("global keyword search via search-index (SearXNG/DDG) + og:description "
-            "enrich — login-free, but indexed public posts only (not real-time)")
-    tokens = re.findall(r"[a-z0-9]+", query.lower())
+    note = ("global keyword search: search-index discovery + web_profile_info "
+            "real-time refresh of matched accounts (free, login-free); brand-new "
+            "un-indexed accounts not caught")
+    phrase = query.lower().strip()
+    # Drop 1-char/ambiguous tokens; require the FULL phrase OR all tokens so a
+    # loose token can't pull noise (e.g. "pla" matching #pla=plastic model kits).
+    toks = [t for t in re.findall(r"[a-z0-9]+", phrase) if len(t) >= 2]
+    ckey = phrase
 
+    def _match(post: dict[str, Any]) -> bool:
+        hay = ((post.get("post_text") or "") + " " +
+               (post.get("author_username") or "")).lower()
+        if phrase and phrase in hay:
+            return True                       # exact phrase = strongest
+        return (not toks) or all(t in hay for t in toks)
+
+    merged: dict[str, dict[str, Any]] = {}
+    index_posts: list[dict[str, Any]] = []
     try:
         from curl_cffi.requests import AsyncSession
+        from .pipeline_adapter import collect_instagram_posts
 
+        # ── Stage 1: DISCOVER (global search-index) + caption/author enrich ──
         async with AsyncSession() as s:
             codes = await _ig_discover(query, s, limit)
             sem = asyncio.Semaphore(6)
 
-            async def _one(sc: str) -> Optional[dict[str, Any]]:
+            async def _enrich(sc: str) -> Optional[dict[str, Any]]:
                 async with sem:
                     og = await _ig_fetch_og(sc, s)
-                    if not og:
-                        return None
-                    return _ddg_ig_to_post(
+                    return (_ddg_ig_to_post(
                         f"https://www.instagram.com/p/{sc}/", og, query)
+                        if og else None)
 
-            results = await asyncio.gather(*[_one(c) for c in codes])
+            index_posts = [p for p in await asyncio.gather(
+                *[_enrich(c) for c in codes]) if p]
+        for p in index_posts:
+            if _match(p):
+                merged[p["platform_post_id"]] = {**p, "source": "index",
+                                                  "is_realtime": False}
+
+        # relevant accounts = discovered + remembered (persist-from-use)
+        authors = {p["author_username"] for p in index_posts if p.get("author_username")}
+        authors |= _ig_author_cache.get(ckey, set())
+        authors = sorted(a for a in authors if a)[:_IG_MAX_ACCOUNTS]
+
+        # ── Stage 2: REAL-TIME refresh of those accounts (web_profile_info) ──
+        batches = await asyncio.gather(
+            *[asyncio.to_thread(collect_instagram_posts, a, limit=8) for a in authors],
+            return_exceptions=True,
+        )
+        for batch in batches:
+            if isinstance(batch, Exception) or not batch:
+                continue
+            for p in batch:
+                if _match(p):
+                    merged[p["platform_post_id"]] = {
+                        **p, "matched_keyword": query,
+                        "source": "realtime", "is_realtime": True}
     except Exception as exc:
         return KeywordSearchResult(
             platform="instagram", method=method, query=query, ok=False,
@@ -862,18 +911,14 @@ async def search_instagram(
             elapsed_s=time.monotonic() - started,
         )
 
-    posts: dict[str, dict[str, Any]] = {}
-    for post in results:
-        if not post:
-            continue
-        haystack = (post["post_text"] + " " + post["author_username"]).lower()
-        if tokens and not any(t in haystack for t in tokens):
-            continue
-        posts.setdefault(post["platform_post_id"], post)
+    if authors:   # remember relevant accounts for next time
+        _ig_author_cache.setdefault(ckey, set()).update(authors)
 
+    ordered = sorted(merged.values(), key=lambda x: x.get("posted_at") or "",
+                     reverse=True)
     return KeywordSearchResult(
         platform="instagram", method=method, query=query, ok=True,
-        posts=tuple(list(posts.values())[:limit]), note=note,
+        posts=tuple(ordered[:limit]), note=note,
         elapsed_s=time.monotonic() - started,
     )
 

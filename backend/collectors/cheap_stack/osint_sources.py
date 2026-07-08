@@ -6,8 +6,10 @@ box (2026-07-08) — it returns real posts via the public preview page, no bot
 token. Channels with preview disabled / wrong handles were dropped.
 
 Reddit search is already global, so `REDDIT_INTEL_SUBREDDITS` is a curated
-high-signal WATCHLIST — for subreddit-scoped searches and as a monitoring set of
-the goldmine / underrated / intelligence communities.
+high-signal WATCHLIST (all liveness-verified) — for subreddit-scoped searches
+and as a monitoring set of the goldmine / underrated / intelligence communities.
+
+~85 Telegram channels + ~85 Reddit subreddits across the categories below.
 """
 from __future__ import annotations
 
@@ -19,19 +21,70 @@ TELEGRAM_CHANNELS: dict[str, list[str]] = {
         "OSINTdefender", "rybar", "intelslava", "WarMonitors", "Faytuks",
         "DDGeopolitics", "clashreport", "spectatorindex", "warfareanalysis",
         "worldsource24", "thewarnews", "EndgameWW3", "geopolitics_live",
+        "WW3Media", "warmonitor",
+    ],
+    # Breaking-news wires / high-velocity aggregators
+    "breaking_wire": [
+        "disclosetv", "BNONews", "CollinRugg", "RadioGenoa",
     ],
     # Ukraine / Russia / Israel theatre
     "conflict_theatre": [
         "DeepStateUA", "wartranslated", "sprinterobserver", "IsraelWarRoom",
     ],
+    # Russia — state media + milbloggers (read critically)
+    "russia": [
+        "readovkanews", "mash", "bazabazon", "SolovievLive", "warfakes",
+        "milinfolive", "dva_majora", "boris_rozhin",
+    ],
+    # Ukraine — official + war reporting
+    "ukraine": [
+        "nexta_tv", "KyivIndependent_official", "Pravda_Gerashchenko",
+        "insiderUKR", "war_home", "ukraine_watch", "serhii_flash",
+        "operativnoZSU", "ukrpravda_news", "tsaplienko", "V_Zelenskiy_official",
+    ],
+    # China / Taiwan / IndoPacific
+    "china_indopacific": [
+        "EyesOnAsia", "ChinaOSINT",
+    ],
+    # Middle East / Iran / Gaza
+    "middle_east": [
+        "IranIntl_En", "muraselon", "QudsNen",
+    ],
+    # Cyber / infosec / threat intel
+    "cyber_infosec": [
+        "vxunderground", "malwrhunterteam", "TheHackerNews", "cyberknow20",
+        "BleepingComputer", "CyberSecurityNews",
+    ],
+    # Aviation / naval / nuclear / space
+    "air_sea_space": [
+        "planespottersnet", "navalnews", "nuclear_news", "nextspaceflight",
+    ],
+    # Economics / markets / finance
+    "economics_markets": [
+        "financialjuice", "markettwits", "moneycontrolcom", "livemint",
+    ],
     # India news + government
     "india_news": [
         "megh_updates", "mygovindia", "aninews", "zeenews", "sudarshannews",
         "ndtv", "timesofindia", "firstpost", "theprintindia", "IndianExpress",
+        "thewire_in", "thequint", "scroll_in", "hindustantimes", "dnaindia",
+        "htTweets",
     ],
     # India / IndoPacific defence + think-tanks
     "india_defence": [
-        "indiandefensenews", "OrfOnline",
+        "indiandefensenews", "OrfOnline", "DRDO_India", "indiannavy",
+    ],
+    # Pakistan
+    "pakistan": [
+        "ARYNewsofficial", "propakistani",
+    ],
+    # Africa
+    "africa": [
+        "AfricaIntelligence",
+    ],
+    # Think-tanks / long-form analysis
+    "think_tanks": [
+        "criticalthreats", "carnegieendowment",
     ],
 }
 
@@ -59,24 +112,62 @@ REDDIT_INTEL_SUBREDDITS: dict[str, list[str]] = {
         "WarCollege",            # ask-the-experts on military history/doctrine
         "LessCredibleDefence",   # looser sister of CredibleDefense, still high signal
         "geopolitics",
+        "CredibleDiplomacy",     # the diplomacy counterpart to CredibleDefense
     ],
     # OSINT / intelligence tradecraft + primary footage
     "osint": [
         "OSINT", "intelligence", "CombatFootage",
         "UkraineWarVideoReport", "UkraineRussiaReport",
     ],
-    # Underrated / niche — less obvious, high context-per-post
+    # Cyber / threat intel / infosec
+    "cyber": [
+        "cybersecurity", "netsec", "Malware", "ReverseEngineering",
+        "AskNetsec", "privacy", "blackhat", "onions",
+    ],
+    # Defence / military
+    "military": [
+        "Military", "MilitaryHistory", "MilitaryStrategy", "submarines",
+        "WarshipPorn", "TankPorn", "WeaponsPorn", "WarplanePorn",
+    ],
+    # Geopolitics / international relations
+    "geopolitics_ir": [
+        "IRstudies", "foreignpolicy", "InternationalNews", "worldevents",
+        "PoliticalScience", "GlobalTalk", "GeopoliticsIndia", "GeopoliticsIndia2",
+    ],
+    # Active-conflict tracking
+    "conflict": [
+        "UkrainianConflict", "russiawarinukraine", "syriancivilwar",
+        "YemeniCrisis", "IsraelPalestine", "Kurdistan", "LebaneseArmy",
+    ],
+    # Regional — world
+    "regional_world": [
+        "taiwan", "HongKong", "korea", "japan", "Philippines", "Pakistan",
+        "bangladesh", "afghanistan", "iran", "europe", "AskARussian",
+        "Africa", "LatinAmerica", "Sino", "China_irl",
+    ],
+    # Regional — India
+    "india": [
+        "IndiaSpeaks", "IndianDefense", "unitedstatesofindia", "librandu",
+        "IndianStreetBets", "IndiaInvestments", "indianews", "IndianModerate",
+        "Kerala", "bangalore", "Kashmir",
+    ],
+    # Economics / energy / geoeconomics
+    "economics": [
+        "economics", "GlobalMarkets", "energy", "oil", "geopoliticaleconomy",
+    ],
+    # Science / space intelligence
+    "science_space": [
+        "space", "aerospace", "satellites",
+    ],
+    # Underrated / high-context / long-form
     "underrated": [
         "NonCredibleDefense",    # memes on top, but breaks real signal early
         "AfterTheLoop",          # "what's the context behind this news?"
         "NeutralPolitics",       # sourced, fact-first political analysis
+        "NeutralNews",
         "anime_titties",         # (ironically named) serious world-news discussion
-        "WarplanePorn",
-    ],
-    # Regional — India / China / IndoPacific
-    "regional": [
-        "GeopoliticsIndia", "IndianDefense", "IndiaSpeaks",
-        "Kashmir", "Sino", "China_irl", "geopolitics",
+        "TrueReddit", "Foodforthought", "InDepthStories", "Ask_Politics",
+        "Hostile_Takeovers",
     ],
 }
 

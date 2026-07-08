@@ -74,6 +74,36 @@ views, upvote_ratio, is_retweet, is_reply, lang, has_media, media_urls (jsonb),
 raw (jsonb)` + enrichment (`sentiment, topic_category, toxicity, …`). So the
 **gaps are small** (see §4).
 
+### 2b. Schema principle — fixed core + JSONB (how we cater to 7 different platforms)
+
+Each platform has different fields. We do NOT add a column per field (sparse,
+90% null) and we do NOT make 7 tables (breaks unified dossier/sentiment queries).
+Pattern = **common typed core + one `raw` jsonb catch-all** (what `social_posts`
+already does). Each platform maps its engagement to the shared columns and dumps
+its quirks into `raw`.
+
+Common typed columns every platform fills (nullable — each fills what it has):
+`platform, platform_post_id, author_username, channel, post_text, post_url,
+posted_at, matched_keyword, source, likes, upvotes, comments_count, shares,
+views, has_media, media_urls (jsonb), lang, raw (jsonb)`.
+
+Engagement mapping: reddit→`upvotes`; tiktok/ig/twitter→`likes`;
+comments→`comments_count`; retweets/tiktok-shares→`shares`;
+yt/tiktok/twitter/telegram→`views`. `channel` = subreddit / TG channel / YT
+channel / WeChat account (null where N/A).
+
+Platform-specific → `raw` jsonb (nothing lost, queryable via `raw->>'x'` + GIN):
+- reddit `{subreddit_subscribers, author_fullname, external_url, domain, over_18, upvote_ratio, is_video}`
+- tiktok `{media_url, thumbnail, duration, region}`
+- youtube `{channel_id, verified, thumbnail, duration, published_text}`
+- twitter `{is_retweet, is_reply, quote_count, hashtags, mentions}`
+- telegram `{external_urls, message_views}`
+- instagram `{source, is_realtime}`
+- wechat `{title}` + **`full_content`** (6k-char body — recommend a DEDICATED
+  `full_content text` column, not raw, so it's FTS-able; same for future YT transcript)
+
+Adding VK / platform #8 later = zero schema change (extras go in `raw`).
+
 ---
 
 ## 3. Phase 2 goal + retire-old
@@ -98,11 +128,19 @@ Conventions: numbered idempotent migration `scripts/migrations/NNN_name.sql`
 (applied in order at first boot via `docker-entrypoint-initdb.d`). DB access:
 `docker exec rig-postgres psql -U rig -d rig`.
 
-**4.1 Decide the target table** (I lean option A):
-- **A. Reuse `social_posts`** — keep the good columns, truncate old rows at
-  cutover. Least code churn (downstream queries already read `social_posts`).
-- **B. New `keyword_posts` table** — clean slate, run both during cutover.
-Tell me A or B.
+**4.1 Target table — DECIDED: Option A, reuse + RESHAPE `social_posts`.**
+"Reuse" does NOT mean keep the old shape — it means reshape via two migrations:
+142 adds the keyword columns, 143 strips the old-firehose columns, and the
+retirement migration deletes the old rows. End state = collector fields +
+enrichment fields, no firehose junk. Rationale (decisive): `social_posts` is the
+hub of an enrichment ecosystem our collectors do NOT produce — `sentiment,
+toxicity, weaponization_signals, entities_extracted, labse_embedding,
+substrate_status`, **9 child tables FK'd to `social_posts.id`** (stances/claims/
+quotes/metrics…), the substrate/sentiment/embedding pipeline, and
+`keyword_dossier.py` + evidence readers. A fresh `keyword_posts` table would
+orphan all of that (multi-day re-plumbing) to arrive at a table identical to
+social_posts-after-cleanup. So: keep the name + plumbing, reshape columns,
+replace data.
 
 **4.2 Add columns** (to whichever table):
 - `matched_keyword text` — the query that surfaced the post.

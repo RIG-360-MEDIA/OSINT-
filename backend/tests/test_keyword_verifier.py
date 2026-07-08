@@ -17,6 +17,8 @@ from backend.collectors.cheap_stack.keyword_search import (
     KeywordSearchResult,
     _ddg_ig_to_post,
     _parse_telegram,
+    _has_cjk,
+    _translate_to_zh,
     _wechat_parse,
     _wx_post_id,
     _reddit_row_to_social_post,
@@ -348,6 +350,27 @@ def test_wx_post_id_from_biz_url():
 
 def test_wechat_parse_empty_html_is_none():
     assert _wechat_parse("https://mp.weixin.qq.com/s/x", "<html></html>", "q") is None
+
+
+# ── WeChat EN->ZH term mapping ───────────────────────────────────────────────
+
+def test_has_cjk():
+    assert _has_cjk("莫迪") and _has_cjk("India 印度")
+    assert not _has_cjk("Modi") and not _has_cjk("PLA Navy")
+
+
+def test_wechat_term_map_covers_common_entities():
+    from backend.collectors.cheap_stack.osint_sources import WECHAT_TERM_MAP
+    assert WECHAT_TERM_MAP["modi"] == "莫迪"
+    assert WECHAT_TERM_MAP["pla navy"] == "解放军海军"
+    assert WECHAT_TERM_MAP["india"] == "印度"
+
+
+def test_translate_dict_hit_needs_no_network():
+    # dict hit returns before touching the session (pass None to prove it)
+    import asyncio
+    assert asyncio.run(_translate_to_zh("Modi", None)) == "莫迪"
+    assert asyncio.run(_translate_to_zh("PLA Navy", None)) == "解放军海军"
 
 
 def test_parse_telegram_extracts_links_and_media():

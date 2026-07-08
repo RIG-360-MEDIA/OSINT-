@@ -188,3 +188,39 @@ def all_intel_subreddits() -> list[str]:
                 seen.add(sub)
                 out.append(sub)
     return out
+
+
+# ── WeChat: English -> Chinese term map (for Sogou Weixin search) ─────────────
+# WeChat is Chinese-language, so English keywords under-return. This curated map
+# (keys lowercased) covers the common India/China/Pakistan OSINT entities for an
+# instant, exact translation; anything not here falls back to a live translator.
+
+WECHAT_TERM_MAP: dict[str, str] = {
+    # leaders
+    "modi": "莫迪", "narendra modi": "莫迪", "xi jinping": "习近平", "xi": "习近平",
+    "putin": "普京", "trump": "特朗普", "biden": "拜登",
+    "jaishankar": "苏杰生", "rajnath singh": "拉杰纳特·辛格",
+    "imran khan": "伊姆兰·汗", "shehbaz sharif": "夏巴兹·谢里夫",
+    # countries / regions
+    "india": "印度", "pakistan": "巴基斯坦", "china": "中国", "russia": "俄罗斯",
+    "united states": "美国", "usa": "美国", "america": "美国",
+    "bangladesh": "孟加拉国", "sri lanka": "斯里兰卡", "nepal": "尼泊尔",
+    "afghanistan": "阿富汗", "iran": "伊朗", "taiwan": "台湾", "japan": "日本",
+    "bhutan": "不丹", "myanmar": "缅甸", "maldives": "马尔代夫",
+    "ladakh": "拉达克", "kashmir": "克什米尔", "arunachal": "阿鲁纳恰尔",
+    "galwan": "加勒万", "doklam": "洞朗", "tibet": "西藏", "xinjiang": "新疆",
+    "south china sea": "南海", "indo-pacific": "印太",
+    # military
+    "pla": "解放军", "pla navy": "解放军海军", "pla army": "解放军陆军",
+    "pla air force": "解放军空军", "pla rocket force": "火箭军",
+    "indian navy": "印度海军", "indian army": "印度陆军",
+    "indian air force": "印度空军", "iaf": "印度空军",
+    "rafale": "阵风", "brahmos": "布拉莫斯", "s-400": "S-400",
+    "aircraft carrier": "航空母舰", "submarine": "潜艇", "missile": "导弹",
+    "nuclear": "核武器", "hypersonic": "高超音速", "fighter jet": "战斗机",
+    "border": "边境", "lac": "实际控制线", "line of actual control": "实际控制线",
+    # orgs / events
+    "brics": "金砖国家", "quad": "四方安全对话", "sco": "上海合作组织",
+    "bjp": "印度人民党", "operation sindoor": "辛杜尔行动",
+    "belt and road": "一带一路", "bri": "一带一路",
+}

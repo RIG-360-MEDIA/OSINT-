@@ -26,7 +26,7 @@ from html import unescape
 from typing import Any, Awaitable, Callable, Optional
 from urllib.parse import unquote
 
-from .osint_sources import all_telegram_channels
+from .osint_sources import WECHAT_TERM_MAP, all_telegram_channels
 
 # Normalized post keys expected by the `social_posts` pipeline shape.
 SOCIAL_POST_KEYS = (
@@ -981,6 +981,44 @@ _WX_UA = {
                   "(KHTML, like Gecko) Chrome/124 Safari/537.36",
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
 }
+_GTX_URL = "https://translate.googleapis.com/translate_a/single"
+
+
+def _has_cjk(text: str) -> bool:
+    return any("一" <= c <= "鿿" for c in text)
+
+
+async def _translate_to_zh(text: str, session: Any) -> Optional[str]:
+    """English -> Chinese. Curated OSINT dict first (exact), then Google's free
+    keyless gtx endpoint (works from datacenter). None if both miss."""
+    hit = WECHAT_TERM_MAP.get(text.strip().lower())
+    if hit:
+        return hit
+    try:
+        r = await session.get(
+            _GTX_URL,
+            params={"client": "gtx", "sl": "en", "tl": "zh-CN", "dt": "t", "q": text},
+            impersonate="chrome", timeout=12,
+        )
+        if r.status_code == 200:
+            zh = "".join(seg[0] for seg in r.json()[0] if seg and seg[0])
+            return zh.strip() or None
+    except Exception:
+        pass
+    return None
+
+
+async def _wechat_query_terms(query: str, session: Any) -> list[str]:
+    """Query variants to search on WeChat: the original + its Chinese term
+    (WeChat is Chinese-language, so English alone under-returns). Searching both
+    maximizes recall (some articles use transliterated/English terms)."""
+    terms = [query]
+    if not _has_cjk(query):
+        zh = await _translate_to_zh(query, session)
+        if zh and zh != query:
+            terms.append(zh)
+    seen: set[str] = set()
+    return [t for t in terms if t and not (t in seen or seen.add(t))]
 
 
 async def _wechat_discover_sogou(query: str, session: Any, want: int) -> list[str]:
@@ -1073,30 +1111,37 @@ async def search_wechat(
     article's full content (curl_cffi, works from datacenter). Chinese-language.
     Moments / private accounts / DMs are OFF-LIMITS.
     """
-    method = "sogou_weixin+content_fetch"
+    method = "sogou_weixin+zh_map+content_fetch"
     started = time.monotonic()
     note = ("public WeChat Official-Account articles via Sogou Weixin (Tencent's "
-            "official WeChat search; search-index fallback) + full-content fetch; "
-            "Chinese-language; Moments/private OFF-LIMITS")
-    ql = query.lower().strip()
-    toks = [t for t in re.findall(r"[\w一-鿿]+", ql) if len(t) >= 2]
+            "official WeChat search; search-index fallback) + EN->ZH term mapping "
+            "+ full-content fetch; Chinese-language; Moments/private OFF-LIMITS")
 
     try:
         from curl_cffi.requests import AsyncSession
 
         async with AsyncSession() as s:
-            urls = await _wechat_discover(query, s, limit)
+            # EN -> [en, zh] so English keywords hit this Chinese-language platform
+            terms = await _wechat_query_terms(query, s)
+            match_toks = [t.lower() for t in terms]
+
+            url_terms: dict[str, str] = {}   # article url -> the term that found it
+            for term in terms:
+                for u in await _wechat_discover(term, s, limit):
+                    url_terms.setdefault(u, term)
+
             sem = asyncio.Semaphore(5)
 
-            async def _one(u: str) -> Optional[dict[str, Any]]:
+            async def _one(item: tuple[str, str]) -> Optional[dict[str, Any]]:
+                u, term = item
                 async with sem:
                     try:
                         r = await s.get(u, impersonate="chrome", timeout=20)
-                        return _wechat_parse(u, r.text, query) if r.status_code == 200 else None
+                        return _wechat_parse(u, r.text, term) if r.status_code == 200 else None
                     except Exception:
                         return None
 
-            results = await asyncio.gather(*[_one(u) for u in urls])
+            results = await asyncio.gather(*[_one(it) for it in url_terms.items()])
     except Exception as exc:
         return KeywordSearchResult(
             platform="wechat", method=method, query=query, ok=False,
@@ -1109,7 +1154,7 @@ async def search_wechat(
         if not p:
             continue
         hay = (p["title"] + " " + p["content"] + " " + p["account"]).lower()
-        if ql and ql not in hay and not any(t in hay for t in toks):
+        if match_toks and not any(t in hay for t in match_toks):
             continue
         posts.setdefault(p["platform_post_id"], p)
 

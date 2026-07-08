@@ -27,6 +27,11 @@ TELEGRAM_CHANNELS: dict[str, list[str]] = {
     "breaking_wire": [
         "disclosetv", "BNONews", "CollinRugg", "RadioGenoa",
     ],
+    # OSINT community channels (discovered by mining r/OSINT recommendations)
+    "osint_community": [
+        "osint_anatomy", "UK_OSINT", "OsintUpdates", "osint_mindset",
+        "sonar_official",
+    ],
     # Ukraine / Russia / Israel theatre
     "conflict_theatre": [
         "DeepStateUA", "wartranslated", "sprinterobserver", "IsraelWarRoom",
@@ -34,21 +39,22 @@ TELEGRAM_CHANNELS: dict[str, list[str]] = {
     # Russia — state media + milbloggers (read critically)
     "russia": [
         "readovkanews", "mash", "bazabazon", "SolovievLive", "warfakes",
-        "milinfolive", "dva_majora", "boris_rozhin",
+        "milinfolive", "dva_majora", "boris_rozhin", "tass_agency",
     ],
     # Ukraine — official + war reporting
     "ukraine": [
         "nexta_tv", "KyivIndependent_official", "Pravda_Gerashchenko",
         "insiderUKR", "war_home", "ukraine_watch", "serhii_flash",
         "operativnoZSU", "ukrpravda_news", "tsaplienko", "V_Zelenskiy_official",
+        "odeskaODA",
     ],
     # China / Taiwan / IndoPacific
     "china_indopacific": [
-        "EyesOnAsia", "ChinaOSINT",
+        "EyesOnAsia", "ChinaOSINT", "HKMilitary", "china3army",
     ],
     # Middle East / Iran / Gaza
     "middle_east": [
-        "IranIntl_En", "muraselon", "QudsNen",
+        "IranIntl_En", "muraselon", "QudsNen", "abualiexpress", "englishabuali",
     ],
     # Cyber / infosec / threat intel
     "cyber_infosec": [

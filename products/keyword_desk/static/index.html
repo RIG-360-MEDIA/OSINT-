@@ -56,6 +56,36 @@
   .excerpt{margin-top:8px;font-size:12.5px;color:#c3ccd8;max-height:150px;overflow:auto;
     background:var(--bg);border-radius:7px;padding:9px 11px;white-space:pre-wrap;line-height:1.55}
 
+  /* analytical panels */
+  .metrics{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 4px}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:8px 13px;min-width:96px}
+  .metric .mv{font-size:18px;font-weight:700;color:var(--txt)}
+  .metric .ml{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:2px}
+  .trend{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;
+    letter-spacing:.05em;text-transform:uppercase}
+  .trend.rising{background:#0f2e1c;color:#5ee08a;border:1px solid #1c5c38}
+  .trend.fading{background:#301616;color:#f0857e;border:1px solid #5c2320}
+  .trend.steady{background:#20293a;color:#9fb2cc;border:1px solid #2c3852}
+  .trend.insufficient{background:var(--panel2);color:var(--dim);border:1px solid var(--line)}
+  .panelgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:16px}
+  .apanel{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+  .apanel h4{margin:0 0 10px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);font-weight:700}
+  .voice{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12.5px;border-bottom:1px dashed var(--line)}
+  .voice:last-child{border-bottom:0}
+  .voice .vn{font-weight:600;color:var(--txt)}
+  .voice .vp{color:var(--dim);font-size:11px}
+  .voice .vv{color:var(--accent);font-size:11px}
+  .voice .ve{margin-left:auto;color:var(--gold);font-weight:600;font-size:11.5px}
+  .bar{margin:6px 0}
+  .bar .bl{display:flex;justify-content:space-between;font-size:11.5px;color:#cdd6e0;margin-bottom:3px}
+  .bar .bt{height:6px;background:var(--bg);border-radius:4px;overflow:hidden}
+  .bar .bf{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold))}
+  .claim{padding:7px 0;font-size:12.5px;color:#dbe3ec;border-bottom:1px dashed var(--line)}
+  .claim:last-child{border-bottom:0}
+  .claim .cs{color:var(--dim);font-size:11px}
+  .claim a{color:var(--accent);text-decoration:none}
+
   /* platform grid */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-top:8px}
   .col{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;
@@ -129,6 +159,43 @@ function render(d){
   ins.deductions.forEach(x=>h+='<div class="deduction">'+esc(x)+'</div>');
   if(ins.themes&&ins.themes.length){h+='<div class="chips">';
     ins.themes.forEach(t=>h+='<span class="chip"><b>'+esc(t.term)+'</b> ·'+t.platforms+' platforms</span>');h+='</div>'}
+
+  // ── metrics strip: velocity + reach + freshness ──
+  const vel=ins.velocity||{}, tr=vel.trend||'insufficient';
+  h+='<div class="metrics">';
+  h+='<div class="metric"><div class="mv"><span class="trend '+tr+'">'+tr+'</span></div><div class="ml">Velocity 24h '+(vel.last_24h||0)+' vs '+(vel.prev_24h||0)+'</div></div>';
+  h+='<div class="metric"><div class="mv">'+(s.fresh_48h||0)+'</div><div class="ml">Fresh · 48h</div></div>';
+  h+='<div class="metric"><div class="mv">'+fmt(s.reach_views||0)+'</div><div class="ml">Views (sample)</div></div>';
+  h+='<div class="metric"><div class="mv">'+fmt(s.reach_engagement||0)+'</div><div class="ml">Engagements</div></div>';
+  if(ins.language_mix&&ins.language_mix.non_latin_pct)
+    h+='<div class="metric"><div class="mv">'+ins.language_mix.non_latin_pct+'%</div><div class="ml">Non-Latin script</div></div>';
+  h+='</div>';
+
+  // ── analytical panels: voices · platform mix · claims · signals ──
+  h+='<div class="panelgrid">';
+  if(ins.voices&&ins.voices.length){h+='<div class="apanel"><h4>Loudest Voices</h4>';
+    ins.voices.forEach(v=>h+='<div class="voice"><span class="vn">@'+esc(v.author)+'</span>'+
+      (v.verified?'<span class="vv">✓</span>':'')+'<span class="vp">'+esc(v.platform)+' · '+v.posts+'p</span>'+
+      '<span class="ve">'+fmt(v.engagement)+'</span></div>');h+='</div>'}
+  if(ins.platform_breakdown&&ins.platform_breakdown.length){h+='<div class="apanel"><h4>Where The Signal Lives</h4>';
+    const mx=Math.max(...ins.platform_breakdown.map(b=>b.engagement),1);
+    ins.platform_breakdown.forEach(b=>h+='<div class="bar"><div class="bl"><span>'+esc(b.platform)+'</span>'+
+      '<span class="muted">'+b.posts+'p · '+b.eng_share+'% eng</span></div>'+
+      '<div class="bt"><div class="bf" style="width:'+Math.round(100*b.engagement/mx)+'%"></div></div></div>');h+='</div>'}
+  if(ins.claims&&ins.claims.length){h+='<div class="apanel"><h4>Claims To Verify</h4>';
+    ins.claims.forEach(c=>h+='<div class="claim">'+(c.url?'<a href="'+esc(c.url)+'" target="_blank">':'')+
+      esc(c.claim)+(c.url?'</a>':'')+'<div class="cs">'+esc(c.platform)+(c.author?' · @'+esc(c.author):'')+'</div></div>');h+='</div>'}
+  const sig=ins.signals||{};
+  if((sig.hashtags&&sig.hashtags.length)||(sig.mentions&&sig.mentions.length)){
+    h+='<div class="apanel"><h4>Entities In Play</h4><div class="chips">';
+    (sig.hashtags||[]).forEach(t=>h+='<span class="chip"><b>#'+esc(t.tag)+'</b> ·'+t.n+'</span>');
+    (sig.mentions||[]).forEach(m=>h+='<span class="chip">@'+esc(m.handle)+' ·'+m.n+'</span>');
+    h+='</div>';
+    if(ins.narrative&&ins.narrative.length)
+      h+='<div style="margin-top:10px;font-size:12px;color:var(--dim)">Framing: '+ins.narrative.map(esc).join(' · ')+'</div>';
+    h+='</div>'}
+  h+='</div>';
+
   h+='<div class="golds">';
   if(g.top_post)h+=goldcard("Peak signal",g.top_post.platform+" · @"+esc(g.top_post.author||"?"),
     esc(g.top_post.text),(fmt(g.top_post.engagement)+" engagement"),g.top_post.url);

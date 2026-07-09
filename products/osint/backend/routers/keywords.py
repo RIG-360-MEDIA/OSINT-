@@ -25,6 +25,7 @@ from perspective import build_perspective
 from searxng_collector import web_search
 from social_live import social_live
 from stats_collector import country_stats
+from tender_collector import tender_search
 from tasking_brain import build_task_plan
 from wiki_collector import wiki_lookup
 
@@ -73,6 +74,20 @@ async def websearch(
     best-guess official domain (feeds infra/archive). Honestly reports which
     engines were unresponsive."""
     return await web_search(q, limit=limit)
+
+
+@router.get("/tenders")
+async def tenders(
+    q: str = Query(..., min_length=2, max_length=120, description="tender keyword, e.g. ammunition"),
+    region: str = Query(default="all", pattern="^(all|eu|india)$"),
+    limit: int = Query(default=15, ge=1, le=40),
+) -> dict[str, Any]:
+    """Tenders source — real OPEN public procurement notices for a keyword.
+
+    TED (EU official API) = keyword-searchable, structured open contract notices.
+    India CPPP = latest-active feed keyword-filtered client-side (no free keyword
+    API — labelled). Returns title/buyer/country/deadline/link per tender."""
+    return await tender_search(q, region=region, limit=limit)
 
 
 @router.get("/infra")

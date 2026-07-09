@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 import tempfile
 
-from fastapi import FastAPI, Query
+from fastapi import BackgroundTasks, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
@@ -144,14 +144,25 @@ def ela(image_url: str = Query(..., max_length=2000)) -> Response:
                     pass
 
 
+def _bg_index(n: int) -> None:
+    try:
+        corpus.index_recent(n)
+    except Exception:
+        pass
+
+
 @app.get("/corpus")
-def corpus_check(image_url: str = Query(..., max_length=2000),
+def corpus_check(background: BackgroundTasks,
+                 image_url: str = Query(..., max_length=2000),
                  max_dist: int = Query(6, ge=0, le=16),
-                 limit: int = Query(8, ge=1, le=25)) -> JSONResponse:
+                 limit: int = Query(8, ge=1, le=25),
+                 grow: int = Query(40, ge=0, le=300)) -> JSONResponse:
     """Where does this image already appear in OUR article corpus? (perceptual-hash match).
 
-    A recycled image links straight to the corpus stories that used it. Only matches
-    against indexed thumbnails — the index grows via /corpus/index (persist-from-use).
+    A recycled image links straight to the corpus stories that used it. On-demand /
+    persist-from-use: the match runs against the existing index, then a small bounded
+    batch is indexed in the BACKGROUND after responding (grow=0 to skip) — so the index
+    grows only when the feature is actually used, never on a timer.
     """
     try:
         hit = cache.get(image_url)
@@ -159,6 +170,8 @@ def corpus_check(image_url: str = Query(..., max_length=2000),
         if not dh:
             dh = vi.dhash_bytes(vi._get(image_url, binary=True))
         matches = corpus.match(dh, max_dist, limit)
+        if grow:
+            background.add_task(_bg_index, grow)   # grow from use, after the response
         return JSONResponse({"query_dhash": dh, "max_dist": max_dist,
                              "match_count": len(matches), "matches": matches,
                              "indexed_total": corpus.count()})

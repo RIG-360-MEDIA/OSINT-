@@ -15,6 +15,7 @@ Free / no-paid. Does NOT touch rig-backend.
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import re
 import subprocess
@@ -69,7 +70,7 @@ def reverse_yandex(image_url: str) -> dict[str, Any]:
 def exif(path: str) -> dict[str, Any]:
     """Capture metadata — exiftool (complete) then Pillow fallback."""
     try:
-        out = subprocess.run(["exiftool", "-json", "-G", path],
+        out = subprocess.run(["exiftool", "-n", "-json", "-G", path],  # -n = numeric GPS
                              capture_output=True, text=True, timeout=20)
         if out.returncode == 0 and out.stdout.strip().startswith("["):
             d = json.loads(out.stdout)[0]
@@ -98,6 +99,69 @@ def dhash(path: str) -> str:
     return "".join("1" if b else "0" for b in (a[:, 1:] > a[:, :-1]).flatten())
 
 
+def _gps(exif_fields: dict[str, Any] | None) -> tuple[float, float] | None:
+    """Pull decimal (lat, lon) from exiftool -n fields, if present."""
+    if not exif_fields:
+        return None
+    lat = lon = None
+    for k, v in exif_fields.items():
+        kl = k.lower()
+        try:
+            if kl.endswith("gpslatitude"):
+                lat = float(v)
+            elif kl.endswith("gpslongitude"):
+                lon = float(v)
+            elif kl.endswith("gpsposition") and isinstance(v, str):
+                parts = v.replace(",", " ").split()
+                if len(parts) >= 2:
+                    lat, lon = float(parts[0]), float(parts[1])
+        except (TypeError, ValueError):
+            continue
+    return (lat, lon) if lat is not None and lon is not None else None
+
+
+def geolocate(exif_fields: dict[str, Any] | None) -> dict[str, Any]:
+    """Where was it taken — from EXIF GPS (reverse-geocoded via Nominatim).
+
+    Most social images have GPS stripped, so this usually returns 'no GPS'."""
+    coords = _gps(exif_fields)
+    if not coords:
+        return {"has_gps": False, "note": "no GPS in metadata (typical after social upload)"}
+    lat, lon = coords
+    place = None
+    try:
+        u = ("https://nominatim.openstreetmap.org/reverse?format=json"
+             f"&lat={lat}&lon={lon}&zoom=14")
+        place = json.loads(_get(u, timeout=15)).get("display_name")
+    except Exception:
+        pass
+    return {"has_gps": True, "lat": round(lat, 6), "lon": round(lon, 6),
+            "place": place, "map": f"https://www.openstreetmap.org/?mlat={lat}&mlon={lon}#map=15/{lat}/{lon}"}
+
+
+def ela(path: str) -> dict[str, Any]:
+    """Error-Level Analysis — recompress and diff; regions at a different
+    compression level are possible edits/splices. SIGNAL only: ELA on already
+    re-saved social images is noisy and NOT proof of tampering."""
+    try:
+        from PIL import Image, ImageChops
+        import numpy as np
+        im = Image.open(path).convert("RGB")
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=90)
+        buf.seek(0)
+        diff = ImageChops.difference(im, Image.open(buf))
+        arr = np.asarray(diff, dtype="float32")
+        Image.fromarray(np.clip(arr * 15, 0, 255).astype("uint8")).save(path + ".ela.png")
+        return {"ok": True, "ela_png": path + ".ela.png",
+                "mean_diff": round(float(arr.mean()), 2),
+                "max_diff": round(float(arr.max()), 1),
+                "note": "bright ELA regions = different compression level (possible edit); "
+                        "noisy on re-saved social images — SIGNAL not proof"}
+    except Exception as exc:
+        return {"ok": False, "error": f"{type(exc).__name__}: {exc}"[:80]}
+
+
 def verify(image: str, claimed_date: str | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {"input": image, "claimed_date": claimed_date}
     local, url = image, None
@@ -114,6 +178,8 @@ def verify(image: str, claimed_date: str | None = None) -> dict[str, Any]:
     out["format"] = im.format
     out["dhash"] = dhash(local)
     out["exif"] = exif(local)
+    out["geolocation"] = geolocate((out["exif"] or {}).get("fields"))
+    out["ela"] = ela(local)
     if url:
         out["reverse"] = reverse_yandex(url)
 
@@ -132,6 +198,15 @@ def verify(image: str, claimed_date: str | None = None) -> dict[str, Any]:
     if not (out.get("exif") or {}).get("fields"):
         signals.append("no EXIF metadata (stripped on social upload or removed) → capture "
                        "time/place UNKNOWN (inconclusive, not proof of anything)")
+    geo = out.get("geolocation") or {}
+    if geo.get("has_gps"):
+        where = geo.get("place") or f"{geo.get('lat')},{geo.get('lon')}"
+        signals.append(f"EXIF GPS present → taken at {where} "
+                       "(cross-check against the claimed location)")
+    ela_r = out.get("ela") or {}
+    if ela_r.get("ok") and ela_r.get("max_diff", 0) >= 40:
+        signals.append(f"ELA shows high-contrast regions (max diff {ela_r['max_diff']}) → possible "
+                       "edit/splice — SIGNAL only, verify visually (noisy on re-saved images)")
     out["signals"] = signals or ["no strong signals"]
     out["note"] = "SIGNALS not a verdict — leads for a human analyst. No free deepfake certainty."
     return out

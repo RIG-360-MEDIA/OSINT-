@@ -1,0 +1,110 @@
+/* Image-verification chip (VerifyBadge) — matches the dossier df-verdict chip family.
+   Uses global OKLCH tokens with hard fallbacks so it renders even out of scope. */
+.vb-wrap {
+  position: relative;
+  display: inline-block;
+}
+.vb-pill {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--faint, #8b93a3);
+  cursor: pointer;
+  line-height: 1.55;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.vb-ic {
+  margin-right: 3px;
+}
+.vb-idle {
+  color: var(--faint, #8b93a3);
+  border-color: color-mix(in oklch, var(--faint, #8b93a3) 30%, transparent);
+}
+.vb-idle:hover {
+  color: var(--ink, #e8eaee);
+  border-color: color-mix(in oklch, var(--faint, #8b93a3) 55%, transparent);
+}
+.vb-busy {
+  color: var(--faint, #8b93a3);
+  border: 1px solid color-mix(in oklch, var(--faint, #8b93a3) 25%, transparent);
+  opacity: 0.85;
+}
+.vb-neg {
+  color: var(--hostile, #e5484d);
+  border-color: color-mix(in oklch, var(--hostile, #e5484d) 42%, transparent);
+  background: color-mix(in oklch, var(--hostile, #e5484d) 12%, transparent);
+}
+.vb-gold {
+  color: var(--gold, #d9a441);
+  border-color: color-mix(in oklch, var(--gold, #d9a441) 42%, transparent);
+  background: color-mix(in oklch, var(--gold, #d9a441) 12%, transparent);
+}
+.vb-pos {
+  color: var(--supportive, #46a758);
+  border-color: color-mix(in oklch, var(--supportive, #46a758) 42%, transparent);
+  background: color-mix(in oklch, var(--supportive, #46a758) 12%, transparent);
+}
+.vb-mut {
+  color: var(--faint, #8b93a3);
+  border-color: color-mix(in oklch, var(--faint, #8b93a3) 35%, transparent);
+}
+.vb-pop {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 232px;
+  max-width: 330px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 12px;
+  border-radius: 9px;
+  background: var(--panel, #14161d);
+  border: 1px solid var(--line, #242833);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+  font-family: var(--sans, system-ui, sans-serif);
+  text-align: left;
+  cursor: default;
+  white-space: normal;
+}
+.vb-pop b {
+  font-size: 12.5px;
+}
+.vb-row {
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  color: var(--dim, #8b93a3);
+}
+.vb-sig {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #cdd3de;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--faint, #8b93a3) 8%, transparent);
+}
+.vb-recheck {
+  align-self: flex-start;
+  margin-top: 2px;
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  color: var(--gold, #d9a441);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+.vb-note {
+  font-family: var(--mono, monospace);
+  font-size: 9px;
+  color: var(--faint, #5c6472);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}

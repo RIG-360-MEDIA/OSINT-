@@ -3,6 +3,7 @@ import { Reveal } from '../lib/ui';
 import { Sparkline, RankBars } from '../lib/charts';
 import { authFetch } from '../lib/supabase';
 import Sources from '../components/Sources';
+import VerifyBadge from '../components/VerifyBadge';
 
 const TYPES = ['all', 'person', 'org', 'place'];
 const ALIGN_DOT = { against: 'hostile', for: 'supportive', neutral: 'neutral' };
@@ -250,7 +251,7 @@ export default function Dossier() {
                       <span className="df-feedthumb">{a.thumbnail ? <img src={a.thumbnail} alt="" loading="lazy" /> : <i className={'df-recdot ' + a.tone} />}</span>
                       <span className="df-feedmain"><span className="df-feedhead">{a.headline}</span>
                         {a.headline_en && <span className="en-gloss"><b>EN</b>{a.headline_en}</span>}
-                        <span className="df-feedmeta"><span className={'df-recdot ' + a.tone} /> {a.source} · {ageOf(a.collected_at)}{a.topic ? ` · ${a.topic}` : ''}</span></span>
+                        <span className="df-feedmeta"><span className={'df-recdot ' + a.tone} /> {a.source} · {ageOf(a.collected_at)}{a.topic ? ` · ${a.topic}` : ''}{a.thumbnail && <> · <VerifyBadge imageUrl={a.thumbnail} /></>}</span></span>
                     </a>
                   ))}
                   {feed.length === 0 && <div className="df-empty">No coverage in the corpus yet.</div>}

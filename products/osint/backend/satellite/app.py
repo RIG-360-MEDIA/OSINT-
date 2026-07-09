@@ -9,12 +9,40 @@ Run (in the satvenv, isolated — does NOT touch rig-backend):
 """
 from __future__ import annotations
 
+import base64
+import os
+import tempfile
+
 from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
+import imagery
 import render
+import verify_satellite_change as vsc
 
 app = FastAPI(title="RIG Geospatial")
+
+# The night-desk media-verification flow corroborates a claim by calling /geo/change.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://desk.rig360media.com", "https://robin-osi.rig360media.com",
+                   "http://localhost:5173"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
+
+
+def _rmtree(d: str) -> None:
+    try:
+        for f in os.listdir(d):
+            try:
+                os.remove(os.path.join(d, f))
+            except OSError:
+                pass
+        os.rmdir(d)
+    except OSError:
+        pass
 
 
 @app.get("/imagery")
@@ -42,6 +70,42 @@ def imagery(
         "Cache-Control": "no-store",
     }
     return Response(content=r["image"], media_type=r["mime"], headers=headers)
+
+
+@app.get("/change")
+def change(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    before: str = Query(..., max_length=40, description="STAC date range e.g. 2022-06-01/2022-06-30"),
+    after: str = Query(..., max_length=40),
+    km: float = Query(12.0, ge=1, le=40),
+    mode: str = Query("optical", pattern="^(optical|radar)$"),
+) -> JSONResponse:
+    """Satellite change-detection between two date windows — corroborate a claim
+    ('did something big physically change here?'). HEAVY / on-demand: STAC search +
+    scene downloads + rendering take ~1-3 min. Returns a summary + before/after/change
+    PNGs as data-URIs. ~10 m ceiling — extent & change, not vehicles."""
+    bbox = imagery.bbox_from_point(lat, lon, km)
+    out = tempfile.mkdtemp(prefix="chg_")
+    label = "aoi"
+    try:
+        fn = vsc.run_radar if mode == "radar" else vsc.run_optical
+        info = fn(bbox, before, after, out, label, km)
+    except Exception as exc:
+        _rmtree(out)
+        return JSONResponse({"error": f"{type(exc).__name__}: {exc}"[:200]}, status_code=502)
+    if info.get("error"):
+        _rmtree(out)
+        return JSONResponse({"error": info["error"], "mode": mode}, status_code=502)
+    images = {}
+    for fname in info.pop("outputs", []):
+        p = os.path.join(out, fname)
+        if os.path.exists(p):
+            key = fname.replace(f"{label}_", "").replace(".png", "")
+            images[key] = "data:image/png;base64," + base64.b64encode(open(p, "rb").read()).decode()
+    _rmtree(out)
+    return JSONResponse({"lat": lat, "lon": lon, "km": km, "mode": mode,
+                         "before": before, "after": after, "summary": info, "images": images})
 
 
 @app.get("/health")

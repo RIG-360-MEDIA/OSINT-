@@ -17,6 +17,7 @@ from __future__ import annotations
 import io
 import json
 import math
+import re
 import urllib.request
 from typing import Any
 
@@ -62,14 +63,23 @@ def capture_date(lat: float, lon: float) -> str | None:
         return None
 
 
+def _wb_date(title: str) -> str:
+    """Extract the YYYY-MM-DD from a Wayback itemTitle, or '' if absent."""
+    m = re.search(r"(\d{4}-\d{2}-\d{2})", title or "")
+    return m.group(1) if m else ""
+
+
 def wayback_versions(limit: int | None = None) -> list[tuple[int, str]]:
-    """Dated Wayback releases [(release_num, title)], newest first — the dates
-    available for a sub-metre before/after."""
+    """Dated Wayback releases [(release_num, title)], newest DATE first — the
+    dates available for a sub-metre before/after. Sorted by the title date, not
+    the release number (which isn't strictly chronological)."""
     try:
         cfg = json.loads(_get(_WB_CONFIG))
-        rel = sorted(((int(k), v.get("itemTitle", "")) for k, v in cfg.items()),
-                     reverse=True)
-        return rel[:limit] if limit else rel
+        rel = [(int(k), v.get("itemTitle", ""), _wb_date(v.get("itemTitle", "")))
+               for k, v in cfg.items()]
+        rel.sort(key=lambda r: r[2], reverse=True)
+        out = [(r[0], r[1]) for r in rel]
+        return out[:limit] if limit else out
     except Exception:
         return []
 

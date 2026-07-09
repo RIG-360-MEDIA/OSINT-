@@ -17,8 +17,10 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import os
 import re
 import subprocess
+import tempfile
 import urllib.parse
 import urllib.request
 from collections import Counter
@@ -164,24 +166,35 @@ def ela(path: str) -> dict[str, Any]:
 
 def verify(image: str, claimed_date: str | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {"input": image, "claimed_date": claimed_date}
-    local, url = image, None
+    local, url, tmp = image, None, None
     if image.startswith("http"):
         url = image
-        local = "/tmp/_verify_img"
+        fd, tmp = tempfile.mkstemp(suffix="_verify")   # unique path — safe under concurrency
+        os.close(fd)
         data = _get(image, binary=True)
-        open(local, "wb").write(data)
+        with open(tmp, "wb") as fh:
+            fh.write(data)
+        local = tmp
         out["bytes"] = len(data)
 
-    from PIL import Image
-    im = Image.open(local)
-    out["dimensions"] = f"{im.width}x{im.height}"
-    out["format"] = im.format
-    out["dhash"] = dhash(local)
-    out["exif"] = exif(local)
-    out["geolocation"] = geolocate((out["exif"] or {}).get("fields"))
-    out["ela"] = ela(local)
-    if url:
-        out["reverse"] = reverse_yandex(url)
+    try:
+        from PIL import Image
+        im = Image.open(local)
+        out["dimensions"] = f"{im.width}x{im.height}"
+        out["format"] = im.format
+        out["dhash"] = dhash(local)
+        out["exif"] = exif(local)
+        out["geolocation"] = geolocate((out["exif"] or {}).get("fields"))
+        out["ela"] = ela(local)
+        if url:
+            out["reverse"] = reverse_yandex(url)
+    finally:
+        if tmp:                                         # never leave temp files for a URL fetch
+            for p in (tmp, tmp + ".ela.png"):
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
 
     # honest, signal-not-proof synthesis
     rev = out.get("reverse") or {}

@@ -15,22 +15,85 @@ import os
 import tempfile
 
 from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
+import cache
 import verify_image as vi
 
 app = FastAPI(title="RIG Media Verify")
 
+# The night-desk dossier (desk.rig360media.com) calls /media/badge cross-origin.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://desk.rig360media.com", "https://robin-osi.rig360media.com",
+                   "http://localhost:5173"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
+
+
+def _run(image_url: str, claimed_date: str | None, fresh: bool) -> dict:
+    """Cache-first verification — a reverse-search runs once, every later view is free."""
+    if not fresh:
+        hit = cache.get(image_url)
+        if hit is not None:
+            if claimed_date and not hit.get("claimed_date"):
+                hit["claimed_date"] = claimed_date
+            return hit
+    r = vi.verify(image_url, claimed_date)
+    (r.get("ela") or {}).pop("ela_png", None)   # don't cache/leak local temp path
+    cache.put(image_url, r)
+    return r
+
+
+def _badge(r: dict) -> dict:
+    """Compact chip for a dossier post card — one status + a short label."""
+    rev = r.get("reverse") or {}
+    fc = rev.get("factcheck_hits") or []
+    geo = r.get("geolocation") or {}
+    n = rev.get("distinct_domains")
+    if fc:
+        status, label = "red", "Likely recycled / debunked"
+    elif not rev.get("ok"):
+        status, label = "unknown", "Reverse-search unavailable"
+    elif n is not None and n <= 2:
+        status, label = "clear", "No earlier appearances"
+    elif rev.get("appears_widely"):
+        status, label = "circulated", "Widely circulated"
+    else:
+        status, label = "circulated", "Some prior appearances"
+    return {
+        "status": status,                                  # red | circulated | clear | unknown
+        "label": label,
+        "factcheck_hits": fc,
+        "sites": n,
+        "has_exif": bool((r.get("exif") or {}).get("fields")),
+        "gps": geo.get("place") if geo.get("has_gps") else None,
+        "signals": r.get("signals", []),
+        "cached": bool(r.get("_cached")),
+    }
+
 
 @app.get("/verify")
 def verify(image_url: str = Query(..., max_length=2000),
-           claimed_date: str | None = Query(None, max_length=40)) -> JSONResponse:
+           claimed_date: str | None = Query(None, max_length=40),
+           fresh: bool = Query(False)) -> JSONResponse:
     try:
-        r = vi.verify(image_url, claimed_date)
+        return JSONResponse(_run(image_url, claimed_date, fresh))
     except Exception as exc:
         return JSONResponse({"error": f"{type(exc).__name__}: {exc}"[:140]}, status_code=502)
-    (r.get("ela") or {}).pop("ela_png", None)   # don't leak local temp path
-    return JSONResponse(r)
+
+
+@app.get("/badge")
+def badge(image_url: str = Query(..., max_length=2000),
+          fresh: bool = Query(False)) -> JSONResponse:
+    """Compact, cached chip for auto-display on dossier cards. Always 200 (degrades gracefully)."""
+    try:
+        return JSONResponse(_badge(_run(image_url, None, fresh)))
+    except Exception as exc:
+        return JSONResponse({"status": "unknown", "label": "verify unavailable",
+                             "error": type(exc).__name__})
 
 
 @app.get("/ela")

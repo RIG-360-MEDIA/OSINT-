@@ -826,7 +826,27 @@ async def _ig_fetch_og(shortcode: str, session: Any) -> Optional[str]:
 # Persist-from-use (in-process): keyword -> relevant author handles, so repeat
 # searches refresh the same accounts (fresher + faster). Grows during a session.
 _ig_author_cache: dict[str, set[str]] = {}
-_IG_MAX_ACCOUNTS = 12   # bound the real-time fan-out (web_profile_info ~200/hr/IP)
+_IG_MAX_ACCOUNTS = 6    # bound the real-time fan-out (web_profile_info is
+                        # cookie-free but rate-limited ~200/hr/IP + login-gating)
+# Cache each account's fetched timeline so repeated searches don't re-hit
+# web_profile_info (which trips IG's "please wait / require_login" rate limit).
+_ig_profile_cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
+_IG_PROFILE_TTL = 900   # seconds
+
+
+def _ig_cached_posts(account: str) -> list[dict[str, Any]]:
+    """web_profile_info for an account, cached for _IG_PROFILE_TTL to stay under
+    IG's cookie-free rate limit."""
+    from .pipeline_adapter import collect_instagram_posts
+
+    hit = _ig_profile_cache.get(account)
+    now = time.monotonic()
+    if hit and now - hit[0] < _IG_PROFILE_TTL:
+        return hit[1]
+    posts = collect_instagram_posts(account, limit=8)
+    if posts:                       # don't cache empty/rate-limited responses
+        _ig_profile_cache[account] = (now, posts)
+    return posts
 
 
 async def search_instagram(
@@ -870,7 +890,6 @@ async def search_instagram(
     index_posts: list[dict[str, Any]] = []
     try:
         from curl_cffi.requests import AsyncSession
-        from .pipeline_adapter import collect_instagram_posts
 
         # ── Stage 1: DISCOVER (global search-index) + caption/author enrich ──
         async with AsyncSession() as s:
@@ -896,9 +915,9 @@ async def search_instagram(
         authors |= _ig_author_cache.get(ckey, set())
         authors = sorted(a for a in authors if a)[:_IG_MAX_ACCOUNTS]
 
-        # ── Stage 2: REAL-TIME refresh of those accounts (web_profile_info) ──
+        # ── Stage 2: REAL-TIME refresh of those accounts (cached web_profile_info) ──
         batches = await asyncio.gather(
-            *[asyncio.to_thread(collect_instagram_posts, a, limit=8) for a in authors],
+            *[asyncio.to_thread(_ig_cached_posts, a) for a in authors],
             return_exceptions=True,
         )
         for batch in batches:

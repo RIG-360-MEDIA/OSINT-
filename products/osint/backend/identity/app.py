@@ -106,6 +106,7 @@ _HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   OFF-LIMITS: no people-search, no breach data, no face search</div>
 </div><script>
  function ex(s){document.getElementById("sel").value=s;run();}
+ (function(){var q=new URLSearchParams(location.search);if(q.get("selector"))ex(q.get("selector"));})();
  function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;"}[c];});}
  function acct(c){return '<a class="acct" href="'+esc(c.url)+'" target="_blank" rel="noreferrer">'+
    '<span class="conf c-'+esc(c.confidence)+'">'+esc(c.confidence)+'</span>'+

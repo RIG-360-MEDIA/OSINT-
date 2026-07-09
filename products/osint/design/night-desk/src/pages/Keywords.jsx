@@ -215,18 +215,9 @@ export default function Keywords() {
             {data.harmful_accounts?.length ? (
               <div style={{ display: 'grid', gap: 7 }}>
                 {data.harmful_accounts.slice(0, 6).map((a, i) => (
-                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, fontSize: '0.82rem' }}>
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
                     <span>{a.platform}·@{a.username}</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ color: 'var(--hostile)' }}>tox {a.max_toxicity}{a.coordinated_posts ? ` · coord ${a.coordinated_posts}` : ''}</span>
-                      <a
-                        href={`${import.meta.env.VITE_IDENT_API || 'https://api.rig360media.com/identity'}/?selector=${encodeURIComponent(a.username)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Map this account's public footprint across other platforms"
-                        style={{ fontFamily: 'var(--mono, monospace)', fontSize: '0.64rem', color: 'var(--gold, #d9a441)', textDecoration: 'none', border: '1px solid color-mix(in oklab, var(--gold, #d9a441) 42%, transparent)', borderRadius: 5, padding: '1px 6px', whiteSpace: 'nowrap' }}
-                      >⌕ footprint ↗</a>
-                    </span>
+                    <span style={{ color: 'var(--hostile)' }}>tox {a.max_toxicity}{a.coordinated_posts ? ` · coord ${a.coordinated_posts}` : ''}</span>
                   </div>
                 ))}
               </div>

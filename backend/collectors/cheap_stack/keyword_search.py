@@ -248,9 +248,12 @@ async def search_tiktok(
         from curl_cffi.requests import AsyncSession
 
         async with AsyncSession() as s:
+            # sort_type=0 leans recent (vs the default popularity sort which
+            # returns old viral videos); over-fetch then recency-sort ourselves.
             r = await s.get(
                 "https://www.tikwm.com/api/feed/search",
-                params={"keywords": query, "count": min(limit, 30)},
+                params={"keywords": query, "count": min(max(limit * 3, 20), 30),
+                        "sort_type": "0"},
                 impersonate="chrome", timeout=25,
             )
         if r.status_code != 200:
@@ -276,6 +279,8 @@ async def search_tiktok(
             elapsed_s=time.monotonic() - started,
         )
 
+    # freshest first — TikTok's own sort is popularity-weighted
+    videos.sort(key=lambda v: int(v.get("create_time") or 0), reverse=True)
     posts = tuple(
         p for p in (_tiktok_vid_to_social_post(v, query) for v in videos[:limit])
         if p is not None

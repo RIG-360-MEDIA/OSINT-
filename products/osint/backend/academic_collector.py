@@ -43,18 +43,25 @@ def _authors(work: dict[str, Any]) -> list[str]:
 
 
 def _shape(work: dict[str, Any]) -> dict[str, Any]:
+    oa = work.get("open_access") or {}
+    loc = work.get("primary_location") or {}
     return {
         "title": (work.get("title") or "").strip() or None,
         "year": work.get("publication_year"),
         "venue": _venue(work),
         "authors": _authors(work)[:6],
         "cited_by_count": work.get("cited_by_count") or 0,
+        "type": work.get("type"),
+        "url": work.get("doi") or loc.get("landing_page_url"),
+        "open_access": bool(oa.get("is_oa")),
+        "pdf_url": oa.get("oa_url") or loc.get("pdf_url"),   # free full text when OA
     }
 
 
 def _summarise(works: list[dict[str, Any]], total: int) -> dict[str, Any]:
     authors: Counter[str] = Counter()
     institutions: Counter[str] = Counter()
+    fields: Counter[str] = Counter()
     for w in works:
         for a in w.get("authorships") or []:
             name = ((a.get("author") or {}).get("display_name") or "").strip()
@@ -64,12 +71,18 @@ def _summarise(works: list[dict[str, Any]], total: int) -> dict[str, Any]:
                 iname = (inst.get("display_name") or "").strip()
                 if iname:
                     institutions[iname] += 1
+        for con in (w.get("concepts") or [])[:5]:      # research fields/topics
+            cname = (con.get("display_name") or "").strip()
+            if cname and (con.get("score") or 0) >= 0.3:
+                fields[cname] += 1
     top_work = max(works, key=lambda w: w.get("cited_by_count") or 0, default=None)
     return {
         "total_works": total,
         "shown": len(works),
         "top_authors": [n for n, _ in authors.most_common(5)],
         "top_institutions": [n for n, _ in institutions.most_common(5)],
+        "top_fields": [n for n, _ in fields.most_common(6)],
+        "open_access_shown": sum(1 for w in works if (w.get("open_access") or {}).get("is_oa")),
         "most_cited": _shape(top_work) if top_work else None,
     }
 

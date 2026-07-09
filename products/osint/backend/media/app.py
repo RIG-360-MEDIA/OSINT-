@@ -87,9 +87,20 @@ def verify(image_url: str = Query(..., max_length=2000),
 
 @app.get("/badge")
 def badge(image_url: str = Query(..., max_length=2000),
-          fresh: bool = Query(False)) -> JSONResponse:
-    """Compact, cached chip for auto-display on dossier cards. Always 200 (degrades gracefully)."""
+          fresh: bool = Query(False),
+          cached_only: bool = Query(False)) -> JSONResponse:
+    """Compact chip for a dossier card. Always 200 (degrades gracefully).
+
+    cached_only=1 → return the cached verdict if present else status 'none' WITHOUT
+    running a reverse-search (cheap auto-paint on feed load — no rate-limit storm).
+    Omit it (or fresh=1) to actually run the ~15 s verification on explicit click.
+    """
     try:
+        if cached_only:
+            hit = cache.get(image_url)
+            if hit is None:
+                return JSONResponse({"status": "none", "label": "Not verified"})
+            return JSONResponse(_badge(hit))
         return JSONResponse(_badge(_run(image_url, None, fresh)))
     except Exception as exc:
         return JSONResponse({"status": "unknown", "label": "verify unavailable",

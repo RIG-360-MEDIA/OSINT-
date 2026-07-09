@@ -45,6 +45,7 @@ class CoverageFilters:
     sentiment: str | None        # supportive | neutral | critical
     window_hours: int
     language: str | None
+    source: tuple[str, ...]      # outlet display name(s) — drill-down from /analytics/outlets
     limit: int
     cursor: str | None
 
@@ -56,10 +57,13 @@ def coverage_filters(
     sentiment: str | None = Query(None, pattern="^(supportive|neutral|critical)$"),
     window: int = Query(DEFAULT_WINDOW_DAYS, ge=1, le=MAX_WINDOW_DAYS, description="Days to look back"),
     language: str | None = Query(None, max_length=8, pattern="^[A-Za-z-]{2,8}$"),
-    limit: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+    source: list[str] | None = Query(None, description="Outlet name(s) to filter by (repeatable) — drill-down from /analytics/outlets"),
+    limit: int = Query(DEFAULT_PAGE_SIZE, ge=1,
+                       description=f"Items per page (values above {MAX_PAGE_SIZE} are clamped to {MAX_PAGE_SIZE})"),
     cursor: str | None = Query(None, max_length=512),
 ) -> CoverageFilters:
     topics = tuple(t.strip()[:80] for t in (topic or []) if t and t.strip())[:25]
+    sources = tuple(s.strip()[:120] for s in (source or []) if s and s.strip())[:25]
     return CoverageFilters(
         entity=_coerce_uuids(entity),
         topic=topics,
@@ -67,6 +71,7 @@ def coverage_filters(
         sentiment=sentiment,
         window_hours=window * 24,
         language=language,
-        limit=limit,
+        source=sources,
+        limit=min(limit, MAX_PAGE_SIZE),  # clamp, don't 422 on a large ask
         cursor=cursor,
     )

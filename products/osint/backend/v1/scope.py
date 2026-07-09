@@ -13,7 +13,7 @@ Empty/absent scope is fail-safe: it yields zero rows, never the whole corpus.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from fastapi import Depends
 from sqlalchemy import text
@@ -33,6 +33,9 @@ class OrgScope:
     topics: tuple[str, ...]
     regions: tuple[str, ...]
     languages: tuple[str, ...]
+    mute_terms: tuple[str, ...] = ()
+    keywords: tuple[str, ...] = ()
+    keyword_priorities: dict = field(default_factory=dict)
 
     @property
     def is_empty(self) -> bool:
@@ -51,7 +54,8 @@ class ApiContext:
 async def load_org_scope(db, org_id: str) -> OrgScope:
     """Read the org's provisioned scope. Missing row => empty (fail-safe)."""
     row = (await db.execute(text("""
-        SELECT all_entities, entity_ids, topics, regions, languages
+        SELECT all_entities, entity_ids, topics, regions, languages,
+               mute_terms, keywords, keyword_priorities
           FROM analytics.org_api_scope
          WHERE org_id = CAST(:o AS uuid)
     """), {"o": org_id})).fetchone()
@@ -64,6 +68,9 @@ async def load_org_scope(db, org_id: str) -> OrgScope:
         topics=tuple(row.topics or []),
         regions=tuple(row.regions or []),
         languages=tuple(row.languages or []),
+        mute_terms=tuple(row.mute_terms or []),
+        keywords=tuple(row.keywords or []),
+        keyword_priorities=dict(row.keyword_priorities or {}),
     )
 
 

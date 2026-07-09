@@ -38,6 +38,8 @@ async def list_articles(
             sentiment=filters.sentiment,
             cursor=filters.cursor,
             limit=filters.limit,
+            source=filters.source,
+            mute_terms=ctx.scope.mute_terms,
         )
     request.state.result_count = len(rows)
     return ok(

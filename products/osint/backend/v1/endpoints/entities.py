@@ -9,7 +9,7 @@ from .. import queries
 from ..errors import not_found, ok
 from ..filters import CoverageFilters, coverage_filters
 from ..scope import ApiContext, get_context, require_entity_in_scope
-from ..serializers import serialize_coverage_item, serialize_entity
+from ..serializers import serialize_article, serialize_coverage_item, serialize_entity
 from ..settings import DEFAULT_WINDOW_DAYS
 from ..util import as_uuid
 
@@ -84,8 +84,25 @@ async def entity_coverage(
             pillars=pillars,
             limit=filters.limit,
         )
+        # Full-field parity: article items get the same 16 fields as /articles;
+        # clips/cuttings keep their (genuinely different) coverage-item shape.
+        full = await queries.articles_full_by_ids(
+            db, [r["id"] for r in rows if r.get("type") == "article"]
+        )
+
+    # Strict on-demand: entity coverage is a surfacing path too — authorise transcript
+    # pulls for any clips it just returned to this org.
+    clip_ids = [r["id"] for r in rows if r.get("type") == "clip" and r.get("id")]
+    if clip_ids:
+        await queries.record_clip_grants(ctx.principal.org_id, clip_ids)
+
+    def _ser(r: dict) -> dict:
+        if r.get("type") == "article" and r["id"] in full:
+            return {"type": "article", **serialize_article(full[r["id"]])}
+        return serialize_coverage_item(r)
+
     request.state.result_count = len(rows)
     return ok(
-        [serialize_coverage_item(r) for r in rows],
+        [_ser(r) for r in rows],
         meta={"count": len(rows), "pillars": pillars},
     )

@@ -35,6 +35,11 @@ MAX_PAGE_SIZE: int = 100
 MAX_WINDOW_DAYS: int = 90
 DEFAULT_WINDOW_DAYS: int = 7
 
+# How long after a clip is surfaced (by a keyword/entity query) its full transcript
+# stays fetchable via GET /v1/clips/{id}. Keeps YouTube strictly on-demand: a client
+# can only read transcripts of clips its own recent queries returned.
+CLIP_GRANT_WINDOW_HOURS: int = int(os.getenv("OSINT_CLIP_GRANT_WINDOW_HOURS", "24"))
+
 # A fixed, obviously-insecure secret used ONLY in non-production when the real
 # secret is unset, so local tests can run. Production raises instead.
 _DEV_FALLBACK_SECRET = "dev-insecure-apikey-secret-do-not-use-in-prod"

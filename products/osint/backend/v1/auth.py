@@ -35,6 +35,7 @@ class ApiPrincipal:
     is_sandbox: bool
     rate_limit_per_min: int
     monthly_quota: int | None
+    can_manage: bool = False
 
 
 def _extract_key(request: Request) -> str | None:
@@ -73,6 +74,7 @@ async def get_api_principal(request: Request) -> ApiPrincipal:
                        k.monthly_quota     AS monthly_quota,
                        k.expires_at        AS expires_at,
                        k.revoked_at        AS revoked_at,
+                       COALESCE(k.can_manage, false) AS can_manage,
                        o.name              AS org_name
                   FROM analytics.api_keys k
                   JOIN analytics.orgs o ON o.id = k.org_id
@@ -95,6 +97,7 @@ async def get_api_principal(request: Request) -> ApiPrincipal:
         is_sandbox=bool(row.is_sandbox),
         rate_limit_per_min=int(row.rate_limit_per_min or DEFAULT_RATE_LIMIT_PER_MIN),
         monthly_quota=row.monthly_quota,
+        can_manage=bool(row.can_manage),
     )
 
     # Stash for the metering middleware (read off request.state after handler).

@@ -852,26 +852,27 @@ def _ig_cached_posts(account: str) -> list[dict[str, Any]]:
 async def search_instagram(
     query: str, *, limit: int = 25,
 ) -> KeywordSearchResult:
-    """Global + real-time keyword search over Instagram — free, NO login, NO
-    ban risk, NO manually-preset account set.
+    """Global + real-time keyword search over Instagram — NO manually-preset
+    account set (the keyword builds the account list).
 
-    Hybrid of two cookie-free techniques, both proven from the datacenter box:
-      1) DISCOVER (global): search-index (SearXNG/DDG) `site:instagram.com "kw"`
-         → post URLs; og:description → caption + the AUTHOR handle. This finds
-         who-posts-about-this anywhere on IG (no preset accounts — the keyword
-         builds the account list).
-      2) REFRESH (real-time): web_profile_info on those auto-discovered accounts
-         → their NEWEST posts → keyword-filter. Fresh, cookie-free, no account.
+    Hybrid of two techniques, both proven from the datacenter box:
+      1) DISCOVER (global, login-free): search-index (SearXNG/DDG)
+         `site:instagram.com "kw"` → post URLs; og:description → caption + the
+         AUTHOR handle. This finds who-posts-about-this anywhere on IG.
+      2) REFRESH (real-time): the authed feed endpoint (feed/user/<pk>, gated by
+         INSTA_SESSIONID) on those auto-discovered accounts → their NEWEST posts
+         → keyword-filter. web_profile_info no longer returns timeline edges, so
+         the feed endpoint is the only reliable source of fresh posts.
       Merge (dedupe by shortcode; real-time overrides stale index copy).
 
     Honest gap: catches real-time posts from any account the index has EVER seen
     on-topic (news orgs, official/known handles) — not a brand-new, never-indexed
     account's post the instant it's made (that needs the login-walled firehose).
     """
-    method = "searxng_discover+web_profile_realtime"
+    method = "searxng_discover+feed_realtime"
     started = time.monotonic()
-    note = ("global keyword search: search-index discovery + web_profile_info "
-            "real-time refresh of matched accounts (free, login-free); brand-new "
+    note = ("global keyword search: login-free search-index discovery + authed "
+            "feed-endpoint real-time refresh of matched accounts; brand-new "
             "un-indexed accounts not caught")
     phrase = query.lower().strip()
     # Drop 1-char/ambiguous tokens; require the FULL phrase OR all tokens so a

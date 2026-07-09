@@ -35,46 +35,88 @@ def _iso(ts: Optional[float]) -> str:
 
 # ── Instagram (recent posts via web_profile_info edges) ─────────────────────
 
+def _ig_auth_cookies() -> Optional[dict[str, str]]:
+    """Authenticated IG cookies from INSTA_SESSIONID env. Cookie-free web_profile_info
+    is rate-limited + login-gating (igweb_rollout); a session cookie lifts that.
+    ds_user_id is the numeric prefix of the sessionid ('<uid>:...' or '<uid>%3A...')."""
+    import os
+
+    sid = os.getenv("INSTA_SESSIONID", "").strip()
+    if not sid:
+        return None
+    uid = re.split(r"%3A|:", sid, maxsplit=1)[0]
+    return {"sessionid": sid, "ds_user_id": uid}
+
+
+_ig_id_cache: dict[str, str] = {}   # username -> numeric pk (stable; safe to cache)
+
+
+def _ig_user_id(username: str, headers: dict, cookies: Optional[dict],
+                egress: Egress) -> Optional[str]:
+    """Resolve an IG handle to its numeric pk via web_profile_info (cached).
+
+    web_profile_info still returns profile metadata (incl. `id`) reliably; it just
+    no longer carries the timeline-media edges (IG stripped those). We use it only
+    to get the pk, then read posts from the feed endpoint below."""
+    if username in _ig_id_cache:
+        return _ig_id_cache[username]
+    r = fetch(
+        "https://www.instagram.com/api/v1/users/web_profile_info/",
+        params={"username": username},
+        headers=headers, cookies=cookies, proxies=egress.proxies, timeout=20,
+    )
+    if not r.ok:
+        logger.warning("IG id %s: http %s", username, r.status)
+        return None
+    uid = (r.json.get("data", {}).get("user", {}) or {}).get("id")
+    if uid:
+        _ig_id_cache[username] = str(uid)
+    return str(uid) if uid else None
+
+
 def collect_instagram_posts(
     username: str, *, egress: Optional[Egress] = None, limit: int = 12,
 ) -> list[dict[str, Any]]:
-    """Recent public posts for an IG handle. Datacenter IP may need residential egress."""
+    """Recent public posts for an IG handle. Requires INSTA_SESSIONID (the feed
+    endpoint is auth-gated). web_profile_info no longer returns timeline edges, so
+    we resolve the pk from it, then read real posts from feed/user/<pk>."""
     egress = egress or Egress()
     username = username.lstrip("@")
+    cookies = _ig_auth_cookies()
+    headers = {"x-ig-app-id": IG_APP_ID, "Accept": "application/json"}
     try:
+        uid = _ig_user_id(username, headers, cookies, egress)
+        if not uid:
+            return []
         r = fetch(
-            "https://www.instagram.com/api/v1/users/web_profile_info/",
-            params={"username": username},
-            headers={"x-ig-app-id": IG_APP_ID, "Accept": "application/json"},
-            proxies=egress.proxies, timeout=20,
+            f"https://www.instagram.com/api/v1/feed/user/{uid}/",
+            params={"count": str(limit)},
+            headers=headers, cookies=cookies, proxies=egress.proxies, timeout=20,
         )
         if not r.ok:
-            logger.warning("IG posts %s: http %s", username, r.status)
+            logger.warning("IG feed %s: http %s", username, r.status)
             return []
-        user = r.json.get("data", {}).get("user", {}) or {}
-        edges = user.get("edge_owner_to_timeline_media", {}).get("edges", []) or []
+        items = r.json.get("items", []) if isinstance(r.json, dict) else []
     except Exception as exc:
         logger.warning("IG posts failed %s: %s", username, exc)
         return []
 
     posts: list[dict[str, Any]] = []
-    for edge in edges[:limit]:
-        node = edge.get("node", {}) or {}
-        pid = node.get("shortcode") or node.get("id")
+    for it in items[:limit]:
+        code = it.get("code")
+        pid = code or it.get("pk") or it.get("id")
         if not pid:
             continue
-        cap_edges = node.get("edge_media_to_caption", {}).get("edges", []) or []
-        caption = cap_edges[0]["node"]["text"] if cap_edges else ""
+        caption = ((it.get("caption") or {}) or {}).get("text", "") or ""
         posts.append({
             "platform": "instagram",
-            "platform_post_id": pid,
-            "author_username": username,
-            "post_text": (caption or "").strip()[:3000],
-            "post_url": f"https://www.instagram.com/p/{node.get('shortcode', pid)}/",
-            "upvotes": int(node.get("edge_liked_by", {}).get("count") or
-                           node.get("edge_media_preview_like", {}).get("count") or 0),
-            "comment_count": int(node.get("edge_media_to_comment", {}).get("count") or 0),
-            "posted_at": _iso(node.get("taken_at_timestamp")),
+            "platform_post_id": str(pid),
+            "author_username": (it.get("user", {}) or {}).get("username") or username,
+            "post_text": caption.strip()[:3000],
+            "post_url": f"https://www.instagram.com/p/{code or pid}/",
+            "upvotes": int(it.get("like_count") or 0),
+            "comment_count": int(it.get("comment_count") or 0),
+            "posted_at": _iso(it.get("taken_at")),
         })
     return posts
 

@@ -3,6 +3,11 @@
 # rasterio's manylinux wheel bundles GDAL, so no apt GDAL layer is needed.
 FROM python:3.12-slim
 
+# libexpat1: XML parsing for the pystac/pyproj STAC chain (needed by /change; slim lacks it).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libexpat1 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir \
       pystac-client odc-stac rasterio pystac planetary-computer \
       numpy pillow matplotlib fastapi "uvicorn[standard]"

@@ -314,6 +314,90 @@ async def _cppp_search(keyword: str, limit: int, pages: int = 4) -> dict[str, An
     return out
 
 
+# ── TenderNews global aggregator (national portals worldwide, keyword-scoped) ──
+# Free listing rows (ref/posting/deadline/location/value/description) from a
+# keyword-slug page. This is what reaches the tenders the structured APIs miss —
+# US, India domestic, Gulf, Asia, Africa. Full detail is gated (registration),
+# but the listing itself is the actionable intel (country + deadline + subject).
+
+_TN_URL = "https://www.tendernews.com/tenders/latest-tender/{slug}.html"
+_TN_ROW = re.compile(r"<tr[^>]*>(.*?)</tr>", re.DOTALL)
+_TN_CELL = re.compile(r"<td[^>]*>(.*?)</td>", re.DOTALL)
+# semantic false positives seen in the wild (Solingen = the 'sword-making city')
+_TN_DROP = ("sword-making", "car-sharing", "car sharing", "sword making")
+
+
+def _norm_date(s: str) -> str | None:
+    try:
+        return datetime.strptime((s or "").strip(), "%d-%b-%Y").strftime("%Y-%m-%d")
+    except Exception:
+        return (s or "").strip() or None
+
+
+def _tn_slug(keyword: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", keyword.lower().strip()).strip("-")
+
+
+def _tn_parse(html: str, slug: str, toks: list[str]) -> list[dict[str, Any]]:
+    rows = _TN_ROW.findall(html)
+    out: list[dict[str, Any]] = []
+    for rw in rows:
+        cells = [_cppp_strip(c) for c in _TN_CELL.findall(rw)]
+        if len(cells) < 6 or cells[0].lower() in ("", "ref no"):
+            continue
+        ref, posting, deadline, location, value, desc = cells[:6]
+        dl = desc.lower()
+        if not desc or any(d in dl for d in _TN_DROP):
+            continue
+        if toks and not any(t in dl for t in toks):   # keyword relevance
+            continue
+        out.append({
+            "source": "TenderNews (global)",
+            "ref": ref,
+            "published": _norm_date(posting),
+            "deadline": _norm_date(deadline),
+            "country": (location.split("/")[0].strip() if location else None),
+            "location": location or None,
+            "value": (value if value and "refer" not in value.lower() else None),
+            "title": desc[:300],
+            "url": _TN_URL.format(slug=slug),
+        })
+    return out
+
+
+async def _tendernews_search(keyword: str, limit: int) -> dict[str, Any]:
+    """Global tender rows for a keyword from the TenderNews aggregator.
+
+    Tries the full-phrase slug, then falls back to the longest single token (its
+    pages are per-term). Relevance-filtered on the description."""
+    out: dict[str, Any] = {"ok": False, "tenders": [], "scanned": 0}
+    toks = [t for t in re.findall(r"[a-z0-9]+", keyword.lower()) if len(t) >= 3]
+    slugs = [_tn_slug(keyword)]
+    if toks:
+        primary = max(toks, key=len)
+        if primary not in slugs:
+            slugs.append(primary)
+    try:
+        async with httpx.AsyncClient(timeout=25, headers={"User-Agent": _UA},
+                                     follow_redirects=True) as cl:
+            parsed: list[dict[str, Any]] = []
+            for slug in slugs:
+                if not slug:
+                    continue
+                r = await cl.get(_TN_URL.format(slug=slug))
+                if r.status_code == 200:
+                    parsed = _tn_parse(r.text, slug, toks)
+                    if parsed:
+                        break
+        parsed.sort(key=lambda t: t.get("deadline") or "9999")   # soonest first
+        out["tenders"] = parsed[:limit]
+        out["scanned"] = len(parsed)
+        out["ok"] = True
+    except Exception as exc:
+        out["error"] = f"{type(exc).__name__}: {exc}"
+    return out
+
+
 async def tender_search(
     keyword: str, *, region: str = "all", country: str | None = None,
     cpv: str | None = None, portals: bool = False, limit: int = 15,
@@ -376,6 +460,17 @@ async def tender_search(
                      "by buyer org (Min. of Defence / Ordnance / MES)"),
         }
         out["tenders"] += cppp["tenders"]
+
+    # Global aggregator — the worldwide catch-all (US/Gulf/Asia/Africa + India
+    # domestic that the structured APIs miss). Needs a keyword (slug page).
+    if keyword and region in ("world", "global", "india", "all"):
+        agg = await _tendernews_search(keyword, limit)
+        out["sources"]["tendernews"] = {
+            "ok": agg["ok"], "returned": len(agg["tenders"]), "error": agg.get("error"),
+            "note": ("global tender aggregator (national portals worldwide) — free "
+                     "listing rows; full detail gated; some loose keyword matches"),
+        }
+        out["tenders"] += agg["tenders"]
 
     # National-portal discovery — reaches buyers the structured APIs miss
     # (India MoD, US SAM, UK, ...). Needs a keyword (site-scoped dork).

@@ -109,6 +109,66 @@ async def _ted_search(keyword: str, limit: int, months: int = 12) -> dict[str, A
     return out
 
 
+# ── World Bank Procurement Notices (GLOBAL — all borrower countries incl. India) ──
+
+_WB = "https://search.worldbank.org/api/v2/procnotices"
+
+
+def _wb_date(s: str) -> str:
+    """WB noticedate is '07-Jul-2026' → ISO; passthrough on any other shape."""
+    try:
+        return datetime.strptime((s or "").strip(), "%d-%b-%Y").strftime("%Y-%m-%d")
+    except Exception:
+        return (s or "")[:10]
+
+
+def _wb_notice(n: dict[str, Any]) -> dict[str, Any]:
+    pid = n.get("project_id") or ""
+    return {
+        "source": "World Bank",
+        "title": (n.get("bid_description") or n.get("project_name") or "").strip()[:300],
+        "buyer": (n.get("project_name") or "").strip()[:160],
+        "country": n.get("project_ctry_name"),
+        "deadline": (n.get("submission_date") or "")[:10] or None,
+        "published": _wb_date(n.get("noticedate") or ""),
+        "notice_type": n.get("notice_type"),
+        "ref": n.get("bid_reference_no") or n.get("id"),
+        "url": (f"https://projects.worldbank.org/en/projects-operations/project-detail/{pid}"
+                if pid else None),
+    }
+
+
+async def _wb_search(keyword: str, limit: int, country: str | None = None) -> dict[str, Any]:
+    """Open World Bank-financed procurement notices matching `keyword`, worldwide.
+
+    Covers every WB borrower country (India, Africa, Asia, LatAm). `os=0` is
+    REQUIRED — omitting it 500s. Drops 'Contract Award' (already awarded); optional
+    client-side country filter."""
+    out: dict[str, Any] = {"ok": False, "tenders": [], "total_matches": None}
+    params = {"format": "json", "qterm": keyword.strip(),
+              "rows": min(max(limit * 5, 50), 100), "os": 0}
+    try:
+        async with httpx.AsyncClient(timeout=25, headers={"User-Agent": _UA}) as cl:
+            r = await cl.get(_WB, params=params, headers={"Accept": "application/json"})
+        if r.status_code != 200:
+            out["error"] = f"WB HTTP {r.status_code}"
+            return out
+        data = r.json()
+        out["total_matches"] = data.get("total")
+        notices = [_wb_notice(n) for n in data.get("procnotices", [])]
+        # open only: drop awarded contracts
+        opened = [t for t in notices if "award" not in (t["notice_type"] or "").lower()]
+        if country:
+            c = country.lower().strip()
+            opened = [t for t in opened if (t["country"] or "").lower() == c]
+        opened.sort(key=lambda t: t["published"] or "", reverse=True)
+        out["tenders"] = opened[:limit]
+        out["ok"] = True
+    except Exception as exc:
+        out["error"] = f"{type(exc).__name__}: {exc}"
+    return out
+
+
 # ── India CPPP latest-active feed ───────────────────────────────────────────
 
 _CPPP_ROW = re.compile(r'<tr style="border-bottom[^>]*>(.*?)</tr>', re.DOTALL)
@@ -169,19 +229,29 @@ async def _cppp_search(keyword: str, limit: int, pages: int = 4) -> dict[str, An
 
 
 async def tender_search(
-    keyword: str, *, region: str = "all", limit: int = 15,
+    keyword: str, *, region: str = "all", country: str | None = None, limit: int = 15,
 ) -> dict[str, Any]:
-    """Open public tenders matching a keyword. `region`: 'eu' | 'india' | 'all'.
+    """Open public tenders matching a keyword, worldwide.
 
-    TED (EU) is the real keyword-searchable engine; India CPPP is a latest-active
-    feed keyword-filtered client-side (labelled — no free keyword API). Partial on
-    any single-source failure."""
+    `region`:
+      • 'world' (default global) — World Bank Procurement Notices, EVERY borrower
+        country (India, Africa, Asia, LatAm). Keyword-searchable, free.
+      • 'eu' — TED (official EU procurement API).
+      • 'india' — World Bank(India) + India CPPP latest-active feed.
+      • 'all' — TED + World Bank(global) + CPPP.
+    `country` (optional) — client-side filter on World Bank results (e.g. 'India',
+    'Kenya', 'Brazil') so any single country can be targeted.
+
+    Where no structured API exists for a country, the SearXNG web-search source
+    (GET /websearch, e.g. '<keyword> tender <country>') is the universal fallback.
+    Partial on any single-source failure — each source degrades to a labelled state."""
     keyword = (keyword or "").strip()
     if not keyword:
         return {"query": keyword, "error": "empty query (tender search needs a keyword)"}
 
-    out: dict[str, Any] = {"query": keyword, "region": region, "tenders": [],
-                           "sources": {}, "summary": None}
+    region = (region or "all").lower()
+    out: dict[str, Any] = {"query": keyword, "region": region, "country": country,
+                           "tenders": [], "sources": {}, "summary": None}
 
     if region in ("eu", "all"):
         ted = await _ted_search(keyword, limit)
@@ -191,6 +261,18 @@ async def tender_search(
             "note": "official EU procurement API — open contract notices, recent-first",
         }
         out["tenders"] += ted["tenders"]
+
+    if region in ("world", "global", "india", "all"):
+        wb_country = "India" if region == "india" else country
+        wb = await _wb_search(keyword, limit, country=wb_country)
+        out["sources"]["world_bank"] = {
+            "ok": wb["ok"], "total_matches": wb.get("total_matches"),
+            "returned": len(wb["tenders"]), "error": wb.get("error"),
+            "country_filter": wb_country,
+            "note": ("World Bank Procurement Notices — every borrower country "
+                     "(incl. India); open notices, awards excluded"),
+        }
+        out["tenders"] += wb["tenders"]
 
     if region in ("india", "all"):
         cppp = await _cppp_search(keyword, limit)
@@ -206,6 +288,7 @@ async def tender_search(
     out["summary"] = {
         "total_returned": len(out["tenders"]),
         "ted_open_matches": out["sources"].get("ted_eu", {}).get("total_matches"),
-        "regions": [k for k, v in out["sources"].items() if v.get("ok")],
+        "worldbank_open_matches": out["sources"].get("world_bank", {}).get("total_matches"),
+        "sources_ok": [k for k, v in out["sources"].items() if v.get("ok")],
     }
     return out

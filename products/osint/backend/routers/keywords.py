@@ -79,15 +79,18 @@ async def websearch(
 @router.get("/tenders")
 async def tenders(
     q: str = Query(..., min_length=2, max_length=120, description="tender keyword, e.g. ammunition"),
-    region: str = Query(default="all", pattern="^(all|eu|india)$"),
+    region: str = Query(default="all", pattern="^(all|eu|india|world|global)$"),
+    country: str | None = Query(default=None, max_length=56, description="filter World Bank results, e.g. Kenya"),
     limit: int = Query(default=15, ge=1, le=40),
 ) -> dict[str, Any]:
-    """Tenders source — real OPEN public procurement notices for a keyword.
+    """Tenders source — real OPEN public procurement notices for a keyword, worldwide.
 
-    TED (EU official API) = keyword-searchable, structured open contract notices.
-    India CPPP = latest-active feed keyword-filtered client-side (no free keyword
-    API — labelled). Returns title/buyer/country/deadline/link per tender."""
-    return await tender_search(q, region=region, limit=limit)
+    World Bank Procurement Notices = every borrower country (incl. India),
+    keyword-searchable, country-filterable. TED (EU official API) = EU contract
+    notices. India CPPP = domestic latest-active feed. For countries with no
+    structured API, /websearch ('<keyword> tender <country>') is the fallback.
+    Returns title/buyer/country/deadline/link per tender."""
+    return await tender_search(q, region=region, country=country, limit=limit)
 
 
 @router.get("/infra")

@@ -78,19 +78,23 @@ async def websearch(
 
 @router.get("/tenders")
 async def tenders(
-    q: str = Query(..., min_length=2, max_length=120, description="tender keyword, e.g. ammunition"),
+    q: str = Query(default="", max_length=120, description="tender keyword (optional if cpv set)"),
     region: str = Query(default="all", pattern="^(all|eu|india|world|global)$"),
     country: str | None = Query(default=None, max_length=56, description="filter World Bank results, e.g. Kenya"),
+    cpv: str | None = Query(default=None, max_length=120, description="CPV category preset (edged|weapons|firearms|ammunition|defence) or raw codes — ambiguity-free"),
+    portals: bool = Query(default=False, description="also dork national portals (India MoD/US SAM/UK/...) for the keyword"),
     limit: int = Query(default=15, ge=1, le=40),
 ) -> dict[str, Any]:
-    """Tenders source — real OPEN public procurement notices for a keyword, worldwide.
+    """Tenders source — real OPEN public procurement notices, worldwide.
 
-    World Bank Procurement Notices = every borrower country (incl. India),
-    keyword-searchable, country-filterable. TED (EU official API) = EU contract
-    notices. India CPPP = domestic latest-active feed. For countries with no
-    structured API, /websearch ('<keyword> tender <country>') is the fallback.
-    Returns title/buyer/country/deadline/link per tender."""
-    return await tender_search(q, region=region, country=country, limit=limit)
+    Three ways to search:
+    - keyword: World Bank (every borrower country incl. India) + TED (EU) + CPPP.
+    - cpv=<preset>: precise procurement-CATEGORY search (e.g. cpv=edged → swords/
+      bayonets), immune to keyword ambiguity ('sabre'=travel system, etc.).
+    - portals=true: also dork national portals structured APIs miss (India MoD
+      defproc, US SAM, UK, ...). Returns title/buyer/country/deadline/link."""
+    return await tender_search(q, region=region, country=country, cpv=cpv,
+                               portals=portals, limit=limit)
 
 
 @router.get("/infra")

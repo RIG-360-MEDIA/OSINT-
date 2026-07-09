@@ -149,7 +149,8 @@ def email_footprint(email: str, timeout: int = 150) -> dict:
     rc, so, se = _run([HOLEHE_BIN, email, "--only-used", "--no-color"], timeout)
     if rc in (127, 124):
         return {**out, "error": se.strip()[:160], "registered_sites": []}
-    sites = sorted({m.group(1) for m in re.finditer(r"^\[\+\]\s+(\S+)", so, re.M)})
+    # require a dot so holehe's legend line ("[+] Email used, ...") isn't captured as a site.
+    sites = sorted({m.group(1) for m in re.finditer(r"^\[\+\]\s+([\w.-]+\.[\w.-]+)", so, re.M)})
     return {**out, "registered_sites": sites, "count": len(sites),
             "confidence": "medium",
             "caveat": "registration tells only (public signup presence). Widely-used / throwaway "

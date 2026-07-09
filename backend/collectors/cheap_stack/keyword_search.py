@@ -135,6 +135,59 @@ def probe_reddit_session(session_token: Optional[str] = None) -> tuple[int, str]
         return -1, f"{type(exc).__name__}: {exc}"
 
 
+# ── shared relevance / freshness gates ──────────────────────────────────────
+
+def _kw_tokens(phrase: str) -> list[str]:
+    """Significant lowercase tokens of a query (drops 1-char noise)."""
+    return [t for t in re.findall(r"[a-z0-9]+", phrase.lower()) if len(t) >= 2]
+
+
+def _kw_relevant(text: str, phrase: str, toks: list[str]) -> bool:
+    """True if `text` carries the query: exact phrase (strong) OR all tokens as
+    WHOLE WORDS appearing CLOSE TOGETHER (proximity).
+
+    Precision-first. Two guards, both needed against real noise seen in the wild:
+      • word-boundary — 'pla' must be the token 'PLA', not a substring of
+        'Playstation' / 'plant' / 'plastic'.
+      • proximity — 'indian' and 'army' must sit near each other, not scattered
+        200 chars apart in an unrelated wall of text (a Vietnam news roundup, a
+        3D-printer thread where 'PLA'=filament and 'navy'=a colour).
+    Single-token queries pass on the word-boundary check alone."""
+    hay = (text or "").lower()
+    if phrase and phrase in hay:
+        return True
+    if not toks:
+        return False
+    positions = {
+        t: [m.start() for m in re.finditer(rf"\b{re.escape(t)}\b", hay)]
+        for t in toks
+    }
+    if any(not p for p in positions.values()):
+        return False
+    if len(toks) == 1:
+        return True
+    # all tokens must fall within one window; scale it with the phrase length
+    window = max(40, len(phrase) * 4)
+    anchor = min(positions, key=lambda t: len(positions[t]))
+    return any(
+        all(any(abs(p - a) <= window for p in positions[t]) for t in toks)
+        for a in positions[anchor]
+    )
+
+
+def _age_days(iso_str: Optional[str]) -> Optional[float]:
+    """Age in days of an ISO8601 timestamp, or None if unparseable."""
+    if not iso_str or not isinstance(iso_str, str):
+        return None
+    try:
+        dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+        if not dt.tzinfo:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - dt).total_seconds() / 86400
+    except Exception:
+        return None
+
+
 async def search_reddit(
     query: str,
     *,
@@ -186,10 +239,23 @@ async def search_reddit(
             elapsed_s=time.monotonic() - started,
         )
 
-    posts = tuple(_reddit_row_to_social_post(r, query) for r in raw_rows)
+    # Reddit's fulltext search (esp. sort=new) is loose — it returns posts that
+    # match only a subreddit name ('PlaystationCollectors' → 'pla') or one stray
+    # token. Gate on real relevance so off-topic noise never reaches the desk.
+    phrase = query.lower().strip()
+    toks = _kw_tokens(phrase)
+    all_posts = [_reddit_row_to_social_post(r, query) for r in raw_rows]
+    posts = tuple(
+        p for p in all_posts
+        if _kw_relevant(f"{p.get('post_text', '')} {p.get('author_username', '')}",
+                        phrase, toks)
+    )
+    dropped = len(all_posts) - len(posts)
+    note = (f"relevance-gated: dropped {dropped}/{len(all_posts)} off-topic "
+            f"(loose-match noise)") if dropped else None
     return KeywordSearchResult(
         platform="reddit", method=method, query=query, ok=True,
-        posts=posts, elapsed_s=time.monotonic() - started,
+        posts=posts, note=note, elapsed_s=time.monotonic() - started,
     )
 
 
@@ -846,6 +912,10 @@ _IG_MAX_ACCOUNTS = 6    # bound the real-time fan-out (web_profile_info is
 # web_profile_info (which trips IG's "please wait / require_login" rate limit).
 _ig_profile_cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 _IG_PROFILE_TTL = 900   # seconds
+# An index-discovered post older than this is stale (the search index remembers
+# a 2019 model-kit post forever). Realtime feed posts are inherently recent and
+# exempt. Prevents surfacing years-old junk as if it were a fresh result.
+_IG_MAX_POST_AGE_DAYS = 90
 
 
 def _ig_cached_posts(account: str) -> list[dict[str, Any]]:
@@ -889,17 +959,13 @@ async def search_instagram(
             "feed-endpoint real-time refresh of matched accounts; brand-new "
             "un-indexed accounts not caught")
     phrase = query.lower().strip()
-    # Drop 1-char/ambiguous tokens; require the FULL phrase OR all tokens so a
-    # loose token can't pull noise (e.g. "pla" matching #pla=plastic model kits).
-    toks = [t for t in re.findall(r"[a-z0-9]+", phrase) if len(t) >= 2]
+    toks = _kw_tokens(phrase)   # phrase OR all-tokens; kills 'pla'=plastic noise
     ckey = phrase
 
     def _match(post: dict[str, Any]) -> bool:
-        hay = ((post.get("post_text") or "") + " " +
-               (post.get("author_username") or "")).lower()
-        if phrase and phrase in hay:
-            return True                       # exact phrase = strongest
-        return (not toks) or all(t in hay for t in toks)
+        return _kw_relevant(
+            f"{post.get('post_text', '')} {post.get('author_username', '')}",
+            phrase, toks)
 
     merged: dict[str, dict[str, Any]] = {}
     index_posts: list[dict[str, Any]] = []
@@ -953,8 +1019,19 @@ async def search_instagram(
     if authors:   # remember relevant accounts for next time
         _ig_author_cache.setdefault(ckey, set()).update(authors)
 
-    ordered = sorted(merged.values(), key=lambda x: x.get("posted_at") or "",
-                     reverse=True)
+    # Freshness gate (applies to ALL posts): `is_realtime` means "freshly fetched
+    # from the feed", NOT "recently posted" — a dormant account's newest post can
+    # still be years old. Judge by ACTUAL post age so stale content never surfaces
+    # as a result, whatever its source.
+    fresh = [p for p in merged.values()
+             if (_age_days(p.get("posted_at")) or 1e9) <= _IG_MAX_POST_AGE_DAYS]
+    stale_dropped = len(merged) - len(fresh)
+    ordered = sorted(fresh, key=lambda x: x.get("posted_at") or "", reverse=True)
+    if stale_dropped:
+        note += f"; dropped {stale_dropped} stale post(s) >{_IG_MAX_POST_AGE_DAYS}d"
+    if not ordered:
+        note += "; no fresh on-topic IG from discoverable accounts (fresh signal " \
+                "for this keyword lives on TikTok/Twitter/Telegram)"
     return KeywordSearchResult(
         platform="instagram", method=method, query=query, ok=True,
         posts=tuple(ordered[:limit]), note=note,

@@ -120,3 +120,35 @@ def fetch_chip(lat: float, lon: float, *, zoom: int = 18, grid: int = 8,
         "capture_date": capture_date(lat, lon) if wayback_release is None else None,
         "attribution": _ATTRIB,
     }
+
+
+def _main() -> None:
+    import argparse
+    import json
+    import os
+
+    ap = argparse.ArgumentParser(description="Esri sub-metre chip for a point")
+    ap.add_argument("lat", type=float)
+    ap.add_argument("lon", type=float)
+    ap.add_argument("--zoom", type=int, default=18, help="~18 ≈ 0.5 m/px")
+    ap.add_argument("--grid", type=int, default=8, help="tiles per side")
+    ap.add_argument("--wayback", type=int, default=None, help="Wayback release number (historical)")
+    ap.add_argument("--out", default="/root/sat-out/esri_chip.jpg")
+    ap.add_argument("--list-dates", action="store_true", help="list recent Wayback dates and exit")
+    a = ap.parse_args()
+
+    if a.list_dates:
+        for rn, title in wayback_versions(12):
+            print(f"  {rn}\t{title}")
+        return
+
+    r = fetch_chip(a.lat, a.lon, zoom=a.zoom, grid=a.grid, wayback_release=a.wayback)
+    os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
+    with open(a.out, "wb") as f:
+        f.write(r.pop("image_jpeg"))
+    r["out"] = a.out
+    print(json.dumps(r, indent=2))
+
+
+if __name__ == "__main__":
+    _main()

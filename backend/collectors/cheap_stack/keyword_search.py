@@ -408,6 +408,13 @@ def _yt_walk_renderers(data: dict[str, Any]) -> list[dict[str, Any]]:
     return out
 
 
+# innertube search-filter param: base64 of protobuf {sortBy: UPLOAD_DATE (\x08\x02)}
+# — the same filter the youtube.com UI sets as `&sp=CAI%3D`. Makes search
+# recency-first (newest uploads) instead of the default relevance sort, which
+# surfaces old high-view videos for a keyword.
+_YT_SORT_UPLOAD_DATE = "CAI="
+
+
 async def search_youtube(
     query: str, *, limit: int = 25,
 ) -> KeywordSearchResult:
@@ -416,15 +423,20 @@ async def search_youtube(
     No API key/quota (uses the public WEB client key), no login. RSS — the only
     datacenter-safe YouTube path — has no search, so this contacts Google
     directly; if the datacenter IP is challenged it fails honestly (ok=False)
-    rather than looking like a genuine zero-match. Results are relevance-sorted,
-    not recency-sorted, and carry no like/comment counts (search limitation).
+    rather than looking like a genuine zero-match.
+
+    Recency-first: requests the UPLOAD_DATE sort filter (newest uploads) so a
+    keyword returns what's being posted NOW, not old high-view videos; results
+    are then re-sorted by parsed publish date for a stable newest-first order.
+    Carries no like/comment counts (search-endpoint limitation).
     """
-    method = "youtube_innertube_search"
+    method = "youtube_innertube_search_recency"
     started = time.monotonic()
     try:
         from curl_cffi.requests import AsyncSession
 
-        body = {"context": {"client": dict(_YT_CLIENT)}, "query": query}
+        body = {"context": {"client": dict(_YT_CLIENT)}, "query": query,
+                "params": _YT_SORT_UPLOAD_DATE}
         async with AsyncSession() as s:
             r = await s.post(
                 f"https://www.youtube.com/youtubei/v1/search?key={_YT_INNERTUBE_KEY}",
@@ -445,10 +457,12 @@ async def search_youtube(
             elapsed_s=time.monotonic() - started,
         )
 
-    posts = tuple(
-        p for p in (_yt_renderer_to_social_post(vr, query) for vr in renderers[:limit])
-        if p is not None
-    )
+    parsed = [p for p in (_yt_renderer_to_social_post(vr, query) for vr in renderers)
+              if p is not None]
+    # UPLOAD_DATE already returns newest-first; re-sort by our parsed ISO date to
+    # guarantee ordering even if the response interleaves shelves/promoted rows.
+    parsed.sort(key=lambda x: x.get("posted_at") or "", reverse=True)
+    posts = tuple(parsed[:limit])
     return KeywordSearchResult(
         platform="youtube", method=method, query=query, ok=True,
         posts=posts, elapsed_s=time.monotonic() - started,

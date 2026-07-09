@@ -6,7 +6,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libimage-exiftool-perl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir pillow numpy fastapi "uvicorn[standard]"
+RUN pip install --no-cache-dir pillow numpy fastapi "uvicorn[standard]" psycopg2-binary
 
 WORKDIR /app
 COPY *.py /app/

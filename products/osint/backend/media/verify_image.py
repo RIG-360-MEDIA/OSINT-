@@ -93,12 +93,22 @@ def exif(path: str) -> dict[str, Any]:
         return {"tool": "Pillow", "fields": None, "error": type(exc).__name__}
 
 
+def _dhash_img(im: "Any") -> str:
+    import numpy as np
+    a = np.asarray(im.convert("L").resize((9, 8)), dtype="int16")
+    return "".join("1" if b else "0" for b in (a[:, 1:] > a[:, :-1]).flatten())
+
+
 def dhash(path: str) -> str:
     """64-bit difference-hash — perceptual fingerprint for near-dupe matching."""
     from PIL import Image
-    import numpy as np
-    a = np.asarray(Image.open(path).convert("L").resize((9, 8)), dtype="int16")
-    return "".join("1" if b else "0" for b in (a[:, 1:] > a[:, :-1]).flatten())
+    return _dhash_img(Image.open(path))
+
+
+def dhash_bytes(data: bytes) -> str:
+    """dHash from raw image bytes (no temp file) — used by the corpus indexer."""
+    from PIL import Image
+    return _dhash_img(Image.open(io.BytesIO(data)))
 
 
 def _gps(exif_fields: dict[str, Any] | None) -> tuple[float, float] | None:
@@ -216,6 +226,17 @@ def verify(image: str, claimed_date: str | None = None) -> dict[str, Any]:
         where = geo.get("place") or f"{geo.get('lat')},{geo.get('lon')}"
         signals.append(f"EXIF GPS present → taken at {where} "
                        "(cross-check against the claimed location)")
+        # Fusion: pull the satellite view of that exact spot to corroborate what's there.
+        base = os.environ.get("GEO_PUBLIC_BASE", "https://api.rig360media.com/geo").rstrip("/")
+        out["satellite"] = {
+            "lat": geo["lat"], "lon": geo["lon"], "place": geo.get("place"),
+            "imagery": f"{base}/imagery?lat={geo['lat']}&lon={geo['lon']}&source=esri",
+            "viewer": f"{base}/?lat={geo['lat']}&lon={geo['lon']}&source=esri",
+            "change_api": f"{base}/change",
+            "note": "satellite view of the EXIF-GPS spot — corroborate what is actually there",
+        }
+        signals.append("satellite corroboration available → the GPS spot can be pulled from "
+                       "orbit (and change-detected between dates) to confirm/deny the scene")
     ela_r = out.get("ela") or {}
     if ela_r.get("ok") and ela_r.get("max_diff", 0) >= 40:
         signals.append(f"ELA shows high-contrast regions (max diff {ela_r['max_diff']}) → possible "

@@ -19,9 +19,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 import cache
+import corpus
 import verify_image as vi
 
 app = FastAPI(title="RIG Media Verify")
+
+
+@app.on_event("startup")
+def _startup() -> None:
+    try:
+        corpus.ensure_schema()
+    except Exception:
+        pass   # corpus cross-check degrades gracefully if the DB is unreachable
 
 # The night-desk dossier (desk.rig360media.com) calls /media/badge cross-origin.
 app.add_middleware(
@@ -131,6 +140,37 @@ def ela(image_url: str = Query(..., max_length=2000)) -> Response:
                     os.remove(p)
                 except OSError:
                     pass
+
+
+@app.get("/corpus")
+def corpus_check(image_url: str = Query(..., max_length=2000),
+                 max_dist: int = Query(6, ge=0, le=16),
+                 limit: int = Query(8, ge=1, le=25)) -> JSONResponse:
+    """Where does this image already appear in OUR article corpus? (perceptual-hash match).
+
+    A recycled image links straight to the corpus stories that used it. Only matches
+    against indexed thumbnails — the index grows via /corpus/index (persist-from-use).
+    """
+    try:
+        hit = cache.get(image_url)
+        dh = (hit or {}).get("dhash")
+        if not dh:
+            dh = vi.dhash_bytes(vi._get(image_url, binary=True))
+        matches = corpus.match(dh, max_dist, limit)
+        return JSONResponse({"query_dhash": dh, "max_dist": max_dist,
+                             "match_count": len(matches), "matches": matches,
+                             "indexed_total": corpus.count()})
+    except Exception as exc:
+        return JSONResponse({"error": f"{type(exc).__name__}: {exc}"[:160]}, status_code=502)
+
+
+@app.get("/corpus/index")
+def corpus_index(limit: int = Query(500, ge=1, le=5000)) -> JSONResponse:
+    """Seed/extend the hash index: hash the N most-recent un-indexed corpus thumbnails."""
+    try:
+        return JSONResponse(corpus.index_recent(limit))
+    except Exception as exc:
+        return JSONResponse({"error": f"{type(exc).__name__}: {exc}"[:160]}, status_code=502)
 
 
 @app.get("/health")

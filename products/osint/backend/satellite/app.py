@@ -28,12 +28,17 @@ def imagery(
     if not r.get("ok"):
         return JSONResponse({"error": r.get("error", "failed"), "source": source},
                             status_code=502)
+
+    def _hv(s: object) -> str:  # HTTP headers are latin-1; strip em/en-dashes etc.
+        return (str(s).replace("—", "-").replace("–", "-")
+                .encode("latin-1", "replace").decode("latin-1"))
+
     headers = {
-        "X-Source": str(r.get("source", "")),
-        "X-Date": str(r.get("date", "")),
-        "X-Res-M": str(r.get("res_m", "")),
-        "X-Cloud": str(r.get("cloud_pct", "")),
-        "X-Attribution": str(r.get("attribution", "")),
+        "X-Source": _hv(r.get("source", "")),
+        "X-Date": _hv(r.get("date", "")),
+        "X-Res-M": _hv(r.get("res_m", "")),
+        "X-Cloud": _hv(r.get("cloud_pct", "")),
+        "X-Attribution": _hv(r.get("attribution", "")),
         "Cache-Control": "no-store",
     }
     return Response(content=r["image"], media_type=r["mime"], headers=headers)

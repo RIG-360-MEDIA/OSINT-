@@ -22,6 +22,7 @@ from gdelt_collector import gdelt_coverage
 from geo_collector import geo_lookup
 from infra_collector import domain_infra
 from perspective import build_perspective
+from searxng_collector import web_search
 from social_live import social_live
 from stats_collector import country_stats
 from tasking_brain import build_task_plan
@@ -59,6 +60,19 @@ async def keyword_search(
         dossier["perspective_default"] = plan["perspective_default"]
         dossier["source_plan"] = plan["source_plan"]
         return dossier
+
+
+@router.get("/websearch")
+async def websearch(
+    q: str = Query(..., min_length=1, max_length=200, description="keyword or dork (site:/filetype:)"),
+    limit: int = Query(default=10, ge=1, le=25),
+) -> dict[str, Any]:
+    """Web-search source — SearXNG multi-engine meta-search for a keyword/dork.
+
+    Ranked results + source-domain discovery + knowledge-panel infobox, and a
+    best-guess official domain (feeds infra/archive). Honestly reports which
+    engines were unresponsive."""
+    return await web_search(q, limit=limit)
 
 
 @router.get("/infra")

@@ -84,6 +84,26 @@ async def _fuzzy_candidates(client: httpx.AsyncClient, q: str) -> list[dict[str,
     return out
 
 
+_LEGAL_SUFFIXES = {"llp", "limited", "ltd", "inc", "incorporated", "sa", "plc",
+                   "pvt", "private", "corp", "corporation", "gmbh", "dmcc", "co",
+                   "company", "ag", "nv", "bv", "srl", "spa", "pte", "llc", "and"}
+
+
+def _match_confidence(q: str, name: str | None) -> str:
+    """How well a resolved legal name matches the query — so a loose grab
+    ('Indian Army' -> 'INDIAN CYBER ARMY') is flagged, not passed off as exact."""
+    q_toks = {t for t in q.lower().split() if len(t) >= 2}
+    n_toks = [t for t in (name or "").lower().replace(",", " ").split() if len(t) >= 2]
+    n_set = set(n_toks)
+    if q.lower().strip() == (name or "").lower().strip():
+        return "exact"
+    if not q_toks or not q_toks <= n_set:
+        return "loose"                      # not all query words present
+    # extra words in the name that aren't legal suffixes = a different entity
+    extra = [t for t in n_toks if t not in q_toks and t not in _LEGAL_SUFFIXES]
+    return "strong" if not extra else "loose"
+
+
 def _pick_best(q: str, candidates: list[dict[str, Any]]) -> dict[str, Any] | None:
     """Best candidate = the one whose name contains all query tokens; else first."""
     toks = [t for t in q.lower().split() if len(t) >= 2]
@@ -151,6 +171,7 @@ async def company_lookup(q: str) -> dict[str, Any]:
     h = out["hierarchy"] or {}
     out["summary"] = {
         "resolved": bool(p),
+        "match_confidence": _match_confidence(q, p["legal_name"]) if p else None,
         "match_count": len(out["matches"]),
         "legal_name": p["legal_name"] if p else None,
         "lei": p["lei"] if p else None,

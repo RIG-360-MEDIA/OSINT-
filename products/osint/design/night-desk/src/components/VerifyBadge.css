@@ -59,8 +59,10 @@
   z-index: 40;
   top: calc(100% + 6px);
   left: 0;
-  min-width: 232px;
-  max-width: 330px;
+  min-width: 250px;
+  max-width: 340px;
+  max-height: 70vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -73,6 +75,77 @@
   text-align: left;
   cursor: default;
   white-space: normal;
+}
+.vb-sect {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 8px;
+  margin-top: 3px;
+  border-top: 1px solid var(--line, #242833);
+}
+.vb-h {
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim, #8b93a3);
+}
+.vb-satimg {
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-radius: 7px;
+  border: 1px solid var(--line, #242833);
+  background: #05070b;
+}
+.vb-satrow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.vb-link {
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  color: var(--accent, #43e0cf);
+  text-decoration: none;
+}
+.vb-chg {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.vb-chgimgs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.vb-chgimgs img {
+  width: 100%;
+  border-radius: 5px;
+  border: 1px solid var(--line, #242833);
+}
+.vb-cstory {
+  display: block;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #cdd3de;
+  text-decoration: none;
+  padding: 5px 7px;
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--faint, #8b93a3) 8%, transparent);
+}
+.vb-cstory:hover {
+  color: #fff;
+}
+.vb-cdist {
+  font-family: var(--mono, monospace);
+  font-size: 9px;
+  color: var(--gold, #d9a441);
+  margin-right: 6px;
+  text-transform: uppercase;
 }
 .vb-pop b {
   font-size: 12.5px;

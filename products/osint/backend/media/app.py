@@ -79,6 +79,8 @@ def _badge(r: dict) -> dict:
         "sites": n,
         "has_exif": bool((r.get("exif") or {}).get("fields")),
         "gps": geo.get("place") if geo.get("has_gps") else None,
+        "satellite": r.get("satellite"),          # fusion: GPS → satellite view + change API
+        "dhash": r.get("dhash"),                   # lets the UI run /corpus without re-hashing
         "signals": r.get("signals", []),
         "cached": bool(r.get("_cached")),
     }

@@ -848,13 +848,53 @@ _IG_OG_RE = re.compile(r'og:description"\s+content="([^"]+)"')
 _IG_UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 _SEARXNG_URL = os.getenv("SEARXNG_URL", "http://rig-searxng:8080")
 
+# Profile-URL handle (instagram.com/<handle>/) — the first path segment when it
+# is NOT a post/reel/system path. The search index often returns an on-topic
+# ACCOUNT (instagram.com/missile_trail/) rather than a post; that handle is more
+# valuable than a shortcode — we feed-refresh it for FRESH posts.
+_IG_PROFILE_RE = re.compile(r"instagram\.com/([A-Za-z0-9_.]{2,30})/?(?:[?#]|$)")
+_IG_RESERVED = {
+    "p", "reel", "reels", "tv", "explore", "stories", "accounts", "direct",
+    "about", "developer", "legal", "press", "api", "web", "graphql", "emails",
+    "challenge", "privacy", "terms", "help",
+}
 
-async def _ig_discover(query: str, session: Any, want: int) -> list[str]:
-    """Return IG shortcodes for a keyword. SearXNG (self-hosted, no direct
-    rate-limit) first; DuckDuckGo direct as fallback (e.g. on dev, no SearXNG)."""
+
+def _ig_handle(url: str) -> Optional[str]:
+    """Extract an account handle from an IG profile URL, or None if it's a post/
+    reel/system path or looks like a numeric id."""
+    m = _IG_PROFILE_RE.search(url or "")
+    if not m:
+        return None
+    h = m.group(1).lower().strip(".")
+    if not h or h in _IG_RESERVED or h.isdigit():
+        return None
+    return h
+
+
+async def _ig_discover(query: str, session: Any,
+                       want: int) -> tuple[list[str], list[str]]:
+    """Discover IG (post shortcodes, account handles) for a keyword. SearXNG
+    (self-hosted, no direct rate-limit) first; DuckDuckGo direct as fallback.
+
+    Returns BOTH: post shortcodes (→ enrich to index posts) and profile handles
+    (→ realtime feed-refresh). The index frequently returns profile URLs, not
+    post URLs — harvesting those handles is what makes discovery actually work
+    for many keywords (else 0 shortcodes → 0 results)."""
     codes: list[str] = []
-    # 1) SearXNG meta-search — try exact phrase AND broad (each surfaces
-    #    different posts; broad also catches /tv/ and reel URLs)
+    handles: list[str] = []
+
+    def _sink(url: str) -> None:
+        m = _IG_SHORTCODE_RE.search(url or "")
+        if m:
+            codes.append(m.group(1))
+        else:
+            h = _ig_handle(url)
+            if h:
+                handles.append(h)
+
+    # 1) SearXNG meta-search — exact phrase AND broad (each surfaces different
+    #    posts/accounts; broad also catches /tv/ and reel URLs)
     for phrase in (f'site:instagram.com "{query}"', f"site:instagram.com {query}"):
         try:
             r = await session.get(
@@ -863,12 +903,10 @@ async def _ig_discover(query: str, session: Any, want: int) -> list[str]:
             )
             if r.status_code == 200 and r.text.lstrip().startswith("{"):
                 for item in r.json().get("results", []):
-                    m = _IG_SHORTCODE_RE.search(item.get("url") or "")
-                    if m:
-                        codes.append(m.group(1))
+                    _sink(item.get("url") or "")
         except Exception:
             continue
-    if len(codes) < want:   # 2) DuckDuckGo direct fallback / top-up
+    if len(codes) + len(handles) < want:   # 2) DuckDuckGo direct fallback / top-up
         try:
             q = f'site:instagram.com "{query}"'.replace(" ", "+")
             r = await session.get(
@@ -878,13 +916,15 @@ async def _ig_discover(query: str, session: Any, want: int) -> list[str]:
             if r.status_code == 200:
                 for href, _t, _s in _DDG_BLOCK_RE.findall(r.text):
                     mu = _UDDG_RE.search(href)
-                    m = _IG_SHORTCODE_RE.search(unquote(mu.group(1)) if mu else href)
-                    if m:
-                        codes.append(m.group(1))
+                    _sink(unquote(mu.group(1)) if mu else href)
         except Exception:
             pass
-    seen: set[str] = set()
-    return [c for c in codes if not (c in seen or seen.add(c))][:want * 2]
+
+    def _dedupe(xs: list[str]) -> list[str]:
+        seen: set[str] = set()
+        return [x for x in xs if not (x in seen or seen.add(x))]
+
+    return _dedupe(codes)[:want * 2], _dedupe(handles)[:want * 2]
 
 
 async def _ig_fetch_og(shortcode: str, session: Any) -> Optional[str]:
@@ -974,7 +1014,7 @@ async def search_instagram(
 
         # ── Stage 1: DISCOVER (global search-index) + caption/author enrich ──
         async with AsyncSession() as s:
-            codes = await _ig_discover(query, s, limit)
+            codes, handles = await _ig_discover(query, s, limit)
             sem = asyncio.Semaphore(6)
 
             async def _enrich(sc: str) -> Optional[dict[str, Any]]:
@@ -991,8 +1031,11 @@ async def search_instagram(
                 merged[p["platform_post_id"]] = {**p, "source": "index",
                                                   "is_realtime": False}
 
-        # relevant accounts = discovered + remembered (persist-from-use)
+        # relevant accounts = post-authors + discovered profile handles +
+        # remembered (persist-from-use). Profile handles from discovery are the
+        # key add: the index often returns an on-topic ACCOUNT, not a post.
         authors = {p["author_username"] for p in index_posts if p.get("author_username")}
+        authors |= set(handles)
         authors |= _ig_author_cache.get(ckey, set())
         authors = sorted(a for a in authors if a)[:_IG_MAX_ACCOUNTS]
 
@@ -1030,8 +1073,15 @@ async def search_instagram(
     if stale_dropped:
         note += f"; dropped {stale_dropped} stale post(s) >{_IG_MAX_POST_AGE_DAYS}d"
     if not ordered:
-        note += "; no fresh on-topic IG from discoverable accounts (fresh signal " \
-                "for this keyword lives on TikTok/Twitter/Telegram)"
+        if authors:
+            # We DID find on-topic accounts — the blocker is the authed refresh.
+            note += (f"; discovered {len(authors)} on-topic account(s) "
+                     f"({', '.join(authors[:3])}) but the authed feed refresh "
+                     "returned nothing — INSTA_SESSIONID is checkpoint-locked or "
+                     "rate-limited; a fresh session unblocks realtime IG")
+        else:
+            note += ("; no discoverable IG accounts for this keyword via the "
+                     "search index")
     return KeywordSearchResult(
         platform="instagram", method=method, query=query, ok=True,
         posts=tuple(ordered[:limit]), note=note,

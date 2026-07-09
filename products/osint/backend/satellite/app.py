@@ -17,7 +17,7 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
-import imagery
+import imagery as sat_imagery  # aliased: the /imagery route function would shadow the module
 import render
 import verify_satellite_change as vsc
 
@@ -85,7 +85,7 @@ def change(
     ('did something big physically change here?'). HEAVY / on-demand: STAC search +
     scene downloads + rendering take ~1-3 min. Returns a summary + before/after/change
     PNGs as data-URIs. ~10 m ceiling — extent & change, not vehicles."""
-    bbox = imagery.bbox_from_point(lat, lon, km)
+    bbox = sat_imagery.bbox_from_point(lat, lon, km)
     out = tempfile.mkdtemp(prefix="chg_")
     label = "aoi"
     try:

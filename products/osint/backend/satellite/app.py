@@ -123,7 +123,7 @@ _HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8">
    var fr=document.getElementById("frame"), sp=document.getElementById("spin");
    fr.classList.remove("loaded"); sp.style.display="block"; sp.textContent="fetching "+src+" imagery… (10-40s)";
    document.getElementById("meta").innerHTML=""; document.getElementById("att").textContent="";
-   fetch("/imagery?lat="+la+"&lon="+lo+"&source="+src).then(function(r){
+   fetch("imagery?lat="+la+"&lon="+lo+"&source="+src).then(function(r){
      if(!r.ok){ sp.textContent="no "+src+" imagery for this spot"; return null; }
      var h=r.headers;
      document.getElementById("meta").innerHTML=

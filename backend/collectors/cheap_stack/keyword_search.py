@@ -1045,6 +1045,11 @@ async def search_instagram(
 # FETCH each article's full content via curl_cffi (proven from datacenter).
 # Chinese-language. Moments / private accounts / DMs are OFF-LIMITS.
 
+# A WeChat article older than this is stale for a live keyword read. Generous
+# vs other platforms — Official Accounts post slowly and this China-source
+# content is rare/high-value — but still bounds truly ancient results.
+_WX_MAX_POST_AGE_DAYS = 180
+
 _WX_TITLE_RE = re.compile(r'property="og:title" content="([^"]*)"')
 _WX_ACCT_RE = re.compile(r'id="js_name">\s*([^<]+)')
 _WX_CT_RE = re.compile(r'var ct = "(\d+)"')
@@ -1265,16 +1270,39 @@ async def search_wechat(
             elapsed_s=time.monotonic() - started,
         )
 
+    # Relevance: on this Chinese-language platform the CHINESE term (导弹) is the
+    # authoritative signal. An English-only hit is usually a brand/incidental
+    # match (e.g. "MISSILE" the mountain-bike brand, which never says 导弹). So:
+    # prefer articles carrying the Chinese term; fall back to any-term ONLY if
+    # the Chinese term found nothing (preserves recall on transliterated topics).
+    zh_toks = [t for t in match_toks if _has_cjk(t)]
+
+    def _hay(p: dict[str, Any]) -> str:
+        return (p["title"] + " " + p["content"] + " " + p["account"]).lower()
+
+    valid = [p for p in results if p]
+    zh_hits = ([p for p in valid if any(t in _hay(p) for t in zh_toks)]
+               if zh_toks else [])
+    kept = zh_hits or [
+        p for p in valid if not match_toks or any(t in _hay(p) for t in match_toks)]
+
     posts: dict[str, dict[str, Any]] = {}
-    for p in results:
-        if not p:
-            continue
-        hay = (p["title"] + " " + p["content"] + " " + p["account"]).lower()
-        if match_toks and not any(t in hay for t in match_toks):
-            continue
+    for p in kept:
         posts.setdefault(p["platform_post_id"], p)
 
-    ordered = sorted(posts.values(), key=lambda x: x.get("posted_at") or "", reverse=True)
+    # Freshness gate: drop truly ancient articles (keeps the rare recent China
+    # signal, cuts the years-old ones surfacing as if current).
+    fresh = {pid: p for pid, p in posts.items()
+             if (_age_days(p.get("posted_at")) or 1e9) <= _WX_MAX_POST_AGE_DAYS}
+    dropped_off = len(valid) - len(kept)
+    dropped_old = len(posts) - len(fresh)
+    if dropped_off:
+        note += f"; dropped {dropped_off} off-topic (English-brand/incidental)"
+    if dropped_old:
+        note += f"; dropped {dropped_old} stale article(s) >{_WX_MAX_POST_AGE_DAYS}d"
+
+    ordered = sorted(fresh.values(), key=lambda x: x.get("posted_at") or "",
+                     reverse=True)
     return KeywordSearchResult(
         platform="wechat", method=method, query=query, ok=True,
         posts=tuple(ordered[:limit]), note=note,

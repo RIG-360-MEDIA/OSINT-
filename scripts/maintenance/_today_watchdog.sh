@@ -36,6 +36,7 @@ check_svc(){ # name port
 check_svc rigmedia 8701
 check_svc riggeo   8700
 check_svc rigident 8702
+check_svc rigscout 8610
 
 # cookie collectors — reddit/twitter/instagram sessions
 if probe_out="$(docker exec -w /app -e PYTHONPATH=/app rig-backend python scripts/maintenance/_collector_health.py 2>&1)"; then

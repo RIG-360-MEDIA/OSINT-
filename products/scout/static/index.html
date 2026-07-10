@@ -30,6 +30,8 @@
  .pname{font-weight:700;font-size:14px;text-transform:capitalize}
  .pcount{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--dim)}
  .dot{width:8px;height:8px;border-radius:50%;flex:none} .d-ok{background:var(--ok)} .d-bad{background:var(--bad)} .d-empty{background:var(--faint)}
+ .d-load{background:var(--acc);animation:pulse 1s ease-in-out infinite} @keyframes pulse{50%{opacity:.25}}
+ .panel.loading .pcount::after{content:" ·  scanning…";color:var(--acc)}
  .pnote{padding:7px 13px;font-family:var(--mono);font-size:11px;color:var(--faint);border-bottom:1px solid var(--line)}
  .perr{padding:9px 13px;font-family:var(--mono);font-size:11.5px;color:#ffbdb8;background:color-mix(in oklab,var(--bad) 9%,transparent)}
  .items{padding:6px 8px}
@@ -77,9 +79,15 @@
      (link?'<a class="clink" href="'+esc(link)+'" target="_blank" rel="noreferrer">'+esc(link)+'</a>':'')+
      '<div class="kv">'+rows+'</div></div>';
  }
- function panel(s){
+ function skeleton(sp){
+   return '<div class="panel collapsed loading" id="p-'+esc(sp.name)+'"><div class="phead">'+
+     '<span class="chev">▸</span><span class="dot d-load"></span>'+
+     '<span class="badge b-'+sp.group+'">'+sp.group+'</span><span class="pname">'+esc(sp.name)+'</span>'+
+     '<span class="pcount"></span></div></div>';
+ }
+ function panel(s,collapsed){
    const dot = s.error?"d-bad":(s.count?"d-ok":"d-empty");
-   let h='<div class="panel collapsed"><div class="phead" onclick="this.parentNode.classList.toggle(\'collapsed\')">'+
+   let h='<div class="panel'+(collapsed?' collapsed':'')+'" id="p-'+esc(s.name)+'"><div class="phead" onclick="this.parentNode.classList.toggle(\'collapsed\')">'+
      '<span class="chev">▸</span><span class="dot '+dot+'"></span>'+
      '<span class="badge b-'+s.group+'">'+s.group+'</span><span class="pname">'+esc(s.name)+'</span>'+
      '<span class="pcount">'+s.count+' · '+s.elapsed_s+'s</span></div>';
@@ -91,18 +99,25 @@
  }
  async function run(){
    const kw=$("#kw").value.trim(); if(!kw)return;
-   $("#bar").textContent='Scouting every source for "'+kw+'" … (live, ~10–20s)';
-   $("#out").innerHTML="";
    const t0=Date.now();
-   try{
-     const r=await fetch("scout?keyword="+encodeURIComponent(kw)+"&limit=10");
-     const d=await r.json();
-     const S=d.sources||[];
-     const total=S.reduce((a,s)=>a+s.count,0), ok=S.filter(s=>s.count).length, bad=S.filter(s=>s.error).length;
-     $("#bar").textContent=total+" results · "+ok+"/"+S.length+" sources returned data · "+bad+" failed · "+((Date.now()-t0)/1000).toFixed(1)+"s";
-     const tb='<div class="toolbar"><button class="tbtn" onclick="allPanels(false)">▾ expand all</button><button class="tbtn" onclick="allPanels(true)">▸ collapse all</button></div>';
-     $("#out").innerHTML='<div class="cols">'+tb+S.map(panel).join("")+'</div>';
-   }catch(e){ $("#bar").textContent="request failed: "+e; }
+   $("#bar").textContent='Scouting "'+kw+'" — querying every source…';
+   let specs=[];
+   try{ specs=(await (await fetch("scout/sources")).json()).sources||[]; }
+   catch(e){ $("#bar").textContent="request failed: "+e; return; }
+   const tb='<div class="toolbar"><button class="tbtn" onclick="allPanels(false)">▾ expand all</button><button class="tbtn" onclick="allPanels(true)">▸ collapse all</button></div>';
+   $("#out").innerHTML='<div class="cols">'+tb+specs.map(skeleton).join("")+'</div>';
+   let done=0,total=0,ok=0,bad=0;
+   const upd=()=>{$("#bar").textContent=total+' results · '+ok+'/'+specs.length+' sources returned data · '+bad+' slow/failed · '+done+'/'+specs.length+' done · '+((Date.now()-t0)/1000).toFixed(1)+'s';};
+   upd();
+   await Promise.all(specs.map(async sp=>{
+     let s;
+     try{ s=await (await fetch("scout/one?name="+encodeURIComponent(sp.name)+"&keyword="+encodeURIComponent(kw)+"&limit=10")).json(); }
+     catch(e){ s={name:sp.name,group:sp.group,ok:false,count:0,items:[],error:"request failed",elapsed_s:0,note:null}; }
+     const el=document.getElementById("p-"+sp.name);
+     const wasOpen=el&&!el.classList.contains("collapsed");
+     if(el) el.outerHTML=panel(s,!wasOpen);
+     done++; total+=s.count||0; if(s.count)ok++; if(s.error)bad++; upd();
+   }));
  }
  function allPanels(collapse){ document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('collapsed',collapse)); }
 </script></body></html>

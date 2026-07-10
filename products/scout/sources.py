@@ -52,14 +52,16 @@ def _sort_newest(items: list[dict], date_key: str | None) -> list[dict]:
 
 
 async def _guard(name: str, group: str, factory: Callable[[], Any],
-                 extract: Callable[[Any], tuple], date_key: str | None) -> SourceResult:
-    """Run one source with a timeout; turn any failure into an honest error envelope."""
+                 extract: Callable[[Any], tuple], date_key: str | None,
+                 timeout: float) -> SourceResult:
+    """Run one source with its own timeout; turn any failure into an honest envelope."""
     t0 = time.monotonic()
     try:
-        raw = await asyncio.wait_for(factory(), timeout=PER_SOURCE_TIMEOUT)
+        raw = await asyncio.wait_for(factory(), timeout=timeout)
     except asyncio.TimeoutError:
         return SourceResult(name, group, False, 0, [], {}, None,
-                            f"timeout >{PER_SOURCE_TIMEOUT:.0f}s", round(time.monotonic() - t0, 1))
+                            f"slow — no response in {timeout:.0f}s (source is up, just slow here)",
+                            round(time.monotonic() - t0, 1))
     except Exception as exc:
         return SourceResult(name, group, False, 0, [], {},
                             None, f"{type(exc).__name__}: {exc}"[:180], round(time.monotonic() - t0, 1))
@@ -79,7 +81,15 @@ def _ex_social(r: Any) -> tuple:
 def _ex_web(r: dict) -> tuple:
     return (True, r.get("results") or [],
             {"infobox": r.get("infobox"), "summary": r.get("summary"),
-             "top_sources": r.get("top_sources"), "suggestions": r.get("suggestions")}, None, None)
+             "top_sources": r.get("top_sources"), "suggestions": r.get("suggestions")}, r.get("_note"), None)
+
+
+async def _web_call(kw: str, lim: int) -> dict:
+    """SearXNG is internal-only (rig-searxng) — off-box this fails; say so, don't error."""
+    try:
+        return await web_search(kw, limit=lim)
+    except Exception:
+        return {"results": [], "_note": "SearXNG is server-only — web results appear when Scout runs on the box"}
 
 
 def _ex_company(r: dict) -> tuple:
@@ -114,33 +124,41 @@ def _ex_tender(r: dict) -> tuple:
              "portal_leads": r.get("portal_leads")}, None, None)
 
 
-# name, async-callable(keyword, limit) -> raw, extractor, date_key (for newest-first)
-_OSINT: list[tuple] = [
-    ("web",      lambda kw, lim: web_search(kw, limit=lim),      _ex_web,      "published"),
-    ("company",  lambda kw, lim: company_lookup(kw),             _ex_company,  None),
-    ("academic", lambda kw, lim: academic_lookup(kw),            _ex_academic, "year"),
-    ("gdelt",    lambda kw, lim: gdelt_coverage(kw),             _ex_gdelt,    "date"),
-    ("wikipedia", lambda kw, lim: wiki_lookup(kw),               _ex_wiki,     None),
-    ("geo",      lambda kw, lim: geo_lookup(kw),                 _ex_geo,      None),
-    ("tenders",  lambda kw, lim: tender_search(kw, limit=lim),   _ex_tender,   "published"),
-]
+# name -> (group, async call(keyword, limit)->raw, extractor, date_key, timeout_s).
+# Timeout is PER SOURCE — slow sources (gdelt) get headroom without holding up the fast ones,
+# because the frontend streams each panel in as it finishes (GET /scout/one).
+def _social_call(platform: str) -> Callable:
+    return lambda kw, lim: SOCIAL[platform](kw, limit=lim)
 
 
-def _mk(fn: Callable, kw: str, lim: int) -> Callable[[], Any]:
-    return lambda: fn(kw, lim)
+SPECS: dict[str, tuple] = {p: ("social", _social_call(p), _ex_social, "posted_at", 25.0) for p in SOCIAL}
+SPECS.update({
+    "web":       ("osint", _web_call,                                _ex_web,      "published", 20.0),
+    "company":   ("osint", lambda kw, lim: company_lookup(kw),       _ex_company,  None,        20.0),
+    "academic":  ("osint", lambda kw, lim: academic_lookup(kw),      _ex_academic, "year",      20.0),
+    "gdelt":     ("osint", lambda kw, lim: gdelt_coverage(kw),       _ex_gdelt,    "date",      50.0),
+    "wikipedia": ("osint", lambda kw, lim: wiki_lookup(kw),          _ex_wiki,     None,        15.0),
+    "geo":       ("osint", lambda kw, lim: geo_lookup(kw),           _ex_geo,      None,        15.0),
+    "tenders":   ("osint", lambda kw, lim: tender_search(kw, limit=lim), _ex_tender, "published", 35.0),
+})
+ORDER: list[str] = list(SPECS.keys())   # social first, then osint
+
+
+def source_list() -> list[dict]:
+    return [{"name": n, "group": SPECS[n][0]} for n in ORDER]
+
+
+async def run_one(name: str, keyword: str, limit: int = 8) -> dict:
+    """Run ONE source (for streaming). Unknown name -> honest error envelope."""
+    spec = SPECS.get(name)
+    if not spec:
+        return asdict(SourceResult(name, "?", False, 0, [], {}, None, "unknown source", 0.0))
+    group, call, extract, date_key, timeout = spec
+    r = await _guard(name, group, lambda: call(keyword, limit), extract, date_key, timeout)
+    return asdict(r)
 
 
 async def scout(keyword: str, limit: int = 8) -> list[dict]:
-    """Fan out to every keyword source in parallel; return one envelope per source."""
-    tasks = [
-        _guard(platform, "social", _mk(lambda kw, lim, p=platform: SOCIAL[p](kw, limit=lim), keyword, limit),
-               _ex_social, "posted_at")
-        for platform in SOCIAL
-    ]
-    tasks += [
-        _guard(name, "osint", _mk(fn, keyword, limit), extract, date_key)
-        for name, fn, extract, date_key in _OSINT
-    ]
-    results = await asyncio.gather(*tasks)
-    # stable order: social first (in REGISTRY order), then osint
-    return [asdict(r) for r in results]
+    """Full fan-out in one shot (kept for convenience; the UI uses run_one per source)."""
+    results = await asyncio.gather(*(run_one(n, keyword, limit) for n in ORDER))
+    return list(results)

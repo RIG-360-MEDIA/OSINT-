@@ -48,6 +48,20 @@ async def scout(keyword: str = Query(..., min_length=1, max_length=120),
     return JSONResponse({"keyword": keyword, "sources": sources})
 
 
+@app.get("/scout/sources")
+def scout_sources() -> JSONResponse:
+    """The ordered source list, so the UI can paint skeleton panels immediately."""
+    return JSONResponse({"sources": S.source_list()})
+
+
+@app.get("/scout/one")
+async def scout_one(name: str = Query(..., max_length=40),
+                    keyword: str = Query(..., min_length=1, max_length=120),
+                    limit: int = Query(8, ge=1, le=25)) -> JSONResponse:
+    """Run ONE source — the UI calls these in parallel so each panel streams in on its own."""
+    return JSONResponse(await S.run_one(name, keyword, limit=limit))
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True}

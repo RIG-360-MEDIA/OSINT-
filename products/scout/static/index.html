@@ -1,0 +1,98 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RIG Scout</title><style>
+ :root{--bg:#0a0c11;--panel:#131822;--panel2:#0e131c;--line:#212b3a;--txt:#e9eef6;--dim:#8b98ad;
+  --faint:#5a6779;--soc:#5ec8f0;--osint:#f4b02e;--ok:#46e0a0;--bad:#ff6259;--acc:#43e0cf;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--sans:system-ui,-apple-system,Segoe UI,sans-serif}
+ *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--sans);line-height:1.5}
+ .wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+ header{padding:34px 0 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:linear-gradient(var(--bg),var(--bg) 78%,transparent);z-index:5}
+ .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--acc)}
+ h1{font-size:25px;font-weight:800;letter-spacing:-.02em;margin:7px 0 3px}
+ .sub{color:var(--dim);font-size:13.5px;margin-bottom:14px}
+ .ctl{display:flex;gap:10px;flex-wrap:wrap}
+ #kw{flex:1;min-width:240px;background:#0b1017;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:11px 13px;font-size:14px}
+ .go{background:var(--acc);color:#06110f;border:0;border-radius:9px;padding:11px 20px;font-weight:700;cursor:pointer;font-size:14px}
+ #bar{font-family:var(--mono);font-size:12px;color:var(--dim);padding:10px 0 2px;min-height:20px}
+ .cols{columns:2;column-gap:16px;padding:16px 0 60px} @media(max-width:820px){.cols{columns:1}}
+ .panel{break-inside:avoid;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:0 0 16px;overflow:hidden}
+ .phead{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--line);background:var(--panel2)}
+ .badge{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:5px}
+ .b-social{color:var(--soc);border:1px solid color-mix(in oklab,var(--soc) 40%,transparent)}
+ .b-osint{color:var(--osint);border:1px solid color-mix(in oklab,var(--osint) 40%,transparent)}
+ .pname{font-weight:700;font-size:14px;text-transform:capitalize}
+ .pcount{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--dim)}
+ .dot{width:8px;height:8px;border-radius:50%;flex:none} .d-ok{background:var(--ok)} .d-bad{background:var(--bad)} .d-empty{background:var(--faint)}
+ .pnote{padding:7px 13px;font-family:var(--mono);font-size:11px;color:var(--faint);border-bottom:1px solid var(--line)}
+ .perr{padding:9px 13px;font-family:var(--mono);font-size:11.5px;color:#ffbdb8;background:color-mix(in oklab,var(--bad) 9%,transparent)}
+ .items{padding:6px 8px}
+ .card{padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);margin:6px 0}
+ .chead{font-size:13.5px;font-weight:600;color:#eef2f8;margin-bottom:2px;word-break:break-word}
+ .clink{font-family:var(--mono);font-size:11px;color:var(--acc);text-decoration:none;word-break:break-all} .clink:hover{text-decoration:underline}
+ .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin-top:6px;font-size:11.5px}
+ .kv .k{font-family:var(--mono);color:var(--faint);white-space:nowrap} .kv .v{color:#c9d2df;word-break:break-word;min-width:0}
+ .kv .v a{color:var(--soc);text-decoration:none} .kv img{max-width:120px;border-radius:5px;display:block;margin-top:2px}
+ .empty{padding:12px 13px;color:var(--faint);font-family:var(--mono);font-size:12px}
+ .foot{color:var(--faint);font-family:var(--mono);font-size:11px;padding:0 0 40px}
+</style></head><body><div class="wrap">
+ <header>
+  <div class="eyebrow">RIG Surveillance · Scout</div>
+  <h1>One keyword → every source → raw data</h1>
+  <div class="sub">Fans out to all 7 social platforms + the free OSINT sources at once. Every source in its own panel, all fields, newest first. No ranking, no dedup, no deductions — just the data.</div>
+  <div class="ctl"><input id="kw" placeholder="Enter a keyword — e.g. missile, Rafale, Adani, PLA Navy" onkeydown="if(event.key==='Enter')run()"><button class="go" onclick="run()">Scout</button></div>
+  <div id="bar">Type a keyword and hit Scout — every source is queried live (~10–20s).</div>
+ </header>
+ <div id="out"></div>
+ <div class="foot">social: reddit · twitter · tiktok · youtube · telegram · instagram · wechat &nbsp;|&nbsp; osint: web · company · academic · gdelt · wikipedia · geo · tenders</div>
+</div><script>
+ const $=s=>document.querySelector(s);
+ const esc=s=>(s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+ const HEAD=["title","post_text","text","snippet","display_name","legal_name","name","extract","claim"];
+ const URLK=/(^url$|_url$|page_url|pdf_url|thumbnail|^image$|permalink)/i;
+ const isUrl=v=>typeof v==="string"&&/^https?:\/\//.test(v);
+
+ function val(k,v){
+   if(v==null||v===""||(Array.isArray(v)&&!v.length))return null;
+   if(/thumbnail|^image$/i.test(k)&&isUrl(v))return '<img src="'+esc(v)+'" loading="lazy" onerror="this.remove()">';
+   if(URLK.test(k)&&isUrl(v))return '<a href="'+esc(v)+'" target="_blank" rel="noreferrer">'+esc(v)+'</a>';
+   if(isUrl(v))return '<a href="'+esc(v)+'" target="_blank" rel="noreferrer">'+esc(v)+'</a>';
+   if(Array.isArray(v))return v.every(x=>typeof x!=="object")?esc(v.join(", ")):esc(JSON.stringify(v)).slice(0,400);
+   if(typeof v==="object")return esc(JSON.stringify(v)).slice(0,400);
+   return esc(v);
+ }
+ function card(it){
+   let head="";
+   for(const h of HEAD){ if(it[h]){ head=String(it[h]).slice(0,240); break; } }
+   let link=""; for(const k of ["url","post_url","page_url","permalink"]){ if(isUrl(it[k])){ link=it[k]; break; } }
+   let rows="";
+   for(const k of Object.keys(it)){ const cell=val(k,it[k]); if(cell!=null) rows+='<div class="k">'+esc(k)+'</div><div class="v">'+cell+'</div>'; }
+   return '<div class="card">'+(head?'<div class="chead">'+esc(head)+'</div>':'')+
+     (link?'<a class="clink" href="'+esc(link)+'" target="_blank" rel="noreferrer">'+esc(link)+'</a>':'')+
+     '<div class="kv">'+rows+'</div></div>';
+ }
+ function panel(s){
+   const dot = s.error?"d-bad":(s.count?"d-ok":"d-empty");
+   let h='<div class="panel"><div class="phead"><span class="dot '+dot+'"></span>'+
+     '<span class="badge b-'+s.group+'">'+s.group+'</span><span class="pname">'+esc(s.name)+'</span>'+
+     '<span class="pcount">'+s.count+' · '+s.elapsed_s+'s</span></div>';
+   if(s.note)h+='<div class="pnote">'+esc(s.note)+'</div>';
+   if(s.error)h+='<div class="perr">⚠ '+esc(s.error)+'</div>';
+   if(s.count)h+='<div class="items">'+s.items.map(card).join("")+'</div>';
+   else if(!s.error)h+='<div class="empty">no matches</div>';
+   return h+'</div>';
+ }
+ async function run(){
+   const kw=$("#kw").value.trim(); if(!kw)return;
+   $("#bar").textContent='Scouting every source for "'+kw+'" … (live, ~10–20s)';
+   $("#out").innerHTML="";
+   const t0=Date.now();
+   try{
+     const r=await fetch("scout?keyword="+encodeURIComponent(kw)+"&limit=10");
+     const d=await r.json();
+     const S=d.sources||[];
+     const total=S.reduce((a,s)=>a+s.count,0), ok=S.filter(s=>s.count).length, bad=S.filter(s=>s.error).length;
+     $("#bar").textContent=total+" results · "+ok+"/"+S.length+" sources returned data · "+bad+" failed · "+((Date.now()-t0)/1000).toFixed(1)+"s";
+     $("#out").innerHTML='<div class="cols">'+S.map(panel).join("")+'</div>';
+   }catch(e){ $("#bar").textContent="request failed: "+e; }
+ }
+</script></body></html>

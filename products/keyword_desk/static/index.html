@@ -77,6 +77,9 @@
   .voice .vp{color:var(--dim);font-size:11px}
   .voice .vv{color:var(--accent);font-size:11px}
   .voice .ve{margin-left:auto;color:var(--gold);font-weight:600;font-size:11.5px}
+  .voice .vfp{color:var(--dim);text-decoration:none;font-size:13px;line-height:1;padding:0 1px;transition:color .15s}
+  .voice .vfp:hover{color:var(--gold)}
+  a.chip{text-decoration:none} a.chip:hover{border-color:var(--gold);color:var(--txt)}
   .bar{margin:6px 0}
   .bar .bl{display:flex;justify-content:space-between;font-size:11.5px;color:#cdd6e0;margin-bottom:3px}
   .bar .bt{height:6px;background:var(--bg);border-radius:4px;overflow:hidden}
@@ -132,6 +135,7 @@ const PLAT = {
   wechat:{c:"#07c160",i:"💬",n:"WeChat"}
 };
 const $=s=>document.querySelector(s);
+const IDENT='https://api.rig360media.com/identity'; // isolated identity-footprint desk
 const esc=s=>(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const fmt=n=>{n=+n||0;return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(1)+"K":""+n};
 function ago(ts){if(!ts)return"";const d=(Date.now()-new Date(ts))/1e3;if(isNaN(d))return"";
@@ -176,7 +180,8 @@ function render(d){
   if(ins.voices&&ins.voices.length){h+='<div class="apanel"><h4>Loudest Voices</h4>';
     ins.voices.forEach(v=>h+='<div class="voice"><span class="vn">@'+esc(v.author)+'</span>'+
       (v.verified?'<span class="vv">✓</span>':'')+'<span class="vp">'+esc(v.platform)+' · '+v.posts+'p</span>'+
-      '<span class="ve">'+fmt(v.engagement)+'</span></div>');h+='</div>'}
+      '<span class="ve">'+fmt(v.engagement)+'</span>'+
+      '<a class="vfp" href="'+IDENT+'/?selector='+encodeURIComponent(v.author)+'" target="_blank" rel="noreferrer" title="Map @'+esc(v.author)+' public footprint across platforms">⌕</a></div>');h+='</div>'}
   if(ins.platform_breakdown&&ins.platform_breakdown.length){h+='<div class="apanel"><h4>Where The Signal Lives</h4>';
     const mx=Math.max(...ins.platform_breakdown.map(b=>b.engagement),1);
     ins.platform_breakdown.forEach(b=>h+='<div class="bar"><div class="bl"><span>'+esc(b.platform)+'</span>'+
@@ -189,7 +194,7 @@ function render(d){
   if((sig.hashtags&&sig.hashtags.length)||(sig.mentions&&sig.mentions.length)){
     h+='<div class="apanel"><h4>Entities In Play</h4><div class="chips">';
     (sig.hashtags||[]).forEach(t=>h+='<span class="chip"><b>#'+esc(t.tag)+'</b> ·'+t.n+'</span>');
-    (sig.mentions||[]).forEach(m=>h+='<span class="chip">@'+esc(m.handle)+' ·'+m.n+'</span>');
+    (sig.mentions||[]).forEach(m=>h+='<a class="chip" href="'+IDENT+'/?selector='+encodeURIComponent(m.handle)+'" target="_blank" rel="noreferrer" title="Map @'+esc(m.handle)+' public footprint">@'+esc(m.handle)+' ·'+m.n+' ⌕</a>');
     h+='</div>';
     if(ins.narrative&&ins.narrative.length)
       h+='<div style="margin-top:10px;font-size:12px;color:var(--dim)">Framing: '+ins.narrative.map(esc).join(' · ')+'</div>';

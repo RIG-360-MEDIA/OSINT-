@@ -22,6 +22,7 @@ from products.osint.backend.academic_collector import academic_lookup
 from products.osint.backend.company_collector import company_lookup
 from products.osint.backend.gdelt_collector import gdelt_coverage
 from products.osint.backend.geo_collector import geo_lookup
+from products.osint.backend.news_collector import news_search
 from products.osint.backend.searxng_collector import web_search
 from products.osint.backend.tender_collector import tender_search
 from products.osint.backend.wiki_collector import wiki_lookup
@@ -76,6 +77,10 @@ async def _guard(name: str, group: str, factory: Callable[[], Any],
 def _ex_social(r: Any) -> tuple:
     return (bool(getattr(r, "ok", False)), list(getattr(r, "posts", ()) or ()),
             {"method": getattr(r, "method", None)}, getattr(r, "note", None), getattr(r, "error", None))
+
+
+def _ex_news(r: dict) -> tuple:
+    return (True, r.get("articles") or [], {"summary": r.get("summary")}, None, r.get("error"))
 
 
 def _ex_web(r: dict) -> tuple:
@@ -133,6 +138,7 @@ def _social_call(platform: str) -> Callable:
 
 SPECS: dict[str, tuple] = {p: ("social", _social_call(p), _ex_social, "posted_at", 25.0) for p in SOCIAL}
 SPECS.update({
+    "news":      ("osint", lambda kw, lim: news_search(kw, limit=lim), _ex_news,   None,        15.0),
     "web":       ("osint", _web_call,                                _ex_web,      "published", 20.0),
     "company":   ("osint", lambda kw, lim: company_lookup(kw),       _ex_company,  None,        20.0),
     "academic":  ("osint", lambda kw, lim: academic_lookup(kw),      _ex_academic, "year",      20.0),

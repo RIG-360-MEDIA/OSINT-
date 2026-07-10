@@ -19,6 +19,26 @@ from fastapi.responses import FileResponse, JSONResponse
 from backend.collectors.cheap_stack.keyword_search import REGISTRY
 from products.keyword_desk.insights import build_insights
 
+def _load_local_env() -> None:
+    """Dev convenience: load a repo-root/local `.env` into the environment (session
+    cookies etc.) so the desk runs off-container. No-op in prod — the container
+    supplies env directly and has no `.env`; `setdefault` also lets real env win.
+    """
+    import os
+
+    for envp in (Path(__file__).resolve().parents[2] / ".env", Path(__file__).parent / ".env"):
+        if not envp.exists():
+            continue
+        for line in envp.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            os.environ.setdefault(key.strip(), val.strip())
+
+
+_load_local_env()
+
 app = FastAPI(title="Keyword Intel Desk")
 _STATIC = Path(__file__).parent / "static"
 

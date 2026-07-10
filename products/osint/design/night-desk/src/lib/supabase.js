@@ -45,6 +45,9 @@ export const API_BASE = import.meta.env.VITE_BRIEF_API || 'http://localhost:8002
 // the header is included transparently without prop-drilling.
 let _impersonateId = null;
 export function setImpersonationTarget(userId) { _impersonateId = userId || null; }
+// Read the active impersonation target so raw fetch() callers (e.g. blob/PDF
+// downloads that can't go through authFetch) can include X-Impersonate too.
+export function getImpersonationTarget() { return _impersonateId; }
 
 function withTimeout(promise, ms, label) {
   let timer;

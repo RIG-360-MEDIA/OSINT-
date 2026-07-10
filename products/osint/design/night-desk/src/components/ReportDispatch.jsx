@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Panel from './Panel';
-import { authFetch, getAccessToken, API_BASE } from '../lib/supabase';
+import { authFetch, getAccessToken, API_BASE, getImpersonationTarget } from '../lib/supabase';
 
 // The real daily intelligence brief: live stats + INLINE PDF viewer + email-to-me.
 // The PDF endpoint (/api/brief/report.pdf) is auth-gated (401 without a bearer
@@ -31,8 +31,12 @@ export default function ReportDispatch() {
       try {
         const token = await getAccessToken();
         if (!token) throw new Error('Not signed in');
+        const imp = getImpersonationTarget();
         const res = await fetch(`${API_BASE}/api/brief/report.pdf`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...(imp ? { 'X-Impersonate': imp } : {}),
+          },
         });
         if (!res.ok) throw new Error(`PDF ${res.status}`);
         const blob = await res.blob();

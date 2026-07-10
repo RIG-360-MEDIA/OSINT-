@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Magnetic } from '../lib/ui';
-import { getAccessToken, API_BASE } from '../lib/supabase';
+import { getAccessToken, API_BASE, getImpersonationTarget } from '../lib/supabase';
 
 export default function CommandBar({ theme = 'dark', onToggle }) {
   const [busy, setBusy] = useState(false);
@@ -18,8 +18,12 @@ export default function CommandBar({ theme = 'dark', onToggle }) {
     try {
       const token = await getAccessToken();
       if (!token) throw new Error('Not signed in');
+      const imp = getImpersonationTarget();
       const res = await fetch(`${API_BASE}/api/brief/report.pdf`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(imp ? { 'X-Impersonate': imp } : {}),
+        },
       });
       if (!res.ok) throw new Error(`PDF ${res.status}`);
       const blob = await res.blob();

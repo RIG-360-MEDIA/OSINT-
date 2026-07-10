@@ -14,9 +14,16 @@
  #kw{flex:1;min-width:240px;background:#0b1017;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:11px 13px;font-size:14px}
  .go{background:var(--acc);color:#06110f;border:0;border-radius:9px;padding:11px 20px;font-weight:700;cursor:pointer;font-size:14px}
  #bar{font-family:var(--mono);font-size:12px;color:var(--dim);padding:10px 0 2px;min-height:20px}
- .cols{columns:2;column-gap:16px;padding:16px 0 60px} @media(max-width:820px){.cols{columns:1}}
- .panel{break-inside:avoid;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:0 0 16px;overflow:hidden}
- .phead{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--line);background:var(--panel2)}
+ .cols{max-width:920px;margin:0 auto;padding:12px 0 60px}
+ .toolbar{display:flex;gap:8px;padding:6px 0 10px}
+ .tbtn{font-family:var(--mono);font-size:11px;color:var(--dim);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 10px;cursor:pointer}
+ .tbtn:hover{color:var(--txt);border-color:var(--acc)}
+ .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:0 0 9px;overflow:hidden}
+ .panel.collapsed .items,.panel.collapsed .pnote,.panel.collapsed .perr,.panel.collapsed .empty{display:none}
+ .chev{font-family:var(--mono);color:var(--faint);flex:none;transition:transform .15s;font-size:12px}
+ .panel:not(.collapsed) .chev{transform:rotate(90deg)}
+ .phead{display:flex;align-items:center;gap:8px;padding:11px 13px;border-bottom:1px solid var(--line);background:var(--panel2);cursor:pointer;user-select:none}
+ .panel.collapsed .phead{border-bottom:0} .phead:hover{background:#161d29}
  .badge{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:5px}
  .b-social{color:var(--soc);border:1px solid color-mix(in oklab,var(--soc) 40%,transparent)}
  .b-osint{color:var(--osint);border:1px solid color-mix(in oklab,var(--osint) 40%,transparent)}
@@ -72,7 +79,8 @@
  }
  function panel(s){
    const dot = s.error?"d-bad":(s.count?"d-ok":"d-empty");
-   let h='<div class="panel"><div class="phead"><span class="dot '+dot+'"></span>'+
+   let h='<div class="panel collapsed"><div class="phead" onclick="this.parentNode.classList.toggle(\'collapsed\')">'+
+     '<span class="chev">▸</span><span class="dot '+dot+'"></span>'+
      '<span class="badge b-'+s.group+'">'+s.group+'</span><span class="pname">'+esc(s.name)+'</span>'+
      '<span class="pcount">'+s.count+' · '+s.elapsed_s+'s</span></div>';
    if(s.note)h+='<div class="pnote">'+esc(s.note)+'</div>';
@@ -92,7 +100,9 @@
      const S=d.sources||[];
      const total=S.reduce((a,s)=>a+s.count,0), ok=S.filter(s=>s.count).length, bad=S.filter(s=>s.error).length;
      $("#bar").textContent=total+" results · "+ok+"/"+S.length+" sources returned data · "+bad+" failed · "+((Date.now()-t0)/1000).toFixed(1)+"s";
-     $("#out").innerHTML='<div class="cols">'+S.map(panel).join("")+'</div>';
+     const tb='<div class="toolbar"><button class="tbtn" onclick="allPanels(false)">▾ expand all</button><button class="tbtn" onclick="allPanels(true)">▸ collapse all</button></div>';
+     $("#out").innerHTML='<div class="cols">'+tb+S.map(panel).join("")+'</div>';
    }catch(e){ $("#bar").textContent="request failed: "+e; }
  }
+ function allPanels(collapse){ document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('collapsed',collapse)); }
 </script></body></html>

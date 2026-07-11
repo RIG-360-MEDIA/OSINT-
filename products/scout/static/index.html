@@ -13,6 +13,10 @@
  .ctl{display:flex;gap:10px;flex-wrap:wrap}
  #kw{flex:1;min-width:240px;background:#0b1017;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:11px 13px;font-size:14px}
  #lim{background:#0b1017;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:11px 10px;font-size:13px;font-family:var(--mono);cursor:pointer}
+ .tabbar{display:flex;gap:4px;margin:14px 0 4px;background:#0a0f16;border:1px solid var(--line);border-radius:10px;padding:4px;width:fit-content}
+ .tab{font-family:var(--mono);font-size:12.5px;background:transparent;color:var(--dim);border:0;border-radius:7px;padding:8px 14px;cursor:pointer}
+ .tab.on{background:#16212d;color:var(--acc)}
+ .tabframe{width:100%;height:80vh;border:1px solid var(--line);border-radius:12px;margin-top:12px;background:var(--bg)}
  .go{background:var(--acc);color:#06110f;border:0;border-radius:9px;padding:11px 20px;font-weight:700;cursor:pointer;font-size:14px}
  #bar{font-family:var(--mono);font-size:12px;color:var(--dim);padding:10px 0 2px;min-height:20px}
  .cols{max-width:920px;margin:0 auto;padding:12px 0 60px}
@@ -50,12 +54,19 @@
   <div class="eyebrow">RIG Surveillance · Scout</div>
   <h1>One keyword → every source → raw data</h1>
   <div class="sub">Fans out to all 7 social platforms + the free OSINT sources at once. Every source in its own panel, all fields, newest first. No ranking, no dedup, no deductions — just the data.</div>
+  <div class="tabbar">
+   <button class="tab on" data-t="search" onclick="showTab('search')">🔎 Keyword search</button>
+   <button class="tab" data-t="image" onclick="showTab('image')">🖼 Image verify</button>
+   <button class="tab" data-t="sat" onclick="showTab('sat')">🛰 Satellite</button>
+  </div>
   <div class="ctl"><input id="kw" placeholder="Enter a keyword — e.g. missile, Rafale, Adani, PLA Navy" onkeydown="if(event.key==='Enter')run()">
    <select id="lim" title="Top results per source"><option value="10">Top 10</option><option value="25">Top 25</option><option value="50">Top 50</option></select>
    <button class="go" onclick="run()">Scout</button></div>
   <div id="bar">Type a keyword and hit Scout — every source is queried live (~10–20s).</div>
  </header>
  <div id="out"></div>
+ <iframe id="frame-image" class="tabframe" style="display:none"></iframe>
+ <iframe id="frame-sat" class="tabframe" style="display:none"></iframe>
  <div class="foot">social: reddit · twitter · tiktok · youtube · telegram · instagram · wechat &nbsp;|&nbsp; osint: web · company · academic · gdelt · wikipedia · geo · tenders</div>
 </div><script>
  const $=s=>document.querySelector(s);
@@ -124,4 +135,15 @@
    }));
  }
  function allPanels(collapse){ document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('collapsed',collapse)); }
+ function showTab(t){
+   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on', b.getAttribute('data-t')===t));
+   var search=(t==='search');
+   document.querySelector('.ctl').style.display=search?'':'none';
+   document.getElementById('bar').style.display=search?'':'none';
+   document.getElementById('out').style.display=search?'':'none';
+   var fi=document.getElementById('frame-image'), fs=document.getElementById('frame-sat');
+   fi.style.display=(t==='image')?'':'none'; fs.style.display=(t==='sat')?'':'none';
+   if(t==='image' && !fi.getAttribute('src')) fi.src='/media/';
+   if(t==='sat' && !fs.getAttribute('src')) fs.src='/geo/';
+ }
 </script></body></html>

@@ -13,6 +13,8 @@
  .ctl{display:flex;gap:10px;flex-wrap:wrap}
  #kw{flex:1;min-width:240px;background:#0b1017;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:11px 13px;font-size:14px}
  #lim{background:#0b1017;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:11px 10px;font-size:13px;font-family:var(--mono);cursor:pointer}
+ #ask{flex:1;min-width:260px;background:#0b1017;border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:11px 13px;font-size:14px}
+ .planbar{font-family:var(--mono);font-size:12.5px;color:var(--acc);background:color-mix(in oklab,var(--acc) 8%,transparent);border:1px solid color-mix(in oklab,var(--acc) 28%,transparent);border-radius:9px;padding:9px 12px;margin:12px 0 2px}
  .tabbar{display:flex;gap:4px;margin:14px 0 4px;background:#0a0f16;border:1px solid var(--line);border-radius:10px;padding:4px;width:fit-content}
  .tab{font-family:var(--mono);font-size:12.5px;background:transparent;color:var(--dim);border:0;border-radius:7px;padding:8px 14px;cursor:pointer}
  .tab.on{background:#16212d;color:var(--acc)}
@@ -60,12 +62,14 @@
   <div class="sub">Fans out to all 7 social platforms + the free OSINT sources at once. Every source in its own panel, all fields, newest first. No ranking, no dedup, no deductions — just the data.</div>
   <div class="tabbar">
    <button class="tab on" data-t="search" onclick="showTab('search')">🔎 Keyword search</button>
+   <button class="tab" data-t="ask" onclick="showTab('ask')">🗣 Ask (plain English)</button>
    <button class="tab" data-t="image" onclick="showTab('image')">🖼 Image verify</button>
    <button class="tab" data-t="sat" onclick="showTab('sat')">🛰 Satellite</button>
   </div>
   <div class="ctl"><input id="kw" placeholder="Enter a keyword — e.g. missile, Rafale, Adani, PLA Navy" onkeydown="if(event.key==='Enter')run()">
    <select id="lim" title="Top results per source"><option value="10">Top 10</option><option value="25">Top 25</option><option value="50">Top 50</option></select>
    <button class="go" onclick="run()">Scout</button></div>
+  <div class="ctl" id="askrow" style="display:none"><input id="ask" placeholder="Ask in plain English — e.g. bad posts on Windlass · top 50 posts on TSLA · all posts on Adani in the last 10 minutes · harmful content on Indian army" onkeydown="if(event.key==='Enter')runAsk()"><button class="go" onclick="runAsk()">Ask</button></div>
   <div id="bar">Type a keyword and hit Scout — every source is queried live (~10–20s).</div>
  </header>
  <div id="out"></div>
@@ -139,22 +143,19 @@
    else if(!s.error)h+='<div class="empty">no matches</div>';
    return h+'</div>';
  }
- async function run(){
-   const kw=$("#kw").value.trim(); if(!kw)return;
-   const t0=Date.now();
-   window.SCOUT={tokens:kw.toLowerCase().split(/\s+/).filter(Boolean),items:[]};
-   $("#bar").textContent='Scouting "'+kw+'" — querying every source…';
-   let specs=[];
-   try{ specs=(await (await fetch("scout/sources")).json()).sources||[]; }
-   catch(e){ $("#bar").textContent="request failed: "+e; return; }
+ async function srcMap(){ if(!window.SRCMAP){ try{ var s=(await (await fetch("scout/sources")).json()).sources||[]; window.SRCMAP={}; s.forEach(x=>window.SRCMAP[x.name]=x.group);}catch(e){window.SRCMAP={};} } return window.SRCMAP; }
+ async function fanout(query, names, urlFor, planText){
+   const t0=Date.now(); const map=await srcMap();
+   window.SCOUT={tokens:query.toLowerCase().split(/\s+/).filter(Boolean),items:[]};
+   const specs=names.map(n=>({name:n,group:map[n]||'osint'}));
    const tb='<div class="toolbar"><button class="tbtn on" id="tb-bysrc" onclick="showBySource()">◱ By source</button><button class="tbtn" id="tb-merged" onclick="renderMerged()">⊕ Top merged · deduped · ranked</button><span style="flex:1"></span><button class="tbtn" onclick="allPanels(false)">▾ expand all</button><button class="tbtn" onclick="allPanels(true)">▸ collapse all</button></div>';
-   $("#out").innerHTML='<div class="cols">'+tb+'<div id="bysource">'+specs.map(skeleton).join("")+'</div><div id="merged" style="display:none"></div></div>';
+   $("#out").innerHTML=(planText?'<div class="planbar">🧭 '+esc(planText)+'</div>':'')+'<div class="cols">'+tb+'<div id="bysource">'+specs.map(skeleton).join("")+'</div><div id="merged" style="display:none"></div></div>';
    let done=0,total=0,ok=0,bad=0;
-   const upd=()=>{$("#bar").textContent=total+' results · '+ok+'/'+specs.length+' sources returned data · '+bad+' slow/failed · '+done+'/'+specs.length+' done · '+((Date.now()-t0)/1000).toFixed(1)+'s';};
-   upd();
+   const upd=()=>{$("#bar").textContent=total+' results · '+ok+'/'+specs.length+' sources · '+bad+' slow/failed · '+done+'/'+specs.length+' done · '+((Date.now()-t0)/1000).toFixed(1)+'s';};
+   $("#bar").style.display=''; upd();
    await Promise.all(specs.map(async sp=>{
      let s;
-     try{ s=await (await fetch("scout/one?name="+encodeURIComponent(sp.name)+"&keyword="+encodeURIComponent(kw)+"&limit="+(($("#lim")||{}).value||10))).json(); }
+     try{ s=await (await fetch(urlFor(sp.name))).json(); }
      catch(e){ s={name:sp.name,group:sp.group,ok:false,count:0,items:[],error:"request failed",elapsed_s:0,note:null}; }
      const el=document.getElementById("p-"+sp.name);
      const wasOpen=el&&!el.classList.contains("collapsed");
@@ -163,13 +164,26 @@
      done++; total+=s.count||0; if(s.count)ok++; if(s.error)bad++; upd();
    }));
  }
+ async function run(){
+   const kw=$("#kw").value.trim(); if(!kw)return;
+   const map=await srcMap(); const lim=(($("#lim")||{}).value||10);
+   await fanout(kw, Object.keys(map), n=>"scout/one?name="+encodeURIComponent(n)+"&keyword="+encodeURIComponent(kw)+"&limit="+lim, "");
+ }
+ async function runAsk(){
+   const q=$("#ask").value.trim(); if(!q)return;
+   $("#bar").style.display=''; $("#bar").textContent='interpreting your ask…';
+   let plan; try{ plan=await (await fetch("scout/ask/plan?q="+encodeURIComponent(q))).json(); }
+   catch(e){ $("#bar").textContent="couldn't parse the ask"; return; }
+   await fanout(plan.query||q, plan.resolved_sources||[], n=>"scout/ask/one?name="+encodeURIComponent(n)+"&q="+encodeURIComponent(q), plan.interpretation);
+ }
  function allPanels(collapse){ document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('collapsed',collapse)); }
  function showTab(t){
    document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on', b.getAttribute('data-t')===t));
-   var search=(t==='search');
-   document.querySelector('.ctl').style.display=search?'':'none';
-   document.getElementById('bar').style.display=search?'':'none';
-   document.getElementById('out').style.display=search?'':'none';
+   var isSearch=(t==='search'), isAsk=(t==='ask'), isData=(isSearch||isAsk);
+   document.querySelector('.ctl').style.display=isSearch?'':'none';
+   document.getElementById('askrow').style.display=isAsk?'':'none';
+   document.getElementById('bar').style.display=isData?'':'none';
+   document.getElementById('out').style.display=isData?'':'none';
    var fi=document.getElementById('frame-image'), fs=document.getElementById('frame-sat');
    fi.style.display=(t==='image')?'':'none'; fs.style.display=(t==='sat')?'':'none';
    if(t==='image' && !fi.getAttribute('src')) fi.src='/media/';

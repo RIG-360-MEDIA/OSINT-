@@ -57,7 +57,7 @@ def _relevant(item: dict, tokens: list[str]) -> bool:
     return all(t in blob for t in tokens)
 
 
-_SEM = asyncio.Semaphore(6)
+_SEM = asyncio.Semaphore(12)
 
 
 async def _sources(client: httpx.AsyncClient) -> list[str]:
@@ -79,19 +79,20 @@ async def main() -> None:
     per_source: dict[str, dict] = {}
     async with httpx.AsyncClient() as client:
         names = await _sources(client)
-        for i, kw in enumerate(GOLD, 1):
+        pairs = [(kw, n) for kw in GOLD for n in names]
+        print(f"running {len(pairs)} (keyword×source) probes concurrently…", flush=True)
+        results = await asyncio.gather(*[_one(client, kw, n) for kw, n in pairs])
+        for (kw, _n), s in zip(pairs, results):
             tokens = [t for t in kw.lower().split() if t]
-            sources = await asyncio.gather(*[_one(client, kw, n) for n in names])
-            for s in sources:
-                acc = per_source.setdefault(s["name"], {"group": s["group"], "returned": 0, "counts": [],
-                                                        "rel": [], "ages": []})
-                items = s.get("items") or []
-                if s.get("count"):
-                    acc["returned"] += 1
-                    acc["counts"].append(s["count"])
-                    acc["rel"].append(sum(_relevant(it, tokens) for it in items) / len(items) if items else 0)
-                    acc["ages"] += [a for a in (_age_days(it) for it in items) if a is not None]
-            print(f"[{i}/{len(GOLD)}] {kw!r} done")
+            acc = per_source.setdefault(s.get("name", _n), {"group": s.get("group", "?"), "returned": 0,
+                                                           "counts": [], "rel": [], "ages": []})
+            items = s.get("items") or []
+            if s.get("count"):
+                acc["returned"] += 1
+                acc["counts"].append(s["count"])
+                acc["rel"].append(sum(_relevant(it, tokens) for it in items) / len(items) if items else 0)
+                acc["ages"] += [a for a in (_age_days(it) for it in items) if a is not None]
+        print("all probes done", flush=True)
 
     n = len(GOLD)
     rows = []

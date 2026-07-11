@@ -13,9 +13,13 @@ NOT keyword-native and are added in a later step.
 from __future__ import annotations
 
 import asyncio
+import os
+import re
 import time
 from dataclasses import asdict, dataclass
 from typing import Any, Callable
+
+import httpx
 
 from backend.collectors.cheap_stack.keyword_search import REGISTRY as SOCIAL
 from products.osint.backend.academic_collector import academic_lookup
@@ -132,6 +136,38 @@ def _ex_tender(r: dict) -> tuple:
 # name -> (group, async call(keyword, limit)->raw, extractor, date_key, timeout_s).
 # Timeout is PER SOURCE — slow sources (gdelt) get headroom without holding up the fast ones,
 # because the frontend streams each panel in as it finishes (GET /scout/one).
+# Identity footprint — GATED: only meaningful when the keyword is a handle/username, not a
+# topic. A single token of handle chars → run rigident; otherwise skip with an honest note.
+_HANDLE_RE = re.compile(r"^[A-Za-z0-9_.]{2,30}$")
+_IDENT_URL = os.environ.get("IDENT_URL", "http://rigident:8702")
+
+
+async def _identity(kw: str, limit: int) -> dict:
+    q = (kw or "").strip()
+    if not _HANDLE_RE.match(q):
+        return {"_skip": True,
+                "note": "identity footprint runs only on a handle/username "
+                        "(single token, no spaces) — this keyword looks like a topic"}
+    try:
+        async with httpx.AsyncClient(timeout=115) as client:
+            r = await client.get(f"{_IDENT_URL}/footprint",
+                                 params={"selector": q, "top_sites": 120})
+            return r.json()
+    except Exception as exc:
+        return {"error": f"{type(exc).__name__}: {exc}"[:120]}
+
+
+def _ex_identity(r: dict) -> tuple:
+    if r.get("_skip"):
+        return (True, [], {"gated": True}, r.get("note"), None)
+    res = r.get("result") or {}
+    items = res.get("confirmed") or []          # username path (gate restricts to handles)
+    meta = {"selector_type": r.get("type"), "caveat": r.get("caveat"),
+            "related_handles": res.get("related_handles"),
+            "checked": res.get("checked"), "rejected_count": res.get("rejected_count")}
+    return (bool(items), items, meta, r.get("caveat"), r.get("error"))
+
+
 def _social_call(platform: str) -> Callable:
     return lambda kw, lim: SOCIAL[platform](kw, limit=lim)
 
@@ -147,6 +183,7 @@ SPECS.update({
     "wikipedia": ("osint", lambda kw, lim: wiki_lookup(kw),          _ex_wiki,     None,        15.0),
     "geo":       ("osint", lambda kw, lim: geo_lookup(kw),           _ex_geo,      None,        15.0),
     "tenders":   ("osint", lambda kw, lim: tender_search(kw, limit=lim), _ex_tender, "published", 35.0),
+    "identity":  ("identity", _identity,                             _ex_identity, None,        120.0),
 })
 ORDER: list[str] = list(SPECS.keys())   # social first, then osint
 

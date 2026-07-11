@@ -35,7 +35,12 @@ _load_local_env()
 from fastapi import FastAPI, Query                       # noqa: E402  (after env load)
 from fastapi.responses import FileResponse, JSONResponse  # noqa: E402
 
+import products.scout.plan as P                            # noqa: E402
 import products.scout.sources as S                        # noqa: E402
+
+
+def _ask_sources(pl: "P.QueryPlan") -> list[str]:
+    return pl.sources if pl.sources else [n for n in S.ORDER if n != "identity"]
 
 app = FastAPI(title="RIG Scout")
 _STATIC = Path(__file__).parent / "static"
@@ -60,6 +65,30 @@ async def scout_one(name: str = Query(..., max_length=40),
                     limit: int = Query(8, ge=1, le=50)) -> JSONResponse:
     """Run ONE source — the UI calls these in parallel so each panel streams in on its own."""
     return JSONResponse(await S.run_one(name, keyword, limit=limit))
+
+
+@app.get("/scout/ask/plan")
+def ask_plan(q: str = Query(..., min_length=1, max_length=200)) -> JSONResponse:
+    """Parse a natural-language ask into a TRANSPARENT plan (shown before running)."""
+    pl = P.rule_parse(q)
+    d = P.to_dict(pl)
+    d["resolved_sources"] = _ask_sources(pl)
+    return JSONResponse(d)
+
+
+@app.get("/scout/ask/one")
+async def ask_one(name: str = Query(..., max_length=40),
+                  q: str = Query(..., min_length=1, max_length=200)) -> JSONResponse:
+    """Run ONE source for a natural-language ask: fan-out on the plan's query, then apply the
+    plan's filters (time-window / sentiment / sort / top-N). UI calls these in parallel."""
+    pl = P.rule_parse(q)
+    # fetch wider than top_n when we're going to filter/sort, so there's material to work with
+    fetch = 50 if (pl.window_minutes or pl.sentiment or pl.sort != "relevance") else max(pl.top_n, 15)
+    env = await S.run_one(name, pl.query, limit=min(fetch, 50))
+    if env.get("items"):
+        env["items"] = P.apply_plan(pl, env["items"])
+        env["count"] = len(env["items"])
+    return JSONResponse(env)
 
 
 @app.get("/health")

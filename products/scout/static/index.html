@@ -48,6 +48,10 @@
  .kv .k{font-family:var(--mono);color:var(--faint);white-space:nowrap} .kv .v{color:#c9d2df;word-break:break-word;min-width:0}
  .kv .v a{color:var(--soc);text-decoration:none} .kv img{max-width:120px;border-radius:5px;display:block;margin-top:2px}
  .empty{padding:12px 13px;color:var(--faint);font-family:var(--mono);font-size:12px}
+ #merged .card{margin:8px 0}
+ .mhead{font-family:var(--mono);font-size:11.5px;color:var(--dim);padding:8px 2px 12px}
+ .mtag{display:flex;gap:8px;align-items:center;margin-bottom:4px}
+ .mscore{font-family:var(--mono);font-size:10px;color:var(--acc)}
  .foot{color:var(--faint);font-family:var(--mono);font-size:11px;padding:0 0 40px}
 </style></head><body><div class="wrap">
  <header>
@@ -84,15 +88,38 @@
    if(typeof v==="object")return esc(JSON.stringify(v)).slice(0,400);
    return esc(v);
  }
- function card(it){
+ function cardBody(it){
    let head="";
    for(const h of HEAD){ if(it[h]){ head=String(it[h]).slice(0,240); break; } }
    let link=""; for(const k of ["url","post_url","page_url","permalink"]){ if(isUrl(it[k])){ link=it[k]; break; } }
    let rows="";
-   for(const k of Object.keys(it)){ const cell=val(k,it[k]); if(cell!=null) rows+='<div class="k">'+esc(k)+'</div><div class="v">'+cell+'</div>'; }
-   return '<div class="card">'+(head?'<div class="chead">'+esc(head)+'</div>':'')+
+   for(const k of Object.keys(it)){ if(k[0]==="_")continue; const cell=val(k,it[k]); if(cell!=null) rows+='<div class="k">'+esc(k)+'</div><div class="v">'+cell+'</div>'; }
+   return (head?'<div class="chead">'+esc(head)+'</div>':'')+
      (link?'<a class="clink" href="'+esc(link)+'" target="_blank" rel="noreferrer">'+esc(link)+'</a>':'')+
-     '<div class="kv">'+rows+'</div></div>';
+     '<div class="kv">'+rows+'</div>';
+ }
+ function card(it){ return '<div class="card">'+cardBody(it)+'</div>'; }
+ function itemAge(it){ for(const f of ["posted_at","published","date","pubDate"]){ if(it[f]){ var t=Date.parse(String(it[f]).replace('Z','+0000')); if(!isNaN(t)) return (Date.now()-t)/864e5; } } return null; }
+ function itemScore(it,tokens){
+   var age=itemAge(it), rec=(age==null)?0.3:Math.max(0,1-age/60);
+   var blob=["title","post_text","text","snippet","description","extract","name","legal_name","display_name"].map(f=>it[f]||"").join(" ").toLowerCase();
+   var rel=tokens.length? tokens.filter(t=>blob.indexOf(t)>=0).length/tokens.length : 0.5;
+   var e=+(it.views||it.likes||it.upvotes||it.cited_by_count||it.comment_count||0);
+   return 0.45*rel + 0.4*rec + 0.15*Math.min(Math.log10(1+e)/6,1);
+ }
+ function dedupKey(it){ var t=(it.title||it.post_text||it.text||it.name||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim().slice(0,70); return (it.url||it.post_url||"")+"|"+t; }
+ function showBySource(){ document.getElementById("bysource").style.display=""; document.getElementById("merged").style.display="none"; document.getElementById("tb-bysrc").classList.add("on"); document.getElementById("tb-merged").classList.remove("on"); }
+ function renderMerged(){
+   var m=document.getElementById("merged"); document.getElementById("bysource").style.display="none"; m.style.display="";
+   document.getElementById("tb-bysrc").classList.remove("on"); document.getElementById("tb-merged").classList.add("on");
+   var S=window.SCOUT||{items:[],tokens:[]};
+   var scored=S.items.map(it=>({it:it,s:itemScore(it,S.tokens)}));
+   var best={}; scored.forEach(x=>{var k=dedupKey(x.it); if(!best[k]||x.s>best[k].s)best[k]=x;});
+   var uniq=Object.keys(best).map(k=>best[k]).sort((a,b)=>b.s-a.s);
+   var top=uniq.slice(0,Math.max(+(($("#lim")||{}).value||10)*3,20));
+   var h='<div class="mhead">'+top.length+' top items · merged across sources · '+(scored.length-uniq.length)+' duplicates collapsed · ranked by recency + keyword-match + engagement (a transparent score, not a verdict)</div>';
+   h+=top.map(x=>'<div class="card"><div class="mtag"><span class="badge b-'+esc(x.it._grp)+'">'+esc(x.it._src)+'</span><span class="mscore">score '+x.s.toFixed(2)+'</span></div>'+cardBody(x.it)+'</div>').join("");
+   m.innerHTML=h||'<div class="empty">nothing to merge yet</div>';
  }
  function skeleton(sp){
    return '<div class="panel collapsed loading" id="p-'+esc(sp.name)+'"><div class="phead">'+
@@ -115,12 +142,13 @@
  async function run(){
    const kw=$("#kw").value.trim(); if(!kw)return;
    const t0=Date.now();
+   window.SCOUT={tokens:kw.toLowerCase().split(/\s+/).filter(Boolean),items:[]};
    $("#bar").textContent='Scouting "'+kw+'" — querying every source…';
    let specs=[];
    try{ specs=(await (await fetch("scout/sources")).json()).sources||[]; }
    catch(e){ $("#bar").textContent="request failed: "+e; return; }
-   const tb='<div class="toolbar"><button class="tbtn" onclick="allPanels(false)">▾ expand all</button><button class="tbtn" onclick="allPanels(true)">▸ collapse all</button></div>';
-   $("#out").innerHTML='<div class="cols">'+tb+specs.map(skeleton).join("")+'</div>';
+   const tb='<div class="toolbar"><button class="tbtn on" id="tb-bysrc" onclick="showBySource()">◱ By source</button><button class="tbtn" id="tb-merged" onclick="renderMerged()">⊕ Top merged · deduped · ranked</button><span style="flex:1"></span><button class="tbtn" onclick="allPanels(false)">▾ expand all</button><button class="tbtn" onclick="allPanels(true)">▸ collapse all</button></div>';
+   $("#out").innerHTML='<div class="cols">'+tb+'<div id="bysource">'+specs.map(skeleton).join("")+'</div><div id="merged" style="display:none"></div></div>';
    let done=0,total=0,ok=0,bad=0;
    const upd=()=>{$("#bar").textContent=total+' results · '+ok+'/'+specs.length+' sources returned data · '+bad+' slow/failed · '+done+'/'+specs.length+' done · '+((Date.now()-t0)/1000).toFixed(1)+'s';};
    upd();
@@ -131,6 +159,7 @@
      const el=document.getElementById("p-"+sp.name);
      const wasOpen=el&&!el.classList.contains("collapsed");
      if(el) el.outerHTML=panel(s,!wasOpen);
+     if(s.count) (s.items||[]).forEach(it=>window.SCOUT.items.push(Object.assign({_src:sp.name,_grp:sp.group},it)));
      done++; total+=s.count||0; if(s.count)ok++; if(s.error)bad++; upd();
    }));
  }

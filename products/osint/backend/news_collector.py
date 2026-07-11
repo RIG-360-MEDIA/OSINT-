@@ -15,6 +15,7 @@ from typing import Any
 import httpx
 
 _RSS = "https://news.google.com/rss/search"
+_BING = "https://www.bing.com/news/search"
 _HEADERS = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                           "(KHTML, like Gecko) Chrome/124 Safari/537.36")}
 
@@ -73,3 +74,28 @@ async def news_search(q: str, *, limit: int = 15, lang: str = "en-US", country: 
             "sources": sorted({a["source"] for a in articles if a["source"]})[:14],
         },
     }
+
+
+async def bing_news_search(q: str, *, limit: int = 15) -> dict[str, Any]:
+    """Bing News RSS — independent no-key news feed; redundancy so news never depends on
+    one provider. Bing gives the REAL article URL (not a redirect). Partial data on failure."""
+    query = (q or "").strip()
+    if not query:
+        return {"query": query, "articles": [], "count": 0, "error": "empty query"}
+    url = f"{_BING}?q={urllib.parse.quote(query)}&format=rss&count={min(limit, 50)}"
+    try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+            r = await client.get(url, headers=_HEADERS)
+            body = r.text
+    except Exception as exc:
+        return {"query": query, "articles": [], "count": 0, "error": f"{type(exc).__name__}: {exc}"[:110]}
+    items = re.findall(r"<item>(.*?)</item>", body, re.S)
+    articles = [{
+        "title": _tag(it, "title"),
+        "url": _tag(it, "link"),                          # Bing gives the direct article URL
+        "source": None,
+        "published": _tag(it, "pubDate"),
+        "snippet": _clean(_tag(it, "description")),
+    } for it in items[:limit]]
+    return {"query": query, "articles": articles, "count": len(articles),
+            "summary": {"total_available": len(items), "returned": len(articles)}}

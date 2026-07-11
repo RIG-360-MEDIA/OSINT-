@@ -202,6 +202,36 @@ async def run_one(name: str, keyword: str, limit: int = 8) -> dict:
     return asdict(r)
 
 
+async def run_multi(name: str, queries: list[str], limit: int = 8) -> dict:
+    """Run a source across MULTIPLE queries (co-occurrence expansion) → merge + dedup items."""
+    qs = [q for q in (queries or []) if q] or [""]
+    envs = await asyncio.gather(*(run_one(name, q, limit) for q in qs))
+    items: list[dict] = []
+    seen: set = set()
+    ok = False
+    note = None
+    errs: list[str] = []
+    elapsed = 0.0
+    group = "?"
+    for e in envs:
+        group = e.get("group", group)
+        ok = ok or bool(e.get("ok"))
+        if e.get("note"):
+            note = e["note"]
+        if e.get("error"):
+            errs.append(e["error"])
+        elapsed = max(elapsed, e.get("elapsed_s", 0))
+        for it in e.get("items") or []:
+            k = ((it.get("url") or it.get("post_url") or "") + "|" +
+                 str(it.get("title") or it.get("post_text") or it.get("text") or "")[:60].lower())
+            if k not in seen:
+                seen.add(k)
+                items.append(it)
+    return {"name": name, "group": group, "ok": ok, "count": len(items), "items": items,
+            "error": ("; ".join(dict.fromkeys(errs)) or None) if not items else None,
+            "note": note, "elapsed_s": round(elapsed, 1)}
+
+
 async def scout(keyword: str, limit: int = 8) -> list[dict]:
     """Full fan-out in one shot (kept for convenience; the UI uses run_one per source)."""
     results = await asyncio.gather(*(run_one(n, keyword, limit) for n in ORDER))

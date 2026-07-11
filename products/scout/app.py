@@ -82,9 +82,10 @@ async def ask_one(name: str = Query(..., max_length=40),
     """Run ONE source for a natural-language ask: fan-out on the plan's query, then apply the
     plan's filters (time-window / sentiment / sort / top-N). UI calls these in parallel."""
     pl = P.rule_parse(q)
-    # fetch wider than top_n when we're going to filter/sort, so there's material to work with
-    fetch = 50 if (pl.window_minutes or pl.sentiment or pl.sort != "relevance") else max(pl.top_n, 15)
-    env = await S.run_one(name, pl.query, limit=min(fetch, 50))
+    # fetch wider than top_n when we're going to filter/sort/rank, so there's material to work with
+    fetch = 50 if (pl.window_minutes or pl.sentiment or pl.anchor or pl.sort != "relevance") else max(pl.top_n, 15)
+    # perspective → run the co-occurrence query set; otherwise the single query
+    env = await S.run_multi(name, pl.queries or [pl.query], limit=min(fetch, 50))
     if env.get("items"):
         env["items"] = P.apply_plan(pl, env["items"])
         env["count"] = len(env["items"])

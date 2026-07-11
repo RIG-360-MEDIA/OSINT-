@@ -57,21 +57,31 @@ def _relevant(item: dict, tokens: list[str]) -> bool:
     return all(t in blob for t in tokens)
 
 
-async def _scout(client: httpx.AsyncClient, kw: str) -> list[dict]:
-    r = await client.get(f"{BASE}/scout", params={"keyword": kw, "limit": 10}, timeout=100)
-    return r.json().get("sources", [])
+_SEM = asyncio.Semaphore(6)
+
+
+async def _sources(client: httpx.AsyncClient) -> list[str]:
+    r = await client.get(f"{BASE}/scout/sources", timeout=15)
+    # identity is gated/slow (maigret) and not a keyword-content source — skip it in the eval.
+    return [s["name"] for s in r.json().get("sources", []) if s["name"] != "identity"]
+
+
+async def _one(client: httpx.AsyncClient, kw: str, name: str) -> dict:
+    async with _SEM:
+        try:
+            r = await client.get(f"{BASE}/scout/one", params={"name": name, "keyword": kw, "limit": 10}, timeout=70)
+            return r.json()
+        except Exception as exc:
+            return {"name": name, "group": "?", "count": 0, "items": [], "error": type(exc).__name__}
 
 
 async def main() -> None:
     per_source: dict[str, dict] = {}
     async with httpx.AsyncClient() as client:
+        names = await _sources(client)
         for i, kw in enumerate(GOLD, 1):
             tokens = [t for t in kw.lower().split() if t]
-            try:
-                sources = await _scout(client, kw)
-            except Exception as exc:
-                print(f"[{i}/{len(GOLD)}] {kw!r} FAILED: {type(exc).__name__}")
-                continue
+            sources = await asyncio.gather(*[_one(client, kw, n) for n in names])
             for s in sources:
                 acc = per_source.setdefault(s["name"], {"group": s["group"], "returned": 0, "counts": [],
                                                         "rel": [], "ages": []})

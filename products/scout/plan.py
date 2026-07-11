@@ -114,11 +114,16 @@ def _describe(p: QueryPlan) -> str:
 _DATE_FIELDS = ("posted_at", "published", "date", "pubDate")
 _DFMT = ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S", "%a, %d %b %Y %H:%M:%S %z",
          "%a, %d %b %Y %H:%M:%S %Z", "%Y-%m-%d")
-_NEG_LEX = {"corrupt", "scam", "fraud", "fail", "failure", "loss", "crash", "collapse", "worst",
-            "terrible", "awful", "hate", "disaster", "shame", "fake", "liar", "lie", "attack",
-            "kill", "dead", "war", "threat", "danger", "boycott", "protest", "anger", "angry",
-            "outrage", "abuse", "toxic", "propaganda", "traitor", "coward", "defeat", "weak",
-            "dump", "sell", "bearish", "plunge", "tank", "fell", "drop", "sink", "warning", "risk"}
+# Strong, unambiguous negativity/hostility stems — matched at a WORD BOUNDARY (not substring,
+# so "war" won't match "forward" and "sell" won't match "reseller"). A keyword PROXY for
+# "bad/harmful", not verified sentiment — honest floor; upgrade path is an LLM judge.
+_NEG_LEX = ("corrupt", "scam", "fraud", "fail", "crash", "collaps", "worst", "terrible", "awful",
+            "hate", "disaster", "shame", "fake", "liar", "traitor", "coward", "boycott", "outrage",
+            "abuse", "toxic", "propaganda", "threat", "atrocit", "attack", "kill", "massacre",
+            "criticis", "criticiz", "slam", "blast", "condemn", "controvers", "defam", "protest",
+            "angry", "anger", "disgrace", "scandal", "incompeten", "betray", "enemy", "brutal",
+            "genocide", "oppress", "violat", "coverup", "cover-up", "lies", "hypocris")
+_NEG_RE = re.compile(r"\b(" + "|".join(_NEG_LEX) + r")", re.I)
 _ENG_FIELDS = ("views", "likes", "upvotes", "comment_count", "shares", "cited_by_count")
 
 
@@ -147,8 +152,8 @@ def _is_negative(it: dict) -> bool:
     if float(it.get("toxicity") or 0) >= 0.5 or it.get("weaponization_signals"):
         return True
     blob = " ".join(str(it.get(f, "")) for f in
-                    ("title", "post_text", "text", "snippet", "description")).lower()
-    return any(w in blob for w in _NEG_LEX)
+                    ("title", "post_text", "text", "snippet", "description"))
+    return bool(_NEG_RE.search(blob))
 
 
 def apply_plan(p: QueryPlan, items: list[dict]) -> list[dict]:

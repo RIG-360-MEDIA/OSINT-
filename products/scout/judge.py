@@ -18,11 +18,11 @@ import products.scout.plan as P
 _GROQ_KEY = (os.environ.get("GROQ_API_KEYS", "") or os.environ.get("GROQ_API_KEY", "")).split(",")[0].strip()
 _GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 _MODEL = os.environ.get("SCOUT_JUDGE_MODEL", "llama-3.1-8b-instant")
-_MAX_JUDGE = 40
+_MAX_JUDGE = 18   # keep the per-source batch small — Groq free tier is tokens-per-minute limited
 
 
 def _text(it: dict) -> str:
-    return str(it.get("title") or it.get("post_text") or it.get("text") or it.get("snippet") or "")[:220]
+    return str(it.get("title") or it.get("post_text") or it.get("text") or it.get("snippet") or "")[:140]
 
 
 def _criterion(pl: "P.QueryPlan") -> str:

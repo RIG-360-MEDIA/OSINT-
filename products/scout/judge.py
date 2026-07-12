@@ -2,9 +2,10 @@
   - sentiment: is this genuinely a hostile/hateful/harmful COMMENT about the subject (not news)?
   - perspective: is this really about the topic AND reflecting the anchor's viewpoint?
 
-One batched call per source (fast Groq model). ALWAYS degrades gracefully: if the pool is
-unreachable / no key / errors, it falls back to the keyword filters (the keyword result is the
-floor). The response is tagged "judged by llm|keyword" so it's transparent which ran.
+Multi-backend, best-effort: try the local **Ollama pool** first (free, no daily limit), then
+**Groq** (fast, but the shared org's tokens-per-day is often exhausted by the main platform).
+ALWAYS degrades gracefully to the keyword filter (the floor) when both are unreachable, and
+tags the result "judged by ollama|groq|keyword" so it's transparent which one actually ran.
 """
 from __future__ import annotations
 
@@ -16,14 +17,18 @@ import httpx
 
 import products.scout.plan as P
 
-# Cap concurrent Groq calls + retry once — the free tier is tokens/requests-per-minute limited,
-# and per-source judging can otherwise fire many calls at once and trip a 429.
-_SEM = asyncio.Semaphore(2)
-
 _GROQ_KEY = (os.environ.get("GROQ_API_KEYS", "") or os.environ.get("GROQ_API_KEY", "")).split(",")[0].strip()
 _GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-_MODEL = os.environ.get("SCOUT_JUDGE_MODEL", "llama-3.1-8b-instant")
-_MAX_JUDGE = 18   # keep the per-source batch small — Groq free tier is tokens-per-minute limited
+_GROQ_MODEL = os.environ.get("SCOUT_JUDGE_MODEL", "llama-3.1-8b-instant")
+# "url|model,url|model" — prefer the smaller/faster node first.
+_OLLAMA_EPS = [tuple(p.split("|", 1)) for p in os.environ.get("OLLAMA_ENDPOINTS", "").split(",")
+               if "|" in p]
+_OLLAMA_EPS.sort(key=lambda um: 0 if "14b" in um[1] or "7b" in um[1] else 1)
+_MAX_JUDGE = 18
+_SEM = asyncio.Semaphore(2)
+
+_SYS = ("You are a strict content filter. Reply ONLY with a JSON array of the item numbers that "
+        "clearly PASS the criterion, e.g. [1,3]. No prose.")
 
 
 def _text(it: dict) -> str:
@@ -42,38 +47,67 @@ def _criterion(pl: "P.QueryPlan") -> str:
     return " AND ".join(parts)
 
 
-async def _groq(criterion: str, texts: list[str]) -> set[int] | None:
-    if not _GROQ_KEY or not texts:
-        return None
+def _prompt(criterion: str, texts: list[str]) -> str:
     numbered = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(texts))
-    sys = ("You are a strict content filter. Reply ONLY with a JSON array of the item numbers "
-           "that clearly PASS the criterion. No prose, no explanation.")
-    usr = f"CRITERION: {criterion}\n\nITEMS:\n{numbered}\n\nJSON array of passing item numbers:"
-    payload = {"model": _MODEL, "temperature": 0, "max_tokens": 300,
-               "messages": [{"role": "system", "content": sys}, {"role": "user", "content": usr}]}
-    async with _SEM:
-        for attempt in range(2):
-            try:
-                async with httpx.AsyncClient(timeout=25) as client:
-                    r = await client.post(_GROQ_URL, headers={"Authorization": f"Bearer {_GROQ_KEY}"},
-                                          json=payload)
-                    if r.status_code == 429 and attempt == 0:
-                        await asyncio.sleep(2.0)
-                        continue
-                    r.raise_for_status()
-                    content = r.json()["choices"][0]["message"]["content"]
-                return {int(n) - 1 for n in re.findall(r"\d+", content)}
-            except Exception:
-                if attempt == 0:
-                    await asyncio.sleep(1.5)
-                    continue
-                return None
+    return f"CRITERION: {criterion}\n\nITEMS:\n{numbered}\n\nJSON array of passing item numbers:"
+
+
+def _parse(content: str) -> set[int]:
+    m = re.search(r"\[[\d,\s]*\]", content or "")
+    return {int(n) - 1 for n in re.findall(r"\d+", m.group(0) if m else "")}
+
+
+async def _ollama(criterion: str, texts: list[str]) -> set[int] | None:
+    for url, model in _OLLAMA_EPS:
+        try:
+            async with httpx.AsyncClient(timeout=45) as c:
+                r = await c.post(f"{url.strip()}/api/chat", json={
+                    "model": model.strip(), "stream": False,
+                    "options": {"temperature": 0, "num_predict": 200},
+                    "messages": [{"role": "system", "content": _SYS},
+                                 {"role": "user", "content": _prompt(criterion, texts)}]})
+                r.raise_for_status()
+                return _parse(r.json()["message"]["content"])
+        except Exception:
+            continue
     return None
 
 
+async def _groq(criterion: str, texts: list[str]) -> set[int] | None:
+    if not _GROQ_KEY:
+        return None
+    payload = {"model": _GROQ_MODEL, "temperature": 0, "max_tokens": 300,
+               "messages": [{"role": "system", "content": _SYS},
+                            {"role": "user", "content": _prompt(criterion, texts)}]}
+    for attempt in range(2):
+        try:
+            async with httpx.AsyncClient(timeout=25) as c:
+                r = await c.post(_GROQ_URL, headers={"Authorization": f"Bearer {_GROQ_KEY}"}, json=payload)
+                if r.status_code == 429:
+                    return None                          # daily/rate limit — let caller fall back
+                r.raise_for_status()
+                return _parse(r.json()["choices"][0]["message"]["content"])
+        except Exception:
+            if attempt == 0:
+                await asyncio.sleep(1.0)
+                continue
+            return None
+    return None
+
+
+async def _judge(criterion: str, texts: list[str]) -> tuple[set[int] | None, str]:
+    async with _SEM:
+        r = await _ollama(criterion, texts)
+        if r is not None:
+            return r, "ollama"
+        r = await _groq(criterion, texts)
+        if r is not None:
+            return r, "groq"
+    return None, "keyword"
+
+
 async def refine(pl: "P.QueryPlan", items: list[dict]) -> tuple[list[dict], str]:
-    """Window-filter → LLM-judge subjective dims (fallback to keyword) → sort → trim.
-    Returns (items, judged_by) where judged_by is 'llm', 'keyword', or 'none'."""
+    """Window-filter → LLM-judge subjective dims (fallback to keyword) → sort → trim."""
     out = list(items)
     if pl.window_minutes is not None:
         out = [it for it in out if (a := P._age_min(it)) is not None and a <= pl.window_minutes]
@@ -82,14 +116,11 @@ async def refine(pl: "P.QueryPlan", items: list[dict]) -> tuple[list[dict], str]
     crit = _criterion(pl)
     if crit and out:
         cand = out[:_MAX_JUDGE]
-        passed = await _groq(crit, [_text(it) for it in cand])
-        if passed is not None:                       # LLM ran
+        passed, judged = await _judge(crit, [_text(it) for it in cand])
+        if passed is not None:
             out = [it for i, it in enumerate(cand) if i in passed]
-            judged = "llm"
-        else:                                        # graceful fallback to keyword filters
-            judged = "keyword"
-            if pl.sentiment == "negative":
-                out = [it for it in out if P._is_negative(it)]
+        elif pl.sentiment == "negative":                 # keyword fallback
+            out = [it for it in out if P._is_negative(it)]
 
     if pl.anchor:
         tt, at = P._toks(pl.topic), P._toks(pl.anchor)

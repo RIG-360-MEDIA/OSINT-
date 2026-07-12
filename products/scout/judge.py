@@ -8,12 +8,17 @@ floor). The response is tagged "judged by llm|keyword" so it's transparent which
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import re
 
 import httpx
 
 import products.scout.plan as P
+
+# Cap concurrent Groq calls + retry once — the free tier is tokens/requests-per-minute limited,
+# and per-source judging can otherwise fire many calls at once and trip a 429.
+_SEM = asyncio.Semaphore(2)
 
 _GROQ_KEY = (os.environ.get("GROQ_API_KEYS", "") or os.environ.get("GROQ_API_KEY", "")).split(",")[0].strip()
 _GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -44,18 +49,26 @@ async def _groq(criterion: str, texts: list[str]) -> set[int] | None:
     sys = ("You are a strict content filter. Reply ONLY with a JSON array of the item numbers "
            "that clearly PASS the criterion. No prose, no explanation.")
     usr = f"CRITERION: {criterion}\n\nITEMS:\n{numbered}\n\nJSON array of passing item numbers:"
-    try:
-        async with httpx.AsyncClient(timeout=25) as client:
-            r = await client.post(_GROQ_URL,
-                                  headers={"Authorization": f"Bearer {_GROQ_KEY}"},
-                                  json={"model": _MODEL, "temperature": 0, "max_tokens": 300,
-                                        "messages": [{"role": "system", "content": sys},
-                                                     {"role": "user", "content": usr}]})
-            r.raise_for_status()
-            content = r.json()["choices"][0]["message"]["content"]
-        return {int(n) - 1 for n in re.findall(r"\d+", content)}
-    except Exception:
-        return None
+    payload = {"model": _MODEL, "temperature": 0, "max_tokens": 300,
+               "messages": [{"role": "system", "content": sys}, {"role": "user", "content": usr}]}
+    async with _SEM:
+        for attempt in range(2):
+            try:
+                async with httpx.AsyncClient(timeout=25) as client:
+                    r = await client.post(_GROQ_URL, headers={"Authorization": f"Bearer {_GROQ_KEY}"},
+                                          json=payload)
+                    if r.status_code == 429 and attempt == 0:
+                        await asyncio.sleep(2.0)
+                        continue
+                    r.raise_for_status()
+                    content = r.json()["choices"][0]["message"]["content"]
+                return {int(n) - 1 for n in re.findall(r"\d+", content)}
+            except Exception:
+                if attempt == 0:
+                    await asyncio.sleep(1.5)
+                    continue
+                return None
+    return None
 
 
 async def refine(pl: "P.QueryPlan", items: list[dict]) -> tuple[list[dict], str]:

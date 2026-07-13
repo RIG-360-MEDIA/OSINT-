@@ -143,7 +143,7 @@
    else if(!s.error)h+='<div class="empty">no matches</div>';
    return h+'</div>';
  }
- async function srcMap(){ if(!window.SRCMAP){ try{ var s=(await (await fetch("scout/sources")).json()).sources||[]; window.SRCMAP={}; s.forEach(x=>window.SRCMAP[x.name]=x.group);}catch(e){window.SRCMAP={};} } return window.SRCMAP; }
+ async function srcMap(){ if(!window.SRCMAP){ try{ var s=(await (await fetch("scout/sources")).json()).sources||[]; if(s.length){ var m={}; s.forEach(x=>m[x.name]=x.group); window.SRCMAP=m; } }catch(e){} } return window.SRCMAP||{}; }
  async function fanout(query, names, urlFor, planText){
    const t0=Date.now(); const map=await srcMap();
    window.SCOUT={tokens:query.toLowerCase().split(/\s+/).filter(Boolean),items:[]};
@@ -167,7 +167,10 @@
  }
  async function run(){
    const kw=$("#kw").value.trim(); if(!kw)return;
-   const map=await srcMap(); const lim=(($("#lim")||{}).value||10);
+   const lim=(($("#lim")||{}).value||10);
+   let map=await srcMap();
+   if(!Object.keys(map).length){ $("#bar").style.display=''; $("#bar").textContent="couldn't load the source list — Scout may be restarting; retrying…"; window.SRCMAP=null; map=await srcMap(); }
+   if(!Object.keys(map).length){ $("#bar").textContent="source list unavailable — is Scout running? try again in a moment"; return; }
    await fanout(kw, Object.keys(map), n=>"scout/one?name="+encodeURIComponent(n)+"&keyword="+encodeURIComponent(kw)+"&limit="+lim, "");
  }
  async function runAsk(){

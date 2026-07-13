@@ -101,4 +101,7 @@ def health() -> dict:
 
 @app.get("/")
 def index() -> FileResponse:
-    return FileResponse(_STATIC / "index.html")
+    # no-cache so UI fixes reach the browser immediately (the app is a single HTML file
+    # that changes often; a stale cached copy silently hides fixes).
+    return FileResponse(_STATIC / "index.html",
+                        headers={"Cache-Control": "no-cache, no-store, must-revalidate"})

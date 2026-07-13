@@ -150,8 +150,8 @@
    const specs=names.map(n=>({name:n,group:map[n]||'osint'}));
    const tb='<div class="toolbar"><button class="tbtn on" id="tb-bysrc" onclick="showBySource()">◱ By source</button><button class="tbtn" id="tb-merged" onclick="renderMerged()">⊕ Top merged · deduped · ranked</button><span style="flex:1"></span><button class="tbtn" onclick="allPanels(false)">▾ expand all</button><button class="tbtn" onclick="allPanels(true)">▸ collapse all</button></div>';
    $("#out").innerHTML=(planText?'<div class="planbar">🧭 '+esc(planText)+'</div>':'')+'<div class="cols">'+tb+'<div id="bysource">'+specs.map(skeleton).join("")+'</div><div id="merged" style="display:none"></div></div>';
-   let done=0,total=0,ok=0,bad=0;
-   const upd=()=>{$("#bar").textContent=total+' results · '+ok+'/'+specs.length+' sources · '+bad+' slow/failed · '+done+'/'+specs.length+' done · '+((Date.now()-t0)/1000).toFixed(1)+'s';};
+   let done=0,total=0,ok=0,bad=0,searched='';
+   const upd=()=>{$("#bar").textContent=total+' results · '+ok+'/'+specs.length+' sources · '+bad+' slow/failed · '+done+'/'+specs.length+' done · '+((Date.now()-t0)/1000).toFixed(1)+'s'+(searched?' · searched "'+searched+'"':'');};
    $("#bar").style.display=''; upd();
    await Promise.all(specs.map(async sp=>{
      let s;
@@ -161,6 +161,7 @@
      const wasOpen=el&&!el.classList.contains("collapsed");
      if(el) el.outerHTML=panel(s,!wasOpen);
      if(s.count) (s.items||[]).forEach(it=>window.SCOUT.items.push(Object.assign({_src:sp.name,_grp:sp.group},it)));
+     if(s.searched)searched=s.searched;
      done++; total+=s.count||0; if(s.count)ok++; if(s.error)bad++; upd();
    }));
  }

@@ -21,6 +21,7 @@ from typing import Any, Callable
 
 import httpx
 
+import products.scout.plan as P
 from backend.collectors.cheap_stack.keyword_search import REGISTRY as SOCIAL
 from products.osint.backend.academic_collector import academic_lookup
 from products.osint.backend.company_collector import company_lookup
@@ -185,11 +186,30 @@ SPECS.update({
     "tenders":   ("osint", lambda kw, lim: tender_search(kw, limit=lim), _ex_tender, "published", 35.0),
     "identity":  ("identity", _identity,                             _ex_identity, None,        120.0),
 })
+# WeChat does Sogou discovery + FULL-article content fetch + EN->ZH translation, so it's
+# genuinely slow (~40-80s). The default 25s social cap cut it off mid-flight → it always
+# looked "failed" when the honest state is "slow, and often empty for non-China topics".
+# Give it real headroom; it streams in last and never blocks the other panels.
+_wg, _wc, _we, _wd, _ = SPECS["wechat"]
+SPECS["wechat"] = (_wg, _wc, _we, _wd, 45.0)
+
 ORDER: list[str] = list(SPECS.keys())   # social first, then osint
 
 
 def source_list() -> list[dict]:
     return [{"name": n, "group": SPECS[n][0]} for n in ORDER]
+
+
+def _normalize_kw(keyword: str) -> str:
+    """Reduce a SENTENCE-like keyword to its core entity so every source searches the same
+    meaningful terms. Strict all-token sources (reddit/telegram/wechat) match the LITERAL
+    phrase, so "harmful content on indian army" (5 tokens, 3 of them filler) matches nothing
+    — while loose sources (tiktok/youtube) return noise. Stripping filler → "indian army"
+    makes all sources consistent. Short/clean keywords pass through unchanged (only rewrite
+    when cleaning actually drops tokens, and never to empty)."""
+    kw = (keyword or "").strip()
+    cleaned = P._clean_query(kw)
+    return cleaned if cleaned and len(cleaned.split()) < len(kw.split()) else kw
 
 
 async def run_one(name: str, keyword: str, limit: int = 8) -> dict:
@@ -198,8 +218,12 @@ async def run_one(name: str, keyword: str, limit: int = 8) -> dict:
     if not spec:
         return asdict(SourceResult(name, "?", False, 0, [], {}, None, "unknown source", 0.0))
     group, call, extract, date_key, timeout = spec
-    r = await _guard(name, group, lambda: call(keyword, limit), extract, date_key, timeout)
-    return asdict(r)
+    kw = _normalize_kw(keyword)
+    r = await _guard(name, group, lambda: call(kw, limit), extract, date_key, timeout)
+    d = asdict(r)
+    if kw != (keyword or "").strip():          # transparent: show what was actually searched
+        d["searched"] = kw
+    return d
 
 
 async def run_multi(name: str, queries: list[str], limit: int = 8) -> dict:

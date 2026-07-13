@@ -39,8 +39,10 @@ def _criterion(pl: "P.QueryPlan") -> str:
     parts = []
     if pl.sentiment == "negative":
         subj = pl.topic or pl.query
-        parts.append(f"the post is a genuinely hostile, hateful or harmful COMMENT about {subj} "
-                     "(an opinion/attack, NOT a neutral news headline)")
+        parts.append(f"the post is NEGATIVE toward {subj} in ANY way — criticism, hostility, an "
+                     f"attack, an accusation, controversy, or a damaging/harmful/critical claim about "
+                     f"{subj}. INCLUDE critical news and negative opinions. Exclude ONLY clearly "
+                     "neutral-factual, positive, or promotional posts")
     if pl.anchor:
         parts.append(f'the post is really about "{pl.topic}" AND reflects the viewpoint or '
                      f'discussion of "{pl.anchor}"')

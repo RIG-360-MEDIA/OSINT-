@@ -35,7 +35,6 @@ _load_local_env()
 from fastapi import FastAPI, Query                       # noqa: E402  (after env load)
 from fastapi.responses import FileResponse, JSONResponse  # noqa: E402
 
-import products.scout.judge as J                           # noqa: E402
 import products.scout.plan as P                            # noqa: E402
 import products.scout.sources as S                        # noqa: E402
 
@@ -88,11 +87,10 @@ async def ask_one(name: str = Query(..., max_length=40),
     # perspective → run the co-occurrence query set; otherwise the single query
     env = await S.run_multi(name, pl.queries or [pl.query], limit=min(fetch, 50))
     if env.get("items"):
-        items, judged = await J.refine(pl, env["items"])
-        env["items"] = items
-        env["count"] = len(items)
+        env["items"] = P.apply_plan(pl, env["items"])
+        env["count"] = len(env["items"])
         if pl.sentiment or pl.anchor:
-            env["note"] = ((env.get("note") or "") + f" · judged by {judged}").strip(" ·")
+            env["note"] = ((env.get("note") or "") + " · keyword-filtered").strip(" ·")
     return JSONResponse(env)
 
 

@@ -1294,46 +1294,90 @@ async def _wechat_discover(query: str, session: Any, want: int) -> list[str]:
     return [u for u in urls if not (u in seen or seen.add(u))][:want]
 
 
+# ── Sogou SERP (article-search) parser — the FAST WeChat path ────────────────
+# Sogou's article search already returns title/snippet/account/date/link per hit, so we
+# build results straight from the results page. The OLD path then fetched each article's
+# FULL body from mp.weixin.qq.com, which hangs ~20s/article from a non-China IP → 45-80s
+# and frequent zero. The SERP carries everything a keyword result needs; the link opens
+# the full article on click (lazy — not fetched during search).
+_SG_BLOCK = re.compile(r'<h3>\s*<a[^>]*href="([^"]+)"[^>]*>(.*?)</a>', re.DOTALL)
+_SG_SNIP = re.compile(r'txt-info[^>]*>(.*?)</p>', re.DOTALL)
+_SG_TS = re.compile(r"timeConvert\('(\d+)'\)")
+_SG_ACCT = re.compile(r'account"[^>]*>(.*?)</a>', re.DOTALL)
+
+
+def _sogou_serp_to_posts(html: str, query: str) -> list[dict[str, Any]]:
+    """Parse a Sogou Weixin article-search results page into social_posts dicts."""
+    posts: list[dict[str, Any]] = []
+    for li in html.split('<li id="sogou_vr')[1:]:
+        h = _SG_BLOCK.search(li)
+        if not h:
+            continue
+        href = unescape(h.group(1))
+        title = unescape(_TG_STRIP.sub("", h.group(2))).strip()
+        if not title:
+            continue
+        sn = _SG_SNIP.search(li)
+        snippet = unescape(_TG_STRIP.sub(" ", sn.group(1))).strip()[:600] if sn else ""
+        acct = _SG_ACCT.search(li)
+        account = unescape(_TG_STRIP.sub("", acct.group(1))).strip() if acct else ""
+        ts = _SG_TS.search(li)
+        url = ("https://weixin.sogou.com" + href) if href.startswith("/link") else href
+        posts.append({
+            "platform": "wechat",
+            "platform_post_id": _wx_post_id(href),
+            "author_username": account,
+            "post_text": (title + ((" — " + snippet) if snippet else ""))[:2000],
+            "post_url": url,
+            "upvotes": 0,
+            "comment_count": 0,
+            "posted_at": _iso(int(ts.group(1))) if ts else "",
+            "matched_keyword": query,
+            "account": account,
+            "title": title,
+            "snippet": snippet,        # full body lives at post_url (opened on click)
+        })
+    return posts
+
+
 async def search_wechat(
     query: str, *, limit: int = 25,
 ) -> KeywordSearchResult:
-    """Keyword search over PUBLIC WeChat Official-Account articles.
+    """Keyword search over PUBLIC WeChat Official-Account articles (Sogou Weixin index).
 
-    DISCOVER via search-index (`site:mp.weixin.qq.com`, no China IP) + FETCH each
-    article's full content (curl_cffi, works from datacenter). Chinese-language.
-    Moments / private accounts / DMs are OFF-LIMITS.
+    FAST SERP path: Sogou's article search (type=2) already returns title/snippet/account/
+    date/link per hit, so results are built directly from the results page — NO per-article
+    full-body fetch (that hangs ~20s/article from a non-China IP → the old 45-80s + zero).
+    Searches the English keyword AND its Chinese translation (Chinese-language platform);
+    the link opens the full article. Moments / private accounts / DMs are OFF-LIMITS.
     """
-    method = "sogou_weixin+zh_map+content_fetch"
+    method = "sogou_weixin_serp+zh"
     started = time.monotonic()
-    note = ("public WeChat Official-Account articles via Sogou Weixin (Tencent's "
-            "official WeChat search; search-index fallback) + EN->ZH term mapping "
-            "+ full-content fetch; Chinese-language; Moments/private OFF-LIMITS")
-
+    note = ("public WeChat Official-Account articles via Sogou Weixin (Tencent's official "
+            "WeChat index) + EN->ZH term expansion; links open the full article; "
+            "Chinese-language; Moments/private OFF-LIMITS")
     try:
         from curl_cffi.requests import AsyncSession
 
         async with AsyncSession() as s:
-            # EN -> [en, zh] so English keywords hit this Chinese-language platform
-            terms = await _wechat_query_terms(query, s)
+            terms = await _wechat_query_terms(query, s)      # [en, zh]
             match_toks = [t.lower() for t in terms]
+            await s.get("https://weixin.sogou.com/", headers=_WX_UA,
+                        impersonate="chrome", timeout=15)
 
-            url_terms: dict[str, str] = {}   # article url -> the term that found it
-            for term in terms:
-                for u in await _wechat_discover(term, s, limit):
-                    url_terms.setdefault(u, term)
+            async def _serp(term: str) -> list[dict[str, Any]]:
+                try:
+                    r = await s.get(
+                        "https://weixin.sogou.com/weixin",
+                        params={"type": "2", "query": term, "ie": "utf8", "s_from": "input"},
+                        headers={**_WX_UA, "Referer": "https://weixin.sogou.com/"},
+                        impersonate="chrome", timeout=20,
+                    )
+                    return _sogou_serp_to_posts(r.text, term) if r.status_code == 200 else []
+                except Exception:
+                    return []
 
-            sem = asyncio.Semaphore(5)
-
-            async def _one(item: tuple[str, str]) -> Optional[dict[str, Any]]:
-                u, term = item
-                async with sem:
-                    try:
-                        r = await s.get(u, impersonate="chrome", timeout=20)
-                        return _wechat_parse(u, r.text, term) if r.status_code == 200 else None
-                    except Exception:
-                        return None
-
-            results = await asyncio.gather(*[_one(it) for it in url_terms.items()])
+            batches = await asyncio.gather(*[_serp(t) for t in terms])
     except Exception as exc:
         return KeywordSearchResult(
             platform="wechat", method=method, query=query, ok=False,
@@ -1341,39 +1385,29 @@ async def search_wechat(
             elapsed_s=time.monotonic() - started,
         )
 
-    # Relevance: on this Chinese-language platform the CHINESE term (导弹) is the
-    # authoritative signal. An English-only hit is usually a brand/incidental
-    # match (e.g. "MISSILE" the mountain-bike brand, which never says 导弹). So:
-    # prefer articles carrying the Chinese term; fall back to any-term ONLY if
-    # the Chinese term found nothing (preserves recall on transliterated topics).
+    # Sogou already searched the exact term, so results are on-topic. Light relevance guard:
+    # prefer the Chinese term (authoritative on this platform); fall back to any-term.
     zh_toks = [t for t in match_toks if _has_cjk(t)]
 
     def _hay(p: dict[str, Any]) -> str:
-        return (p["title"] + " " + p["content"] + " " + p["account"]).lower()
+        return (p["title"] + " " + p["snippet"] + " " + p["account"]).lower()
 
-    valid = [p for p in results if p]
-    zh_hits = ([p for p in valid if any(t in _hay(p) for t in zh_toks)]
-               if zh_toks else [])
-    kept = zh_hits or [
-        p for p in valid if not match_toks or any(t in _hay(p) for t in match_toks)]
+    valid = [p for batch in batches for p in batch]
+    zh_hits = ([p for p in valid if any(t in _hay(p) for t in zh_toks)] if zh_toks else [])
+    kept = zh_hits or [p for p in valid if not match_toks or any(t in _hay(p) for t in match_toks)]
 
+    # Dedup by title (the same article surfaces under both the EN and ZH search).
     posts: dict[str, dict[str, Any]] = {}
     for p in kept:
-        posts.setdefault(p["platform_post_id"], p)
+        posts.setdefault(p["title"][:80] or p["platform_post_id"], p)
 
-    # Freshness gate: drop truly ancient articles (keeps the rare recent China
-    # signal, cuts the years-old ones surfacing as if current).
-    fresh = {pid: p for pid, p in posts.items()
+    fresh = {k: p for k, p in posts.items()
              if (_age_days(p.get("posted_at")) or 1e9) <= _WX_MAX_POST_AGE_DAYS}
-    dropped_off = len(valid) - len(kept)
     dropped_old = len(posts) - len(fresh)
-    if dropped_off:
-        note += f"; dropped {dropped_off} off-topic (English-brand/incidental)"
     if dropped_old:
         note += f"; dropped {dropped_old} stale article(s) >{_WX_MAX_POST_AGE_DAYS}d"
 
-    ordered = sorted(fresh.values(), key=lambda x: x.get("posted_at") or "",
-                     reverse=True)
+    ordered = sorted(fresh.values(), key=lambda x: x.get("posted_at") or "", reverse=True)
     return KeywordSearchResult(
         platform="wechat", method=method, query=query, ok=True,
         posts=tuple(ordered[:limit]), note=note,

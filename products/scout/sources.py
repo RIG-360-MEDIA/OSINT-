@@ -186,13 +186,6 @@ SPECS.update({
     "tenders":   ("osint", lambda kw, lim: tender_search(kw, limit=lim), _ex_tender, "published", 35.0),
     "identity":  ("identity", _identity,                             _ex_identity, None,        120.0),
 })
-# WeChat does Sogou discovery + FULL-article content fetch + EN->ZH translation, so it's
-# genuinely slow (~40-80s). The default 25s social cap cut it off mid-flight → it always
-# looked "failed" when the honest state is "slow, and often empty for non-China topics".
-# Give it real headroom; it streams in last and never blocks the other panels.
-_wg, _wc, _we, _wd, _ = SPECS["wechat"]
-SPECS["wechat"] = (_wg, _wc, _we, _wd, 45.0)
-
 ORDER: list[str] = list(SPECS.keys())   # social first, then osint
 
 

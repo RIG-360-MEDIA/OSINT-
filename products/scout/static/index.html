@@ -143,7 +143,14 @@
    else if(!s.error)h+='<div class="empty">no matches</div>';
    return h+'</div>';
  }
- async function srcMap(){ if(!window.SRCMAP){ try{ var s=(await (await fetch("scout/sources")).json()).sources||[]; if(s.length){ var m={}; s.forEach(x=>m[x.name]=x.group); window.SRCMAP=m; } }catch(e){} } return window.SRCMAP||{}; }
+ async function srcMap(){
+   if(window.SRCMAP) return window.SRCMAP;
+   for(let attempt=0; attempt<4 && !window.SRCMAP; attempt++){          // survive a brief app restart
+     try{ var s=(await (await fetch("scout/sources")).json()).sources||[]; if(s.length){ var m={}; s.forEach(x=>m[x.name]=x.group); window.SRCMAP=m; break; } }catch(e){}
+     await new Promise(r=>setTimeout(r,1200));
+   }
+   return window.SRCMAP||{};
+ }
  async function fanout(query, names, urlFor, planText){
    const t0=Date.now(); const map=await srcMap();
    window.SCOUT={tokens:query.toLowerCase().split(/\s+/).filter(Boolean),items:[]};

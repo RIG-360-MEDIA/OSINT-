@@ -109,7 +109,12 @@ async def _judge(criterion: str, texts: list[str]) -> tuple[set[int] | None, str
 
 
 async def refine(pl: "P.QueryPlan", items: list[dict]) -> tuple[list[dict], str]:
-    """Window-filter → LLM-judge subjective dims (fallback to keyword) → sort → trim."""
+    """Window-filter → LLM-judge subjective dims (fallback to keyword) → sort → trim.
+
+    The judge scores the WHOLE candidate pool in batches of _MAX_JUDGE — not just the
+    first 18 — so a large source pool (e.g. 66 tweets) is fully evaluated rather than
+    silently truncated. The per-process semaphore still caps GPU concurrency at 2.
+    """
     out = list(items)
     if pl.window_minutes is not None:
         out = [it for it in out if (a := P._age_min(it)) is not None and a <= pl.window_minutes]
@@ -117,12 +122,21 @@ async def refine(pl: "P.QueryPlan", items: list[dict]) -> tuple[list[dict], str]
     judged = "none"
     crit = _criterion(pl)
     if crit and out:
-        cand = out[:_MAX_JUDGE]
-        passed, judged = await _judge(crit, [_text(it) for it in cand])
-        if passed is not None:
-            out = [it for i, it in enumerate(cand) if i in passed]
-        elif pl.sentiment == "negative":                 # keyword fallback
-            out = [it for it in out if P._is_negative(it)]
+        chunks = [out[i:i + _MAX_JUDGE] for i in range(0, len(out), _MAX_JUDGE)]
+        results = await asyncio.gather(
+            *(_judge(crit, [_text(it) for it in ch]) for ch in chunks))
+        backends = {b for _, b in results}
+        judged = ("ollama" if "ollama" in backends else
+                  "groq" if "groq" in backends else "keyword")
+        kept: list[dict] = []
+        for ch, (passed, _b) in zip(chunks, results):
+            if passed is not None:                       # LLM scored this chunk
+                kept.extend(it for i, it in enumerate(ch) if i in passed)
+            elif pl.sentiment == "negative":             # both backends down → keyword floor
+                kept.extend(it for it in ch if P._is_negative(it))
+            else:                                        # no keyword rule → keep as-is
+                kept.extend(ch)
+        out = kept
 
     if pl.anchor:
         tt, at = P._toks(pl.topic), P._toks(pl.anchor)

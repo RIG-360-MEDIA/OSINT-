@@ -995,6 +995,27 @@ async def search_instagram(
     """
     method = "searxng_discover+feed_realtime"
     started = time.monotonic()
+
+    # Reality check (verified July 2026): logged-out Instagram is fully walled.
+    #   • No free search engine indexes IG captions anymore — `site:instagram.com "kw"`
+    #     returns 0 organic results on Bing/Google and a bot-challenge (HTTP 202) on DDG.
+    #   • Logged-out web_profile_info hands back text-LESS, 2013-era stub posts (no caption
+    #     to keyword-match, no freshness) — useless for a keyword read.
+    # The ONLY path to captioned, fresh IG content is the auth-gated feed endpoint, which
+    # needs a valid INSTA_SESSIONID. Without it, fail HONESTLY and actionably (per this
+    # module's contract: ok=False distinguishes "no session" from "genuine zero match")
+    # rather than running a doomed discovery that always returns 0 with a confusing note.
+    if not os.getenv("INSTA_SESSIONID", "").strip():
+        return KeywordSearchResult(
+            platform="instagram", method="needs_session", query=query, ok=False,
+            error="Instagram needs a logged-in session (set INSTA_SESSIONID)",
+            note=("logged-out IG exposes no keyword-searchable content: no free engine "
+                  "indexes IG captions, and anonymous web_profile_info returns text-less "
+                  "2013 stub posts. Provide a fresh, non-checkpointed INSTA_SESSIONID "
+                  "cookie to enable real-time keyword search over matched accounts."),
+            elapsed_s=time.monotonic() - started,
+        )
+
     note = ("global keyword search: login-free search-index discovery + authed "
             "feed-endpoint real-time refresh of matched accounts; brand-new "
             "un-indexed accounts not caught")

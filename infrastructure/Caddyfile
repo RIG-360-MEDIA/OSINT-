@@ -1,12 +1,19 @@
 # RIG SURVEILLANCE - Caddy (night-desk only; legacy sites decommissioned 2026-06-10)
 # Public URL: https://desk.rig360media.com/
 
-desk.rig360media.com {
+desk.rig360media.com, robin-osi.rig360media.com {
     encode gzip zstd
 
     # Same-origin API: /osint/* -> osint-backend (no CORS)
     handle_path /osint/* {
         reverse_proxy osint-backend:8000
+    }
+
+    # Ask-RIG agentic chat (SSE - flush_interval -1 keeps tokens streaming live)
+    handle_path /ask/* {
+        reverse_proxy rig-askrig:8010 {
+            flush_interval -1
+        }
     }
 
     # Night-desk SPA: static files + history-API fallback
@@ -23,19 +30,27 @@ desk.rig360media.com {
         Referrer-Policy "strict-origin-when-cross-origin"
     }
 
+    # Hashed assets immutable; HTML revalidates so deploys show without a hard-refresh
+    @assets path /assets/*
+    header @assets Cache-Control "public, max-age=31536000, immutable"
+    @html {
+        not path /assets/*
+    }
+    header @html Cache-Control "no-cache, must-revalidate"
+
     log {
         output stdout
     }
 }
-mc.178-105-63-154.nip.io {
+mc.178-104-145-135.nip.io {
     encode gzip zstd
     basic_auth {
-        admin $2a$14$Yy57e5ic1IsvcJ9mcMIKQOwxIlqFTfWERsx0qc4JBkHbxJM/E0Dr.
+        admin REDACTED-BCRYPT-SET-ON-BOX
     }
     reverse_proxy mc-frontend:3030
 }
 
-mc-api.178-105-63-154.nip.io {
+mc-api.178-104-145-135.nip.io {
     encode gzip zstd
     @public path /public/*
     handle @public {
@@ -46,3 +61,75 @@ mc-api.178-105-63-154.nip.io {
     }
 }
 
+ukapi.178-104-145-135.nip.io {
+	encode gzip zstd
+	@api path /api/* /health
+	handle @api {
+		reverse_proxy rig-backend:8799
+	}
+	handle {
+		respond "Not found" 404
+	}
+}
+
+uklive.178-104-145-135.nip.io {
+	encode gzip zstd
+	reverse_proxy rig-backend:8799
+}
+
+uttarakhand.democracynewslive.com {
+	encode gzip zstd
+	reverse_proxy rig-backend:8799
+}
+
+# Client API gateway — dedicated host. /v1/* -> osint-backend (path preserved).
+# Staff /v1/admin/* blocked here (stays internal via /osint/v1/admin).
+api.rig360media.com {
+    encode gzip zstd
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+    }
+    @admin path /v1/admin/*
+    handle @admin {
+        respond "Not found" 404
+    }
+    handle /v1/* {
+        reverse_proxy osint-backend:8000
+    }
+    redir /geo /geo/
+    handle_path /geo/* {
+        reverse_proxy riggeo:8700
+    }
+    redir /media /media/
+    handle_path /media/* {
+        reverse_proxy rigmedia:8701
+    }
+    redir /identity /identity/
+    handle_path /identity/* {
+        reverse_proxy rigident:8702
+    }
+    # Scout — app routes are baked as /scout/*, so DON'T strip the prefix.
+    # The app's only un-prefixed routes are / (UI) and /health -> map them explicitly.
+    handle /scout/health {
+        rewrite * /health
+        reverse_proxy rigscout:8610
+    }
+    handle /scout {
+        rewrite * /
+        reverse_proxy rigscout:8610
+    }
+    handle /scout/ {
+        rewrite * /
+        reverse_proxy rigscout:8610
+    }
+    handle /scout/* {
+        reverse_proxy rigscout:8610
+    }
+    handle {
+        respond "Not found" 404
+    }
+    log {
+        output stdout
+    }
+}

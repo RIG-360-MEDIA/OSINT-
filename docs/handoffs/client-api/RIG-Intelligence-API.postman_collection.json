@@ -1,0 +1,1073 @@
+{
+  "info": {
+    "name": "RIG Intelligence API (v1)",
+    "description": "Read API over your provisioned intelligence scope — news articles, newspaper cuttings, and YouTube — with directed sentiment, grouped stories, geography, briefings, and programmatic control of your own coverage scope.\n\nAuthenticate with your key as `Authorization: Bearer rig_live_…` (or `X-API-Key`). Your key encodes your organisation and scope; every response is filtered to it.\n\nSet the `apiKey` collection variable to your `rig_live_…` key.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{apiKey}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.rig360media.com",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "rig_live_REPLACE_ME",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "scope",
+      "item": [
+        {
+          "name": "Read your org's provisioned scope",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/scope",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "scope"
+              ]
+            },
+            "description": "Read your org's provisioned scope"
+          }
+        },
+        {
+          "name": "Manage your scope (management key required)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/scope",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "scope"
+              ]
+            },
+            "description": "Manage your scope (management key required)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Explicitly purge your scope + webhooks (confirm required)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/scope/purge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "scope",
+                "purge"
+              ]
+            },
+            "description": "Explicitly purge your scope + webhooks (confirm required)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "entities",
+      "item": [
+        {
+          "name": "List your provisioned entities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/entities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "entities"
+              ]
+            },
+            "description": "List your provisioned entities"
+          }
+        },
+        {
+          "name": "Profile of one entity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/entities/{entity_id}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "entities",
+                ":entity_id"
+              ],
+              "variable": [
+                {
+                  "key": "entity_id",
+                  "value": "",
+                  "description": "required"
+                }
+              ]
+            },
+            "description": "Profile of one entity"
+          }
+        },
+        {
+          "name": "All coverage about one entity (articles + clips + cuttings)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/entities/{entity_id}/coverage?pillar=all&entity=&topic=&match=any&sentiment=&window=7&language=&source=&limit=20&cursor=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "entities",
+                ":entity_id",
+                "coverage"
+              ],
+              "query": [
+                {
+                  "key": "pillar",
+                  "value": "all",
+                  "description": "Which pillars to include",
+                  "disabled": true
+                },
+                {
+                  "key": "entity",
+                  "value": "",
+                  "description": "Entity id(s) to filter by (repeatable)",
+                  "disabled": true
+                },
+                {
+                  "key": "topic",
+                  "value": "",
+                  "description": "Topic(s) to filter by (repeatable)",
+                  "disabled": true
+                },
+                {
+                  "key": "match",
+                  "value": "any",
+                  "description": "Combine filters with OR (any) or AND (all)",
+                  "disabled": true
+                },
+                {
+                  "key": "sentiment",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "window",
+                  "value": "7",
+                  "description": "Days to look back",
+                  "disabled": true
+                },
+                {
+                  "key": "language",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "source",
+                  "value": "",
+                  "description": "Outlet name(s) to filter by (repeatable) — drill-down from /analytics/outlets",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page (values above 100 are clamped to 100)",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ],
+              "variable": [
+                {
+                  "key": "entity_id",
+                  "value": "",
+                  "description": "required"
+                }
+              ]
+            },
+            "description": "All coverage about one entity (articles + clips + cuttings)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "coverage",
+      "item": [
+        {
+          "name": "Filterable coverage feed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/articles?entity=&topic=&match=any&sentiment=&window=7&language=&source=&limit=20&cursor=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "articles"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "",
+                  "description": "Entity id(s) to filter by (repeatable)",
+                  "disabled": true
+                },
+                {
+                  "key": "topic",
+                  "value": "",
+                  "description": "Topic(s) to filter by (repeatable)",
+                  "disabled": true
+                },
+                {
+                  "key": "match",
+                  "value": "any",
+                  "description": "Combine filters with OR (any) or AND (all)",
+                  "disabled": true
+                },
+                {
+                  "key": "sentiment",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "window",
+                  "value": "7",
+                  "description": "Days to look back",
+                  "disabled": true
+                },
+                {
+                  "key": "language",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "source",
+                  "value": "",
+                  "description": "Outlet name(s) to filter by (repeatable) — drill-down from /analytics/outlets",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page (values above 100 are clamped to 100)",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Filterable coverage feed"
+          }
+        },
+        {
+          "name": "A single coverage item",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/articles/{article_id}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "articles",
+                ":article_id"
+              ],
+              "variable": [
+                {
+                  "key": "article_id",
+                  "value": "",
+                  "description": "required"
+                }
+              ]
+            },
+            "description": "A single coverage item"
+          }
+        }
+      ]
+    },
+    {
+      "name": "cuttings",
+      "item": [
+        {
+          "name": "Newspaper cuttings feed (full text), scoped",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cuttings?before=&entity=&topic=&match=any&sentiment=&window=7&language=&source=&limit=20&cursor=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cuttings"
+              ],
+              "query": [
+                {
+                  "key": "before",
+                  "value": "",
+                  "description": "ISO timestamp cursor — return cuttings collected strictly before this (from the previous page's next_before)",
+                  "disabled": true
+                },
+                {
+                  "key": "entity",
+                  "value": "",
+                  "description": "Entity id(s) to filter by (repeatable)",
+                  "disabled": true
+                },
+                {
+                  "key": "topic",
+                  "value": "",
+                  "description": "Topic(s) to filter by (repeatable)",
+                  "disabled": true
+                },
+                {
+                  "key": "match",
+                  "value": "any",
+                  "description": "Combine filters with OR (any) or AND (all)",
+                  "disabled": true
+                },
+                {
+                  "key": "sentiment",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "window",
+                  "value": "7",
+                  "description": "Days to look back",
+                  "disabled": true
+                },
+                {
+                  "key": "language",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "source",
+                  "value": "",
+                  "description": "Outlet name(s) to filter by (repeatable) — drill-down from /analytics/outlets",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page (values above 100 are clamped to 100)",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Newspaper cuttings feed (full text), scoped"
+          }
+        },
+        {
+          "name": "One newspaper cutting, full text",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/cuttings/{cutting_id}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "cuttings",
+                ":cutting_id"
+              ],
+              "variable": [
+                {
+                  "key": "cutting_id",
+                  "value": "",
+                  "description": "required"
+                }
+              ]
+            },
+            "description": "One newspaper cutting, full text"
+          }
+        }
+      ]
+    },
+    {
+      "name": "clips",
+      "item": [
+        {
+          "name": "Full transcript of a clip you surfaced (strict on-demand)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/clips/{clip_id}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "clips",
+                ":clip_id"
+              ],
+              "variable": [
+                {
+                  "key": "clip_id",
+                  "value": "",
+                  "description": "required"
+                }
+              ]
+            },
+            "description": "Full transcript of a clip you surfaced (strict on-demand)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "stories",
+      "item": [
+        {
+          "name": "Surfaceable grouped stories (v9 clusters), scoped to your provisioning",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/stories?entity=&country=&cursor=&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "stories"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "",
+                  "description": "Narrow to one or more of your entities (entity-only view)",
+                  "disabled": true
+                },
+                {
+                  "key": "country",
+                  "value": "",
+                  "description": "ISO 2-letter subject country filter",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Surfaceable grouped stories (v9 clusters), scoped to your provisioning"
+          }
+        },
+        {
+          "name": "One story: metadata + timeline + outlet breakdown",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/stories/{story_id}?limit=60",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "stories",
+                ":story_id"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "60",
+                  "description": "Max timeline (member) articles",
+                  "disabled": true
+                }
+              ],
+              "variable": [
+                {
+                  "key": "story_id",
+                  "value": "",
+                  "description": "required"
+                }
+              ]
+            },
+            "description": "One story: metadata + timeline + outlet breakdown"
+          }
+        }
+      ]
+    },
+    {
+      "name": "briefings",
+      "item": [
+        {
+          "name": "Today's digest — top stories in your scope, grouped by topic",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/brief/today?limit=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "brief",
+                "today"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "30",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Today's digest — top stories in your scope, grouped by topic"
+          }
+        },
+        {
+          "name": "Rolling situation summary across your scope",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/brief/situation?limit=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "brief",
+                "situation"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "30",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Rolling situation summary across your scope"
+          }
+        },
+        {
+          "name": "The digest for a given day (defaults to current)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/brief/daily?date=&limit=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "brief",
+                "daily"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "",
+                  "description": "ISO date YYYY-MM-DD (v1 returns the current scope digest)",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "30",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "The digest for a given day (defaults to current)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "geography",
+      "item": [
+        {
+          "name": "District-level coverage counts by state, scoped",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/geo/coverage?window=7",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "geo",
+                "coverage"
+              ],
+              "query": [
+                {
+                  "key": "window",
+                  "value": "7",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "District-level coverage counts by state, scoped"
+          }
+        },
+        {
+          "name": "Coverage for one district (slug)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/geo/district/{district_id}?window=7&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "geo",
+                "district",
+                ":district_id"
+              ],
+              "query": [
+                {
+                  "key": "window",
+                  "value": "7",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                }
+              ],
+              "variable": [
+                {
+                  "key": "district_id",
+                  "value": "",
+                  "description": "required"
+                }
+              ]
+            },
+            "description": "Coverage for one district (slug)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "analytics",
+      "item": [
+        {
+          "name": "Most-covered topics in your scope",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/analytics/topics?window=7&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "analytics",
+                "topics"
+              ],
+              "query": [
+                {
+                  "key": "window",
+                  "value": "7",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Most-covered topics in your scope"
+          }
+        },
+        {
+          "name": "Per-outlet coverage & lean toward an entity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/analytics/outlets?entity=&window=7&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "analytics",
+                "outlets"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "",
+                  "description": "Entity id whose per-outlet coverage to break down (required)",
+                  "disabled": false
+                },
+                {
+                  "key": "window",
+                  "value": "7",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Per-outlet coverage & lean toward an entity"
+          }
+        },
+        {
+          "name": "Directed sentiment toward an entity (name or id) + daily trend",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/analytics/sentiment?entity=&window=7&include_youtube=False",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "analytics",
+                "sentiment"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "",
+                  "description": "Entity id OR name to measure sentiment toward (required)",
+                  "disabled": false
+                },
+                {
+                  "key": "window",
+                  "value": "7",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "include_youtube",
+                  "value": "False",
+                  "description": "Also live-score YouTube clips for this entity's name and add a 'youtube' pillar (slower; on-demand LLM, not pre-computed)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Directed sentiment toward an entity (name or id) + daily trend"
+          }
+        },
+        {
+          "name": "Coverage volume over time",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/analytics/coverage?window=7",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "analytics",
+                "coverage"
+              ],
+              "query": [
+                {
+                  "key": "window",
+                  "value": "7",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Coverage volume over time"
+          }
+        },
+        {
+          "name": "On-demand two-field sentiment for an arbitrary keyword",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/analytics/keyword-sentiment?keyword=&window=7&refresh=False&scope=False&pillars=articles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "analytics",
+                "keyword-sentiment"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "description": "Any word or phrase (need not be a provisioned entity) (required)",
+                  "disabled": false
+                },
+                {
+                  "key": "window",
+                  "value": "7",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "refresh",
+                  "value": "False",
+                  "description": "Bypass the cache and recompute",
+                  "disabled": true
+                },
+                {
+                  "key": "scope",
+                  "value": "False",
+                  "description": "Constrain discovery to your provisioned entities/region (recommended for generic keywords)",
+                  "disabled": true
+                },
+                {
+                  "key": "pillars",
+                  "value": "articles",
+                  "description": "Search news articles, YouTube clips, or both",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "On-demand two-field sentiment for an arbitrary keyword"
+          }
+        }
+      ]
+    },
+    {
+      "name": "webhooks",
+      "item": [
+        {
+          "name": "List your webhook subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhooks"
+              ]
+            },
+            "description": "List your webhook subscriptions"
+          }
+        },
+        {
+          "name": "Create a webhook subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhooks"
+              ]
+            },
+            "description": "Create a webhook subscription",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete a webhook subscription",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhooks/{webhook_id}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhooks",
+                ":webhook_id"
+              ],
+              "variable": [
+                {
+                  "key": "webhook_id",
+                  "value": "",
+                  "description": "required"
+                }
+              ]
+            },
+            "description": "Delete a webhook subscription"
+          }
+        }
+      ]
+    },
+    {
+      "name": "usage",
+      "item": [
+        {
+          "name": "Your current period usage",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/usage",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "usage"
+              ]
+            },
+            "description": "Your current period usage"
+          }
+        }
+      ]
+    },
+    {
+      "name": "meta",
+      "item": [
+        {
+          "name": "Liveness probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "health"
+              ]
+            },
+            "description": "Liveness probe"
+          }
+        }
+      ]
+    }
+  ]
+}

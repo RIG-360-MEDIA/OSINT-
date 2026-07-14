@@ -1,0 +1,744 @@
+<meta charset="utf-8">
+<title>RIG Intelligence API — Reference</title>
+<style>
+  :root{
+    --ink:#141b24; --ink-soft:#39434f; --muted:#68727d; --faint:#98a2ac;
+    --line:#e4e8ec; --line-soft:#eef1f4; --bg:#ffffff; --bg-soft:#f7f9fa;
+    --accent:#0f6b5c; --accent-soft:#e7f2ef; --accent-line:#bfe0d7;
+    --get:#1a7f5a; --get-bg:#e8f4ee; --post:#1f6f9e; --post-bg:#e8f1f8;
+    --patch:#9a6a12; --patch-bg:#f7efda; --delete:#b23b3b; --delete-bg:#f8e9e9;
+    --code-bg:#f6f8fa; --code-line:#e6eaed; --code-ink:#243b45;
+    --sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    --mono:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{margin:0;font-family:var(--sans);color:var(--ink);font-size:10.2pt;line-height:1.5}
+  h1,h2,h3,h4{line-height:1.2;font-weight:650;letter-spacing:-.01em;color:var(--ink)}
+  p{margin:.5em 0}
+  a{color:var(--accent);text-decoration:none}
+  code{font-family:var(--mono);font-size:.86em;background:var(--code-bg);border:1px solid var(--code-line);
+    border-radius:4px;padding:.06em .34em;color:var(--code-ink)}
+  pre{font-family:var(--mono);font-size:8.4pt;line-height:1.5;background:var(--code-bg);border:1px solid var(--code-line);
+    border-radius:7px;padding:11px 13px;overflow:auto;color:var(--code-ink);white-space:pre-wrap;word-break:break-word;
+    margin:.5em 0;page-break-inside:avoid}
+  pre code{background:none;border:none;padding:0;font-size:1em;color:inherit}
+  .eyebrow{font-family:var(--mono);font-size:8pt;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:9pt;margin:.6em 0;page-break-inside:avoid}
+  th,td{text-align:left;padding:6px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:7.6pt;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;
+    background:var(--bg-soft);border-bottom:1px solid var(--line)}
+  tr{page-break-inside:avoid}
+  td code{font-size:.82em}
+  .req{color:var(--delete);font-weight:600;font-size:8pt}
+
+  /* ── cover ── */
+  .cover{min-height:245mm;display:flex;flex-direction:column;page-break-after:always;position:relative}
+  .cover .brandrow{display:flex;align-items:center;gap:10px;padding-top:4mm}
+  .cover .mark{width:26px;height:26px;border-radius:6px;background:var(--accent);position:relative;flex:none}
+  .cover .mark::after{content:"";position:absolute;inset:7px;border:2px solid #fff;border-radius:2px}
+  .cover .brand{font-weight:700;letter-spacing:.02em;font-size:12pt}
+  .cover .center{margin:auto 0}
+  .cover h1{font-size:33pt;margin:0 0 6px;letter-spacing:-.02em}
+  .cover .lede{font-size:12.5pt;color:var(--ink-soft);max-width:135mm;line-height:1.45}
+  .cover .accentbar{width:54px;height:4px;background:var(--accent);border-radius:2px;margin:14px 0 22px}
+  .cover .metagrid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--line);margin-top:8mm}
+  .cover .metagrid div{padding:10px 0;border-bottom:1px solid var(--line-soft)}
+  .cover .metagrid .k{font-family:var(--mono);font-size:7.6pt;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .cover .metagrid .v{font-size:10pt;color:var(--ink);margin-top:2px}
+  .cover .foot{position:absolute;bottom:0;left:0;right:0;font-family:var(--mono);font-size:7.6pt;color:var(--faint);
+    border-top:1px solid var(--line);padding-top:6px;display:flex;justify-content:space-between}
+  .confid{color:var(--delete);font-weight:600}
+
+  /* ── structure ── */
+  .part{page-break-before:always;padding-top:2mm}
+  h2.sec{font-size:17pt;margin:0 0 2px;padding-bottom:7px;border-bottom:2px solid var(--ink)}
+  h2.sec .n{font-family:var(--mono);color:var(--accent);font-size:12pt;margin-right:10px}
+  .sub{color:var(--muted);margin:0 0 14px;font-size:10pt}
+  h3{font-size:12.5pt;margin:18px 0 4px}
+  h4{font-size:10.5pt;margin:14px 0 3px;color:var(--ink-soft)}
+
+  /* ── endpoint card ── */
+  .ep{border:1px solid var(--line);border-radius:9px;padding:13px 15px;margin:12px 0;page-break-inside:avoid;background:var(--bg)}
+  .ep.br{page-break-inside:auto}
+  .ep .route{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .m{font-family:var(--mono);font-weight:700;font-size:8pt;letter-spacing:.04em;padding:3px 8px;border-radius:5px}
+  .m.get{color:var(--get);background:var(--get-bg)} .m.post{color:var(--post);background:var(--post-bg)}
+  .m.patch{color:var(--patch);background:var(--patch-bg)} .m.delete{color:var(--delete);background:var(--delete-bg)}
+  .path{font-family:var(--mono);font-size:10.5pt;font-weight:600;color:var(--ink)}
+  .ep .desc{color:var(--ink-soft);margin:7px 0 2px;font-size:9.6pt}
+  .tag{display:inline-block;font-family:var(--mono);font-size:7.4pt;letter-spacing:.05em;text-transform:uppercase;
+    padding:2px 7px;border-radius:20px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);font-weight:600}
+  .cap{font-family:var(--mono);font-size:7.8pt;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:12px 0 3px}
+
+  .callout{background:var(--accent-soft);border:1px solid var(--accent-line);border-left:4px solid var(--accent);
+    border-radius:7px;padding:11px 14px;margin:12px 0;font-size:9.6pt;page-break-inside:avoid}
+  .callout b{color:var(--accent)}
+  .note{background:var(--bg-soft);border:1px solid var(--line);border-radius:7px;padding:10px 13px;margin:10px 0;font-size:9.4pt;color:var(--ink-soft)}
+  ul{margin:.4em 0;padding-left:20px} li{margin:3px 0}
+  .toc{columns:2;column-gap:26px;font-size:9.6pt;margin-top:6px}
+  .toc a{display:block;color:var(--ink-soft);padding:3px 0;border-bottom:1px solid var(--line-soft);break-inside:avoid}
+  .toc a .tn{font-family:var(--mono);color:var(--accent);margin-right:8px}
+  .pill-row{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
+  .kv{font-size:9.4pt}
+  .kv b{font-family:var(--mono);font-weight:600}
+  .small{font-size:8.6pt;color:var(--muted)}
+  hr{border:none;border-top:1px solid var(--line);margin:16px 0}
+</style>
+
+<!-- ══════════════ COVER ══════════════ -->
+<section class="cover">
+  <div class="brandrow"><div class="mark"></div><div class="brand">RIG&nbsp;INTELLIGENCE</div></div>
+  <div class="center">
+    <div class="eyebrow">Partner API · Integration Reference</div>
+    <div class="accentbar"></div>
+    <h1>RIG Intelligence API</h1>
+    <p class="lede">A read API over your provisioned intelligence scope — news articles, newspaper
+      cuttings, and YouTube — with directed sentiment, grouped stories, geography, briefings, and
+      programmatic control of your own coverage scope.</p>
+    <div class="metagrid">
+      <div><div class="k">Version</div><div class="v">v1</div></div>
+      <div><div class="k">Base URL</div><div class="v">https://api.rig360media.com/v1</div></div>
+      <div><div class="k">Prepared for</div><div class="v">Telangana CM &amp; Government</div></div>
+      <div><div class="k">Protocol</div><div class="v">HTTPS · JSON · Bearer key</div></div>
+      <div><div class="k">Issued</div><div class="v">9 July 2026</div></div>
+      <div><div class="k">Endpoints</div><div class="v">28 · self-service scope</div></div>
+    </div>
+  </div>
+  <div class="foot"><span>RIG Intelligence — Partner Integration</span><span class="confid">CONFIDENTIAL</span></div>
+</section>
+
+<!-- ══════════════ CONTENTS ══════════════ -->
+<section class="part">
+  <h2 class="sec"><span class="n">—</span>Contents</h2>
+  <div class="toc">
+    <a href="#intro"><span class="tn">1</span>Overview &amp; how it works</a>
+    <a href="#auth"><span class="tn">2</span>Authentication &amp; your key</a>
+    <a href="#conv"><span class="tn">3</span>Conventions — envelope, errors, paging, limits</a>
+    <a href="#pillars"><span class="tn">4</span>The three content pillars &amp; field dictionary</a>
+    <a href="#scope"><span class="tn">5</span>Managing your scope (self-service)</a>
+    <a href="#entities"><span class="tn">6</span>Entities</a>
+    <a href="#coverage"><span class="tn">7</span>Articles (news)</a>
+    <a href="#cuttings"><span class="tn">8</span>Newspapers (cuttings)</a>
+    <a href="#clips"><span class="tn">9</span>YouTube transcripts (on-demand)</a>
+    <a href="#stories"><span class="tn">10</span>Stories (grouped coverage)</a>
+    <a href="#brief"><span class="tn">11</span>Briefings</a>
+    <a href="#geo"><span class="tn">12</span>Geography</a>
+    <a href="#analytics"><span class="tn">13</span>Analytics &amp; sentiment</a>
+    <a href="#webhooks"><span class="tn">14</span>Webhooks</a>
+    <a href="#usage"><span class="tn">15</span>Usage &amp; quota</a>
+    <a href="#recipes"><span class="tn">16</span>Common workflows</a>
+  </div>
+</section>
+
+<!-- ══════════════ 1. OVERVIEW ══════════════ -->
+<section class="part" id="intro">
+  <h2 class="sec"><span class="n">1</span>Overview &amp; how it works</h2>
+  <p class="sub">What the API gives you and the one idea that governs all of it.</p>
+
+  <p>The RIG Intelligence API is a <b>read API over your provisioned intelligence scope</b>. Every request
+  returns coverage and analytics drawn from three underlying content pillars — <b>news articles</b>,
+  <b>newspaper cuttings</b>, and <b>YouTube</b> — enriched with directed sentiment, entity resolution,
+  grouped stories, district geography, and daily briefings. You can also <b>manage your own scope</b>
+  (the entities, keywords, regions and mutes you track) programmatically.</p>
+
+  <div class="callout"><b>One idea to remember: your key <i>is</i> your scope.</b> Every endpoint is
+  automatically filtered to what your organisation is provisioned for. Nothing you pass in a request can
+  widen that — an out-of-scope entity, article, or district returns the same <code>404</code> as one that
+  doesn't exist. This is what lets you share the API across your team without any request accidentally
+  reaching another tenant's data.</p>
+
+  <h4>Content vs. analytics</h4>
+  <p>Everything the API exposes is either <b>content</b> (a specific article / cutting / clip) or an
+  <b>aggregate</b> computed over that content (sentiment, topic counts, coverage volume, stories, geo).
+  Every aggregate is <b>drillable</b> — it returns the IDs of the items behind the number, which you can
+  fetch individually.</p>
+
+  <h4>Base URL</h4>
+  <pre>https://api.rig360media.com/v1</pre>
+  <p class="small">A same-origin alias is also available at <code>https://desk.rig360media.com/osint/v1</code> for
+  browser-based tools that need to avoid CORS. Both route to the identical API.</p>
+</section>
+
+<!-- ══════════════ 2. AUTH ══════════════ -->
+<section class="part" id="auth">
+  <h2 class="sec"><span class="n">2</span>Authentication &amp; your key</h2>
+  <p class="sub">Bearer-token auth. Your key encodes your organisation and your limits.</p>
+
+  <p>Every request must carry your API key in the <code>Authorization</code> header:</p>
+  <pre>curl https://api.rig360media.com/v1/entities \
+  -H "Authorization: Bearer rig_live_YOUR_KEY_HERE"</pre>
+  <p>An <code>X-API-Key: rig_live_…</code> header is also accepted if a Bearer header is inconvenient in your stack.</p>
+
+  <table>
+    <tr><th>Key prefix</th><th>Environment</th><th>Notes</th></tr>
+    <tr><td><code>rig_live_…</code></td><td>Production</td><td>Live data, counts against your monthly quota.</td></tr>
+    <tr><td><code>rig_test_…</code></td><td>Sandbox</td><td>Same API surface for integration testing.</td></tr>
+  </table>
+
+  <div class="callout"><b>Your key is delivered separately.</b> For security, the secret is never included
+  in this document — it is sent to you once, over a secure channel. We store only a one-way hash of it, so it
+  cannot be re-displayed; if it is ever lost or exposed, we revoke and reissue. Treat it like a password:
+  never commit it to source control or paste it into shared tools.</p>
+
+  <div class="note"><b>Your key is a management key.</b> Your organisation's key carries the
+  <code>can_manage</code> capability, which means you can configure your own scope through the API
+  (see <a href="#scope">§5</a>) — add or remove any entity or keyword yourself, on demand, without
+  waiting on us.</div>
+
+  <h4>Failed authentication</h4>
+  <p>A missing, malformed, revoked, or expired key returns an identical terse <code>401</code> — the API
+  never reveals which of those it was, so a leaked key can't be probed for its state.</p>
+  <pre>{ "error": { "code": "unauthorized", "message": "Invalid or missing API key", "status": 401 } }</pre>
+</section>
+
+<!-- ══════════════ 3. CONVENTIONS ══════════════ -->
+<section class="part" id="conv">
+  <h2 class="sec"><span class="n">3</span>Conventions</h2>
+  <p class="sub">Read once; these hold across every endpoint.</p>
+
+  <h3>Response envelope</h3>
+  <p>Every successful response is wrapped in a <code>data</code> field; list endpoints add a <code>meta</code>
+  block with counts and paging.</p>
+  <pre>{
+  "data": { ... },              // the payload — object or array
+  "meta": { "count": 20, "next_cursor": "eyJ0Ijoi…" }   // on list endpoints
+}</pre>
+  <p>Every error uses the same shape:</p>
+  <pre>{ "error": { "code": "bad_request", "message": "human-readable reason", "status": 400 } }</pre>
+
+  <h3>Status codes</h3>
+  <table>
+    <tr><th>Code</th><th>Meaning</th></tr>
+    <tr><td><code>200</code></td><td>Success.</td></tr>
+    <tr><td><code>400</code></td><td>Malformed request (bad date, bad body). Message explains what.</td></tr>
+    <tr><td><code>401</code></td><td>Missing / invalid key.</td></tr>
+    <tr><td><code>404</code></td><td>Not found <i>or</i> out of your scope — deliberately indistinguishable.</td></tr>
+    <tr><td><code>422</code></td><td>A query parameter failed validation (wrong enum / type).</td></tr>
+    <tr><td><code>429</code></td><td>Rate limit exceeded — see the <code>X-RateLimit-*</code> headers.</td></tr>
+  </table>
+
+  <h3>Pagination</h3>
+  <p>List endpoints are cursor-paged. When more results exist, <code>meta.next_cursor</code> is non-null;
+  pass it back as <code>?cursor=</code> for the next page. The newspapers feed uses a timestamp cursor
+  <code>?before=</code> returned as <code>meta.next_before</code>. A null cursor means the last page.</p>
+
+  <h3>Time windows &amp; limits</h3>
+  <table>
+    <tr><th>Parameter</th><th>Default</th><th>Bounds</th></tr>
+    <tr><td><code>window</code> (days back)</td><td>7</td><td>1–90</td></tr>
+    <tr><td><code>limit</code> (page size)</td><td>20</td><td>1–100 (larger asks are clamped, not rejected)</td></tr>
+  </table>
+
+  <h3>Rate limits &amp; quota</h3>
+  <p>Each response carries <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, and
+  <code>X-RateLimit-Reset</code> (per-minute window). Monthly consumption is tracked against your quota and is
+  readable any time at <a href="#usage"><code>GET /v1/usage</code></a>.</p>
+</section>
+
+<!-- ══════════════ 4. PILLARS ══════════════ -->
+<section class="part" id="pillars">
+  <h2 class="sec"><span class="n">4</span>The three content pillars</h2>
+  <p class="sub">All content — and every aggregate — comes from these three. Full field dictionary below.</p>
+
+  <table>
+    <tr><th>Pillar</th><th>What it is</th><th>How you access it</th></tr>
+    <tr><td><b>Articles</b></td><td>News / web coverage, stored &amp; translated</td><td>Filterable feed + single item; richest shape</td></tr>
+    <tr><td><b>Newspapers</b></td><td>Print newspaper cuttings, stored &amp; translated</td><td>Feed + single item, full text</td></tr>
+    <tr><td><b>YouTube</b></td><td>Broadcast/video coverage</td><td><b>Keyword-driven</b>: discover via a query, then fetch the full transcript on demand</td></tr>
+  </table>
+
+  <h3>Article fields</h3>
+  <p>The article object (also used for story timelines, entity coverage, and district drill-downs):</p>
+  <table>
+    <tr><th>Field</th><th>Meaning</th></tr>
+    <tr><td><code>id</code></td><td>Article identifier (UUID).</td></tr>
+    <tr><td><code>headline</code></td><td>Title, in the source language.</td></tr>
+    <tr><td><code>summary</code> / <code>full_text</code></td><td>English (translation-preferred) summary and body.</td></tr>
+    <tr><td><code>summary_original</code> / <code>full_text_original</code></td><td>Native-language summary and body (Telugu / Urdu / Hindi …).</td></tr>
+    <tr><td><code>source</code></td><td>Outlet name.</td></tr>
+    <tr><td><code>language</code></td><td>Source-language tag (e.g. <code>te</code>, <code>en</code>).</td></tr>
+    <tr><td><code>url</code></td><td>Link to the original.</td></tr>
+    <tr><td><code>geo</code></td><td>Primary place (district / region), where detected.</td></tr>
+    <tr><td><code>story_id</code></td><td>The grouped story this belongs to (if any) — see <a href="#stories">§10</a>.</td></tr>
+    <tr><td><code>sentiment</code></td><td><code>{ label: supportive|neutral|critical, intensity: 0–1 }</code>. Null when unclassified.</td></tr>
+    <tr><td><code>source_flags</code></td><td><code>{ low_credibility, political_lean }</code> — provenance signals (see below).</td></tr>
+    <tr><td><code>api_ready</code></td><td>True once the item has cleared full enrichment.</td></tr>
+    <tr><td><code>published_at</code> / <code>last_updated</code></td><td>Timestamps (ISO-8601 UTC).</td></tr>
+    <tr><td><code>entities</code></td><td>On single-item lookups: entities mentioned, within your scope — <code>{id,name,type}</code>.</td></tr>
+  </table>
+
+  <div class="note"><b>Source flags are provenance, not a verdict.</b> <code>political_lean</code> is only present
+  when an outlet is classified (left … right); <code>low_credibility</code> marks outlets on a curated
+  low-credibility/state-propaganda list. Absence is not an endorsement, and neither flag is a claim about a
+  specific article's truth.</div>
+
+  <h3>Newspaper (cutting) fields</h3>
+  <p><code>id</code>, <code>headline</code>/<code>headline_original</code>, <code>subheadline</code>,
+  <code>full_text</code>/<code>full_text_original</code>, <code>source</code>, <code>section</code>,
+  <code>language</code>, <code>geo</code>, <code>page_number</code>, <code>edition_date</code>.</p>
+
+  <h3>YouTube (clip) fields</h3>
+  <p><code>id</code>, <code>video_id</code>, <code>title</code>, <code>channel</code>, <code>url</code>,
+  <code>published_at</code>, <code>language</code>, <code>transcript_source</code>, <code>segment_count</code>,
+  and the assembled <code>transcript</code>. See <a href="#clips">§9</a> for the on-demand access rule.</p>
+</section>
+
+<!-- ══════════════ 5. SCOPE ══════════════ -->
+<section class="part" id="scope">
+  <h2 class="sec"><span class="n">5</span>Managing your scope</h2>
+  <p class="sub">Your key can configure its own coverage — add any entity or keyword, any time.</p>
+
+  <p>Your <b>scope</b> is the set of things the API filters everything to: provisioned <b>entities</b>,
+  free-text <b>keywords</b>, <b>topics</b>, <b>regions</b>, <b>mute_terms</b>, and per-keyword
+  <b>priorities</b>. Because your key carries <code>can_manage</code>, you control all of it programmatically —
+  you never need to wait on us to add an entity or keyword.</p>
+
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/scope</span></div>
+    <div class="desc">Read your current provisioned scope.</div>
+    <div class="cap">Example response</div>
+<pre>{
+  "data": {
+    "all_entities": false,
+    "entity_ids": ["d2da8f86-…-b1ecf5a8d62d", "9a70e644-…-1a9e68aae1ed"],
+    "topics": [], "keywords": ["irrigation project", "kaleshwaram"],
+    "regions": ["Telangana"], "languages": [], "mute_terms": ["horoscope"],
+    "keyword_priorities": { "kaleshwaram": 5 },
+    "can_manage": true
+  }
+}</pre>
+  </div>
+
+  <div class="ep">
+    <div class="route"><span class="m patch">PATCH</span><span class="path">/v1/scope</span><span class="tag">management key</span></div>
+    <div class="desc">Add or remove items from your scope. All fields optional; send only what you're changing.</div>
+    <div class="cap">Body fields</div>
+    <table>
+      <tr><th>Field</th><th>Effect</th></tr>
+      <tr><td><code>add_entities</code></td><td>Add entities — <b>by name or by id</b>. A name is resolved to a known entity; if it matches none, it's added as a keyword instead (never dropped).</td></tr>
+      <tr><td><code>remove_entities</code></td><td>Remove entity ids from scope.</td></tr>
+      <tr><td><code>add_keywords</code> / <code>remove_keywords</code></td><td>Arbitrary free-text terms — no dictionary needed.</td></tr>
+      <tr><td><code>add_topics</code> / <code>remove_topics</code></td><td>Topic filters.</td></tr>
+      <tr><td><code>add_regions</code> / <code>remove_regions</code></td><td>Region names (e.g. <code>Telangana</code>).</td></tr>
+      <tr><td><code>add_mute_terms</code> / <code>remove_mute_terms</code></td><td>Terms to suppress from your feeds.</td></tr>
+      <tr><td><code>keyword_priorities</code></td><td>Map of <code>keyword → integer weight</code> (merged in).</td></tr>
+      <tr><td><code>languages</code></td><td>Replaces the language allow-list.</td></tr>
+    </table>
+    <div class="cap">Example request</div>
+<pre>curl -X PATCH https://api.rig360media.com/v1/scope \
+  -H "Authorization: Bearer rig_live_…" -H "Content-Type: application/json" \
+  -d '{ "add_entities": ["K. T. Rama Rao", "Some New Local Leader"],
+        "add_keywords": ["kaleshwaram"], "add_regions": ["Telangana"] }'</pre>
+    <div class="cap">Example response — names resolved, unknowns kept as keywords</div>
+<pre>{
+  "data": {
+    "all_entities": false,
+    "entity_ids": ["…", "d2da8f86-…-b1ecf5a8d62d"],
+    "keywords": ["kaleshwaram", "some new local leader"],
+    "regions": ["Telangana"],
+    "resolved_entities": [ { "name": "K. T. Rama Rao", "entity_id": "d2da8f86-…-b1ecf5a8d62d" } ],
+    "added_as_keywords": ["Some New Local Leader"]
+  }
+}</pre>
+    <div class="callout"><b>Nothing you ask to track is ever silently dropped.</b> Give <code>add_entities</code> a
+    name we recognise and it becomes a resolved entity (best, indexed matching); give it something we don't
+    recognise and it's added as a free-text keyword. The response tells you exactly which happened via
+    <code>resolved_entities</code> and <code>added_as_keywords</code>.</div>
+  </div>
+
+  <div class="ep">
+    <div class="route"><span class="m post">POST</span><span class="path">/v1/scope/purge</span><span class="tag">management key</span></div>
+    <div class="desc">Clear your scope and webhook subscriptions. Requires an explicit confirmation flag in the body.</div>
+  </div>
+</section>
+
+<!-- ══════════════ 6. ENTITIES ══════════════ -->
+<section class="part" id="entities">
+  <h2 class="sec"><span class="n">6</span>Entities</h2>
+  <p class="sub">Your provisioned people, organisations and places — and everything said about them.</p>
+
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/entities</span></div>
+    <div class="desc">List the entities in your scope.</div>
+<pre>{ "data": [ { "id": "d2da8f86-…", "name": "K. T. Rama Rao", "type": "person" },
+            { "id": "9a70e644-…", "name": "Revanth Reddy",  "type": "person" } ],
+  "meta": { "count": 2 } }</pre>
+  </div>
+
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/entities/{entity_id}</span></div>
+    <div class="desc">Profile of one entity, with a 7-day coverage + sentiment snapshot.</div>
+<pre>{
+  "data": {
+    "id": "d2da8f86-…", "name": "K. T. Rama Rao", "type": "person",
+    "snapshot": { "coverage_7d": 198,
+                  "sentiment_7d": { "supportive": 28, "neutral": 73, "critical": 50 } }
+  }
+}</pre>
+  </div>
+
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/entities/{entity_id}/coverage</span></div>
+    <div class="desc">Unified recent coverage about one entity across all three pillars.</div>
+    <div class="cap">Query</div>
+    <div class="kv"><b>pillar</b> = all | articles | clips | cuttings &nbsp;·&nbsp; <b>window</b>, <b>limit</b>, <b>language</b>, <b>source</b></div>
+    <div class="cap">Example response (article item shown in full)</div>
+<pre>{
+  "data": [
+    {
+      "type": "article",
+      "id": "384ab9ab-…",
+      "headline": "సంపన్న రాష్ట్రం.. కేటీఆర్ కామెంట్స్",
+      "summary": "**KCR's visionary leadership receives international recognition** …",
+      "full_text": "Wealthy State.. KTR's comments on World Bank recognition …",
+      "summary_original": "కేసీఆర్ దార్శనిక నాయకత్వానికి అంతర్జాతీయ గుర్తింపు …",
+      "source": "V6 Velugu", "language": "te",
+      "url": "https://www.v6velugu.com/ktr-says-world-bank-recognition-…",
+      "geo": "Telangana", "story_id": null,
+      "sentiment": { "label": "supportive", "intensity": 0.9 },
+      "source_flags": { "low_credibility": false },
+      "published_at": "2026-07-09T02:03:00+00:00"
+    }
+  ],
+  "meta": { "count": 3, "pillars": ["article","clip","cutting"] }
+}</pre>
+  </div>
+</section>
+
+<!-- ══════════════ 7. ARTICLES ══════════════ -->
+<section class="part" id="coverage">
+  <h2 class="sec"><span class="n">7</span>Articles (news)</h2>
+  <p class="sub">The filterable coverage feed and single-item lookup.</p>
+
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/articles</span></div>
+    <div class="desc">Filterable feed of news coverage in your scope, newest first.</div>
+    <div class="cap">Query parameters</div>
+    <table>
+      <tr><th>Param</th><th>Meaning</th></tr>
+      <tr><td><code>entity</code></td><td>One or more of your entity ids (repeatable). Narrows to those entities.</td></tr>
+      <tr><td><code>topic</code></td><td>Topic filter(s), repeatable.</td></tr>
+      <tr><td><code>sentiment</code></td><td><code>supportive | neutral | critical</code>.</td></tr>
+      <tr><td><code>source</code></td><td>Outlet name(s) — drill down from <code>/analytics/outlets</code>.</td></tr>
+      <tr><td><code>match</code></td><td><code>any</code> (OR, default) or <code>all</code> (AND) across filters.</td></tr>
+      <tr><td><code>language</code>, <code>window</code>, <code>limit</code>, <code>cursor</code></td><td>Standard (see §3).</td></tr>
+    </table>
+    <div class="cap">Example — supportive KTR coverage</div>
+<pre>curl "https://api.rig360media.com/v1/articles?entity=d2da8f86-…&sentiment=supportive&limit=20" \
+  -H "Authorization: Bearer rig_live_…"</pre>
+    <div class="small">Returns an array of article objects (see §4) plus <code>meta.next_cursor</code>.</div>
+  </div>
+
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/articles/{article_id}</span></div>
+    <div class="desc">A single article with the full 16-field shape and its in-scope <code>entities[]</code>.</div>
+  </div>
+</section>
+
+<!-- ══════════════ 8. CUTTINGS ══════════════ -->
+<section class="part" id="cuttings">
+  <h2 class="sec"><span class="n">8</span>Newspapers (cuttings)</h2>
+  <p class="sub">Print newspaper coverage with full text — native and English.</p>
+
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/cuttings</span></div>
+    <div class="desc">Scoped feed of newspaper cuttings, newest first. Timestamp-paged via <code>?before=</code>.</div>
+    <div class="cap">Example response</div>
+<pre>{
+  "data": [
+    {
+      "type": "cutting", "id": "f3be735c-…",
+      "headline": "హాకర్ల తోలగింపులో ఉద్రిక్తత",
+      "headline_original": "హాకర్ల తోలగింపులో ఉద్రిక్తత", "subheadline": null,
+      "full_text": "కర్త తొలగింపులో ఉద్రిక్తత … బీసెంట్ రోడ్డులో హాకర్ల తోపుడు బళ్లు …",
+      "full_text_original": "కర్త తొలగింపులో ఉద్రిక్తత …",
+      "source": "Sakshi", "section": "Local", "language": "te",
+      "geo": null, "page_number": 9, "edition_date": "2026-07-09"
+    }
+  ],
+  "meta": { "count": 2, "next_before": "2026-07-09T03:23:44+00:00" }
+}</pre>
+  </div>
+
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/cuttings/{cutting_id}</span></div>
+    <div class="desc">One cutting with full native + English text — same shape as a feed item.</div>
+  </div>
+</section>
+
+<!-- ══════════════ 9. CLIPS ══════════════ -->
+<section class="part" id="clips">
+  <h2 class="sec"><span class="n">9</span>YouTube transcripts</h2>
+  <p class="sub">Keyword-driven and on-demand: discover a clip via a query, then read its full transcript.</p>
+
+  <div class="callout"><b>YouTube is on-demand, not a browsable feed.</b> There is deliberately no
+  "list all clips" endpoint. You first <b>surface</b> clips with a keyword or entity query
+  (<code>/analytics/keyword-sentiment?pillars=clips</code>, <code>/analytics/sentiment?include_youtube=true</code>,
+  or an entity's <code>coverage?pillar=clips</code>). Those return <code>clip_ids</code>. You may then fetch the
+  full transcript of any clip you surfaced, within a rolling 24-hour window. A clip you never surfaced —
+  or one surfaced by another organisation — returns <code>404</code>.</div>
+
+  <h4>Step 1 — surface clips with a query</h4>
+<pre>curl "https://api.rig360media.com/v1/analytics/keyword-sentiment?keyword=Revanth+Reddy&pillars=clips&window=45" \
+  -H "Authorization: Bearer rig_live_…"
+
+→ { "data": { "keyword": "revanth reddy", "n_matched": 80, "n_scored": 62,
+              "stance": { "positive": 11, "negative": 30, "neutral": 21 },
+              "stance_score": -0.306,
+              "clip_ids": ["9693", "9673", …], "pillars": "clips", "partial": true } }</pre>
+
+  <h4>Step 2 — fetch the full transcript</h4>
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/clips/{clip_id}</span><span class="tag">on-demand · 24h window</span></div>
+    <div class="desc">The full transcript of a clip you surfaced, assembled from its timed segments.</div>
+<pre>{
+  "data": {
+    "type": "clip", "id": "9693", "video_id": "oLpqNGFPMZA",
+    "title": "Ghantaravam 9 AM | Full Bulletin | 9th July 2026 @etvtelangana",
+    "channel": "ETV Telangana",
+    "url": "https://www.youtube.com/watch?v=oLpqNGFPMZA",
+    "published_at": "2026-07-09T04:18:32+00:00",
+    "language": "en", "transcript_source": "auto_captions",
+    "segment_count": 14,
+    "transcript": "Greetings, welcome to Ghantaravam. First, the main points. West Asia turned into a battlefield … government measures to alleviate the hardships …"
+  }
+}</pre>
+  </div>
+</section>
+
+<!-- ══════════════ 10. STORIES ══════════════ -->
+<section class="part" id="stories">
+  <h2 class="sec"><span class="n">10</span>Stories (grouped coverage)</h2>
+  <p class="sub">The same event across many outlets, collapsed into one surfaceable story — scoped to you.</p>
+
+  <div class="ep br">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/stories</span></div>
+    <div class="desc">Surfaceable grouped stories (≥3 independent outlets), scoped to your entities and/or regions.
+      Optional <code>?entity=</code>, <code>?country=</code> (ISO-2), <code>?cursor=</code>, <code>?limit=</code>.</div>
+    <div class="cap">Example response (shape)</div>
+<pre>{
+  "data": [
+    {
+      "id": "2bc19b56-…", "title": "…", "topic": "INTERNATIONAL",
+      "subject_country": "IN", "subject_region": "…",
+      "article_count": 306, "outlets": 291,
+      "top_outlets": ["TASS — Defence", "gCaptain", …],
+      "languages": { "en": 1080, "te": 13, "hi": 20, … },
+      "importance": 182.0,
+      "representative_article_id": "1dd6a23b-…",
+      "first_seen": "2026-04-16T17:03:15+00:00",
+      "last_updated": "2026-06-16T10:27:44+00:00"
+    }
+  ],
+  "meta": { "count": 2, "next_cursor": "eyJ0IjoiMTc5Ii…" }
+}</pre>
+    <div class="small"><code>outlets</code> is the de-duplicated independent-outlet count; <code>importance</code> ranks the story within your scope.</div>
+  </div>
+
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/stories/{story_id}</span></div>
+    <div class="desc">One story: the card above, plus a full <code>outlets_breakdown</code> and a chronological
+      <code>timeline[]</code> of member articles (each a full 16-field article object, with
+      <code>is_representative</code>).</div>
+  </div>
+</section>
+
+<!-- ══════════════ 11. BRIEF ══════════════ -->
+<section class="part" id="brief">
+  <h2 class="sec"><span class="n">11</span>Briefings</h2>
+  <p class="sub">A structured "what's happening in your world" digest, grouped by topic.</p>
+
+  <div class="pill-row">
+    <span class="tag">GET /v1/brief/today</span><span class="tag">GET /v1/brief/situation</span><span class="tag">GET /v1/brief/daily</span>
+  </div>
+  <p><b>today</b> and <b>daily</b> rank by importance; <b>situation</b> orders by recency. All accept <code>?limit=</code>;
+  <code>daily</code> accepts <code>?date=YYYY-MM-DD</code>.</p>
+<pre>{
+  "data": {
+    "kind": "today", "ordering": "importance", "date": "2026-07-09",
+    "summary": "5 developments across your scope, in 1 topics.",
+    "sections": [
+      { "title": "INTERNATIONAL",
+        "stories": [
+          { "story_id": "2bc19b56-…", "title": "…", "outlets": 291,
+            "article_count": 306, "representative_article_id": "1dd6a23b-…" }
+        ] }
+    ]
+  }
+}</pre>
+</section>
+
+<!-- ══════════════ 12. GEO ══════════════ -->
+<section class="part" id="geo">
+  <h2 class="sec"><span class="n">12</span>Geography</h2>
+  <p class="sub">District-level coverage across your provisioned states.</p>
+
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/geo/coverage</span></div>
+    <div class="desc">Coverage counts by state and district within your scope (<code>?window=</code>).</div>
+<pre>{
+  "data": {
+    "window_days": 7,
+    "states": [
+      { "state_code": "TG", "articles": 4751,
+        "districts": [ { "id": "hyderabad", "name": "HYDERABAD", "articles": 1186 },
+                       { "id": "warangal",  "name": "WARANGAL",  "articles": 402 } ] }
+    ]
+  }
+}</pre>
+    <div class="small">District geography currently covers Telangana &amp; Andhra Pradesh.</div>
+  </div>
+
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/geo/district/{district_id}</span></div>
+    <div class="desc">One district: its counts plus recent articles (full article objects). Out-of-scope states return 404.</div>
+  </div>
+</section>
+
+<!-- ══════════════ 13. ANALYTICS ══════════════ -->
+<section class="part" id="analytics">
+  <h2 class="sec"><span class="n">13</span>Analytics &amp; sentiment</h2>
+  <p class="sub">Directed sentiment, per-outlet lean, topic mix, coverage volume, and arbitrary-keyword sentiment.</p>
+
+  <h3>Directed sentiment</h3>
+  <div class="ep br">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/analytics/sentiment</span></div>
+    <div class="desc">Two-field sentiment toward an entity (by id <b>or</b> name), split by pillar, with a daily trend.
+      Add <code>?include_youtube=true</code> to append an on-demand YouTube pillar.</div>
+    <div class="cap">Example — sentiment toward K. T. Rama Rao</div>
+<pre>{
+  "data": {
+    "subject": "K. T. Rama Rao", "window_days": 7,
+    "total": 151,
+    "split": { "supportive": 28, "neutral": 73, "critical": 50 },
+    "net_lean": -0.1457,
+    "impact": { "positive": 23, "negative": 26, "neutral": 23, "not_relevant": 79 },
+    "by_pillar": {
+      "articles":  { "total": 148, "split": {"supportive":28,"neutral":71,"critical":49}, "net_lean": -0.1419 },
+      "newspaper": { "total": 3,   "split": {"supportive":0,"neutral":2,"critical":1},   "net_lean": -0.3333 }
+    },
+    "daily": [ { "date": "2026-07-02", "supportive": 1, "neutral": 11, "critical": 12 }, … ]
+  }
+}</pre>
+    <div class="note"><b>Two fields, not one.</b> <code>stance</code> (surfaced as the supportive/neutral/critical
+    <code>split</code>) is the <i>tone</i> of coverage; <code>impact</code> is whether events are
+    <i>good or bad for the subject</i> by consequence. <code>net_lean</code> = (supportive − critical) ÷ total.
+    Figures are a classified, entity-linked sample.</div>
+  </div>
+
+  <h3>Per-outlet lean</h3>
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/analytics/outlets</span></div>
+    <div class="desc">Which outlets cover an entity most, and their net lean toward it. <code>?entity=</code> (id), <code>?window=</code>, <code>?limit=</code>.</div>
+<pre>{ "data": { "subject": "K. T. Rama Rao", "window_days": 7,
+  "outlets": [ { "name": "Namasthe Telangana", "count": 72, "net_lean": 0.0517 },
+               { "name": "Mana Telangana",     "count": 20, "net_lean": -0.3333 } ] } }</pre>
+  </div>
+
+  <h3>Topics &amp; volume</h3>
+  <div class="pill-row"><span class="tag">GET /v1/analytics/topics</span><span class="tag">GET /v1/analytics/coverage</span></div>
+<pre>topics   → { "data": { "window_days": 7, "topics": [ { "name": "INTERNATIONAL", "count": 12428 }, … ] } }
+coverage → { "data": { "total": 350326, "daily": [ { "date": "2026-06-26", "count": 27660 }, … ], "window_days": 14 } }</pre>
+
+  <h3>Keyword sentiment (arbitrary term, on-demand)</h3>
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/analytics/keyword-sentiment</span></div>
+    <div class="desc">Live two-field sentiment for <b>any</b> word or phrase — it need not be a provisioned entity.
+      <code>?keyword=</code>, <code>?pillars=articles|clips|both</code>, <code>?scope=true</code> to constrain to
+      your entities/region, <code>?window=</code>. Returns <code>article_ids</code> / <code>clip_ids</code> for drill-down.</div>
+    <div class="small">Because results are live-scored, the first call for a term takes a few seconds; identical
+      article-only queries are cached. <code>partial: true</code> means scoring hit its time budget and returned the newest matches.</div>
+  </div>
+</section>
+
+<!-- ══════════════ 14. WEBHOOKS ══════════════ -->
+<section class="part" id="webhooks">
+  <h2 class="sec"><span class="n">14</span>Webhooks</h2>
+  <p class="sub">Push alerts to your endpoint when new coverage matches a filter.</p>
+
+  <div class="ep">
+    <div class="route"><span class="m post">POST</span><span class="path">/v1/webhooks</span></div>
+    <div class="desc">Subscribe an <code>https://</code> endpoint to events, optionally filtered by entity / topic / sentiment.
+      The signing <code>secret</code> is returned <b>once</b>, here only.</div>
+    <div class="cap">Request &amp; response</div>
+<pre>POST /v1/webhooks
+{ "url": "https://your-host.gov.in/rig-hook",
+  "events": ["new_coverage", "critical_sentiment"],
+  "filter": { "entity": "d2da8f86-…" } }
+
+→ { "data": {
+      "id": "5515379e-…", "url": "https://your-host.gov.in/rig-hook",
+      "filter": { "entity": "d2da8f86-…", "sentiment": "critical" },
+      "events": ["new_coverage", "critical_sentiment"],
+      "is_active": true,
+      "secret": "whsec_5d001f05982f1ce8…3bb677aa" } }</pre>
+    <div class="cap">Events</div>
+    <table>
+      <tr><th>Event</th><th>Status</th></tr>
+      <tr><td><code>new_coverage</code></td><td>Delivered — new matching item in your scope.</td></tr>
+      <tr><td><code>critical_sentiment</code></td><td>Delivered — new critical-sentiment coverage (adds a <code>sentiment=critical</code> filter).</td></tr>
+      <tr><td><code>spike</code>, <code>high_priority_story</code></td><td>Accepted &amp; stored; detectors rolling out (returned under <code>events_pending</code>).</td></tr>
+    </table>
+    <div class="note"><b>Verifying delivery.</b> Each POST to your endpoint is signed
+    <code>X-RIG-Signature: sha256=HMAC(secret, body)</code>. Recompute the HMAC over the raw body with your
+    <code>whsec_…</code> secret and compare, to confirm authenticity.</div>
+  </div>
+
+  <div class="pill-row"><span class="tag">GET /v1/webhooks</span><span class="tag">DELETE /v1/webhooks/{id}</span></div>
+  <p class="small">List returns your subscriptions (without secrets). Delete is scoped to your org (up to 25 webhooks).</p>
+</section>
+
+<!-- ══════════════ 15. USAGE ══════════════ -->
+<section class="part" id="usage">
+  <h2 class="sec"><span class="n">15</span>Usage &amp; quota</h2>
+  <p class="sub">Your own consumption against your monthly quota.</p>
+  <div class="ep">
+    <div class="route"><span class="m get">GET</span><span class="path">/v1/usage</span></div>
+    <div class="desc">Current-period request count, quota, remaining, and your top endpoints.</div>
+<pre>{
+  "data": {
+    "period": "2026-07", "requests": 17, "quota": 1000000, "remaining": 999983,
+    "by_endpoint": [ { "endpoint": "/v1/articles", "requests": 6 },
+                     { "endpoint": "/v1/analytics/sentiment", "requests": 3 }, … ]
+  }
+}</pre>
+  </div>
+</section>
+
+<!-- ══════════════ 16. RECIPES ══════════════ -->
+<section class="part" id="recipes">
+  <h2 class="sec"><span class="n">16</span>Common workflows</h2>
+  <p class="sub">End-to-end sequences that combine the endpoints above.</p>
+
+  <h3>A. Provision your scope, then read your world</h3>
+  <ol>
+    <li><code>PATCH /v1/scope</code> with your entities (by name), keywords and region.</li>
+    <li><code>GET /v1/brief/today</code> for the grouped digest, or <code>GET /v1/articles</code> for the raw feed.</li>
+    <li><code>GET /v1/stories</code> for the multi-outlet stories in your scope.</li>
+  </ol>
+
+  <h3>B. Sentiment on an entity — and the coverage behind it</h3>
+  <ol>
+    <li><code>GET /v1/analytics/sentiment?entity=&lt;name-or-id&gt;</code> → the split + daily trend.</li>
+    <li><code>GET /v1/articles?entity=&lt;id&gt;&amp;sentiment=critical</code> → the critical articles driving it.</li>
+    <li><code>GET /v1/analytics/outlets?entity=&lt;id&gt;</code> → which outlets are most negative.</li>
+  </ol>
+
+  <h3>C. Find YouTube coverage of a topic, then read a transcript</h3>
+  <ol>
+    <li><code>GET /v1/analytics/keyword-sentiment?keyword=&lt;term&gt;&amp;pillars=clips</code> → <code>clip_ids</code>.</li>
+    <li><code>GET /v1/clips/&lt;clip_id&gt;</code> → the full transcript (within 24h of surfacing).</li>
+  </ol>
+
+  <h3>D. Real-time alerting</h3>
+  <ol>
+    <li><code>POST /v1/webhooks</code> with <code>events:["critical_sentiment"]</code> filtered to your key entities.</li>
+    <li>Verify each delivery's <code>X-RIG-Signature</code>, then act on the payload.</li>
+  </ol>
+
+  <hr>
+  <p class="small">RIG Intelligence · Partner Integration Reference · v1 · Issued 9 July 2026 ·
+  <span class="confid">Confidential — not for redistribution.</span> Questions &amp; key delivery are handled
+  through your RIG account contact.</p>
+</section>

@@ -1,0 +1,2126 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "RIG Intelligence API",
+    "version": "v1",
+    "description": "Read API over your provisioned intelligence scope — news articles, newspaper cuttings, and YouTube — with directed sentiment, grouped stories, geography, briefings, and programmatic control of your own coverage scope.\n\nAuthenticate with your key as `Authorization: Bearer rig_live_…` (or `X-API-Key`). Your key encodes your organisation and scope; every response is filtered to it.",
+    "contact": {
+      "name": "RIG Intelligence",
+      "url": "https://api.rig360media.com"
+    },
+    "x-confidential": "Partner integration reference — not for redistribution."
+  },
+  "servers": [
+    {
+      "url": "https://api.rig360media.com",
+      "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "bearerApiKey": []
+    },
+    {
+      "apiKeyHeader": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "scope",
+      "description": "Read and self-manage your provisioned scope."
+    },
+    {
+      "name": "entities",
+      "description": "Your provisioned people, organisations, places."
+    },
+    {
+      "name": "coverage",
+      "description": "News articles — filterable feed + single item."
+    },
+    {
+      "name": "cuttings",
+      "description": "Newspaper cuttings — full text."
+    },
+    {
+      "name": "clips",
+      "description": "YouTube transcripts — keyword-driven, on-demand."
+    },
+    {
+      "name": "stories",
+      "description": "Grouped multi-outlet stories."
+    },
+    {
+      "name": "briefings",
+      "description": "Structured scope digests."
+    },
+    {
+      "name": "geography",
+      "description": "District-level coverage."
+    },
+    {
+      "name": "analytics",
+      "description": "Sentiment, outlets, topics, volume."
+    },
+    {
+      "name": "webhooks",
+      "description": "Push alerts on matching coverage."
+    },
+    {
+      "name": "usage",
+      "description": "Your consumption vs. quota."
+    }
+  ],
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Liveness probe",
+        "operationId": "health_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health V1 Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/entities": {
+      "get": {
+        "tags": [
+          "entities"
+        ],
+        "summary": "List your provisioned entities",
+        "operationId": "list_entities_v1_entities_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Entities V1 Entities Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/entities/{entity_id}": {
+      "get": {
+        "tags": [
+          "entities"
+        ],
+        "summary": "Profile of one entity",
+        "operationId": "get_entity_v1_entities__entity_id__get",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Entity V1 Entities  Entity Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/entities/{entity_id}/coverage": {
+      "get": {
+        "tags": [
+          "entities"
+        ],
+        "summary": "All coverage about one entity (articles + clips + cuttings)",
+        "operationId": "entity_coverage_v1_entities__entity_id__coverage_get",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entity Id"
+            }
+          },
+          {
+            "name": "pillar",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(all|articles|clips|cuttings)$",
+              "description": "Which pillars to include",
+              "default": "all",
+              "title": "Pillar"
+            },
+            "description": "Which pillars to include"
+          },
+          {
+            "name": "entity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity id(s) to filter by (repeatable)",
+              "title": "Entity"
+            },
+            "description": "Entity id(s) to filter by (repeatable)"
+          },
+          {
+            "name": "topic",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Topic(s) to filter by (repeatable)",
+              "title": "Topic"
+            },
+            "description": "Topic(s) to filter by (repeatable)"
+          },
+          {
+            "name": "match",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(any|all)$",
+              "description": "Combine filters with OR (any) or AND (all)",
+              "default": "any",
+              "title": "Match"
+            },
+            "description": "Combine filters with OR (any) or AND (all)"
+          },
+          {
+            "name": "sentiment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(supportive|neutral|critical)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentiment"
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "description": "Days to look back",
+              "default": 7,
+              "title": "Window"
+            },
+            "description": "Days to look back"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 8,
+                  "pattern": "^[A-Za-z-]{2,8}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Outlet name(s) to filter by (repeatable) — drill-down from /analytics/outlets",
+              "title": "Source"
+            },
+            "description": "Outlet name(s) to filter by (repeatable) — drill-down from /analytics/outlets"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Items per page (values above 100 are clamped to 100)",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page (values above 100 are clamped to 100)"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 512
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Entity Coverage V1 Entities  Entity Id  Coverage Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/articles": {
+      "get": {
+        "tags": [
+          "coverage"
+        ],
+        "summary": "Filterable coverage feed",
+        "operationId": "list_articles_v1_articles_get",
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity id(s) to filter by (repeatable)",
+              "title": "Entity"
+            },
+            "description": "Entity id(s) to filter by (repeatable)"
+          },
+          {
+            "name": "topic",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Topic(s) to filter by (repeatable)",
+              "title": "Topic"
+            },
+            "description": "Topic(s) to filter by (repeatable)"
+          },
+          {
+            "name": "match",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(any|all)$",
+              "description": "Combine filters with OR (any) or AND (all)",
+              "default": "any",
+              "title": "Match"
+            },
+            "description": "Combine filters with OR (any) or AND (all)"
+          },
+          {
+            "name": "sentiment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(supportive|neutral|critical)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentiment"
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "description": "Days to look back",
+              "default": 7,
+              "title": "Window"
+            },
+            "description": "Days to look back"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 8,
+                  "pattern": "^[A-Za-z-]{2,8}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Outlet name(s) to filter by (repeatable) — drill-down from /analytics/outlets",
+              "title": "Source"
+            },
+            "description": "Outlet name(s) to filter by (repeatable) — drill-down from /analytics/outlets"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Items per page (values above 100 are clamped to 100)",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page (values above 100 are clamped to 100)"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 512
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Articles V1 Articles Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/articles/{article_id}": {
+      "get": {
+        "tags": [
+          "coverage"
+        ],
+        "summary": "A single coverage item",
+        "operationId": "get_article_v1_articles__article_id__get",
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Article Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Article V1 Articles  Article Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cuttings": {
+      "get": {
+        "tags": [
+          "cuttings"
+        ],
+        "summary": "Newspaper cuttings feed (full text), scoped",
+        "operationId": "list_cuttings_v1_cuttings_get",
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO timestamp cursor — return cuttings collected strictly before this (from the previous page's next_before)",
+              "title": "Before"
+            },
+            "description": "ISO timestamp cursor — return cuttings collected strictly before this (from the previous page's next_before)"
+          },
+          {
+            "name": "entity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity id(s) to filter by (repeatable)",
+              "title": "Entity"
+            },
+            "description": "Entity id(s) to filter by (repeatable)"
+          },
+          {
+            "name": "topic",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Topic(s) to filter by (repeatable)",
+              "title": "Topic"
+            },
+            "description": "Topic(s) to filter by (repeatable)"
+          },
+          {
+            "name": "match",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(any|all)$",
+              "description": "Combine filters with OR (any) or AND (all)",
+              "default": "any",
+              "title": "Match"
+            },
+            "description": "Combine filters with OR (any) or AND (all)"
+          },
+          {
+            "name": "sentiment",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(supportive|neutral|critical)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentiment"
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "description": "Days to look back",
+              "default": 7,
+              "title": "Window"
+            },
+            "description": "Days to look back"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 8,
+                  "pattern": "^[A-Za-z-]{2,8}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Outlet name(s) to filter by (repeatable) — drill-down from /analytics/outlets",
+              "title": "Source"
+            },
+            "description": "Outlet name(s) to filter by (repeatable) — drill-down from /analytics/outlets"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Items per page (values above 100 are clamped to 100)",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Items per page (values above 100 are clamped to 100)"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 512
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Cuttings V1 Cuttings Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cuttings/{cutting_id}": {
+      "get": {
+        "tags": [
+          "cuttings"
+        ],
+        "summary": "One newspaper cutting, full text",
+        "operationId": "get_cutting_v1_cuttings__cutting_id__get",
+        "parameters": [
+          {
+            "name": "cutting_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cutting Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Cutting V1 Cuttings  Cutting Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/clips/{clip_id}": {
+      "get": {
+        "tags": [
+          "clips"
+        ],
+        "summary": "Full transcript of a clip you surfaced (strict on-demand)",
+        "operationId": "get_clip_transcript_v1_clips__clip_id__get",
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Clip Transcript V1 Clips  Clip Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/stories": {
+      "get": {
+        "tags": [
+          "stories"
+        ],
+        "summary": "Surfaceable grouped stories (v9 clusters), scoped to your provisioning",
+        "operationId": "list_stories_v1_stories_get",
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Narrow to one or more of your entities (entity-only view)",
+              "title": "Entity"
+            },
+            "description": "Narrow to one or more of your entities (entity-only view)"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 2
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO 2-letter subject country filter",
+              "title": "Country"
+            },
+            "description": "ISO 2-letter subject country filter"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response List Stories V1 Stories Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/stories/{story_id}": {
+      "get": {
+        "tags": [
+          "stories"
+        ],
+        "summary": "One story: metadata + timeline + outlet breakdown",
+        "operationId": "get_story_v1_stories__story_id__get",
+        "parameters": [
+          {
+            "name": "story_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Story Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "description": "Max timeline (member) articles",
+              "default": 60,
+              "title": "Limit"
+            },
+            "description": "Max timeline (member) articles"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Story V1 Stories  Story Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/brief/today": {
+      "get": {
+        "tags": [
+          "briefings"
+        ],
+        "summary": "Today's digest — top stories in your scope, grouped by topic",
+        "operationId": "brief_today_v1_brief_today_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Brief Today V1 Brief Today Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/brief/situation": {
+      "get": {
+        "tags": [
+          "briefings"
+        ],
+        "summary": "Rolling situation summary across your scope",
+        "operationId": "brief_situation_v1_brief_situation_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Brief Situation V1 Brief Situation Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/brief/daily": {
+      "get": {
+        "tags": [
+          "briefings"
+        ],
+        "summary": "The digest for a given day (defaults to current)",
+        "operationId": "brief_daily_v1_brief_daily_get",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO date YYYY-MM-DD (v1 returns the current scope digest)",
+              "title": "Date"
+            },
+            "description": "ISO date YYYY-MM-DD (v1 returns the current scope digest)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Brief Daily V1 Brief Daily Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/geo/coverage": {
+      "get": {
+        "tags": [
+          "geography"
+        ],
+        "summary": "District-level coverage counts by state, scoped",
+        "operationId": "geo_coverage_v1_geo_coverage_get",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 7,
+              "title": "Window"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Geo Coverage V1 Geo Coverage Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/geo/district/{district_id}": {
+      "get": {
+        "tags": [
+          "geography"
+        ],
+        "summary": "Coverage for one district (slug)",
+        "operationId": "geo_district_v1_geo_district__district_id__get",
+        "parameters": [
+          {
+            "name": "district_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "District Id"
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 7,
+              "title": "Window"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Geo District V1 Geo District  District Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analytics/topics": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Most-covered topics in your scope",
+        "operationId": "analytics_topics_v1_analytics_topics_get",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 7,
+              "title": "Window"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Analytics Topics V1 Analytics Topics Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analytics/outlets": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Per-outlet coverage & lean toward an entity",
+        "operationId": "analytics_outlets_v1_analytics_outlets_get",
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Entity id whose per-outlet coverage to break down",
+              "title": "Entity"
+            },
+            "description": "Entity id whose per-outlet coverage to break down"
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 7,
+              "title": "Window"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Analytics Outlets V1 Analytics Outlets Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analytics/sentiment": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Directed sentiment toward an entity (name or id) + daily trend",
+        "operationId": "analytics_sentiment_v1_analytics_sentiment_get",
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Entity id OR name to measure sentiment toward",
+              "title": "Entity"
+            },
+            "description": "Entity id OR name to measure sentiment toward"
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 7,
+              "title": "Window"
+            }
+          },
+          {
+            "name": "include_youtube",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Also live-score YouTube clips for this entity's name and add a 'youtube' pillar (slower; on-demand LLM, not pre-computed)",
+              "default": false,
+              "title": "Include Youtube"
+            },
+            "description": "Also live-score YouTube clips for this entity's name and add a 'youtube' pillar (slower; on-demand LLM, not pre-computed)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Analytics Sentiment V1 Analytics Sentiment Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analytics/coverage": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Coverage volume over time",
+        "operationId": "analytics_coverage_v1_analytics_coverage_get",
+        "parameters": [
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 7,
+              "title": "Window"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Analytics Coverage V1 Analytics Coverage Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/analytics/keyword-sentiment": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "On-demand two-field sentiment for an arbitrary keyword",
+        "operationId": "keyword_sentiment_v1_analytics_keyword_sentiment_get",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80,
+              "description": "Any word or phrase (need not be a provisioned entity)",
+              "title": "Keyword"
+            },
+            "description": "Any word or phrase (need not be a provisioned entity)"
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 90,
+              "minimum": 1,
+              "default": 7,
+              "title": "Window"
+            }
+          },
+          {
+            "name": "refresh",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Bypass the cache and recompute",
+              "default": false,
+              "title": "Refresh"
+            },
+            "description": "Bypass the cache and recompute"
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Constrain discovery to your provisioned entities/region (recommended for generic keywords)",
+              "default": false,
+              "title": "Scope"
+            },
+            "description": "Constrain discovery to your provisioned entities/region (recommended for generic keywords)"
+          },
+          {
+            "name": "pillars",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(articles|clips|both)$",
+              "description": "Search news articles, YouTube clips, or both",
+              "default": "articles",
+              "title": "Pillars"
+            },
+            "description": "Search news articles, YouTube clips, or both"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Keyword Sentiment V1 Analytics Keyword Sentiment Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scope": {
+      "get": {
+        "tags": [
+          "scope"
+        ],
+        "summary": "Read your org's provisioned scope",
+        "operationId": "read_scope_v1_scope_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Read Scope V1 Scope Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "scope"
+        ],
+        "summary": "Manage your scope (management key required)",
+        "operationId": "patch_scope_v1_scope_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScopePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Patch Scope V1 Scope Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/scope/purge": {
+      "post": {
+        "tags": [
+          "scope"
+        ],
+        "summary": "Explicitly purge your scope + webhooks (confirm required)",
+        "operationId": "purge_scope_v1_scope_purge_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurgeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Purge Scope V1 Scope Purge Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/usage": {
+      "get": {
+        "tags": [
+          "usage"
+        ],
+        "summary": "Your current period usage",
+        "operationId": "usage_v1_usage_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Usage V1 Usage Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks": {
+      "get": {
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "List your webhook subscriptions",
+        "operationId": "list_webhooks_v1_webhooks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Webhooks V1 Webhooks Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "Create a webhook subscription",
+        "operationId": "create_webhook_v1_webhooks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Webhook V1 Webhooks Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks/{webhook_id}": {
+      "delete": {
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "Delete a webhook subscription",
+        "operationId": "delete_webhook_v1_webhooks__webhook_id__delete",
+        "parameters": [
+          {
+            "name": "webhook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Webhook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Webhook V1 Webhooks  Webhook Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerApiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Your API key as a Bearer token: `Authorization: Bearer rig_live_…`"
+      },
+      "apiKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Alternative: send the key in the `X-API-Key` header."
+      }
+    },
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "PurgeBody": {
+        "properties": {
+          "confirm": {
+            "type": "boolean",
+            "title": "Confirm",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "PurgeBody"
+      },
+      "ScopePatch": {
+        "properties": {
+          "add_entities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Add Entities"
+          },
+          "remove_entities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Remove Entities"
+          },
+          "add_topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Add Topics"
+          },
+          "remove_topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Remove Topics"
+          },
+          "add_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Add Keywords"
+          },
+          "remove_keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Remove Keywords"
+          },
+          "add_regions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Add Regions"
+          },
+          "remove_regions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Remove Regions"
+          },
+          "add_mute_terms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Add Mute Terms"
+          },
+          "remove_mute_terms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Remove Mute Terms"
+          },
+          "languages": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Languages"
+          },
+          "keyword_priorities": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyword Priorities"
+          }
+        },
+        "type": "object",
+        "title": "ScopePatch"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WebhookCreate": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Url"
+          },
+          "filter": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Filter"
+          },
+          "events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "WebhookCreate"
+      }
+    }
+  }
+}

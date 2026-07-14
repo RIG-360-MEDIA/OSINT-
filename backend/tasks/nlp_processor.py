@@ -222,7 +222,6 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
     """Run a single article through all 4 NLP steps and persist results."""
     from sqlalchemy import text
 
-    from backend.nlp.cm.geo_district import load_gazetteer, tag_districts
     from backend.nlp.nlp_embedding import check_semantic_duplicate, generate_embedding, LABSE_REVISION
     from backend.nlp.nlp_entities import extract_entities
     from backend.nlp.nlp_geo import tag_geography
@@ -284,6 +283,14 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
     # If the districts table is empty (fresh deploy, seed not yet
     # applied), this returns [] and the INSERT loop below is a no-op.
     try:
+        # District module (CM Page v2) was deleted in the 2026-06-11 decommission
+        # cleanup (commit 158a202), but this import lived at the top of the function
+        # so EVERY article threw ModuleNotFoundError before reaching entity persist —
+        # silently zeroing entities_extracted corpus-wide. Import lazily INSIDE the
+        # best-effort try so a missing module degrades to "no districts" instead of
+        # aborting the whole article.
+        from backend.nlp.cm.geo_district import load_gazetteer, tag_districts
+
         gazetteer = await load_gazetteer(db)
         district_matches = tag_districts(
             title=title,
@@ -332,10 +339,12 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
               topic_fine            = :topic_fine,
               geo_primary           = :geo_primary,
               geo_secondary         = CAST(:geo_secondary AS text[]),
-              labse_embedding       = CAST(:labse_embedding AS vector),
-              embedded_at           = CASE WHEN CAST(:embedding_model AS text) IS NOT NULL THEN now() ELSE embedded_at END,
-              embedding_model       = COALESCE(:embedding_model, embedding_model),
-              embedding_revision    = COALESCE(:embedding_revision, embedding_revision),
+              -- Embeddings are owned SOLELY by embed_fill (locked V4 recipe = translated lead + title,
+              -- stamped embedding_revision='v4-tr-title-1024', writes both labse_embedding + _v4).
+              -- nlp_processor must NOT write labse_embedding: it used a lead-ONLY recipe and stamped the
+              -- model SHA (embedding_revision=836121a), which (a) put a 2nd revision label across the V4
+              -- corpus and (b) blocked embed_fill (skips non-null labse_embedding) from filling _v4.
+              -- The in-memory vector is still computed above for semantic dedup; we just don't persist it.
               is_duplicate          = :is_duplicate,
               duplicate_of          = CAST(:duplicate_of AS uuid),
               nlp_processed         = TRUE,
@@ -352,9 +361,6 @@ async def _process_single(article, db, nlp_model, precomputed_embedding: list[fl
             "topic_fine": topic_fine,
             "geo_primary": geo_primary,
             "geo_secondary": geo_secondary or [],
-            "labse_embedding": embedding_str,
-            "embedding_model": "sentence-transformers/LaBSE" if embedding else None,
-            "embedding_revision": LABSE_REVISION if embedding else None,
             "is_duplicate": is_duplicate,
             "duplicate_of": duplicate_of,
             "nlp_confidence": nlp_confidence,

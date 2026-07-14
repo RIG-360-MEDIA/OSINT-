@@ -54,13 +54,20 @@ app = Flask(__name__)
 # ── config ────────────────────────────────────────────────────────────────────
 
 RATE_INTERVAL        = float(os.getenv("RELAY_RATE_INTERVAL", "5.0"))
-CB_FAILURE_THRESHOLD = 5
-CB_RESET_AFTER       = 300     # seconds
+# Tolerant threshold: a large watchlist always has some private/invalid handles whose
+# per-account failures shouldn't trip the breaker and starve the rest of the batch.
+# The breaker still catches a genuine IG-wide block (many consecutive failures).
+CB_FAILURE_THRESHOLD = int(os.getenv("RELAY_CB_THRESHOLD", "15"))
+CB_RESET_AFTER       = int(os.getenv("RELAY_CB_RESET", "180"))   # seconds
 CACHE_TTL            = 600     # seconds
 PORT                 = int(os.getenv("INSTAGRAM_RELAY_PORT", "8890"))
 
 # Read session ID from env; fall back to env file pattern used by YouTube relay
 _SESSIONID = os.getenv("INSTA_SESSIONID", "")
+# ds_user_id is the numeric prefix of the sessionid (before the first colon, url-encoded
+# as %3A). Instagram's mobile feed endpoint 401s ("require_login") if sessionid is sent
+# WITHOUT it — this was the silent cause of the relay looking "logged out".
+_DS_USER_ID = _SESSIONID.split("%3A")[0].split(":")[0] if _SESSIONID else ""
 
 # ── fake device fingerprint (keeps mobile API happy) ──────────────────────────
 
@@ -133,12 +140,17 @@ def _record_success() -> None:
 def _web_session() -> _req.Session:
     s = _req.Session()
     s.cookies.set("sessionid", _SESSIONID, domain=".instagram.com")
+    if _DS_USER_ID:
+        s.cookies.set("ds_user_id", _DS_USER_ID, domain=".instagram.com")
     s.headers.update(_WEB_HEADERS)
     return s
 
 
 def _mobile_cookies() -> dict[str, str]:
-    return {"sessionid": _SESSIONID}
+    cookies = {"sessionid": _SESSIONID}
+    if _DS_USER_ID:
+        cookies["ds_user_id"] = _DS_USER_ID
+    return cookies
 
 
 # ── fetch helpers ─────────────────────────────────────────────────────────────
@@ -224,6 +236,14 @@ def _web_node_to_post(node: dict[str, Any], username: str) -> dict[str, Any]:
     post_url = f"https://www.instagram.com/p/{shortcode}/" if shortcode else ""
     is_video = bool(node.get("is_video"))
     media_urls = [node["display_url"]] if node.get("display_url") else []
+    # Reels/videos put the like count in edge_media_preview_like, NOT edge_liked_by
+    # (which comes back 0 for them). Take whichever is present/larger. comments can
+    # also live in edge_media_preview_comment on some post types.
+    likes = (node.get("edge_liked_by") or {}).get("count") or 0
+    likes = max(likes, (node.get("edge_media_preview_like") or {}).get("count") or 0)
+    comments = (node.get("edge_media_to_comment") or {}).get("count")
+    if not comments:
+        comments = (node.get("edge_media_preview_comment") or {}).get("count")
     return {
         "platform": "instagram",
         "platform_post_id": str(node.get("id") or ""),
@@ -232,10 +252,11 @@ def _web_node_to_post(node: dict[str, Any], username: str) -> dict[str, Any]:
         "post_text": (text or "").strip(),
         "post_url": post_url,
         "posted_at": posted_at,
-        "likes": (node.get("edge_liked_by") or {}).get("count"),
-        "comments": (node.get("edge_media_to_comment") or {}).get("count"),
+        "likes": likes or None,
+        "comments": comments,
         "shares": None,
         "upvotes": None,
+        "views": node.get("video_view_count") if is_video else None,
         "has_media": bool(media_urls),
         "media_urls": media_urls[:4],
         "raw": {
@@ -256,6 +277,12 @@ def _fetch_profile(username: str, limit: int) -> list[dict[str, Any]]:
             logger.info("cache hit @%s", username)
             return data
 
+    # web_profile_info stopped returning timeline edges for authed sessions (mid-2026):
+    # it serves profile metadata + id but an EMPTY edge_owner_to_timeline_media. The mobile
+    # feed endpoint DOES return posts as long as ds_user_id accompanies sessionid. So:
+    # resolve uid from web_profile_info (still returns id), then pull posts from feed/user.
+    uid = _get_user_id(username)
+
     with _lock:
         if _circuit_open():
             raise RuntimeError(
@@ -266,18 +293,19 @@ def _fetch_profile(username: str, limit: int) -> list[dict[str, Any]]:
         for attempt in range(4):
             try:
                 _wait_for_slot()
-                s = _web_session()
-                r = s.get(
-                    f"https://www.instagram.com/api/v1/users/web_profile_info/?username={username}",
+                r = _req.get(
+                    f"https://i.instagram.com/api/v1/feed/user/{uid}/",
+                    params={"count": limit},
+                    headers=_MOBILE_HEADERS,
+                    cookies=_mobile_cookies(),
                     timeout=20,
                 )
                 r.raise_for_status()
-                user = r.json()["data"]["user"]
-                edges = (user.get("edge_owner_to_timeline_media") or {}).get("edges", [])
-                posts = [_web_node_to_post(e["node"], username) for e in edges[:limit]]
+                items = r.json().get("items", [])
+                posts = [_item_to_post(it, username) for it in items[:limit]]
                 _record_success()
                 _cache[cache_key] = (now + CACHE_TTL, posts)
-                logger.info("fetched %d posts @%s (web)", len(posts), username)
+                logger.info("fetched %d posts @%s (feed)", len(posts), username)
                 return posts
 
             except (_req.HTTPError, _req.ConnectionError) as exc:

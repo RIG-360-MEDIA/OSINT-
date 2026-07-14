@@ -376,6 +376,9 @@ _CEREBRAS_KEYS: list[str] = [
 ]
 _cerebras_index: int = 0
 
+# Round-robin index for rotating cerebras model lanes (per-model TPD budgets).
+_cerebras_model_idx: int = 0
+
 # Groq model id → Cerebras model id. Same model weights, different naming
 # convention. Anything not in the map falls back to zai-glm-4.7.
 _GROQ_TO_CEREBRAS_MODEL: dict[str, str] = {
@@ -425,11 +428,20 @@ async def _call_cerebras(
     if not _CEREBRAS_KEYS:
         raise GroqQuotaExhausted("No Cerebras keys configured for failover.")
 
-    cerebras_model = _GROQ_TO_CEREBRAS_MODEL.get(groq_model, "zai-glm-4.7")
+    # Cerebras TPD is PER-MODEL — rotate across models so one exhausted model
+    # (e.g. zai-glm-4.7) doesn't sink failover while gemma-4-31b sits idle with
+    # a full daily budget. gemma-4-31b leads (clean JSON, no reasoning tax);
+    # zai-glm/gpt-oss follow as separate-budget fallbacks. (2026-07-08: probe
+    # showed zai-glm-4.7 + gpt-oss-120b TPD-exhausted, gemma-4-31b HTTP200 clean.)
+    _cb_primary = _GROQ_TO_CEREBRAS_MODEL.get(groq_model, "gemma-4-31b")
+    _cb_seen: set = set()
+    _cb_lanes = [m for m in [_cb_primary, "gemma-4-31b", "zai-glm-4.7", "gpt-oss-120b"]
+                 if not (m in _cb_seen or _cb_seen.add(m))]
     import httpx as _httpx
-    # Try up to 3 Cerebras keys before giving up.
+    # Each model lane × up to 2 keys; per-model TPD → cycle models on 429/empty.
     last_exc: Exception | None = None
-    for _ in range(min(len(_CEREBRAS_KEYS), 3)):
+    for _attempt in range(len(_cb_lanes) * min(len(_CEREBRAS_KEYS), 2)):
+        cerebras_model = _cb_lanes[_attempt % len(_cb_lanes)]
         await _get_bucket().acquire()
         key = _next_cerebras_key()
         if not key:
@@ -516,7 +528,11 @@ async def _call_cerebras(
                 .get("content", "")
             )
             if not content:
-                raise GroqCallFailed("Cerebras returned empty content")
+                # empty (e.g. reasoning model starved of tokens) → rotate to the
+                # next model lane rather than failing the whole Cerebras failover.
+                last_exc = GroqCallFailed(f"Cerebras {cerebras_model} empty content")
+                logger.warning("Cerebras %s empty — rotating model lane", cerebras_model)
+                continue
             return content.strip()
         except (GroqCallFailed, GroqQuotaExhausted):
             raise
@@ -937,8 +953,15 @@ async def _call_via_slot(
         response = await client.chat.completions.create(**kwargs)
         return response.choices[0].message.content.strip()
 
-    # Cerebras path — reuse _call_cerebras's per-key request shape.
-    cerebras_model = _GROQ_TO_CEREBRAS_MODEL.get(model, "zai-glm-4.7")
+    # Cerebras path. TPD is PER-MODEL, so rotate across models with separate
+    # daily budgets instead of funneling every call into one drained model.
+    # (2026-07-08 probe: gemma-4-31b HTTP200 clean w/ full headroom; zai-glm-4.7
+    # + gpt-oss-120b were TPD-exhausted.) gemma leads; zai-glm as 2nd budget
+    # (its reasoning_effort=none handling below stays intact).
+    global _cerebras_model_idx
+    _cb_lanes = ("gemma-4-31b", "gemma-4-31b", "zai-glm-4.7")
+    cerebras_model = _cb_lanes[_cerebras_model_idx % len(_cb_lanes)]
+    _cerebras_model_idx += 1
     import httpx as _httpx
     body: dict[str, Any] = {
         "model": cerebras_model,

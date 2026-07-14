@@ -214,6 +214,33 @@ def classify_list_sentiment(
     return kept, True
 
 
+def classify_labels(llm: LLMProvider, items: list["ListItem"]) -> list[str] | None:
+    """Classify each item's stance as negative/positive/neutral; return the label list
+    (same order) or None on failure. For sentiment DISTRIBUTION (charts/trends)."""
+    if not items:
+        return []
+    listing = "\n".join(f"{i + 1}. {it.title} — {(it.snippet or '')[:120]}" for i, it in enumerate(items))
+    try:
+        raw = llm.complete(_CLASSIFY_SYSTEM, f"Items:\n{listing}\n\nJSON array of {len(items)} labels:")
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("classify_labels failed: %s", exc)
+        return None
+    m = re.search(r"\[.*\]", raw, re.DOTALL)
+    if not m:
+        return None
+    try:
+        labels = json.loads(m.group(0))
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(labels, list) or len(labels) < len(items):
+        return None
+    out = []
+    for lab in labels[: len(items)]:
+        s = str(lab).strip().lower()
+        out.append("negative" if s.startswith("neg") else "positive" if s.startswith("pos") else "neutral")
+    return out
+
+
 def _clauses(since_hours: int | None, languages: Sequence[str] | None) -> tuple[str, str]:
     since = " AND a.published_at > now() - make_interval(hours => :hours)" if since_hours else ""
     lang = " AND a.language_detected = ANY(:langs)" if languages else ""

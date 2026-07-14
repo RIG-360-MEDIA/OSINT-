@@ -140,13 +140,13 @@ async def build_keyword_dossier(db, q: str, days: int = 7) -> dict[str, Any]:
         "platform": r.platform, "username": r.username,
         "posts": int(r.c), "engagement": int(r.eng or 0),
     } for r in (await db.execute(text("""
-        SELECT sa.platform AS platform, sa.username AS username, count(*) AS c,
+        SELECT sp.platform AS platform, sp.author_username AS username, count(*) AS c,
                sum(coalesce(sp.upvotes,0)+coalesce(sp.likes,0)
                    +coalesce(sp.comments_count,0)) AS eng
-          FROM social_posts sp JOIN social_authors sa ON sa.id = sp.author_id
+          FROM social_posts sp
          WHERE sp.collected_at > now() - make_interval(days => :days)
-           AND sp.post_text ~* :pat AND sa.username IS NOT NULL
-         GROUP BY sa.platform, sa.username ORDER BY c DESC LIMIT 10
+           AND sp.post_text ~* :pat AND sp.author_username IS NOT NULL
+         GROUP BY sp.platform, sp.author_username ORDER BY c DESC LIMIT 10
     """), {"days": d, "pat": pat})).fetchall()]
 
     # 7. Harmful accounts — toxic / weaponized / coordinated posts about the keyword.
@@ -158,17 +158,17 @@ async def build_keyword_dossier(db, q: str, days: int = 7) -> dict[str, Any]:
         "toxic_posts": int(r.toxic or 0), "max_toxicity": round(float(r.mx or 0), 2),
         "coordinated_posts": int(r.coord or 0),
     } for r in (await db.execute(text("""
-        SELECT sa.platform AS platform, sa.username AS username,
+        SELECT sp.platform AS platform, sp.author_username AS username,
                count(*) FILTER (WHERE sp.toxicity > 0.5) AS toxic,
                max(sp.toxicity) AS mx,
                count(*) FILTER (WHERE sp.coordination_cluster_id IS NOT NULL) AS coord
-          FROM social_posts sp JOIN social_authors sa ON sa.id = sp.author_id
+          FROM social_posts sp
          WHERE sp.collected_at > now() - make_interval(days => :days)
-           AND sp.post_text ~* :pat AND sa.username IS NOT NULL
+           AND sp.post_text ~* :pat AND sp.author_username IS NOT NULL
            AND (sp.toxicity > 0.5 OR sp.coordination_cluster_id IS NOT NULL
                 OR (sp.weaponization_signals IS NOT NULL
                     AND sp.weaponization_signals::text NOT IN ('null','{}','[]')))
-         GROUP BY sa.platform, sa.username
+         GROUP BY sp.platform, sp.author_username
          ORDER BY toxic DESC, mx DESC NULLS LAST LIMIT 10
     """), {"days": d, "pat": pat})).fetchall()]
 

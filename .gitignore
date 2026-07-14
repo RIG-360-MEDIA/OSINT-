@@ -46,3 +46,11 @@ products/ask-rig/eval/qa_results.json
 
 # Local agent/editor config
 .claude/launch.json
+
+# Live service credentials — never commit (rotate if exposed)
+backend/collectors/ig_relay_settings.json
+# Runtime locks
+.claude/*.lock
+# Generated binary deliverables (keep the source/spec, not the built artifacts)
+docs/handoffs/client-api/*.pdf
+docs/handoffs/client-api/*.zip

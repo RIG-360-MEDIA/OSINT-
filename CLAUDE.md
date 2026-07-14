@@ -3,6 +3,11 @@
 Project context for any Claude session working in this repo. Read this
 before touching infrastructure or making assumptions about how things run.
 
+> Estate-wide knowledge-base rules (READ-FIRST, task routing, key facts,
+> product aliases) now live in the user-level `~/.claude/CLAUDE.md`, which
+> loads in every session. This file keeps only `rig-surveillance`-specific
+> context.
+
 ## New session? Read docs/onboarding/00-README.md first.
 
 A complete onboarding folder lives at `docs/onboarding/` (11 numbered

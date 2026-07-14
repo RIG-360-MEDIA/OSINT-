@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Reveal, Magnetic } from '../lib/ui';
+import { Reveal } from '../lib/ui';
 import { authFetch } from '../lib/supabase';
 import LiveStamp from '../components/LiveStamp';
 import Sources from '../components/Sources';
@@ -41,6 +41,7 @@ export default function WarRoom() {
   if (status.error || !w || !w.personalized) return <Notice>{status.error ? `Couldn’t load the war room — ${status.error}` : 'Finish onboarding to open the war room.'}</Notice>;
 
   const STATION = w.station, LEAD = w.lead, CABLES = w.cables || [], ARSENAL = w.arsenal || {};
+  if (!STATION || !LEAD) return <Notice>War-room data is still assembling for this window — check back shortly.</Notice>;
 
   return (
     <div className="cabledesk">
@@ -119,7 +120,6 @@ export default function WarRoom() {
               <div className="cd-bh">SUGGESTED REPLY <span className="cd-langs"><b>{ARSENAL.predraft.lang}</b> · {ARSENAL.predraft.words}w</span></div>
               <p className="cd-draft">{ARSENAL.predraft.en}</p>
               <div className="cd-flag">⚑ {ARSENAL.predraft.flag}</div>
-              <div className="cd-actrow"><Magnetic className="btn primary">approve</Magnetic><button className="btn">edit</button><button className="btn cd-ghost">kill</button></div>
             </div>)}
           <div className="cd-block">
             <div className="cd-bh">WHAT OPPONENTS ARE SAYING <em>· in stories that hit you</em></div>

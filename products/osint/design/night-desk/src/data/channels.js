@@ -35,12 +35,14 @@ const BY_STATE = {
     { name: '10TV', id: 'UCBF2w5CGS8d0YLygY0nlnXQ' },
   ],
   TG: [
-    { name: 'NDTV', id: 'UCXBD5iG5cr4ZYZ99K-fmDHg', live: 'Z39sKDk6Goc' },
-    { name: 'India Today', id: 'UCYPvAwZP8pZhSMW8qs7cVCw', live: 'S_vIHNXkiNA' },
-    { name: 'TV9 Telugu', id: 'UCfaww9Q8C_-EaM0sXI8o-fA', live: 'MuLKRPmOamM' },
-    { name: 'V6 News', id: 'UC239yTgdQbce3omeOjCt8_A' },
+    // live videoIds omitted — they rotate every few hours and go stale;
+    // live_stream?channel=ID self-heals to whatever the channel is broadcasting.
+    { name: 'NDTV', id: 'UCXBD5iG5cr4ZYZ99K-fmDHg' },
+    { name: 'India Today', id: 'UCYPvAwZP8pZhSMW8qs7cVCw' },
+    { name: 'TV9 Telugu', id: 'UCfaww9Q8C_-EaM0sXI8o-fA' },
+    { name: 'T News Telugu', id: 'UCQGqX5Ndpm4SNE0Hm4KHNWQ' },
     { name: 'Mahaa News', id: 'UCf40zfa4GGOC9s8yoQhGZGg' },
-    { name: 'ABN Telugu', id: 'UC_2irx_BQR7RsBKmUV9fePQ', live: 'eNCV9ooxf_Y' },
+    { name: 'ABN Telugu', id: 'UC_2irx_BQR7RsBKmUV9fePQ' },
   ],
 };
 

@@ -3,7 +3,7 @@ import { Reveal, StanceDot } from '../lib/ui';
 import { Wave } from '../lib/charts';
 import Panel from '../components/Panel';
 import LiveStamp from '../components/LiveStamp';
-import { authFetch } from '../lib/supabase';
+import { authFetch, API_BASE } from '../lib/supabase';
 
 const toneCls = (t) => (t === 'hostile' ? 'neg' : t === 'supportive' ? 'pos' : 'neu');
 // Colour the pressure-point readout by its polarity word (Positive → green,
@@ -33,6 +33,10 @@ const TOVL = {
   supportive: 'linear-gradient(180deg, oklch(0.55 0.15 165 / .38), oklch(0.05 0.01 270 / .82))',
   neutral: 'linear-gradient(180deg, oklch(0.32 0.02 270 / .35), oklch(0.05 0.01 270 / .82))',
 };
+
+// Branded placeholder for missing/broken thumbnails — a hatched theme-toned
+// fill, no external image service (picsum was a customer-readiness liability).
+const FALLBACK_BG = 'repeating-linear-gradient(125deg, oklch(0.17 0.014 270) 0 8px, oklch(0.12 0.012 270) 8px 16px)';
 
 const initials = (n) => (n || '?').split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 
@@ -104,9 +108,50 @@ function enText(t) {
   return s.length > 150 ? s.slice(0, 150).replace(/\s+\S*$/, '') + '…' : s;
 }
 
+// Relative age from an ISO timestamp ("3h ago" / "2d ago"), for clip/cutting cards.
+function ago(iso) {
+  if (!iso) return '';
+  const h = (Date.now() - new Date(iso).getTime()) / 36e5;
+  if (!isFinite(h) || h < 0) return '';
+  if (h < 1) return 'just now';
+  if (h < 24) return Math.round(h) + 'h ago';
+  return Math.round(h / 24) + 'd ago';
+}
+
+// Map an article / clip / cutting row to the shared Top-Stories card model so the
+// three pillars render in one strip format (thumbnail | headline | "for you" summary).
+// Clips use the YouTube thumbnail; cuttings use the snapshot image endpoint.
+function cardModel(tab, it, i) {
+  if (tab === 'clips') {
+    return {
+      key: it.id ?? i, thumb: it.thumb, src: it.source || 'YouTube', tone: null,
+      title: it.title, titleEn: '', href: it.url || null,
+      meta: [it.source || 'YouTube', it.ts ? ago(it.ts) : null].filter(Boolean).join(' · '),
+      body: it.summary || (it.matched ? `Matched on ${it.matched}.` : 'In your coverage this window.'),
+    };
+  }
+  if (tab === 'cuttings') {
+    return {
+      key: it.id ?? i, thumb: it.id ? `${API_BASE}/api/brief/clipping-image/${it.id}` : null, src: it.source || 'Newspaper', tone: null,
+      title: it.title, titleEn: '', href: null,
+      meta: [it.source || 'Newspaper', it.ts ? ago(it.ts) : null].filter(Boolean).join(' · '),
+      body: it.summary || (it.matched ? `Matched on ${it.matched}.` : 'In your coverage this window.'),
+    };
+  }
+  return {
+    key: i, thumb: it.thumbnail, src: it.source, tone: it.tone,
+    title: it.headline, titleEn: it.headline_en && enText(it.headline_en), href: it.url || null,
+    meta: [it.source, it.age].filter(Boolean).join(' · '),
+    body: it.summary || (it.matched ? `Matched on ${it.matched}.` : 'In your coverage this window.'),
+  };
+}
+
 export default function Home() {
   const [home, setHome] = useState(null);
   const [stories, setStories] = useState([]);
+  const [clips, setClips] = useState([]);
+  const [cuttings, setCuttings] = useState([]);
+  const [feedTab, setFeedTab] = useState('articles'); // articles | cuttings | clips
   const [status, setStatus] = useState({ loading: true, error: null });
   const [loadedAt, setLoadedAt] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -125,12 +170,15 @@ export default function Home() {
   const load = useCallback(async ({ silent = false } = {}) => {
     if (silent) setRefreshing(true);
     try {
-      const [h, s] = await Promise.all([
+      const [h, s, cp] = await Promise.all([
         authFetch('/api/brief/home'),
         authFetch('/api/brief/top-articles?limit=6').catch(() => null),
+        authFetch('/api/brief/cross-pillar').catch(() => null),
       ]);
       setHome(h);
       setStories((s && s.articles) || []);
+      setClips((cp && cp.clips) || []);
+      setCuttings((cp && cp.cuttings) || []);
       setStatus({ loading: false, error: null });
       setLoadedAt(Date.now());
     } catch (e) {
@@ -213,7 +261,6 @@ export default function Home() {
   const S = home.sentiment || {};
   const sPoints = S.points || [];
   const players = home.players || [];
-  const six = home.six || [];
   const caveat = (home.caveats || [])[0];
 
   return (
@@ -367,38 +414,81 @@ export default function Home() {
         </div>
       </Reveal>
 
-      {/* ② TOP STORIES FOR YOU */}
-      {stories.length > 0 && (
-        <Reveal>
-          <div className="eyebrow">TOP STORIES FOR YOU</div>
-          <div className="sub" style={{ marginBottom: 18 }}>The stories that matter to you — and why.</div>
-          <div className="panel tstories">
-            {stories.map((s, i) => (
-              <div key={i} className="tstory-strip">
-                <div className="ts-left">
-                  <div className="ts-thumb">
-                    <img src={s.thumbnail || `https://picsum.photos/seed/${i}-osint/720/440`} alt="" loading="lazy" />
-                    <div className="tovl" style={{ background: TOVL[s.tone] || TOVL.neutral }} />
-                    <span className="ts-src-badge">{s.source}</span>
-                  </div>
-                  <div className="ts-hd">
-                    <StanceDot t={s.tone} />
-                    <span>{cleanTitle(s.headline)}</span>
-                  </div>
-                  {s.headline_en && enText(s.headline_en) && (
-                    <div className="en-gloss"><b>EN</b>{enText(s.headline_en)}</div>
-                  )}
-                  <div className="ts-meta">{s.source} · {s.age}</div>
-                </div>
-                <div className="ts-right">
-                  <b className="ts-fy-label">For you</b>
-                  <p className="ts-fy-body">{s.summary || (s.matched ? `Matched on ${s.matched}.` : 'In your coverage this window.')}</p>
-                </div>
+      {/* ② TOP STORIES FOR YOU — toggle across Articles / Newspaper / YouTube, one card format */}
+      {(stories.length > 0 || clips.length > 0 || cuttings.length > 0) && (() => {
+        const tabs = [
+          { k: 'articles', label: 'Articles', items: stories },
+          { k: 'cuttings', label: 'Newspaper', items: cuttings },
+          { k: 'clips', label: 'YouTube', items: clips },
+        ];
+        const active = tabs.find((t) => t.k === feedTab) || tabs[0];
+        const blurb = feedTab === 'clips' ? "What's airing about your watch list."
+          : feedTab === 'cuttings' ? 'In print across your coverage — tap the snapshot to read.'
+          : 'The stories that matter to you — and why.';
+        return (
+          <Reveal>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <div className="eyebrow">TOP STORIES FOR YOU</div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {tabs.map((t) => {
+                  const on = feedTab === t.k;
+                  return (
+                    <button key={t.k} type="button" onClick={() => setFeedTab(t.k)}
+                      style={{
+                        padding: '5px 14px', borderRadius: 999, cursor: 'pointer',
+                        fontSize: '.72rem', letterSpacing: '.07em', textTransform: 'uppercase', fontWeight: 600,
+                        transition: 'all .15s',
+                        border: '1px solid ' + (on ? 'var(--gold, #c9a227)' : 'var(--line, #2b2b34)'),
+                        background: on ? 'var(--gold, #c9a227)' : 'transparent',
+                        color: on ? '#0b0b0e' : 'var(--faint, #8a8a93)',
+                      }}>
+                      {t.label}{t.items.length ? ' ' + t.items.length : ''}
+                    </button>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        </Reveal>
-      )}
+            </div>
+            <div className="sub" style={{ marginBottom: 18 }}>{blurb}</div>
+            <div className="panel tstories">
+              {!active.items.length && (
+                <div style={{ padding: 24, color: 'var(--faint)' }}>Nothing in this window yet.</div>
+              )}
+              {active.items.map((it, i) => {
+                const m = cardModel(active.k, it, i);
+                const inner = (
+                  <>
+                    <div className="ts-left">
+                      <div className="ts-thumb" style={{ background: FALLBACK_BG }}>
+                        {m.thumb && (
+                          <img src={m.thumb} alt="" loading="lazy"
+                               onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                        )}
+                        <div className="tovl" style={{ background: TOVL[m.tone] || TOVL.neutral }} />
+                        <span className="ts-src-badge">{m.src}</span>
+                      </div>
+                      <div className="ts-hd">
+                        {m.tone ? <StanceDot t={m.tone} /> : null}
+                        <span>{cleanTitle(m.title)}</span>
+                      </div>
+                      {m.titleEn && <div className="en-gloss"><b>EN</b>{m.titleEn}</div>}
+                      <div className="ts-meta">{m.meta}</div>
+                    </div>
+                    <div className="ts-right">
+                      <b className="ts-fy-label">For you</b>
+                      <p className="ts-fy-body">{m.body}</p>
+                    </div>
+                  </>
+                );
+                return m.href ? (
+                  <a key={m.key} className="tstory-strip" href={m.href} target="_blank" rel="noopener noreferrer">{inner}</a>
+                ) : (
+                  <div key={m.key} className="tstory-strip">{inner}</div>
+                );
+              })}
+            </div>
+          </Reveal>
+        );
+      })()}
 
       {/* ③ PEOPLE TO WATCH */}
       <Reveal>
@@ -465,39 +555,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
-      {/* THE SIX — live evidence feeds */}
-      <Reveal>
-        <div className="eyebrow">THE LATEST</div>
-        <div className="sub" style={{ marginBottom: 16 }}>Everything new about you right now — quotes, coverage, and who you're tied to.</div>
-        <div className="sixgrid">
-          {six.map((s) => (
-            <Panel key={s.key} className={'six feed feed-' + s.key}>
-              <div className="tt">{s.title}</div>
-              <div className="feed-blurb">{s.blurb}</div>
-              {(!s.items || !s.items.length) && <div className="feed-empty">{s.empty}</div>}
-              {s.items && s.items.map((it, j) => (
-                it.kind === 'tag' ? (
-                  <div className="feed-tag" key={j}>
-                    <span className="feed-tag-name">{it.text}</span>
-                    <span className="feed-tag-sub">{it.sub}</span>
-                  </div>
-                ) : (
-                  <a className="feed-row" key={j} href={it.url || undefined}
-                     target="_blank" rel="noopener noreferrer">
-                    <span className={'feed-dot ' + (it.tone || 'neu')} />
-                    <span className="feed-body">
-                      <span className={'feed-text' + (it.kind === 'quote' ? ' feed-quote' : '')}>{it.text}</span>
-                      {it.en && <span className="feed-en">{it.en}</span>}
-                      <span className="feed-meta">{it.sub}{it.when ? ' · ' + it.when : ''}</span>
-                    </span>
-                  </a>
-                )
-              ))}
-            </Panel>
-          ))}
-        </div>
-      </Reveal>
     </div>
   );
 }

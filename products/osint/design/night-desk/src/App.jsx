@@ -12,7 +12,7 @@ import Dossier from './pages/Dossier';
 import MapPage from './pages/MapPage';
 import Dispatch from './pages/Dispatch';
 import Ask from './pages/Ask';
-import Keywords from './pages/Keywords';
+import Keywords from './pages/Keywords'; // withheld in prod; dev-only route (see arrays below)
 import Login from './pages/Login';
 import Landing from './pages/Landing';
 import SuperUserDashboard from './pages/SuperUserDashboard';
@@ -22,15 +22,24 @@ import ProductPicker, { canSeeCompany } from './pages/company/ProductPicker';
 import CompanyApp from './pages/company/CompanyApp';
 import './styles/company.css';
 
-const ALL_PAGES = [Home, WarRoom, Analytics, Dossier, MapPage, Dispatch, Keywords, Ask];
-const ALL_SLUGS = ['home', 'war-room', 'analytics', 'dossier', 'map', 'dispatch', 'keywords', 'ask'];
+// Keyword Intelligence is deliberately withheld (2026-07-07): the flagship
+// dossier only reads pre-stored data and collapses on anything not already
+// in the corpus (verified live — Modi works, Tridel doesn't). Hidden for
+// everyone, including admins, until it does real on-demand collection with
+// verifiable evidence behind every claim. Page + route intentionally absent
+// from these arrays, not just nav-hidden, so /keywords 404s for all roles.
+// Keyword Intelligence stays withheld in prod (above). It IS mounted on localhost
+// (`import.meta.env.DEV`) so the identity-footprint wiring on harmful accounts can be
+// exercised locally without shipping the page to production.
+const DEV_ONLY = import.meta.env.DEV;
+const ALL_PAGES = [Home, WarRoom, Analytics, Dossier, MapPage, Dispatch, Ask, ...(DEV_ONLY ? [Keywords] : [])];
+const ALL_SLUGS = ['home', 'war-room', 'analytics', 'dossier', 'map', 'dispatch', 'ask', ...(DEV_ONLY ? ['keywords'] : [])];
 const BASE = (import.meta.env.BASE_URL || '/').replace(/\/$/, ''); // '' at root, '/desk' on subpath
 
-// Client users get everything except the Ask/RAG page (now the last, index 7).
-// Keywords (index 6) IS available to clients — it's the core product surface.
+// Client users get everything except the Ask/RAG page (last, index 6).
 function pagesForRole(role) {
   if (role === 'client') {
-    return { pages: ALL_PAGES.slice(0, 7), slugs: ALL_SLUGS.slice(0, 7) };
+    return { pages: ALL_PAGES.slice(0, 6), slugs: ALL_SLUGS.slice(0, 6) };
   }
   return { pages: ALL_PAGES, slugs: ALL_SLUGS };
 }

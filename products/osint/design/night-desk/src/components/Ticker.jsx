@@ -23,8 +23,10 @@ export default function Ticker() {
     return () => { alive = false; clearInterval(t); };
   }, []);
 
+  const clean = (t) => String(t || '').replace(/\s+(?:[a-z]{2,8}\s+)?\d{5,}\S*$/i, '').trim() || t;
+
   const line = items.map((it, i) => {
-    const text = it.title_en || it.title || '';
+    const text = clean(it.title_en || it.title || '');
     const label = it.source ? <>{text} <b>· {it.source}</b></> : text;
     const headline = it.url ? (
       <a href={it.url} target="_blank" rel="noreferrer"

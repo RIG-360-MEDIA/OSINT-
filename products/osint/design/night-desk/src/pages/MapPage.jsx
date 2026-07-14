@@ -193,12 +193,22 @@ export default function MapPage() {
   const useChoropleth = scope === 'mine' && !!geo;
 
   const layers = useMemo(() => {
-    const labelData = [...bubbles].sort((a, b) => (b.articles || 0) - (a.articles || 0)).slice(0, scope === 'mine' ? 12 : 18);
+    // Telangana/AP district labels crowd at default zoom — keep only the higher-volume
+    // districts (drops the long tail of 0–1 story labels that pile on top of each other)
+    // and let labels collide-cull rather than overlap.
+    const minLabelArt = scope === 'mine' ? 2 : 0;
+    const labelData = [...bubbles]
+      .filter((b) => (b.articles || 0) >= minLabelArt)
+      .sort((a, b) => (b.articles || 0) - (a.articles || 0))
+      .slice(0, scope === 'mine' ? 8 : 18);
     const labelLayer = new TextLayer({
       id: 'labels', data: labelData, getPosition: (b) => [b.lon, b.lat], getText: (b) => b.name,
       getSize: 11, getColor: [236, 241, 250, 240], getPixelOffset: [0, -4],
       fontFamily: 'ui-monospace, monospace', getTextAnchor: 'middle', getAlignmentBaseline: 'center',
       outlineWidth: 3, outlineColor: [5, 7, 12, 255], fontSettings: { sdf: true },
+      // Padding around each glyph block adds breathing room so adjacent district
+      // labels read as separate at the default zoom.
+      getTextPadding: [4, 2, 4, 2],
     });
     if (scope === 'global') {
       const gls = [new GeoJsonLayer({

@@ -12,6 +12,8 @@ article_locations, article_events.
 """
 from __future__ import annotations
 
+import os
+
 import argparse
 import asyncio
 import json
@@ -72,6 +74,58 @@ _BROWSER_HEADERS = {
 MIN_BODY_CHARS = 120
 MAX_BODY_FOR_GROQ = 2400
 GROQ_TASK_TYPE = "profile_extraction"     # 1000-token cap
+
+# ── Dedicated summary call (2026-06-25) ──────────────────────────────
+# The big extraction crams ~10 fields into one JSON and the model omits the
+# `summaries` block ~75% of the time (deprioritised → silently {} at ~line 762
+# → summary_executive stays NULL). A single-purpose call whose ENTIRE output is
+# the summary block lifts compliance ~25% → ~100% (measured, summary_backfill).
+# Fires ONLY when the big call left summary_executive empty. Toggle: SPLIT_SUMMARY.
+_SPLIT_SUMMARY = os.getenv("SPLIT_SUMMARY", "0") != "0"
+GROQ_SYS_SUMMARY = (
+    "You summarise a single news article. Output JSON ONLY, exactly these three "
+    "REQUIRED fields:\n"
+    '{"preview": "punchy teaser, MAX 50 chars, not a cut-off sentence", '
+    '"snippet": "standalone one-sentence gist, MAX 200 chars, grammatically complete", '
+    '"executive": "the substance: who/what/where + why it matters, 2-4 sentences, MAX 1000 chars"}\n'
+    "RULES: output ONLY the JSON object (no markdown, no reasoning); ALL three fields "
+    "REQUIRED and non-empty; write every field in ENGLISH even if the article is not; "
+    "summarise only what the article says, invent nothing."
+)
+
+
+async def _dedicated_summary(title: str, body: str) -> dict[str, str] | None:
+    """Single-purpose summary call → {preview, snippet, executive} or None."""
+    user = f"TITLE: {title}\n\nBODY:\n{body}\n\nReturn ONLY the JSON object."
+    try:
+        raw = await call_groq(
+            system=GROQ_SYS_SUMMARY, user=user, pillar="articles",
+            task_type=GROQ_TASK_TYPE, json_response=True, max_tokens_override=700,
+        )
+    except (GroqCallFailed, GroqQuotaExhausted):
+        return None
+    t = (raw or "").strip()
+    try:
+        parsed = json.loads(t)
+    except (TypeError, ValueError):
+        if t.startswith("```"):
+            t = t.strip("`").replace("json", "", 1).strip()
+        a, b = t.find("{"), t.rfind("}")
+        if not (0 <= a < b):
+            return None
+        try:
+            parsed = json.loads(t[a:b + 1])
+        except (TypeError, ValueError):
+            return None
+    if not isinstance(parsed, dict):
+        return None
+    out: dict[str, str] = {}
+    for k in ("preview", "snippet", "executive"):
+        v = parsed.get(k)
+        if isinstance(v, str) and v.strip():
+            out[k] = v.strip()
+    return out or None
+
 
 ARTICLE_TYPES = {
     "news", "opinion", "analysis", "explainer", "listicle",
@@ -923,6 +977,15 @@ async def process_one(db, article: dict[str, Any]) -> dict[str, Any]:
         register_is_breaking = False
         english_translation = None
 
+    # Dedicated summary fallback — fires when the big call omitted the summary
+    # block (the dominant failure mode). Free local-first call; only when missing.
+    if _SPLIT_SUMMARY and not summary_executive:
+        _s = await _dedicated_summary(title, ctx_body)
+        if _s:
+            summary_preview = summary_preview or _s.get("preview")
+            summary_snippet = summary_snippet or _s.get("snippet")
+            summary_executive = summary_executive or _s.get("executive")
+
     byline = structural.get("byline")
 
     # 6. Persist — extended _update_article writes all the v2 columns.
@@ -999,7 +1062,13 @@ async def _update_article(
             """
             UPDATE articles
             SET full_text_scraped       = COALESCE(:body, full_text_scraped),
-                lead_text_translated    = COALESCE(LEFT(:body, 2000), lead_text_translated),
+                -- Fall back to text already on the row (collector's scraped body) when a fresh
+                -- re-extraction returns empty - else thin/RSS-snippet sources leave this NULL
+                -- and the article can never be embedded. Same source as the normal path
+                -- (LEFT of the body), so vectors stay recipe-consistent. (2026-07 fix.)
+                lead_text_translated    = COALESCE(NULLIF(LEFT(:body, 2000), ''),
+                                                   NULLIF(LEFT(full_text_scraped, 2000), ''),
+                                                   lead_text_translated),
                 body_quality            = :quality,
                 word_count              = :wc,
                 reading_minutes         = :rm,
@@ -1008,7 +1077,16 @@ async def _update_article(
                 language_iso            = COALESCE(:lang, language_iso),
                 thumbnail_url           = COALESCE(:hero, thumbnail_url),
                 substrate_processed_at  = now(),
-                substrate_status        = :status,
+                -- Never stamp 'ok' with no usable lead text (no fresh body AND no stored
+                -- scraped body). Downgrade to 'extract_failed' so it surfaces instead of
+                -- silently passing. junk/fetch_failed pass through unchanged.
+                substrate_status        = CASE
+                    WHEN :status = 'ok'
+                     AND COALESCE(NULLIF(LEFT(:body, 2000), ''),
+                                  NULLIF(LEFT(full_text_scraped, 2000), '')) IS NULL
+                    THEN 'extract_failed'
+                    ELSE :status
+                END,
                 quotes_extracted        = TRUE,
                 claims_extracted        = TRUE,
                 primary_subject         = COALESCE(:ps, primary_subject),
@@ -1399,6 +1477,10 @@ async def _persist_events(db, aid: str, evs: list[dict[str, Any]]) -> None:
 # ORCHESTRATOR
 # ─────────────────────────────────────────────────────────────────────
 
+_DRAIN_ORDER = "ASC" if os.getenv("DRAIN_OLDEST_FIRST", "0") == "1" else "DESC"
+# ^ default DESC (newest-first) keeps beat task + CLI callers identical.
+
+
 async def run(args: argparse.Namespace) -> int:
     async with get_db() as db:
         if args.all:
@@ -1439,14 +1521,14 @@ async def run(args: argparse.Namespace) -> int:
     # them. Orphaned 'processing' rows from a hard-killed script are re-picked
     # by the next D1 reset cycle.
     fetched_q = text(
-        """
+        f"""
         UPDATE articles
            SET substrate_status = 'processing'
          WHERE id IN (
            SELECT id FROM articles
             WHERE substrate_processed_at IS NULL AND url IS NOT NULL
               AND (substrate_status IS NULL OR substrate_status = 'pending')
-            ORDER BY collected_at DESC
+            ORDER BY collected_at {_DRAIN_ORDER}
             LIMIT :batch
             FOR UPDATE SKIP LOCKED
          )
@@ -1457,7 +1539,7 @@ async def run(args: argparse.Namespace) -> int:
     started = time.time()
     counters = {"ok": 0, "junk": 0, "fetch_failed": 0, "errors": 0, "ok_no_groq": 0}
     processed = 0
-    sem = asyncio.Semaphore(8)
+    sem = asyncio.Semaphore(int(os.getenv("SUBSTRATE_CONCURRENCY", "8")))
 
     async def _one_with_db(row: dict[str, Any]) -> str:
         async with sem:

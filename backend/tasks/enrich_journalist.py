@@ -164,7 +164,7 @@ async def _run(batch_size: int) -> dict:
             # Empty string '' is the "tried, no name" sentinel — prevents re-pickup
             value = name if name else ""
             await db.execute(text("""
-                UPDATE articles SET author_name = :n WHERE id::text = :id
+                UPDATE articles SET author_name = :n WHERE id = CAST(:id AS uuid)
             """), {"n": value, "id": r["aid"]})
             if name:
                 extracted += 1

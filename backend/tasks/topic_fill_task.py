@@ -29,22 +29,44 @@ _COARSE_CASE = (
     + " ".join(f"WHEN '{k}' THEN '{v}'" for k, v in FINE_TO_COARSE.items())
     + " ELSE topic_fine END"
 )
-# Fix 1: copy the good label into the shown field wherever they disagree. Cheap, bulk.
+_ROLLUP_BATCH = 2000
+_ROLLUP_MAX_BATCHES = 15
+# BATCHED + FOR UPDATE SKIP LOCKED + per-batch commit so this can NEVER hold
+# table-wide row locks. The unbatched whole-table version ran 13h on 2026-07-16
+# and blocked collector INSERTs, stalling ingestion. Rows currently locked by a
+# collector upsert are skipped and picked up on the next pass.
 _ROLLUP_SQL = (
-    f"UPDATE articles SET topic_category = {_COARSE_CASE} "
-    f"WHERE topic_fine IS NOT NULL AND topic_fine <> '' "
-    f"AND topic_category IS DISTINCT FROM ({_COARSE_CASE})"
+    f"WITH tgt AS ("
+    f"  SELECT id FROM articles "
+    f"  WHERE topic_fine IS NOT NULL AND topic_fine <> '' "
+    f"  AND topic_category IS DISTINCT FROM ({_COARSE_CASE}) "
+    f"  LIMIT {_ROLLUP_BATCH} FOR UPDATE SKIP LOCKED"
+    f") UPDATE articles a SET topic_category = {_COARSE_CASE} "
+    f"FROM tgt WHERE a.id = tgt.id"
 )
 
 _PICK_LEAD = "COALESCE(NULLIF(lead_text_translated,''), NULLIF(lead_text_original,''), NULLIF(full_text_scraped,''), '')"
 
 
 async def _rollup() -> int:
+    """Roll topic_fine->topic_category in bounded, self-committing batches.
+
+    Never holds more than _ROLLUP_BATCH row locks at once and skips rows locked
+    by concurrent collector upserts, so it can never wedge ingestion. Replaces
+    the unbatched whole-table UPDATE behind the 2026-07-16 13h lock incident.
+    """
     from backend.database import get_db
+    total = 0
     async with get_db() as db:
-        r = await db.execute(text(_ROLLUP_SQL))
-        await db.commit()
-        return r.rowcount or 0
+        await db.execute(text("SET lock_timeout = '3s'"))
+        for _ in range(_ROLLUP_MAX_BATCHES):
+            r = await db.execute(text(_ROLLUP_SQL))
+            n = r.rowcount or 0
+            await db.commit()
+            total += n
+            if n < _ROLLUP_BATCH:
+                break
+    return total
 
 
 async def _classify_batch(limit: int = 200) -> int:

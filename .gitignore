@@ -46,3 +46,7 @@ products/ask-rig/eval/qa_results.json
 
 # Local agent/editor config
 .claude/launch.json
+
+# Instagram relay session state — contains live sessionid / authorization_data.
+# Runtime artifact, never commit.
+backend/collectors/ig_relay_settings.json

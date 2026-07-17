@@ -170,3 +170,47 @@ fast-follow. Do NOT add the raw national "Bharatiya Janata Party" entity as-is.
 **Fixes applied this pass:** webhook delivery cron restored; title/suffix/comma
 aliases added (all 19 resolve); 5 govt-body entities added earlier. Sandbox restored
 to mirror live.
+
+---
+
+## FIXES DEPLOYED — the "fix these now" pass (2026-07-17, later)
+
+Addressed the three "inert / not-how-they-want" gaps. All deployed + validated live;
+adversarially reviewed (3 lenses, caught a feed-emptying bug — fixed).
+
+**1. regions/topics now FILTER the feed (were inert) — and this fixes the BJP contamination.**
+`queries._region_clause`: an article is in-region if it is in a scoped region's
+vernacular language (te/ur) OR its title/lead names a scoped region. Deployed. Live
+proof: DIPR's live-mirror feed went from `{en,ml,kn,bn,hi,ne,te}` (national noise) to
+`{te,en}`; the 19-scope-with-national-BJP feed dropped from ~60% off-topic to ~4%;
+national BJP 5,354 → ~1,024 (survivors are Telangana-BJP). Keeps 98% Revanth / 95% KCR.
+Warm 200–330ms. `topics` filter also wired (upper-cased both sides).
+
+**2. `languages` deliberately NOT a hard filter.** Clients send names ("Telugu"),
+DB stores ISO ("te") — an exact filter would EMPTY the feed (the review caught this;
+verified live it no longer does). The region filter already carries the te/ur signal
+and Urdu is collected (1,131/7d), so their intent is met without the footgun.
+
+**3. keywords → routed by type (the raw keyword filter is superseded, kept dormant).**
+Distinctive proper-noun scheme/project ENTITIES created (available to scope, retro-
+tagging now): Rythu Bharosa, Praja Palana, Gruha Jyothi, Indiramma Indlu, Rythu Bandhu,
+HYDRAA, Medigadda, Regional Ring Road, Abhaya Hastham, Rajiv Yuva Vikasam (+ Kaleshwaram,
+GHMC already entities). Generic terms (education/floods/…) → the now-working `topics`
+filter. Keywords stay inert on the feed (a 50-keyword raw filter = flood + 8-min query).
+
+**4. webhook delivery loop restored** (flock'd cron, correct `-m` invocation). Coverage-
+push (`coverage.matched` on entity/topic/sentiment filter) works; a `sentiment=critical`
+filter approximates their critical-alert need. Their hook stays disabled (their endpoint
+must accept first; reset watermark→now() before reactivating). The weighted-priority /
+spike-detection SEVERITY engine their doc describes is a genuine fast-follow BUILD — not
+rushed onto a live API pre-launch.
+
+**Review fixes also shipped:** cursor id validated (tampered cursor → 400 not 500);
+unprofiled region names ignored (not turned into over-broad `%india%` / `%%`); region
+patterns wildcard-escaped. Left (don't bite entity-scoped DIPR): all_entities+regions
+perf cliff; client ?topic/?match params dead. Commit `2505a6b`, rollback
+`/root/v1_rollback_region_20260717`.
+
+Health after all changes: ingestion ~1,500/hr, 0 blocked, 0 rollups, backfill ~62k/209k,
+10/11 endpoints 200 (the 1 "fail" = correct scope enforcement: sentiment for an entity
+not in the current sandbox scope → 404).

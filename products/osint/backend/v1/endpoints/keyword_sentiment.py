@@ -86,17 +86,59 @@ _TITLELEAD = ("coalesce(title,'') || ' ' || coalesce(lead_text_original,'') || '
 def _search_sql(scope_clause: str = ""):
     """Discovery SQL. `scope_clause` (optional, a FIXED fragment — values bound via
     params) constrains matches to the org's entities/region so a generic keyword
-    stays on-topic. Empty => global keyword search (the dictionary-free default)."""
+    stays on-topic. Empty => global keyword search (the dictionary-free default).
+
+    The `AS MATERIALIZED` CTE is load-bearing, not style. Written flat, the
+    planner sees ORDER BY collected_at DESC + LIMIT and walks
+    idx_articles_collected newest-first applying the ILIKE as a *filter*,
+    betting it will hit :cap matches early. For a rare keyword that bet loses
+    and it walks most of the window, ignoring the trigram index entirely:
+
+        keyword=నీటిపారుదల, 30d  ->  118,377 ms   (80 real matches)
+        keyword=किसान,      30d  ->   15,856 ms
+        keyword=kaleshwaram, 30d ->   33,704 ms
+
+    Those numbers are why Telugu terms 500'd: not the LLM (_score_bodies has its
+    own 20s budget and degrades to partial), not the language, just whichever
+    term was slowest. kaleshwaram only ever looked fine because it was cached.
+
+    MATERIALIZED forces the match set to be built first, so the planner uses the
+    indexes that already exist -- BitmapOr over idx_articles_titlelead_trgm and
+    articles_fts_gin_idx -- and only then sorts. Same query, same data:
+
+        keyword=నీటిపారుదల, 30d  ->      211 ms   (561x)
+
+    Keep the WHERE expression byte-identical to idx_articles_titlelead_trgm's
+    indexed expression (_TITLELEAD), or the trigram index silently stops matching
+    and this regresses to the scan.
+
+    The scored `body` prefers summary_executive / summary_preview -- the English
+    ones -- over the native lead. Fixing the scan above exposed a second, real
+    defect underneath it: Telugu terms came back 200 but `n_scored: 0` of 77,
+    because we were handing the model native Telugu and it returned nothing the
+    JSON-mode contract would accept (groq `json_validate_failed`). English
+    articles were unaffected (pothole: 56 of 80 scored). We already hold an
+    English rendering of those articles, so score that. Native remains the
+    fallback for rows with no English summary yet.
+    """
     return text(f"""
+        WITH m AS MATERIALIZED (
+            SELECT id, title, summary_executive, summary_preview,
+                   lead_text_original, lead_text_translated,
+                   published_at, collected_at
+            FROM articles
+            WHERE collected_at > now() - make_interval(days => :days)
+              AND substrate_status = 'ok' AND NOT is_duplicate
+              AND ( ({_TITLELEAD}) ILIKE :pat
+                    OR fts @@ websearch_to_tsquery(:cfg, :q) )
+              {scope_clause}
+        )
         SELECT id::text AS id,
-               coalesce(title,'') || ' — ' || coalesce(lead_text_original, lead_text_translated, '') AS body,
+               coalesce(title,'') || ' — '
+               || coalesce(NULLIF(summary_executive,''), NULLIF(summary_preview,''),
+                           lead_text_original, lead_text_translated, '') AS body,
                published_at
-        FROM articles
-        WHERE collected_at > now() - make_interval(days => :days)
-          AND substrate_status = 'ok' AND NOT is_duplicate
-          AND ( ({_TITLELEAD}) ILIKE :pat
-                OR fts @@ websearch_to_tsquery(:cfg, :q) )
-          {scope_clause}
+        FROM m
         ORDER BY collected_at DESC
         LIMIT :cap
     """)

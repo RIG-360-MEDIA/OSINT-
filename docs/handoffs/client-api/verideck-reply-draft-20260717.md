@@ -74,7 +74,50 @@ Anything we already know resolves immediately with its history; anything we don'
 we add and tag back. Keep keywords for genuinely peripheral terms. If you'd rather
 just send us the whole list, we'll tell you which are which before you push.
 
-**2. Confirming the patch — you can see it yourself, and we'll check it too.**
+**2. Your name-format question — you're right, and here are the exact answers.**
+
+I ran your list against our dictionary rather than answer from memory.
+
+**Send plain names, no titles.** We match on the exact name, so the titles would
+indeed cost you three entities you already have — including the Chief Minister:
+
+| what you'd send | result |
+|---|---|
+| `Chief Minister A. Revanth Reddy` | ✗ falls through |
+| `Revanth Reddy` | ✓ |
+| `Deputy Chief Minister Mallu Bhatti Vikramarka` | ✗ falls through |
+| `Mallu Bhatti Vikramarka` | ✓ |
+
+**Initials are fine — keep them.** `T. Harish Rao`, `N. Ramchander Rao` and
+`G. Kishan Reddy` all resolve as written.
+
+**On the dashes: the dash isn't the problem — the ` – Telangana` suffix is.**
+Both the long dash and a plain hyphen fail. Send `Indian National Congress` and
+`Bharatiya Janata Party` on their own and they resolve.
+
+**Your 19, checked:**
+
+- **Resolve exactly as written (6):** Government of Telangana, N. Ramchander Rao,
+  G. Kishan Reddy, All India Majlis-e-Ittehadul Muslimeen, Asaduddin Owaisi,
+  Kalvakuntla Kavitha — plus your existing six.
+- **Resolve once the ` – Telangana` suffix comes off (2):** INC, BJP.
+- **We need to add these five (we'll do it):** Telangana Council of Ministers;
+  Department of Information and Public Relations (Telangana); Telangana Jagruthi;
+  Telangana Rajyadhikara Party; Teenmaar Mallanna.
+
+So **14 of your 19 land tonight with their archive attached**, and we already know
+the five to add — no need to wait for the patch response and send them back to us.
+We'll have them in and retro-tagged; tell us if the naming should differ.
+
+**One note on the keyword and language half of the list.** Right now those two are
+much weaker instruments than they sound — your entities are what actually drive the
+articles you receive. Concretely: over the last 30 days there are 321 articles
+mentioning Kaleshwaram and you're receiving 226 — because those name one of your
+politicians, not because "kaleshwaram" is in your keyword list. So please put
+anything you genuinely want tracked through as an **entity**, not a keyword. We're
+improving the keyword side and I'd rather tell you now than have you find it later.
+
+**3. Confirming the patch — you can see it yourself, and we'll check it too.**
 
 The PATCH response already tells you exactly what happened to each name:
 

@@ -128,3 +128,49 @@ run an unbatched whole-table UPDATE on `articles` — **and note that "batched" 
 not sufficient; size the batch by lock-hold time.** Always check
 `pg_blocking_pids()` before blaming your own job. Confirm before destructive or
 outward actions. Keep raw keys out of chat.
+
+---
+
+## 10. ADDENDUM (late 2026-07-17) — keyword work
+
+**SHIPPED + VERIFIED LIVE:**
+- `keyword-sentiment` discovery: **561x** (Telugu 30d 118,377ms → 211ms). The
+  trigram index `idx_articles_titlelead_trgm` (3.1GB, migration 120) **already
+  existed** and matched `_TITLELEAD` exactly — the planner just never chose it,
+  because `ORDER BY collected_at DESC + LIMIT` made it walk `idx_articles_collected`
+  with the ILIKE as a filter. `AS MATERIALIZED` forces the match set first.
+- Telugu 500 → **200**. It was never Groq and never Telugu — just the slowest term.
+  kaleshwaram only looked healthy because it was **cached**; Hindi because 15.9s
+  squeaked under the timeout.
+- Scoring now uses the **English** `summary_executive`/`summary_preview` as the
+  body, not native text. Telugu `n_scored` **0 → 41** of 77.
+- `days` accepted as an alias for `window` (400 if both given and disagree).
+
+**WRITTEN, COMMITTED (`9105ff6`), DELIBERATELY NOT DEPLOYED — scope keyword filter.**
+Scope keywords never filtered the article feed at all (see KB keyword-tracking.md).
+The fix is correct and the semantics are right (entity OR keyword; no widening of
+an explicit `?entity=` drill-down; searches the English summaries for the ~19x
+gain on Telugu press). **It is gated on box health, not on code:**
+
+| query | time |
+|---|---|
+| their feed today, 24h (entity only) | 1,526 ms |
+| with keywords, 24h | 5,539 ms |
+| with `AS MATERIALIZED` + OR'd single ILIKE | 8,127–8,406 ms |
+
+The trigram index is **not** used at a 24h window — the planner correctly judges
+`idx_articles_collected` cheaper for ~28k rows, then pays ~290µs/row on ILIKE over
+large text. That per-row cost is the swapping box (§4), not the plan. On a healthy
+box this is a few hundred ms. **Re-measure after the memory problem is addressed;
+do not ship an 8s query onto the client's feed.**
+
+Note `LIKE ANY(array)` is never trigram-indexable — only single-pattern
+`ILIKE :pat` is. If this is retried, expand to OR'd single patterns.
+
+**REFUSED, with reasons** (both were asked for; both are wrong to do now):
+- *Substrate overwrite of `lead_text_translated`*: that column is the LaBSE embed
+  input. It currently holds native text and the embeddings/clusters are built from
+  it. "Stop overwriting" means it starts holding English → silently changes the
+  embed input → forces a full re-embed + re-cluster. That is a migration, not a fix.
+- *Entity auto-discovery*: NER + disambiguation + dedupe against the existing
+  dictionary + a review step. Weeks, not a Friday.

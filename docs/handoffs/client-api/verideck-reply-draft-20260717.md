@@ -74,26 +74,28 @@ Anything we already know resolves immediately with its history; anything we don'
 we add and tag back. Keep keywords for genuinely peripheral terms. If you'd rather
 just send us the whole list, we'll tell you which are which before you push.
 
-**2. Your name-format question — you're right, and here are the exact answers.**
+**2. Your name-format question — good catch, and you don't need to change anything.**
 
-I ran your list against our dictionary rather than answer from memory.
+You were right: as of this morning those titles would have fallen through, including
+the Chief Minister. Rather than make your analyst rewrite the list, we've taught our
+side to recognise the way a newspaper prints them. **Send it exactly as written.**
 
-**Send plain names, no titles.** We match on the exact name, so the titles would
-indeed cost you three entities you already have — including the Chief Minister:
+Verified just now, against your actual strings:
 
-| what you'd send | result |
+| what your analyst wrote | now resolves to |
 |---|---|
-| `Chief Minister A. Revanth Reddy` | ✗ falls through |
-| `Revanth Reddy` | ✓ |
-| `Deputy Chief Minister Mallu Bhatti Vikramarka` | ✗ falls through |
-| `Mallu Bhatti Vikramarka` | ✓ |
+| `Chief Minister A. Revanth Reddy` | ✅ Revanth Reddy |
+| `Deputy Chief Minister Mallu Bhatti Vikramarka` | ✅ Bhatti Vikramarka |
+| `Indian National Congress – Telangana` | ✅ Indian National Congress |
+| `Bharatiya Janata Party – Telangana` | ✅ Bharatiya Janata Party |
+| `T. Harish Rao` | ✅ Harish Rao (already worked) |
 
-**Initials are fine — keep them.** `T. Harish Rao`, `N. Ramchander Rao` and
-`G. Kishan Reddy` all resolve as written.
+Initials were never a problem — `T. Harish Rao`, `N. Ramchander Rao` and
+`G. Kishan Reddy` all resolve as written. And the long dash is fine now; we've
+covered the plain hyphen too, so either is safe.
 
-**On the dashes: the dash isn't the problem — the ` – Telangana` suffix is.**
-Both the long dash and a plain hyphen fail. Send `Indian National Congress` and
-`Bharatiya Janata Party` on their own and they resolve.
+Titles and honorifics are exactly the kind of thing we should absorb rather than
+push back to you — thank you for flagging it before you pushed rather than after.
 
 **Your 19, checked:**
 

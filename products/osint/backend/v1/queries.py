@@ -19,6 +19,7 @@ exhaustiveness.
 """
 from __future__ import annotations
 
+import uuid as _uuid
 from datetime import datetime
 from typing import Any
 
@@ -446,6 +447,67 @@ def _keyword_scope_clause(keywords: tuple[str, ...], params: dict[str, Any]) -> 
     return "(" + " OR ".join(preds) + ")"
 
 
+# Aliased title+lead, for POST filters on the outer query (which aliases articles `a`).
+# Unlike _TITLELEAD this need NOT be index-identical: region text matching runs over the
+# already-small scope-matched set, not the corpus, so ANY(array) is fine here.
+_TITLELEAD_A = ("coalesce(a.title,'') || ' ' || coalesce(a.lead_text_original,'') || ' ' "
+                "|| coalesce(a.lead_text_translated,'')")
+
+# Per-region relevance signals for the article feed. `langs` = the region's vernacular
+# languages; `pats` = text substrings that mark the region in title/lead.
+_REGION_PROFILE = {
+    "telangana": {"langs": ["te", "ur"], "pats": ["telangana", "hyderabad"]},
+    "hyderabad": {"langs": ["te", "ur"], "pats": ["hyderabad"]},
+}
+
+
+def _region_clause(regions: tuple[str, ...], params: dict[str, Any]) -> str | None:
+    """Region-relevance filter: an article is in-region if it is in a scoped region's
+    vernacular LANGUAGE **or** its title/lead NAMES a scoped region.
+
+    Why both, and why language is load-bearing (measured live 2026-07-17, 30d):
+
+        signal                         Revanth(relevant)  KCR(relevant)  BJP(national noise)
+        text mention only                    68%               53%              9%
+        text mention + te/ur language        98%               95%             19%
+
+    Text-only silently drops a THIRD of a Telangana politician's coverage, because
+    Telugu/Urdu press writes about them in native script and never spells 'Telangana'
+    in Latin. The language signal recovers it. The 19% of national-BJP that survives is
+    its Telangana-relevant coverage — correct to keep. Net for BJP: 5,354 -> ~1,024, the
+    ~4,330 dropped being national noise (Modi/Amit Shah/other states).
+
+    Only PROFILED regions filter. An unprofiled region is IGNORED, not turned into a
+    bare substring — that was a real footgun: 'India' -> '%india%' re-admits national
+    noise (nulling the whole point), and '' -> '%%' matches every article (pass-through).
+    So an org whose regions are all unprofiled gets no region narrowing (safe: same as
+    before this change), and DIPR's junk region strings ('India (only where…central)',
+    'all 33 Telangana districts') are simply dropped. Extend _REGION_PROFILE to add a
+    region. Returns None if nothing profiled matched.
+
+    Applied as a POST filter over the scope-matched set, so the ANY(array) ILIKE is on a
+    bounded row count, not the corpus. (An all_entities org with regions set would scan
+    the window here — DIPR is entity-scoped, so not a concern; noted for the future.)
+    """
+    langs: set[str] = set()
+    pats: list[str] = []
+    for r in regions:
+        prof = _REGION_PROFILE.get(r.strip().lower())
+        if prof:
+            langs.update(prof["langs"])
+            pats.extend(prof["pats"])
+        # unprofiled region -> ignored on purpose (see docstring).
+    ors: list[str] = []
+    if langs:
+        params["rlangs"] = sorted(langs)
+        ors.append("a.language_detected = ANY(:rlangs)")
+    if pats:
+        # _like_pattern escapes %/_ so a region name can never act as a SQL wildcard.
+        params["rpats"] = [_like_pattern(p) for p in pats]
+        ors.append(f"({_TITLELEAD_A}) ILIKE ANY(:rpats)")
+    return "(" + " OR ".join(ors) + ")" if ors else None
+
+
 def _scoped_articles_union_sql(
     *,
     keywords: tuple[str, ...],
@@ -560,6 +622,9 @@ async def list_scoped_articles(
     source: tuple[str, ...] = (),
     mute_terms: tuple[str, ...] = (),
     keywords: tuple[str, ...] = (),
+    scope_languages: tuple[str, ...] = (),
+    regions: tuple[str, ...] = (),
+    topics: tuple[str, ...] = (),
 ) -> tuple[list[dict[str, Any]], str | None]:
     """Scoped, filtered, keyset-paginated article list.
 
@@ -603,6 +668,29 @@ async def list_scoped_articles(
         post.append("a.language_detected = :lang")
         params["lang"] = language
 
+    # SCOPE filters (org provisioning) — narrowing, applied to the final result on both
+    # the flat and UNION paths. These make regions/topics on PATCH /v1/scope actually
+    # filter the feed; before 2026-07-17 they were stored and ignored.
+    #
+    # `scope_languages` is DELIBERATELY NOT a hard filter. Clients provision it as human
+    # names ("Telugu","English","Urdu","Hindi") but language_detected stores ISO codes
+    # ("te"/"en"/"ur"/"hi"); an exact ANY() match would then silently return [] — a
+    # feed-emptying footgun for zero real benefit, because (a) the region filter already
+    # carries the vernacular-language relevance signal (te/ur) and (b) the client's
+    # actual intent ("include Urdu") is satisfied by collection + that signal, not by
+    # NARROWING. If a hard language filter is ever wanted it needs a name->ISO map, not
+    # a raw compare.
+    region_pred = _region_clause(regions, params)
+    if region_pred:
+        post.append(region_pred)
+
+    if topics:
+        # topic_category is stored upper-case (POLITICS/GOVERNANCE/…) but the domain is
+        # not case-guaranteed (country.py defensively upper()s it), and clients provision
+        # free-case. Normalise BOTH sides or an exact `=` silently empties the feed.
+        post.append("upper(a.topic_category) = ANY(:stopics)")
+        params["stopics"] = [t.strip().upper() for t in topics]
+
     if source:
         # Outlet drill-down: match by source display name (what /analytics/outlets returns).
         post.append("s.name = ANY(:sources)")
@@ -635,12 +723,17 @@ async def list_scoped_articles(
     if cur is not None:
         # Bind the timestamp as a real datetime — asyncpg resolves the param type from
         # CAST(:ct AS timestamptz) and rejects a str. Parse (and fail-closed on garbage).
+        # Validate BOTH halves and fail closed with 400. The id half is unvalidated at
+        # decode_cursor and reaches CAST(:ci AS uuid) — an id like 'abc' from a tampered
+        # cursor would otherwise raise a raw asyncpg uuid error -> 500, breaking the
+        # module's own "corruption fails closed with a 400" contract.
         try:
             ct = datetime.fromisoformat(cur[0])
-        except (TypeError, ValueError):
+            ci = str(_uuid.UUID(str(cur[1])))
+        except (TypeError, ValueError, AttributeError):
             raise bad_request("Invalid cursor")
         cursor_clause = "(a.collected_at, a.id) < (:ct, CAST(:ci AS uuid))"
-        params["ct"], params["ci"] = ct, cur[1]
+        params["ct"], params["ci"] = ct, ci
 
     # Strongest stance toward the scoped entity (or any, absent an entity scope).
     stance_scope = "AND e.entity_id = ANY(CAST(:eids AS uuid[]))" if scoped_ents else ""

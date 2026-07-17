@@ -23,10 +23,15 @@ async def list_articles(
 ) -> dict:
     # Intersect the client's requested entities with what they're allowed to see.
     eids = effective_entity_ids(ctx.scope, filters.entity)
-    # Scope keywords widen the org's OWN feed, but must never widen an explicit
-    # drill-down: ?entity=KCR means KCR, not "KCR or kaleshwaram". So they apply
-    # only when the client did not name an entity.
-    kws = () if filters.entity else ctx.scope.keywords
+    # Scope keywords are intentionally INERT on the feed (kws = ()). Measured
+    # 2026-07-17: a real client keyword list (~50 terms) is dominated by generic
+    # words (education, floods, investments) that match ~135k articles / 90d — as a
+    # raw "entity OR keyword" widener that is an 8-minute query AND a feed flooded
+    # with off-topic national news. The correct routing is by term type: distinctive
+    # proper nouns (Kaleshwaram, Rythu Bharosa) become ENTITIES (they extract + tag +
+    # carry history); generic terms are served by the `topics` scope filter below.
+    # The keyword-UNION path in queries.py stays committed but dormant behind this.
+    kws: tuple[str, ...] = ()
     # Non-all_entities org with nothing to match on => empty (never the corpus).
     if not ctx.scope.all_entities and not eids and not kws:
         request.state.result_count = 0
@@ -45,6 +50,8 @@ async def list_articles(
             source=filters.source,
             mute_terms=ctx.scope.mute_terms,
             keywords=kws,
+            regions=ctx.scope.regions,
+            topics=ctx.scope.topics,
         )
     request.state.result_count = len(rows)
     return ok(

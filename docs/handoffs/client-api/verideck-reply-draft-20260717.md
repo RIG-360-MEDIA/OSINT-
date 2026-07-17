@@ -34,21 +34,32 @@ queryable immediately — there's no job to run and no waiting period.
 We verified this rather than assuming it: we added a new entity and a new keyword
 to a test scope and immediately saw months of prior coverage returned for both.
 
-One exception worth knowing: if you name an entity we don't already track, we add
-it and tag it back across the archive for you. That's on us and it's usually
-quick — just send the name.
+**2. You never have to guess what we track — the PATCH response tells you.**
 
-**2. Confirming tonight's change — yes, and we'll check it term by term.**
+Worth reading, because it removes a question you'd otherwise have to ask us every
+time you expand.
 
-We'll confirm each term individually rather than just checking that the request
-succeeded. It's worth knowing why: if an entity name isn't one we recognise, the
-request still succeeds — the name is accepted and treated as a plain text match
-instead. You'd still receive articles, but you'd quietly lose entity-level
-analytics (sentiment and outlet breakdowns) for that name.
+When you `PATCH /v1/scope` with `add_entities`, every name is resolved against our
+full entity list, and **the response reports what happened to each one**:
 
-So we'll confirm that every entity you intended resolved as an entity, and that
-each term actually returns coverage. Send the list when you make the change and
-we'll turn the check around the same night.
+- `resolved_entities` — the names we matched, each with its `entity_id`
+- `added_as_keywords` — the names we did **not** recognise
+
+A name in `added_as_keywords` is still accepted and still working — it's matched
+as text rather than as a known entity. So nothing fails quietly: if a name lands
+there and you expected an entity, **send it to us and we'll add it and tag it back
+across the archive.** That's on us and it's usually quick.
+
+**What an unrecognised name actually costs you — less than you'd think:**
+
+- You keep the articles, **and you keep sentiment**: `/v1/analytics/keyword-sentiment`
+  scores **any** term you pass it, with no dependency on our entity list at all.
+- What you lose is the per-outlet breakdown (`/v1/analytics/outlets` is keyed by
+  `entity_id`) and the `/v1/entities/{id}` views for that name.
+
+**3. Confirming tonight's change.** You can now confirm it yourself in one step —
+read `added_as_keywords` in the PATCH response. Send us the list too and we'll
+cross-check the same night if you'd like a second pair of eyes.
 
 **3. Weekend watch.** Coming back to you separately — that's a staffing call our
 side and I'd rather confirm it than promise cover I haven't arranged.
@@ -74,6 +85,15 @@ the real picture.
 Two smaller notes on keywords: they match the headline and opening text rather
 than the full body, and they match as substrings — "musi" will also match
 "music". Distinctive terms work best.
+
+Native-script terms work normally for scope and for the article feed. One current
+limitation to save you the debugging: on `/v1/analytics/keyword-sentiment`
+specifically, some Telugu-script terms are timing out right now (Hindi and Latin
+terms are fine). We're on it — if you plan to lean on that endpoint for
+Telugu-script terms before Monday, tell us and we'll prioritise it.
+
+Also, that endpoint's window parameter is `window` (days), not `days` — passing
+`days` is ignored and you'll silently get the 7-day default.
 
 **Heads-up 2: summary length increased today — check your field widths**
 

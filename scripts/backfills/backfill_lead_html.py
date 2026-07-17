@@ -46,8 +46,15 @@ from backend.collectors.text_clean import strip_html_lead
 TAG = os.environ.get("BACKFILL_TAG", "20260717")
 BACKUP = f"analytics.lead_orig_html_backup_{TAG}"
 LOG_PATH = f"/tmp/backfill_lead_html_{TAG}.log"
-BATCH = 2000
-SLEEP = 0.25
+# 200, not 2000. SKIP LOCKED stops US waiting on a collector; it does NOT stop a
+# collector waiting on US -- our transaction holds every row lock it takes until
+# it commits. At 2000 the SELECT..FOR UPDATE + clean + UPDATE round trip ran long
+# enough under random-read IO that collector upserts queued behind it (observed
+# 2026-07-17: INSERTs blocked 100s+). At 200 the transaction is ~1s, so a
+# collector waits milliseconds. The batch query itself is an index nested-loop
+# (verified via EXPLAIN), so smaller batches cost throughput, not complexity.
+BATCH = int(os.environ.get("BACKFILL_BATCH", "200"))
+SLEEP = float(os.environ.get("BACKFILL_SLEEP", "0.25"))
 MAX_STALL = 20
 DIRTY_RE = r"<[a-zA-Z/]"
 RECOVER_CHARS = 300

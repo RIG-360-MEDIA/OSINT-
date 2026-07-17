@@ -42,6 +42,42 @@ _V2_TO_CLIENT = {"positive": "supportive", "negative": "critical", "neutral": "n
 # Hard ceiling on how many entities we'll enumerate for an all_entities org.
 _ALL_ENTITIES_LIST_CAP = 500
 
+# The partner-API contract for `summary` is English ("summary / full_text --
+# English (translation-preferred) summary and body" in the API reference).
+#
+# lead_text_translated does NOT honour that contract on its own: substrate's
+# corpus pass (backend/tasks/substrate/run_corpus_pass.py) overwrites it with
+# the native trafilatura body, so for most non-English articles it carries
+# native script. The LLM-written summary_executive / summary_preview columns
+# already hold real English for ~65% of those rows, so we fall back to them
+# whenever the lead itself is not English.
+#
+# Tier order is deliberate:
+#   1. an English lead wins -- it is the article's actual lead paragraph, and
+#      preferring it means English articles keep their existing summary
+#      verbatim (measured blast radius: 0.66% of already-English rows change,
+#      and those are rows currently serving raw HTML, so they improve);
+#   2/3. the generated English summaries, only reached when tier 1 would hand
+#      the client Telugu/Hindi/Urdu text;
+#   4/5. the historic behaviour, so a row can never lose its summary.
+#
+# ASCII is a deliberately cheap English proxy -- the failure mode we care about
+# is non-Latin script, not diacritics. octet_length = char_length is true iff
+# every character is single-byte (ASCII) under UTF-8: it is exactly equivalent
+# to `~ '^[[:ascii:]]+$'` (verified over 108,480 rows: zero mismatches), but it
+# avoids a regex AND avoids the POSIX class `[[:ascii:]]`, whose embedded
+# colons SQLAlchemy's text() would parse as an `:ascii` bind parameter.
+# Evaluated in the SELECT list (post-LIMIT), so it costs nothing on the scan.
+_SUMMARY_SQL = """COALESCE(
+                   NULLIF(CASE WHEN octet_length(a.lead_text_translated) = char_length(a.lead_text_translated)
+                               THEN a.lead_text_translated END, ''),
+                   NULLIF(CASE WHEN octet_length(a.summary_executive) = char_length(a.summary_executive)
+                               THEN a.summary_executive END, ''),
+                   NULLIF(CASE WHEN octet_length(a.summary_preview) = char_length(a.summary_preview)
+                               THEN a.summary_preview END, ''),
+                   NULLIF(a.lead_text_translated, ''),
+                   NULLIF(a.lead_text_original, ''))"""
+
 
 # ── Entities ────────────────────────────────────────────────────────────────
 
@@ -408,7 +444,7 @@ async def list_scoped_articles(
     stance_scope = "" if all_entities else "AND e.entity_id = ANY(CAST(:eids AS uuid[]))"
     sql = f"""
         SELECT a.id::text AS id, a.title AS headline,
-               COALESCE(NULLIF(a.lead_text_translated, ''), NULLIF(a.lead_text_original, '')) AS summary,
+               {_SUMMARY_SQL} AS summary,
                COALESCE(NULLIF(a.full_text_translated, ''), NULLIF(a.full_text_scraped, '')) AS full_text,
                NULLIF(a.lead_text_original, '') AS summary_original,
                NULLIF(a.full_text_scraped, '') AS full_text_original,
@@ -461,7 +497,7 @@ async def get_scoped_article(db, article_id: str, entity_ids: list[str], all_ent
     stance_scope = "" if all_entities else "AND e.entity_id = ANY(CAST(:eids AS uuid[]))"
     row = (await db.execute(text(f"""
         SELECT a.id::text AS id, a.title AS headline,
-               COALESCE(NULLIF(a.lead_text_translated, ''), NULLIF(a.lead_text_original, '')) AS summary,
+               {_SUMMARY_SQL} AS summary,
                COALESCE(NULLIF(a.full_text_translated, ''), NULLIF(a.full_text_scraped, '')) AS full_text,
                NULLIF(a.lead_text_original, '') AS summary_original,
                NULLIF(a.full_text_scraped, '') AS full_text_original,
@@ -845,9 +881,9 @@ async def articles_full_by_ids(db, ids: list[str]) -> dict[str, dict[str, Any]]:
     """
     if not ids:
         return {}
-    rows = (await db.execute(text("""
+    rows = (await db.execute(text(f"""
         SELECT a.id::text AS id, a.title AS headline,
-               COALESCE(NULLIF(a.lead_text_translated, ''), NULLIF(a.lead_text_original, '')) AS summary,
+               {_SUMMARY_SQL} AS summary,
                COALESCE(NULLIF(a.full_text_translated, ''), NULLIF(a.full_text_scraped, '')) AS full_text,
                NULLIF(a.lead_text_original, '') AS summary_original,
                NULLIF(a.full_text_scraped, '') AS full_text_original,

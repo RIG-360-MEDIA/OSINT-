@@ -10,7 +10,17 @@ from __future__ import annotations
 
 from typing import Any
 
-_SUMMARY_MAX = 400
+# Ceiling on `summary` / `summary_original`, matched to LEAD_TEXT_MAX_CHARS
+# (2000) in the collectors -- i.e. the API never truncates a summary below what
+# ingest actually stores. The API reference states no length limit, so this is
+# ours to choose.
+#
+# Raised from 400 on 2026-07-17. At 400 the API was clipping 58% of summaries
+# (p50 length 513) -- and once `summary` prefers the LLM-written English
+# summary_executive (see queries._SUMMARY_SQL), whose median runs well past
+# 400, a 400-char ceiling would have cut most English summaries mid-sentence.
+# At 2000 only ~3.9% are clipped, and those keep the ellipsis below.
+_SUMMARY_MAX = 2000
 
 
 def _iso(dt: Any) -> str | None:

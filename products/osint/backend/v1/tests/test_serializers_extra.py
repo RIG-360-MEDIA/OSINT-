@@ -22,8 +22,11 @@ def test_iso_and_clip_and_as_float():
     assert S._clip(None) is None
     assert S._clip("") is None
     assert S._clip("short") == "short"
-    long = "x" * 500
-    assert len(S._clip(long)) <= 400 and S._clip(long).endswith("…")
+    # Relative to the constant, not a literal: the ceiling moved 400 -> 2000 on
+    # 2026-07-17 and a hard-coded bound silently tests the wrong thing.
+    assert S._clip("x" * (S._SUMMARY_MAX - 1)) == "x" * (S._SUMMARY_MAX - 1)
+    long = "x" * (S._SUMMARY_MAX + 100)
+    assert len(S._clip(long)) == S._SUMMARY_MAX and S._clip(long).endswith("…")
     assert S._as_float(None) is None
     assert S._as_float("nan-ish") is None
     assert S._as_float("1.23456") == 1.235

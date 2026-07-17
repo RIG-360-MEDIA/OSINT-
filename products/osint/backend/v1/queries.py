@@ -378,13 +378,18 @@ async def list_scoped_articles(
     limit: int,
     source: tuple[str, ...] = (),
     mute_terms: tuple[str, ...] = (),
+    keywords: tuple[str, ...] = (),
 ) -> tuple[list[dict[str, Any]], str | None]:
     """Scoped, filtered, keyset-paginated article list.
 
     Returns (rows, next_cursor). An org with empty scope (and not all_entities)
     gets [] — never the whole corpus.
+
+    Scope is `entity OR keyword`, not `entity AND keyword`: an org asking for
+    6 politicians plus the keyword "kaleshwaram" means "either", and expects the
+    project coverage that names no politician.
     """
-    if not all_entities and not entity_ids:
+    if not all_entities and not entity_ids and not keywords:
         return [], None
 
     clauses = [
@@ -394,10 +399,29 @@ async def list_scoped_articles(
     params: dict[str, Any] = {"h": window_hours, "lim": limit}
 
     if not all_entities:
-        clauses.append("""EXISTS (SELECT 1 FROM article_entity_mentions aem
-                                   WHERE aem.article_id = a.id
-                                     AND aem.entity_id = ANY(CAST(:eids AS uuid[])))""")
-        params["eids"] = entity_ids
+        # The scope predicate is a UNION of what the org asked for. Keep it one
+        # OR-group: appending each as its own clause would AND them, so an org
+        # with entities AND keywords would get only articles matching both.
+        scope_or: list[str] = []
+        if entity_ids:
+            scope_or.append("""EXISTS (SELECT 1 FROM article_entity_mentions aem
+                                        WHERE aem.article_id = a.id
+                                          AND aem.entity_id = ANY(CAST(:eids AS uuid[])))""")
+            params["eids"] = entity_ids
+        if keywords:
+            # Match native text AND the English summaries. The English columns are
+            # what make an English keyword work against non-English press: measured
+            # over 30d of Telugu articles, "irrigation" hits 19 rows in the native
+            # title/lead but 355 in summary_executive/summary_preview -- ~19x. The
+            # native columns stay in so a native-script keyword still matches
+            # (Telugu "నీటిపారుదల" -> 75). Substring (LIKE), matching mute_terms
+            # semantics: "musi" also matches "music".
+            scope_or.append("""(lower(coalesce(a.title, '')) LIKE ANY(:kpats)
+                                OR lower(coalesce(a.summary_executive, '')) LIKE ANY(:kpats)
+                                OR lower(coalesce(a.summary_preview, '')) LIKE ANY(:kpats)
+                                OR lower(coalesce(a.lead_text_translated, a.lead_text_original, '')) LIKE ANY(:kpats))""")
+            params["kpats"] = ["%" + k.lower() + "%" for k in keywords]
+        clauses.append("(" + " OR ".join(scope_or) + ")")
 
     if language:
         clauses.append("a.language_detected = :lang")

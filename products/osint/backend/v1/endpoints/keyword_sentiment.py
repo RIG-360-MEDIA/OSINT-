@@ -287,7 +287,11 @@ async def keyword_sentiment(
     request: Request,
     keyword: str = Query(..., min_length=2, max_length=80,
                          description="Any word or phrase (need not be a provisioned entity)"),
-    window: int = Query(DEFAULT_WINDOW_DAYS, ge=1, le=MAX_WINDOW_DAYS),
+    window: int | None = Query(None, ge=1, le=MAX_WINDOW_DAYS,
+                               description=f"Lookback in days (default {DEFAULT_WINDOW_DAYS}, "
+                                           f"max {MAX_WINDOW_DAYS}). 'days' is accepted as an alias."),
+    days: int | None = Query(None, ge=1, le=MAX_WINDOW_DAYS,
+                             description="Alias for 'window'."),
     refresh: bool = Query(False, description="Bypass the cache and recompute"),
     scope: bool = Query(False, description="Constrain discovery to your provisioned "
                         "entities/region (recommended for generic keywords)"),
@@ -295,6 +299,14 @@ async def keyword_sentiment(
                          description="Search news articles, YouTube clips, or both"),
     ctx: ApiContext = Depends(get_context),
 ) -> dict:
+    # `days` is the name clients reach for first. FastAPI ignores unknown query
+    # params, so `?days=30` used to be silently discarded and the caller got the
+    # 7-day default back -- indistinguishable from "you have thin coverage".
+    # Accept both; disagreement is a 400 rather than a silent winner.
+    if window is not None and days is not None and window != days:
+        raise bad_request("pass either 'window' or 'days', not both with different values")
+    window = window if window is not None else (days if days is not None else DEFAULT_WINDOW_DAYS)
+
     kw = " ".join(keyword.split()).lower()
     if not kw:
         raise bad_request("'keyword' must not be empty")

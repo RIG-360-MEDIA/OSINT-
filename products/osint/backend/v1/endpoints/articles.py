@@ -23,8 +23,12 @@ async def list_articles(
 ) -> dict:
     # Intersect the client's requested entities with what they're allowed to see.
     eids = effective_entity_ids(ctx.scope, filters.entity)
-    # Non-all_entities org with no usable entity => empty (never the corpus).
-    if not ctx.scope.all_entities and not eids:
+    # Scope keywords widen the org's OWN feed, but must never widen an explicit
+    # drill-down: ?entity=KCR means KCR, not "KCR or kaleshwaram". So they apply
+    # only when the client did not name an entity.
+    kws = () if filters.entity else ctx.scope.keywords
+    # Non-all_entities org with nothing to match on => empty (never the corpus).
+    if not ctx.scope.all_entities and not eids and not kws:
         request.state.result_count = 0
         return ok([], meta={"count": 0, "next_cursor": None})
 
@@ -40,6 +44,7 @@ async def list_articles(
             limit=filters.limit,
             source=filters.source,
             mute_terms=ctx.scope.mute_terms,
+            keywords=kws,
         )
     request.state.result_count = len(rows)
     return ok(

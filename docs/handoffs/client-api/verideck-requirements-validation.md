@@ -124,3 +124,49 @@ keyword field to do. Keep the commit only for its latent-500 fix.
 11. Route Group-B generic topics to the topic/alert layer, region-scoped.
 12. `shared_buffers` restart (G3); escalate DNL cron (G4); topic_fill root cause (G1).
 13. Give the KB a git remote (currently local-only).
+
+---
+
+## EXECUTED VALIDATION — 2026-07-17 (sandbox set to their 19-entity scope, then restored)
+
+Ran a full data-quality sweep with the sandbox key after setting its scope to their
+exact tonight-push (19 entities, their keywords/regions/languages/mute). Sandbox
+**restored to mirror live (6 entities)** afterwards.
+
+**Confirmed working with real data:**
+- ✅ **All 19 entities resolve** (0 nulls when scope set) — incl. the DIPR comma form.
+- ✅ **Directed sentiment toward Government of Telangana** (their PRIMARY measurement):
+  `total 698, split {supportive 25, neutral 511, critical 162}, net_lean -0.196`.
+  **NOTE: `/analytics/sentiment` REQUIRES an `entity=` param** (name or id) — without it, 422. That is correct design; tell VeriDeck's dev.
+- ✅ English summaries on the feed: 44/50 (88%), avg 782 chars.
+- ✅ Urdu IS collected: 1,131 Urdu articles in 7d (their explicit ask is met; the languages *field* is still inert but inert = no narrowing).
+- ✅ Brief (`/brief/today`,`/brief/daily`): real content, references their entities, ~8.5KB.
+- ✅ topics / coverage / entities / cuttings / geo: all 200 with real data.
+- ⚠️ **stories: 9.0s** — functional but slow; worth a look.
+
+**🔴 CRITICAL FINDING — national-entity contamination (hits LIVE when they push):**
+Their CURRENT 6-entity scope is clean (all Telangana-specific). Their PLANNED 19 adds
+the **national "Bharatiya Janata Party" entity**, which is the problem:
+- BJP entity = **5,345 articles/30d**, of which only **490 (9%) even mention Telangana/Hyderabad**. ~4,855 are pure national noise (Modi, Amit Shah, TN's Annamalai, Kerala's Satheesan).
+- BJP alone would be ~60–67% of their entire feed.
+- Cause: I aliased "Bharatiya Janata Party - Telangana" → the *national* BJP entity, and **`regions` is inert for the article feed** (C5), so nothing constrains it to Telangana.
+- INC national resolves but is nearly empty (6 articles); AIMIM small + mostly relevant (23/12). **So the contamination is specifically the BJP national entity.**
+- The Telangana people are clean: Revanth 74% TG, KCR 65%, KTR 68%, Kishan Reddy 72%.
+
+**Recommendation (client decision, do NOT unilaterally build region-scoping pre-launch):**
+For national parties, rely on the Telangana *leaders* already in their list (Kishan
+Reddy + Ramchander Rao for BJP; Revanth for Congress; Owaisi for AIMIM) which capture
+Telangana party activity cleanly — OR we build region-scoped party tracking as a
+fast-follow. Do NOT add the raw national "Bharatiya Janata Party" entity as-is.
+
+**🔴 CRITICAL FINDING — webhook delivery was DEAD (now restored):**
+- Engine (`webhook_delivery.run_once`) is production-quality (SSRF guard, HMAC, at-least-once, retry, auto-disable) and had delivered 1,979 times historically.
+- But **nothing scheduled it** — `run_once` is only in `if __name__=="__main__"`; no cron/beat/loop. It last ran 2026-07-16 07:16 and stopped.
+- **FIXED**: added a flock'd cron (`*/3`, correct `-m v1.webhook_delivery` invocation — the naive `python file.py` fails on relative imports). Crontab backup `/root/crontab.bak-20260717`. Safe: 0 active webhooks, so it's a no-op until one activates.
+- VeriDeck's own webhook is **disabled** (15 failures, `is_active=f`, watermark stuck at 2000-01-01) — their Cloud Run endpoint wasn't accepting during QA.
+- ⚠️ **Semantic gap:** webhooks fire `coverage.matched` on an entity/topic/sentiment filter — a **coverage push, NOT** the severity/critical-tone/multi-outlet-spike alerting their doc describes. Their keyword-priority + critical-alert rules are **not implemented** as such.
+- ⚠️ **Reactivation footgun:** before re-enabling their hook, RESET `last_delivered_at = now()` or the first run tries to deliver every matching article back to 2000. And confirm their endpoint accepts POSTs first.
+
+**Fixes applied this pass:** webhook delivery cron restored; title/suffix/comma
+aliases added (all 19 resolve); 5 govt-body entities added earlier. Sandbox restored
+to mirror live.

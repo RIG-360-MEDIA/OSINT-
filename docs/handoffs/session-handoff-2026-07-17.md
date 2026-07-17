@@ -102,7 +102,7 @@ rather than thousands. Not a code problem — worth its own look after Monday.
 
 1. **Reply to VeriDeck** — draft ready at `docs/handoffs/client-api/verideck-reply-draft-20260717.md`. **Not sent.** It deliberately says nothing about our internals; the one thing they MUST read is that `summary`/`summary_original` now return up to 2000 chars (was 400) — if they mirror into fixed-width columns, Monday breaks.
 2. **Deliver the sandbox key** (`/root/verideck_sandbox_key.txt`, chmod 600 — `shred -u` after).
-3. **Tonight: verify their PATCH per term** — an unknown entity name does NOT error, it silently degrades to a keyword (you keep text matches, you lose entity-level analytics). Confirm each name resolved to an entity_id AND returns non-zero coverage.
+3. **Tonight: verify their PATCH per term.** An unknown entity name does NOT error — it is kept as a keyword and **reported back** in the response's `added_as_keywords` (`resolved_entities` lists the ones that matched), so this is self-service, not silent. ⚠️ But per §10, **keywords do not filter the feed at all**, so an unresolved name currently contributes **nothing** — not "text matches". Confirm each intended name resolved to an entity_id.
 4. **Push the branch / open the PR.** Nothing is pushed.
 5. Watch the backfill to completion, then verify `SELECT count(*) FROM articles WHERE lead_text_original ~ '<[a-zA-Z/]'` → 0.
 6. Older: PR `substrate-lead-fallback` (`7faf5cf`), substrate anti-clobber COALESCE.

@@ -93,7 +93,7 @@ async def _fetch_story_data(db, story_id: str) -> dict[str, Any]:
         SELECT c.story_id::text, c.representative_title,
                c.article_count, c.independent_source_count,
                c.importance_score, c.topic, c.subject_country
-          FROM analytics.story_clusters c
+          FROM analytics.story_clusters_v8 c
          WHERE c.story_id = CAST(:sid AS uuid)
     """), {"sid": story_id})).fetchone()
 
@@ -109,7 +109,7 @@ async def _fetch_story_data(db, story_id: str) -> dict[str, Any]:
                span_hours,
                is_breaking,
                dormant_since::date AS dormant_since
-          FROM analytics.story_timeline
+          FROM analytics.story_timeline_v8
          WHERE story_id = CAST(:sid AS uuid)
     """), {"sid": story_id})).fetchone()
 
@@ -119,7 +119,7 @@ async def _fetch_story_data(db, story_id: str) -> dict[str, Any]:
                s.name               AS source,
                a.language_iso,
                m.attach_score
-          FROM analytics.story_cluster_members m
+          FROM analytics.story_cluster_members_v8 m
           JOIN articles a ON a.id = m.article_id
           LEFT JOIN sources s ON s.id = a.source_id
          WHERE m.story_id = CAST(:sid AS uuid)
@@ -130,7 +130,7 @@ async def _fetch_story_data(db, story_id: str) -> dict[str, Any]:
     quotes = (await db.execute(text("""
         SELECT sq.speaker, sq.quote_text_en, sq.is_direct,
                a.collected_at::date AS quote_date
-          FROM analytics.story_quotes sq
+          FROM analytics.story_quotes_v8 sq
           LEFT JOIN articles a ON a.id = sq.article_id
          WHERE sq.story_id = CAST(:sid AS uuid)
            AND sq.quote_text_en IS NOT NULL
@@ -140,14 +140,14 @@ async def _fetch_story_data(db, story_id: str) -> dict[str, Any]:
 
     stance = (await db.execute(text("""
         SELECT stance_distribution, sentiment, n_stances
-          FROM analytics.story_stance
+          FROM analytics.story_stance_v8
          WHERE story_id = CAST(:sid AS uuid)
     """), {"sid": story_id})).fetchone()
 
     facts = (await db.execute(text("""
         SELECT fact_key, unit, value_min, value_max, value_latest,
                member_count, single_source, sample_claim
-          FROM analytics.story_facts
+          FROM analytics.story_facts_v8
          WHERE story_id = CAST(:sid AS uuid)
          ORDER BY member_count DESC
          LIMIT 15
@@ -381,7 +381,7 @@ async def _fetch_story_data_v2(db, story_id: str) -> dict[str, Any]:
         SELECT c.story_id::text, c.representative_title,
                c.article_count, c.independent_source_count,
                c.importance_score, c.topic, c.subject_country
-          FROM analytics.story_clusters c
+          FROM analytics.story_clusters_v8 c
          WHERE c.story_id = CAST(:sid AS uuid)
     """), {"sid": story_id})).fetchone()
 
@@ -394,7 +394,7 @@ async def _fetch_story_data_v2(db, story_id: str) -> dict[str, Any]:
                peak_at::date       AS peak_date,
                peak_articles_per_hour, velocity,
                span_hours, is_breaking, dormant_since::date AS dormant_since
-          FROM analytics.story_timeline
+          FROM analytics.story_timeline_v8
          WHERE story_id = CAST(:sid AS uuid)
     """), {"sid": story_id})).fetchone()
 
@@ -407,7 +407,7 @@ async def _fetch_story_data_v2(db, story_id: str) -> dict[str, Any]:
                a.lead_text_translated,
                a.summary_preview,
                m.attach_score
-          FROM analytics.story_cluster_members m
+          FROM analytics.story_cluster_members_v8 m
           JOIN articles a ON a.id = m.article_id
           LEFT JOIN sources s ON s.id = a.source_id
          WHERE m.story_id = CAST(:sid AS uuid)
@@ -418,7 +418,7 @@ async def _fetch_story_data_v2(db, story_id: str) -> dict[str, Any]:
     quotes = (await db.execute(text("""
         SELECT sq.speaker, sq.quote_text_en, sq.is_direct,
                a.collected_at::date AS quote_date
-          FROM analytics.story_quotes sq
+          FROM analytics.story_quotes_v8 sq
           LEFT JOIN articles a ON a.id = sq.article_id
          WHERE sq.story_id = CAST(:sid AS uuid)
            AND sq.quote_text_en IS NOT NULL
@@ -428,7 +428,7 @@ async def _fetch_story_data_v2(db, story_id: str) -> dict[str, Any]:
     facts = (await db.execute(text("""
         SELECT fact_key, unit, value_min, value_max, value_latest,
                member_count, single_source, sample_claim
-          FROM analytics.story_facts
+          FROM analytics.story_facts_v8
          WHERE story_id = CAST(:sid AS uuid)
          ORDER BY member_count DESC LIMIT 15
     """), {"sid": story_id})).fetchall()
@@ -599,9 +599,9 @@ async def my_chronicles(
                    usa.assigned_at,
                    (cc.story_id IS NOT NULL)          AS has_cache
               FROM analytics.user_story_assignments usa
-              JOIN analytics.story_clusters c
+              JOIN analytics.story_clusters_v8 c
                      ON c.story_id = usa.story_id
-              LEFT JOIN analytics.story_timeline t
+              LEFT JOIN analytics.story_timeline_v8 t
                      ON t.story_id = c.story_id
               LEFT JOIN analytics.chronicle_cache cc
                      ON cc.story_id = c.story_id
@@ -648,8 +648,8 @@ async def chronicle_meta(
                    t.span_hours,
                    usa.label AS assignment_label,
                    usa.assigned_at
-              FROM analytics.story_clusters c
-              LEFT JOIN analytics.story_timeline t
+              FROM analytics.story_clusters_v8 c
+              LEFT JOIN analytics.story_timeline_v8 t
                      ON t.story_id = c.story_id
               LEFT JOIN analytics.user_story_assignments usa
                      ON usa.story_id = c.story_id
@@ -787,7 +787,7 @@ async def get_chronicle_articles(
                    a.collected_at::date AS pub_date,
                    s.name               AS source,
                    m.attach_score
-              FROM analytics.story_cluster_members m
+              FROM analytics.story_cluster_members_v8 m
               JOIN articles a ON a.id = m.article_id
               LEFT JOIN sources s ON s.id = a.source_id
              WHERE m.story_id = CAST(:sid AS uuid)
@@ -966,7 +966,7 @@ async def list_assignments(
                    ) AS cache_generated_at
               FROM analytics.user_story_assignments usa
               LEFT JOIN analytics.users u ON u.id = usa.user_id
-              LEFT JOIN analytics.story_clusters c ON c.story_id = usa.story_id
+              LEFT JOIN analytics.story_clusters_v8 c ON c.story_id = usa.story_id
              ORDER BY usa.assigned_at DESC
         """))).fetchall()
 

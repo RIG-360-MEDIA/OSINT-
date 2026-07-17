@@ -24,7 +24,7 @@ from sqlalchemy import text
 
 from config import load_settings
 from db import dispose_engine, get_db, get_engine
-from routers import admin, analytics_router, chronicle_router, climbing, cm_perspective, dossier_router, entities, emerging, executive, export, home, horizon, intel, kpi, map_router, me, mood, onboarding, posture, report_router, sources_router, stories, textual, ticker_router, top_articles, voices, war_room_router
+from routers import keywords, admin, analytics_router, chronicle_router, climbing, cm_perspective, dossier_router, entities, emerging, executive, export, home, horizon, intel, kpi, map_router, me, mood, onboarding, posture, report_router, sources_router, stories, textual, ticker_router, top_articles, voices, war_room_router
 
 settings = load_settings()
 
@@ -70,6 +70,7 @@ app.include_router(entities.router)
 app.include_router(emerging.router)
 app.include_router(stories.router)
 app.include_router(top_articles.router)
+app.include_router(keywords.router)
 app.include_router(ticker_router.router)
 app.include_router(home.router)
 app.include_router(dossier_router.router)
@@ -104,3 +105,10 @@ async def ready() -> dict[str, str]:
     async with get_db() as db:
         row = (await db.execute(text("SELECT 1 AS one"))).fetchone()
     return {"status": "ready" if row and row.one == 1 else "degraded"}
+
+try:
+    from v1 import install_v1
+    install_v1(app)
+except Exception as _v1e:
+    import logging as _lg
+    _lg.getLogger("main").warning("v1 partner-API unavailable: %s", _v1e)

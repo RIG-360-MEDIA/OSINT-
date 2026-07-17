@@ -660,10 +660,14 @@ class _UnifiedPool:
             self._lock = asyncio.Lock()
         return self._lock
 
-    async def get_slot(self) -> tuple[int, _UnifiedSlot]:
+    async def get_slot(self, skip_local: bool = False) -> tuple[int, _UnifiedSlot]:
         """Return (slot_index, _UnifiedSlot). Local slot is preferred when
         available; free providers (Groq+Cerebras) become overflow.
-        Falls back to soonest-to-recover when all slots are exhausted."""
+        Falls back to soonest-to-recover when all slots are exhausted.
+
+        skip_local: when True (json_mode), never PREFER a local slot — the local
+        Ollama node hangs on format=json calls (120s+ timeouts; ported from the
+        rig pool 2026-06-16 fix), so json tasks route straight to hosted."""
         import time as _time
         async with self._get_lock():
             now = _time.time()
@@ -675,7 +679,8 @@ class _UnifiedPool:
             # not saturated with in-flight requests. In LOCAL-ONLY mode
             # we ALSO return local even when at capacity — Ollama queues
             # internally, and there's no other slot to fall back to.
-            if _LOCAL_LLM_PRIMARY:
+            # skip_local (json_mode) bypasses this preference entirely.
+            if _LOCAL_LLM_PRIMARY and not skip_local:
                 for i, slot in enumerate(self._slots):
                     if slot.provider != "local":
                         continue
@@ -960,7 +965,7 @@ async def _call_unified_pool(
     last_exc: Exception | None = None
     for attempt in range(attempts):
         await _get_bucket().acquire()
-        slot_idx, slot = await pool.get_slot()
+        slot_idx, slot = await pool.get_slot(skip_local=json_response)
         try:
             try:
                 return await _call_via_slot(

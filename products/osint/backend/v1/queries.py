@@ -366,6 +366,187 @@ async def outlets_for_entity(db, entity_id: str, window_hours: int, limit: int) 
     return out
 
 
+# The keyword-scope match expression. BYTE-IDENTICAL to the indexed expression of
+# idx_articles_titlelead_trgm, and copied verbatim from endpoints/keyword_sentiment.py
+# (_TITLELEAD there) — that is the whole point of it, not a style choice.
+#
+# Postgres matches an expression index on the PARSED expression tree, so case and
+# whitespace are not load-bearing; the COLUMN SET, their ORDER, and the two ' '
+# separators are. Add summary_executive, drop a lead, reorder, and the index stops
+# matching: the query still returns CORRECT rows, ~40x slower, with no error and no
+# test failure. Nothing in Python can catch that — do not edit this without an
+# EXPLAIN showing a Bitmap Index Scan on idx_articles_titlelead_trgm.
+#
+# NOT included: summary_executive / summary_preview. They carry the English rendering
+# of non-English press (~19x more English-keyword hits on Telugu articles), but they
+# are in NO trigram index, so naming them here forces a full scan of the window and
+# costs the entire rewrite. Live behaviour today is that scope keywords match NOTHING,
+# so title/lead-only is a strict, large improvement with no client-visible regression.
+# The follow-up is a THIRD union branch over a new summaries trigram index, not more
+# columns in this expression.
+#
+# Consequence to know: this CONCATENATES both leads, where the old (never-live) OR
+# version searched coalesce(lead_text_translated, lead_text_original) — only one. So
+# it searches strictly MORE lead text.
+_TITLELEAD = ("coalesce(title,'') || ' ' || coalesce(lead_text_original,'') || ' ' "
+              "|| coalesce(lead_text_translated,'')")
+
+# The entity-scope semi-join, shared by the flat feed and the UNION path's entity branch.
+_ENTITY_SCOPE_SQL = """EXISTS (SELECT 1 FROM article_entity_mentions aem
+                                        WHERE aem.article_id = a.id
+                                          AND aem.entity_id = ANY(CAST(:eids AS uuid[])))"""
+
+# The feed's client-safe SELECT list. Deliberately evaluated on the OUTER query only,
+# post-LIMIT (see _SUMMARY_SQL's note) — never inside a scope branch, where it would
+# run over the whole match set instead of :lim rows and eat the entire win.
+_FEED_COLS = f"""a.id::text AS id, a.title AS headline,
+               {_SUMMARY_SQL} AS summary,
+               COALESCE(NULLIF(a.full_text_translated, ''), NULLIF(a.full_text_scraped, '')) AS full_text,
+               NULLIF(a.lead_text_original, '') AS summary_original,
+               NULLIF(a.full_text_scraped, '') AS full_text_original,
+               s.name AS source, a.url, a.language_detected AS language,
+               a.thread_id::text AS story_id, sent.stance AS stance, sent.intensity AS intensity,
+               s.political_lean AS political_lean,
+               EXISTS (SELECT 1 FROM analytics.low_credibility_sources lc WHERE lc.source_id = a.source_id) AS low_credibility,
+               (a.substrate_status='ok' AND NOT COALESCE(a.is_duplicate,false)
+                AND a.title IS NOT NULL AND a.topic_category IS NOT NULL AND a.topic_category<>'OTHER'
+                AND a.labse_embedding_v4 IS NOT NULL
+                AND jsonb_typeof(a.entities_extracted)='array' AND jsonb_array_length(a.entities_extracted)>0) AS api_ready,
+               a.published_at, a.collected_at, a.updated_at AS last_updated, a.geo_primary"""
+
+
+def _like_pattern(term: str) -> str:
+    """A substring LIKE/ILIKE pattern with the wildcards in `term` escaped, so a
+    provisioned keyword containing % or _ matches literally rather than acting as a
+    wildcard. Always bound as a parameter — user/provisioned text never reaches SQL."""
+    esc = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{esc}%"
+
+
+def _keyword_scope_clause(keywords: tuple[str, ...], params: dict[str, Any]) -> str:
+    """OR'd SINGLE-pattern ILIKE predicates over _TITLELEAD, one bind param each.
+
+    Two rules, both of which silently cost the trigram index if broken:
+      * `LIKE ANY(array)` is NEVER trigram-indexable — only a single-pattern
+        `ILIKE :pat` is. Hence the expansion into one predicate per keyword.
+      * the index is on the RAW expression, so `lower(expr) LIKE :pat` is
+        index-defeating too. ILIKE on the bare expression matches identically
+        and IS supported by gin_trgm_ops.
+    Only the loop index is interpolated into SQL; the keyword itself is a bind param.
+
+    Known data risk: pg_trgm needs >=3 non-wildcard chars to extract trigrams, so a
+    provisioned keyword shorter than that yields none and degrades this branch to a
+    full scan of the window. We do NOT drop short keywords (scope is what the org
+    asked for) — audit the provisioned list instead.
+    """
+    preds = []
+    for i, k in enumerate(keywords):
+        preds.append(f"({_TITLELEAD}) ILIKE :kw{i}")
+        params[f"kw{i}"] = _like_pattern(k)
+    return "(" + " OR ".join(preds) + ")"
+
+
+def _scoped_articles_union_sql(
+    *,
+    keywords: tuple[str, ...],
+    scoped_ents: bool,
+    post: list[str],
+    cursor_clause: str | None,
+    stance_scope: str,
+    params: dict[str, Any],
+) -> str:
+    """The keyword-scope feed: `entity match UNION keyword match`, then filter+sort once.
+
+    WHY A UNION AND NOT `EXISTS(...) OR ILIKE(...)`. The OR is the obvious spelling and
+    it is CORRECT — it is also 5,539-8,406 ms on the live 24h feed, against 1,526 ms for
+    the entity-only feed it replaces. The planner cannot bitmap-combine an EXISTS
+    semi-join with an index scan, so it gives up on both, walks idx_articles_collected
+    newest-first, and evaluates the ILIKE as a per-row filter over large text
+    (~290us/row). A UNION lets each branch use its OWN index —
+    article_entity_mentions_entity_idx for entities, idx_articles_titlelead_trgm for
+    keywords — and measures 2,407 ms cold / 151 ms warm. Re-folding this back into one
+    OR-group is the single easiest way to undo the whole change.
+
+    WHY `AS MATERIALIZED` ON EVERY BRANCH. Without it the planner inlines the CTEs, sees
+    ORDER BY collected_at DESC + LIMIT, and re-enters exactly the newest-first scan
+    above — the 118,377 ms failure documented at endpoints/keyword_sentiment.py's
+    _search_sql. MATERIALIZED forces the match set to be built by index first, and only
+    then sorted. Non-negotiable, not style.
+
+    WHY NO PER-BRANCH `ORDER BY ... LIMIT`. This is the load-bearing decision and the
+    real landmine. "Take top-:lim from each branch then re-sort" looks like free speed
+    and is UNSOUND here: it is only valid if EVERY post-union filter (language, source,
+    sentiment, mute_terms) is also duplicated into both branches, and on the keyword
+    branch it re-arms the precise ORDER-BY-LIMIT trap that MATERIALIZED exists to
+    prevent. It fails SILENTLY — rows quietly missing from page 2+, no error, no plan
+    anyone would look at twice. Do not add a LIMIT to a branch.
+
+    WHY THE CURSOR IS INSIDE BOTH BRANCHES. With no per-branch LIMIT the cursor is a
+    row-local predicate, so inside-the-branches and after-the-union are logically
+    identical and both correct. It lives in the branches because it is free there, it
+    shrinks the materialized set and the outer sort, and it keeps the query correct if
+    someone ever does add a per-branch LIMIT. Note the danger is the LIMIT, not the
+    cursor's placement.
+
+    WHY `UNION` AND NOT `UNION ALL`. An article matching a scoped entity AND a scope
+    keyword would otherwise be returned twice. Dedupe is on (id, collected_at) off the
+    same physical row, so it is exact.
+
+    The branches select ONLY id + collected_at; the expensive SELECT list stays on the
+    outer query, post-LIMIT. Window and NOT is_duplicate live in both branches (they
+    bound the match set and keep the trigram bitmap small).
+    """
+    ent_cursor = f"AND {cursor_clause}" if cursor_clause else ""
+    # The keyword branch is UNALIASED (`FROM articles`) because _TITLELEAD uses bare
+    # column names — that is what keeps it byte-identical to the indexed expression.
+    kw_cursor = "AND (collected_at, id) < (:ct, CAST(:ci AS uuid))" if cursor_clause else ""
+
+    ctes: list[str] = []
+    if scoped_ents:
+        ctes.append(f"""ent_scope AS MATERIALIZED (
+            SELECT a.id, a.collected_at
+              FROM articles a
+             WHERE a.collected_at > now() - make_interval(hours => :h)
+               AND NOT COALESCE(a.is_duplicate, false)
+               AND {_ENTITY_SCOPE_SQL}
+               {ent_cursor}
+        )""")
+    ctes.append(f"""kw_scope AS MATERIALIZED (
+            SELECT id, collected_at
+              FROM articles
+             WHERE collected_at > now() - make_interval(hours => :h)
+               AND NOT COALESCE(is_duplicate, false)
+               AND {_keyword_scope_clause(keywords, params)}
+               {kw_cursor}
+        )""")
+
+    scope_rel = "kw_scope"
+    if scoped_ents:
+        scope_rel = "scope_union"
+        ctes.append("""scope_union AS MATERIALIZED (
+            SELECT id, collected_at FROM ent_scope
+            UNION
+            SELECT id, collected_at FROM kw_scope
+        )""")
+
+    post_where = " AND ".join(post) if post else "TRUE"
+    return f"""
+        WITH {", ".join(ctes)}
+        SELECT {_FEED_COLS}
+          FROM {scope_rel} scope
+          JOIN articles a ON a.id = scope.id
+          JOIN sources s ON s.id = a.source_id
+          LEFT JOIN LATERAL (
+              SELECT e.stance, e.impact_confidence AS intensity FROM analytics.article_entity_sentiment e
+               WHERE e.article_id = a.id {stance_scope}
+               ORDER BY e.impact_confidence DESC NULLS LAST LIMIT 1
+          ) sent ON true
+         WHERE {post_where}
+         ORDER BY scope.collected_at DESC, scope.id DESC
+         LIMIT :lim
+    """
+
+
 async def list_scoped_articles(
     db,
     *,
@@ -388,70 +569,68 @@ async def list_scoped_articles(
     Scope is `entity OR keyword`, not `entity AND keyword`: an org asking for
     6 politicians plus the keyword "kaleshwaram" means "either", and expects the
     project coverage that names no politician.
+
+    THREE query shapes, branched on scope — the keyword rewrite must not touch the
+    two paths that are already fine:
+      A. all_entities            -> the flat query, unchanged. Keywords are IGNORED
+                                    (long-standing behaviour: the scope block has
+                                    always been under `if not all_entities`).
+      B. entity scope, no keywords -> the flat query, unchanged (~1.5s live).
+      C. keyword scope (± entities) -> the UNION path (see _scoped_articles_union_sql).
     """
     if not all_entities and not entity_ids and not keywords:
         return [], None
 
-    clauses = [
-        "a.collected_at > now() - make_interval(hours => :h)",
-        "NOT COALESCE(a.is_duplicate, false)",
-    ]
     params: dict[str, Any] = {"h": window_hours, "lim": limit}
+    # Entity scope drives BOTH the mention semi-join and every :eids reference below.
+    # Keying these off `entity_ids` rather than `not all_entities` is a fix, not a
+    # tidy-up: a keywords-only org (all_entities=false, entity_ids=[]) used to build
+    # SQL naming :eids with no such bind param -> SQLAlchemy raised on execute -> 500
+    # on exactly the config this feature exists for.
+    scoped_ents = not all_entities and bool(entity_ids)
+    if scoped_ents:
+        params["eids"] = entity_ids
 
-    if not all_entities:
-        # The scope predicate is a UNION of what the org asked for. Keep it one
-        # OR-group: appending each as its own clause would AND them, so an org
-        # with entities AND keywords would get only articles matching both.
-        scope_or: list[str] = []
-        if entity_ids:
-            scope_or.append("""EXISTS (SELECT 1 FROM article_entity_mentions aem
-                                        WHERE aem.article_id = a.id
-                                          AND aem.entity_id = ANY(CAST(:eids AS uuid[])))""")
-            params["eids"] = entity_ids
-        if keywords:
-            # Match native text AND the English summaries. The English columns are
-            # what make an English keyword work against non-English press: measured
-            # over 30d of Telugu articles, "irrigation" hits 19 rows in the native
-            # title/lead but 355 in summary_executive/summary_preview -- ~19x. The
-            # native columns stay in so a native-script keyword still matches
-            # (Telugu "నీటిపారుదల" -> 75). Substring (LIKE), matching mute_terms
-            # semantics: "musi" also matches "music".
-            scope_or.append("""(lower(coalesce(a.title, '')) LIKE ANY(:kpats)
-                                OR lower(coalesce(a.summary_executive, '')) LIKE ANY(:kpats)
-                                OR lower(coalesce(a.summary_preview, '')) LIKE ANY(:kpats)
-                                OR lower(coalesce(a.lead_text_translated, a.lead_text_original, '')) LIKE ANY(:kpats))""")
-            params["kpats"] = ["%" + k.lower() + "%" for k in keywords]
-        clauses.append("(" + " OR ".join(scope_or) + ")")
+    # Post-scope filters. On the UNION path these are applied AFTER the union, on the
+    # small result set, and NOT duplicated into the branches: every predicate copied
+    # into two branches is a chance to land it in only one, which is the bug class
+    # here. (sentiment is a semi-join — inside a branch it would re-lose the index;
+    # source needs `JOIN sources s`, which the branches don't have; mute_terms is a
+    # negated LIKE ANY and is unindexable in any position.)
+    post: list[str] = []
 
     if language:
-        clauses.append("a.language_detected = :lang")
+        post.append("a.language_detected = :lang")
         params["lang"] = language
 
     if source:
         # Outlet drill-down: match by source display name (what /analytics/outlets returns).
-        clauses.append("s.name = ANY(:sources)")
+        post.append("s.name = ANY(:sources)")
         params["sources"] = list(source)
 
     stance_set = _stance_set_for(sentiment)
     if stance_set:
         # Drill-down symmetry: match the SAME v2 rows /analytics/sentiment counts
         # (analytics.article_entity_sentiment, scoped by resolved entity_id).
-        if all_entities:
-            clauses.append("""EXISTS (SELECT 1 FROM analytics.article_entity_sentiment e
-                                       WHERE e.article_id = a.id
-                                         AND lower(e.stance) = ANY(:stances))""")
-        else:
-            clauses.append("""EXISTS (SELECT 1 FROM analytics.article_entity_sentiment e
+        # No entity scope (all_entities, or keywords-only) => "any entity", the only
+        # honest reading when there is no entity scope to scope to.
+        if scoped_ents:
+            post.append("""EXISTS (SELECT 1 FROM analytics.article_entity_sentiment e
                                        WHERE e.article_id = a.id
                                          AND e.entity_id = ANY(CAST(:eids AS uuid[]))
+                                         AND lower(e.stance) = ANY(:stances))""")
+        else:
+            post.append("""EXISTS (SELECT 1 FROM analytics.article_entity_sentiment e
+                                       WHERE e.article_id = a.id
                                          AND lower(e.stance) = ANY(:stances))""")
         params["stances"] = stance_set
 
     if mute_terms:
-        clauses.append("NOT (lower(coalesce(a.title,'')) LIKE ANY(:mpats) "
-                       "OR lower(coalesce(a.lead_text_translated, a.lead_text_original, '')) LIKE ANY(:mpats))")
+        post.append("NOT (lower(coalesce(a.title,'')) LIKE ANY(:mpats) "
+                    "OR lower(coalesce(a.lead_text_translated, a.lead_text_original, '')) LIKE ANY(:mpats))")
         params["mpats"] = ["%" + m.lower() + "%" for m in mute_terms]
 
+    cursor_clause = None
     cur = decode_cursor(cursor)
     if cur is not None:
         # Bind the timestamp as a real datetime — asyncpg resolves the param type from
@@ -460,27 +639,30 @@ async def list_scoped_articles(
             ct = datetime.fromisoformat(cur[0])
         except (TypeError, ValueError):
             raise bad_request("Invalid cursor")
-        clauses.append("(a.collected_at, a.id) < (:ct, CAST(:ci AS uuid))")
+        cursor_clause = "(a.collected_at, a.id) < (:ct, CAST(:ci AS uuid))"
         params["ct"], params["ci"] = ct, cur[1]
 
-    where = " AND ".join(clauses)
-    # Strongest stance toward the scoped entity (or any, for all_entities orgs).
-    stance_scope = "" if all_entities else "AND e.entity_id = ANY(CAST(:eids AS uuid[]))"
-    sql = f"""
-        SELECT a.id::text AS id, a.title AS headline,
-               {_SUMMARY_SQL} AS summary,
-               COALESCE(NULLIF(a.full_text_translated, ''), NULLIF(a.full_text_scraped, '')) AS full_text,
-               NULLIF(a.lead_text_original, '') AS summary_original,
-               NULLIF(a.full_text_scraped, '') AS full_text_original,
-               s.name AS source, a.url, a.language_detected AS language,
-               a.thread_id::text AS story_id, sent.stance AS stance, sent.intensity AS intensity,
-               s.political_lean AS political_lean,
-               EXISTS (SELECT 1 FROM analytics.low_credibility_sources lc WHERE lc.source_id = a.source_id) AS low_credibility,
-               (a.substrate_status='ok' AND NOT COALESCE(a.is_duplicate,false)
-                AND a.title IS NOT NULL AND a.topic_category IS NOT NULL AND a.topic_category<>'OTHER'
-                AND a.labse_embedding_v4 IS NOT NULL
-                AND jsonb_typeof(a.entities_extracted)='array' AND jsonb_array_length(a.entities_extracted)>0) AS api_ready,
-               a.published_at, a.collected_at, a.updated_at AS last_updated, a.geo_primary
+    # Strongest stance toward the scoped entity (or any, absent an entity scope).
+    stance_scope = "AND e.entity_id = ANY(CAST(:eids AS uuid[]))" if scoped_ents else ""
+
+    if keywords and not all_entities:
+        sql = _scoped_articles_union_sql(
+            keywords=keywords, scoped_ents=scoped_ents, post=post,
+            cursor_clause=cursor_clause, stance_scope=stance_scope, params=params,
+        )
+    else:
+        clauses = [
+            "a.collected_at > now() - make_interval(hours => :h)",
+            "NOT COALESCE(a.is_duplicate, false)",
+        ]
+        if scoped_ents:
+            clauses.append("(" + _ENTITY_SCOPE_SQL + ")")
+        clauses.extend(post)
+        if cursor_clause:
+            clauses.append(cursor_clause)
+        where = " AND ".join(clauses)
+        sql = f"""
+        SELECT {_FEED_COLS}
           FROM articles a
           JOIN sources s ON s.id = a.source_id
           LEFT JOIN LATERAL (

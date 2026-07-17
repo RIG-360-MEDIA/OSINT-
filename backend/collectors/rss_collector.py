@@ -33,6 +33,7 @@ DATABASE_URL: str = os.environ.get(
 )
 
 LEAD_TEXT_MAX_CHARS = 2000
+from backend.collectors.text_clean import strip_html_lead
 MIN_FULL_TEXT_CHARS = 50
 ITEMS_PER_FEED = 20
 
@@ -337,7 +338,7 @@ class RSSCollector:
             logger.debug("Skipping scrape for %s (in back-off window)", host)
             full_text = lead_text = thumbnail = author = None
             if rss_summary:
-                lead_text = rss_summary[:LEAD_TEXT_MAX_CHARS]
+                lead_text = strip_html_lead(rss_summary, LEAD_TEXT_MAX_CHARS)
         else:
             try:
                 full_text, lead_text, thumbnail, author = await self._fetch_and_extract(
@@ -352,7 +353,7 @@ class RSSCollector:
                 logger.debug("Scrape exception for %s: %s", url, _scrape_exc)
                 full_text = lead_text = thumbnail = author = None
                 if rss_summary:
-                    lead_text = rss_summary[:LEAD_TEXT_MAX_CHARS]
+                    lead_text = strip_html_lead(rss_summary, LEAD_TEXT_MAX_CHARS)
 
         # Parse published timestamp
         published_at: datetime | None = None
@@ -485,7 +486,7 @@ class RSSCollector:
         if not text or len(text) < MIN_FULL_TEXT_CHARS:
             text = None
 
-        lead_text = text[:LEAD_TEXT_MAX_CHARS] if text else None
+        lead_text = strip_html_lead(text, LEAD_TEXT_MAX_CHARS)
         return text, lead_text, thumbnail, author
 
     # ------------------------------------------------------------------

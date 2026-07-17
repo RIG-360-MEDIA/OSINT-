@@ -34,6 +34,7 @@ DATABASE_URL: str = os.environ.get(
 )
 
 LEAD_TEXT_MAX_CHARS = 2000
+from backend.collectors.text_clean import strip_html_lead
 MIN_FULL_TEXT_CHARS = 50
 HTTP_TIMEOUT = 30
 
@@ -294,5 +295,5 @@ class HTMLCollector:
             logger.info("Short/empty extraction for %s — may be paywalled", url)
             full_text = None
 
-        lead_text = full_text[:LEAD_TEXT_MAX_CHARS] if full_text else None
+        lead_text = strip_html_lead(full_text, LEAD_TEXT_MAX_CHARS)
         return full_text, lead_text, thumbnail, author

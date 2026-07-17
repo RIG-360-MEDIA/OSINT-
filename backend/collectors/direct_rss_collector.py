@@ -44,6 +44,7 @@ FRESHRSS_USERNAME: str = os.environ.get("FRESHRSS_USERNAME", "admin")
 FRESHRSS_PASSWORD: str = os.environ.get("FRESHRSS_PASSWORD", "")
 
 LEAD_TEXT_MAX_CHARS = 2000
+from backend.collectors.text_clean import strip_html_lead
 MIN_FULL_TEXT_CHARS = 50
 ITEMS_PER_FEED = 20
 FEED_FETCH_TIMEOUT = 20
@@ -379,7 +380,7 @@ class DirectRSSCollector:
         )
         if not full_text or len(full_text) < MIN_FULL_TEXT_CHARS:
             full_text = None
-        lead_text = full_text[:LEAD_TEXT_MAX_CHARS] if full_text else None
+        lead_text = strip_html_lead(full_text, LEAD_TEXT_MAX_CHARS)
 
         # Published timestamp — feedparser exposes parsed struct
         published_at: datetime | None = None

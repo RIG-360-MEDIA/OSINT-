@@ -25,8 +25,18 @@ For `/v1/articles` only `entity_ids` and `mute_terms` do anything. `keywords`, `
 **⚠️ Do NOT "fix" languages/topics/regions** — they're *narrowing* filters; wiring them up REMOVES articles (their sandbox has `languages=Telugu` but the DB stores `te` → feed would return zero). Inert is protecting them. Keywords are the only safe one (it widens).
 
 **WHAT I WANT NEXT (in priority order):**
-1. **The keyword filter.** Code is committed (`9105ff6`) but NOT deployed because the committed version uses `OR` (5.5–8.4s). Finish it with the **UNION rewrite** — §4 of the handoff has the exact SQL shape, the measurements (151ms warm vs their current 1,526ms), and the gotchas (`LIKE ANY(array)` is never trigram-indexable; the WHERE expression must byte-match `idx_articles_titlelead_trgm`; the keyset cursor must apply inside both branches). Test pagination hard, verify live with the sandbox key, don't ship a slow query onto their feed.
+
+1. **Deploy the keyword filter — the UNION rewrite is WRITTEN and committed (`86ffa76`), but NOT deployed.** Do NOT rewrite it; it has been through adversarial review. What remains is the verification it explicitly could not do without the box:
+   - **EXPLAIN ANALYZE at the MAX window.** The 151ms warm / 2,407ms cold numbers are **24h-window only**. There is deliberately no per-branch LIMIT, so the full match set is materialized and sorted on every page — cost scales with match count, and deep pagination is O(match set), not O(limit). Nobody has measured `MAX_WINDOW_DAYS`. If it's bad, the mitigation is a lower max window for keyword-scoped orgs — **NOT** a per-branch LIMIT (that re-arms the ORDER BY + LIMIT trap that caused the 118s scan, and is only sound if every post-union filter is duplicated into both branches).
+   - **Live pagination test across a page boundary that straddles both branches** (page 1 all entity-matches, page 2 mixed). Silent row loss is the failure mode.
+   - Then deploy to the container **and** `/root/rig/products/osint/backend/v1/`, run the v1 tests (baseline is **8F/136P** — match it exactly), restart `osint-backend`, verify live with the sandbox key.
+   - It also fixes a **live latent 500**: `:eids` was referenced unconditionally while only bound inside `if entity_ids:`, so any keywords-only org (all_entities=false, entity_ids=[], keywords set) 500s today. Add a regression test.
+   - Already verified on the box: both indexes exist and are `indisvalid`+`indisready`; neither org has a keyword under 3 chars (pg_trgm extracts no trigrams below 3 and would silently fall back to a scan); `article_entity_mentions` is a **MATVIEW** — a non-concurrent REFRESH takes an AccessExclusiveLock and would block the entity branch.
+   - Paths A (all_entities) and B (entity-only) generate **byte-identical** SQL to the previous HEAD — only the keyword path is new.
+
 2. Anything else in §11 of the handoff.
+
+**ALSO DONE 2026-07-17 (don't redo):** title/suffix **aliases** added to `entity_lookup`, so VeriDeck can send names exactly as their analyst writes them — `Chief Minister A. Revanth Reddy`, `Deputy Chief Minister Mallu Bhatti Vikramarka`, and both `– Telangana` party units now resolve (verified live). `name_norm` is a global PK, so an alias maps to exactly one entity estate-wide; both dash shapes had to be added explicitly because the resolver is an exact string match. **Aliases are the supported way to absorb honorifics — never ask a client to reformat.**
 
 **WORKING RULES:**
 - Live client-facing prod DB with a Monday go-live. **Confirm before destructive/outward actions.**

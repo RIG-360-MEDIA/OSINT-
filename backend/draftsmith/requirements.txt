@@ -1,0 +1,13 @@
+# draftsmith (Door B) — ADDED dependencies only.
+#
+# VERIFIED against backend/requirements.txt (2026-07-21): fastapi==0.115.0,
+# uvicorn[standard]==0.30.0, sqlalchemy==2.0.35, asyncpg==0.29.0,
+# pydantic>=2.10, httpx are ALL already pinned there — rig-backend is itself
+# a FastAPI service (see CLAUDE.md), not just a Celery worker host. Do not
+# re-pin any of them here; this file lists ONLY what draftsmith adds on top.
+
+# Prompt/context budgeting for the BRIEF assembled in the rank stage
+# (config.BUNDLE_TOKEN_CEILING) — trims lowest-relevance evidence first while
+# respecting config.SELECT_FLOOR, so the writer call never blows its context
+# window. [all] pulls in its tokenizer backends.
+headroom-ai[all]>=0.1

@@ -389,8 +389,10 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             SELECT DISTINCT ON (topic, pillar) topic, pillar, item_ref, source_ref, verdict
               FROM briefing.items i
               LEFT JOIN articles a ON a.id::text = i.item_ref
+              LEFT JOIN clippings cl ON cl.id::text = i.item_ref
              WHERE run_id=:r AND about_government AND NOT unclear AND topic IS NOT NULL
              ORDER BY topic, pillar,
+                      (cl.clipping_image_b64 IS NOT NULL) DESC,
                       (a.thumbnail_url IS NOT NULL AND a.thumbnail_url <> '') DESC,
                       (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST
         """), {"r": rid})).fetchall()
@@ -567,8 +569,10 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             SELECT DISTINCT ON (scheme, pillar) scheme, pillar, item_ref, source_ref, verdict
               FROM briefing.items i
               LEFT JOIN articles a ON a.id::text = i.item_ref
+              LEFT JOIN clippings cl ON cl.id::text = i.item_ref
              WHERE run_id=:r AND about_government AND NOT unclear AND scheme IS NOT NULL
              ORDER BY scheme, pillar,
+                      (cl.clipping_image_b64 IS NOT NULL) DESC,
                       (a.thumbnail_url IS NOT NULL AND a.thumbnail_url <> '') DESC,
                       (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST
         """), {"r": rid})).fetchall()

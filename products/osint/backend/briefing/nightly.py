@@ -25,16 +25,36 @@ TELANGANA_ORG = "31ad3fa9-25eb-4b3c-8a56-360696fc680a"
 ACTIVE_ORGS = [TELANGANA_ORG]
 
 
+async def _retry(coro_factory, *, tries: int = 5, base_delay: float = 4.0, label: str = ""):
+    """Run an idempotent DB step, retrying transient failures.
+
+    rig-postgres is shared and periodically contended; a single read can exceed
+    the 20s statement_timeout during a write/ingestion burst and abort the whole
+    step. Every step here (merge/assemble/cache) is idempotent and re-runs cleanly,
+    so we retry with linear backoff rather than failing the day's report.
+    """
+    last: Exception | None = None
+    for i in range(tries):
+        try:
+            return await coro_factory()
+        except Exception as exc:  # noqa: BLE001
+            last = exc
+            logger.warning("briefing %s attempt %d/%d failed: %s",
+                           label, i + 1, tries, str(exc)[:120])
+            await asyncio.sleep(base_delay * (i + 1))
+    raise last  # type: ignore[misc]
+
+
 async def run_full(org_id: str, cover_date, concurrency: int = 6) -> dict:
     """judge -> merge -> assemble for one org+day. Returns summary."""
     logger.info("briefing run_full %s %s", org_id, cover_date)
     jud = await run_day(org_id, cover_date, limit_per_pillar=2000, concurrency=concurrency)
-    mrg = await merge_events(org_id, cover_date)
-    rep = await assemble(org_id, cover_date)
+    mrg = await _retry(lambda: merge_events(org_id, cover_date), label="merge")
+    rep = await _retry(lambda: assemble(org_id, cover_date), label="assemble")
     # warm the HTML + PDF cache so the first Dispatch load of the day is instant
     try:
         from briefing.cache import get_pdf
-        await get_pdf(org_id, cover_date)
+        await _retry(lambda: get_pdf(org_id, cover_date), label="pdf-warm", tries=3)
     except Exception as exc:  # noqa: BLE001
         logger.warning("pdf cache warm failed: %s", str(exc)[:120])
     strip = rep.get("strip", {})

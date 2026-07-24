@@ -213,15 +213,15 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
                 "_web_refs": [m.item_ref for m in members if m.pillar == "web"],
             }
             # ── coverage through the day: members bucketed by hour × pillar ──
-            _HB = ["6a", "9a", "12p", "3p", "6p", "9p", "next"]
+            _HB = ["6am", "9am", "12pm", "3pm", "6pm", "9pm", "next"]
             hourly = {k: {"web": 0, "tv": 0, "print": 0} for k in _HB}
 
             def _hbucket(ts, pillar):
                 if pillar == "newspaper" or ts is None:
-                    return "next" if pillar == "newspaper" else "9p"
+                    return "next" if pillar == "newspaper" else "9pm"
                 h = ts.hour
-                return ("6a" if h < 8 else "9a" if h < 11 else "12p" if h < 14
-                        else "3p" if h < 17 else "6p" if h < 20 else "9p")
+                return ("6am" if h < 8 else "9am" if h < 11 else "12pm" if h < 14
+                        else "3pm" if h < 17 else "6pm" if h < 20 else "9pm")
 
             def _tod(ts, pillar):
                 if pillar == "newspaper":

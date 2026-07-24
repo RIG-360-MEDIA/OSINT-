@@ -263,14 +263,16 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 .qtag.g{background:var(--pro-soft);color:var(--pro)}.qtag.o{background:var(--anti-soft);color:var(--anti)}
 .lean{font-family:var(--sans);font-size:8.5px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:3px;vertical-align:middle;margin-left:4px}
 .lean.n{background:var(--anti-soft);color:var(--anti)}.lean.p{background:var(--pro-soft);color:var(--pro)}
-.colo{padding:22px 46px;background:var(--navy);color:#c7d3e4;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--sans);font-size:10.5px;line-height:1.7}
-.colo b{color:#fff}.colo .rb{font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:11px;color:#fff}
+.enddisc{padding:20px 46px 30px;font-family:var(--sans);font-size:10px;color:var(--muted);text-align:center;font-style:italic}
+.pagefoot{position:fixed;left:0;right:0;bottom:0;height:26px;display:flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(180deg,#202127 0%,#141519 100%);border-top:2px solid #d5352b;font-family:var(--sans);font-size:9px;letter-spacing:.05em;color:#aab0b9;z-index:100}
+.pagefoot .fb{font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#fff;font-size:9.5px}
+.pagefoot .fb .accent{color:#e8443b;margin-left:.13em}
 /* ── print / PDF (headless Chromium) — screen == download == print ── */
-@page{size:A4;margin:11mm 12mm}
+@page{size:A4;margin:11mm 12mm 16mm}
 @media print{
  body{background:#fff}
  .paper{max-width:none;margin:0;border-radius:0;box-shadow:none}
- .topbar,.mast,.colo{padding-left:12mm;padding-right:12mm}
+ .topbar,.mast{padding-left:12mm;padding-right:12mm}
  section{padding:16px 12mm;break-inside:auto}
  .kstrip{padding:0 12mm}
  .shead{break-after:avoid}
@@ -649,10 +651,13 @@ def render_html(r: dict[str, Any]) -> str:
                      f"<div class='amt'><span class='med'>{_e(a['pillar'])}</span> &middot; {_e(a['source'])} &middot; {_e(a['lang'])}</div></div>{link}</div>")
         o.append("</div></section>")
 
-    o.append("<div class='colo'><div><b>Telangana &mdash; Information &amp; Public Relations.</b> "
-             "Prepared from published media only. Tone reflects how the government was portrayed, not the accuracy of reporting.</div>"
-             "<div style='text-align:right'><span class='rb'>Robin OSINT</span><br>A product of RIG 360 Media &amp; News Pvt. Ltd.</div></div>")
-    o.append("</div></body></html>")
+    o.append("<div class='enddisc'>Prepared from published media only. Tone reflects how the "
+             "government was portrayed, not the accuracy of reporting.</div>")
+    o.append("</div>")  # /paper
+    # fixed page-footer — repeats at the bottom of every PDF page
+    o.append("<div class='pagefoot'><span class='fb'>Robin<span class='accent'>OSINT</span></span>"
+             "<span class='ft'>&middot; A product of RIG 360 Media &amp; News Pvt. Ltd.</span></div>")
+    o.append("</body></html>")
     return "".join(o)
 
 

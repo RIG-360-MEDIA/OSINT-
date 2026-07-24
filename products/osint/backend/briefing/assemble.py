@@ -31,14 +31,21 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             return {"error": "no run for date"}
         rid = run.id
 
-        # ── strip: totals by pillar ──
+        # ── strip: totals by pillar (GOVERNMENT-relevant only) ──
+        # "Total stories" = stories that actually concern the government, not the
+        # full scanned corpus (which includes cricket / national / ads). The
+        # per-pillar split and headline total are both gov-relevant.
         tot = (await db.execute(text("""
-            SELECT pillar, count(*) n FROM briefing.items WHERE run_id=:r GROUP BY 1
+            SELECT pillar, count(*) n FROM briefing.items
+             WHERE run_id=:r AND about_government AND NOT unclear GROUP BY 1
         """), {"r": rid})).fetchall()
         by_pillar = {p: 0 for p in ("web", "tv", "newspaper")}
         for row in tot:
             by_pillar[row.pillar] = int(row.n)
         total = sum(by_pillar.values())
+        # full scanned volume kept for context (how loud the day was overall)
+        scanned = int((await db.execute(text(
+            "SELECT count(*) FROM briefing.items WHERE run_id=:r"), {"r": rid})).scalar() or 0)
 
         # ── sentiment (gov-relevant, not unclear) ──
         s = (await db.execute(text("""
@@ -447,7 +454,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             "annexure": annexure,
             "strip": {
                 "total": total, "by_pillar": by_pillar,
-                "about_government": gov_total,
+                "about_government": gov_total, "scanned": scanned,
                 "biggest_subject": {"topic": biggest, "items": biggest_n},
                 "sentiment": {"net": net, "favourable": fav, "critical": crit, "neutral": neu},
                 "top_outlet_by_medium": top_by_medium,

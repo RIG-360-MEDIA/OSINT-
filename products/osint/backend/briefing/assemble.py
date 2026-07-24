@@ -462,18 +462,36 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
                 d["top_critical"] = dd.get("critical")
                 d["top_positive"] = dd.get("favourable")
 
-        # ══ §7 quote contrast (gov vs opposition, roster-classified) ══
+        # ══ §7 quote contrast (gov vs opposition) — roster-classified AND
+        # speaker-verified. We keep a quote only if the attributed speaker matches
+        # a roster person AND that person's name/variant actually appears in the
+        # article (title / URL slug / translated body). This catches NLP
+        # mis-attributions (e.g. a BJP quote tagged to the wrong BJP leader)
+        # before they reach the report. ══
         roster = (await db.execute(text("""
             SELECT lower(canonical_name) nm, side, name_variants FROM briefing.roster
              WHERE org_id=CAST(:o AS uuid) AND active
         """), {"o": org_id})).fetchall()
-        gov_names, opp_names = set(), set()
+        people = []  # (variants:set[str], side:'gov'|'opp') — per-person, for verification
         for rr in roster:
-            alln = [rr.nm] + [str(x).lower() for x in (rr.name_variants or [])]
-            (gov_names if rr.side in ("government", "institution") else opp_names).update(
-                n for n in alln if len(n) >= 4)
-        qrows = (await db.execute(text("""
-            SELECT q.speaker_name sp, q.quote_text qt, s.name src
+            variants = {rr.nm} | {str(x).lower() for x in (rr.name_variants or [])}
+            variants = {v for v in variants if len(v) >= 3}
+            if variants:
+                people.append((variants, "gov" if rr.side in ("government", "institution") else "opp"))
+
+        def _verify_side(speaker: str, hay: str):
+            """'gov'/'opp' if the speaker matches a roster person whose name also
+            appears in the article; None if unmatched OR mis-attributed."""
+            sp = (speaker or "").lower()
+            for variants, side in people:
+                if any(v in sp for v in variants):
+                    return side if any(v in hay for v in variants) else None
+            return None
+
+        _HAY = ("lower(COALESCE(a.title,'')||' '||COALESCE(a.url,'')||' '||"
+                "left(COALESCE(a.full_text_translated, a.full_text_scraped,''),1200))")
+        qrows = (await db.execute(text(f"""
+            SELECT q.speaker_name sp, q.quote_text qt, s.name src, {_HAY} hay
               FROM briefing.items i
               JOIN article_quotes q ON q.article_id = CAST(i.item_ref AS uuid)
               JOIN articles a ON a.id = CAST(i.item_ref AS uuid)
@@ -485,23 +503,21 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
         """), {"r": rid})).fetchall()
         gov_q, opp_q, seen_q = [], [], set()
         for q in qrows:
-            sp = (q.sp or "").lower()
             key = (q.qt or "")[:60]
             if key in seen_q:
                 continue
             seen_q.add(key)
-            side = "gov" if any(g in sp for g in gov_names) else ("opp" if any(o in sp for o in opp_names) else None)
+            side = _verify_side(q.sp, q.hay or "")
             if side == "gov" and len(gov_q) < 7:
                 gov_q.append({"speaker": q.sp, "text": q.qt, "source": q.src})
             elif side == "opp" and len(opp_q) < 7:
                 opp_q.append({"speaker": q.sp, "text": q.qt, "source": q.src})
         quotes = {"government": gov_q, "opposition": opp_q}
 
-        # ── §2 "what each side said": real published quotes from the big story's
-        # own web members, split gov vs opposition by the same roster. ──
+        # ── §2 "what each side said": same source + same speaker verification. ──
         if big and big.get("_web_refs"):
-            brows = (await db.execute(text("""
-                SELECT q.speaker_name sp, q.quote_text qt, s.name src
+            brows = (await db.execute(text(f"""
+                SELECT q.speaker_name sp, q.quote_text qt, s.name src, {_HAY} hay
                   FROM article_quotes q
                   JOIN articles a ON a.id = q.article_id
                   JOIN sources s ON s.id = a.source_id
@@ -511,9 +527,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             """), {"ids": big["_web_refs"]})).fetchall()
             bg = bo = None
             for q in brows:
-                sp = (q.sp or "").lower()
-                side = ("gov" if any(g in sp for g in gov_names)
-                        else "opp" if any(o in sp for o in opp_names) else None)
+                side = _verify_side(q.sp, q.hay or "")
                 if side == "gov" and not bg:
                     bg = {"speaker": q.sp, "text": q.qt, "source": q.src}
                 elif side == "opp" and not bo:

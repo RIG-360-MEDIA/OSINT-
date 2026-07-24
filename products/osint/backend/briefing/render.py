@@ -50,7 +50,7 @@ def _dcls(net):
 
 
 CSS = """
-:root{--paper:#fff;--ink:#14181d;--ink2:#3c4650;--muted:#66707b;--faint:#949ca6;
+:root{--paper:#fff;--ink:#14181d;--ink2:#333d47;--muted:#4f5a64;--faint:#6b7480;
 --hair:#e2e6ea;--hair2:#eef1f4;--navy:#183a63;--navy2:#2b5288;--navy-soft:#eef2f8;--navy-line:#cdd8e8;
 --pro:#1f7a46;--pro-soft:#e6f2ea;--anti:#b02a24;--anti-soft:#fbe9e7;--warn:#8a5a12;--warn-soft:#faf1de;
 --serif:"Charter","Sitka Text",Cambria,Georgia,serif;--sans:"Inter",ui-sans-serif,"Segoe UI",Arial,sans-serif;
@@ -93,7 +93,7 @@ ol.brief h3{font-family:var(--serif);font-size:16.5px;font-weight:600;margin:0 0
 ol.brief .ev{font-family:var(--serif);font-size:14px;color:var(--ink2);line-height:1.5;margin:0 0 8px}
 .tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .tag{font-family:var(--sans);font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:var(--hair2);color:var(--ink2)}
-.cites{margin-top:9px;font-family:var(--sans);font-size:11px;line-height:1.7;color:var(--faint2,#8a8778)}
+.cites{margin-top:9px;font-family:var(--sans);font-size:11px;line-height:1.7;color:var(--muted)}
 .cites .cl{font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:9.5px;color:var(--navy2);margin-right:7px}
 .cites a{color:var(--navy2);text-decoration:none;border-bottom:1px solid var(--hair)}
 .cites a:hover{border-bottom-color:var(--navy2)}

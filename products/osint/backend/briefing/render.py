@@ -264,7 +264,7 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 .lean{font-family:var(--sans);font-size:8.5px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:3px;vertical-align:middle;margin-left:4px}
 .lean.n{background:var(--anti-soft);color:var(--anti)}.lean.p{background:var(--pro-soft);color:var(--pro)}
 .enddisc{padding:20px 46px 30px;font-family:var(--sans);font-size:10px;color:var(--muted);text-align:center;font-style:italic}
-.pagefoot{position:fixed;left:0;right:0;bottom:0;height:26px;display:flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(180deg,#202127 0%,#141519 100%);border-top:2px solid #d5352b;font-family:var(--sans);font-size:9px;letter-spacing:.05em;color:#aab0b9;z-index:100}
+.pagefoot{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 0;background:linear-gradient(180deg,#202127 0%,#141519 100%);border-top:2px solid #d5352b;font-family:var(--sans);font-size:9px;letter-spacing:.05em;color:#aab0b9}
 .pagefoot .fb{font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#fff;font-size:9.5px}
 .pagefoot .fb .accent{color:#e8443b;margin-left:.13em}
 /* ── print / PDF (headless Chromium) — screen == download == print ── */
@@ -273,6 +273,7 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
  body{background:#fff}
  .paper{max-width:none;margin:0;border-radius:0;box-shadow:none}
  .topbar,.mast{padding-left:12mm;padding-right:12mm}
+ .pagefoot{position:fixed;left:0;right:0;bottom:0;padding:5px 0}
  section{padding:16px 12mm;break-inside:auto}
  .kstrip{padding:0 12mm}
  .shead{break-after:avoid}
@@ -290,7 +291,7 @@ def render_html(r: dict[str, Any]) -> str:
     o = [f"<!doctype html><html><head><meta charset='utf-8'><style>{CSS}</style></head><body><div class='paper'>"]
     o.append("<div class='topbar'><div class='dept'>Telangana &middot; Information &amp; Public Relations</div>"
              "<div class='brand'><span class='bn'>Robin<span class='accent'>OSINT</span></span>"
-             "<span class='bs'>Daily Media Intelligence</span></div></div>")
+             "<span class='bs'>Daily Media Watch</span></div></div>")
     o.append(f"<div class='mast'><h1>Daily Media Briefing</h1><div class='dek'>"
              f"<b>Covering {_e(r['cover_date'])} &middot; 00:00&ndash;23:59 IST</b>"
              f"<span>Newspapers &middot; Television &middot; Online</span></div></div>")

@@ -479,17 +479,27 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             if variants:
                 people.append((variants, "gov" if rr.side in ("government", "institution") else "opp"))
 
+        import re as _re
+
+        def _norm(s: str) -> str:
+            # collapse punctuation so "revanth-reddy" (URL slug) == "revanth reddy"
+            return " " + _re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip() + " "
+
         def _verify_side(speaker: str, hay: str):
-            """'gov'/'opp' if the speaker matches a roster person whose name also
-            appears in the article; None if unmatched OR mis-attributed."""
-            sp = (speaker or "").lower()
+            """'gov'/'opp' if the speaker matches a roster person who is the
+            article's PRIMARY subject (name in headline/URL); None otherwise.
+            Verifying against title+URL — not the body — is deliberate: a body can
+            name several leaders in passing (that's how a Ramchander Rao quote got
+            tagged to Bandi Sanjay), but the headline/slug names who the piece is
+            actually about, i.e. who is speaking."""
+            sp = _norm(speaker)
+            hayn = _norm(hay)
             for variants, side in people:
-                if any(v in sp for v in variants):
-                    return side if any(v in hay for v in variants) else None
+                if any(_norm(v).strip() in sp for v in variants):
+                    return side if any(_norm(v).strip() in hayn for v in variants) else None
             return None
 
-        _HAY = ("lower(COALESCE(a.title,'')||' '||COALESCE(a.url,'')||' '||"
-                "left(COALESCE(a.full_text_translated, a.full_text_scraped,''),1200))")
+        _HAY = "lower(COALESCE(a.title,'')||' '||COALESCE(a.url,''))"
         qrows = (await db.execute(text(f"""
             SELECT q.speaker_name sp, q.quote_text qt, s.name src, {_HAY} hay
               FROM briefing.items i

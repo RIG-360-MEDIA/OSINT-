@@ -239,9 +239,38 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             ), {"ids": all_member_ids})).fetchall():
                 ev_by_item[m.id] = m.evidence
 
+        # ── citations: real outlet + link per member item, so every story is
+        # verifiable. web + newspaper-web-editions carry articles.url; TV resolves
+        # to youtu.be/<video_id>; only true scanned cuttings have no link. ──
+        src_by_item: dict = {}
+        if all_member_ids:
+            for m in (await db.execute(text("""
+                SELECT i.id, i.source_ref, i.pillar,
+                       COALESCE(a.url, CASE WHEN i.pillar='tv'
+                                            THEN 'https://youtu.be/'||i.item_ref END) url
+                  FROM briefing.items i
+                  LEFT JOIN articles a ON a.id::text=i.item_ref
+                 WHERE i.id = ANY(:ids)
+            """), {"ids": all_member_ids})).fetchall():
+                src_by_item[m.id] = {"outlet": m.source_ref, "pillar": m.pillar, "url": m.url}
+
+        def _event_sources(idx):
+            """Deduped outlet list for one event (prefer the row that has a link)."""
+            best: dict = {}
+            for mid in ev_member_ids.get(idx, []):
+                s = src_by_item.get(mid)
+                if not s or not s.get("outlet"):
+                    continue
+                k = s["outlet"]
+                if k not in best or (s.get("url") and not best[k].get("url")):
+                    best[k] = s
+            # links first, then alphabetical for stable output
+            return sorted(best.values(), key=lambda s: (s.get("url") is None, s["outlet"]))
+
         _psem = _aio.Semaphore(2)  # gpt-oss-120b rate-limits under high concurrency
 
         async def _enrich_event(idx, eo):
+            eo["sources"] = _event_sources(idx)  # always attached, even if prose fails
             evs = [ev_by_item.get(mid) for mid in ev_member_ids.get(idx, [])]
             evs = [e for e in evs if e]
             if not evs and eo.get("evidence"):

@@ -93,6 +93,11 @@ ol.brief h3{font-family:var(--serif);font-size:16.5px;font-weight:600;margin:0 0
 ol.brief .ev{font-family:var(--serif);font-size:14px;color:var(--ink2);line-height:1.5;margin:0 0 8px}
 .tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .tag{font-family:var(--sans);font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:var(--hair2);color:var(--ink2)}
+.cites{margin-top:9px;font-family:var(--sans);font-size:11px;line-height:1.7;color:var(--faint2,#8a8778)}
+.cites .cl{font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:9.5px;color:var(--navy2);margin-right:7px}
+.cites a{color:var(--navy2);text-decoration:none;border-bottom:1px solid var(--hair)}
+.cites a:hover{border-bottom-color:var(--navy2)}
+.cites .nolink{color:var(--faint,#9a978a)}
 .tag.p{background:var(--pro-soft);color:var(--pro)}.tag.n{background:var(--anti-soft);color:var(--anti)}.tag.g{background:var(--navy-soft);color:var(--navy2)}
 .big{margin-top:16px;border:1px solid var(--hair);border-radius:10px;overflow:hidden}
 .big .bh{background:var(--navy-soft);padding:18px 22px;border-bottom:1px solid var(--navy-line)}
@@ -247,13 +252,29 @@ def render_html(r: dict[str, Any]) -> str:
         sp = f"web {e['spread_web']}" + (f" &middot; TV {e['spread_tv']}" if e['spread_tv'] else "") + (f" &middot; paper {e['spread_np']}" if e['spread_np'] else "")
         head = e.get("headline") or e["label"]
         body = e.get("paragraph") or e.get("evidence") or ""
+        # citations — each contributing outlet, linked to the original report
+        srcs = e.get("sources") or []
+        _cap = 12
+        _chips = []
+        for s in srcs[:_cap]:
+            nm = _tel(s.get("outlet") or "")
+            if s.get("url"):
+                _chips.append(f"<a href='{_e(s['url'])}' target='_blank' rel='noopener'>{nm}</a>")
+            else:
+                _chips.append(f"<span class='nolink'>{nm}</span>")
+        _more = len(srcs) - _cap
+        if _more > 0:
+            _chips.append(f"<span class='nolink'>+{_more} more</span>")
+        cites = (f"<div class='cites'><span class='cl'>Sources</span>{' &middot; '.join(_chips)}</div>"
+                 if _chips else "")
         o.append(f"<li><div><h3>{_tel(head)}</h3>"
                  + (f"<p class='ev'>{_tel(body)}</p>" if body else "")
                  + "<div class='tags'>"
                  + (f"<span class='tag g'>{_e(e['topic'])}</span>" if e.get("topic") else "")
                  + (f"<span class='tag g'>{_e(e['department'])}</span>" if e.get("department") else "")
                  + f"<span class='tag {vcls}'>{vlabel} &middot; net {net:+d}</span>"
-                 + f"<span class='tag'>{sp} &middot; {e['size']} reports</span></div></div></li>")
+                 + f"<span class='tag'>{sp} &middot; {e['size']} reports</span></div>"
+                 + cites + "</div></li>")
     o.append("</ol></section>")
 
     # §2 Big Story

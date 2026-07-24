@@ -151,10 +151,20 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 .card .meta{font-family:var(--sans);font-size:10px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .dot{width:7px;height:7px;border-radius:50%}.dot.n{background:var(--anti)}.dot.p{background:var(--pro)}.dot.z{background:var(--faint)}
 /* district map */
-.dmap{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:14px 0 6px}
-.tile{border:1px solid var(--hair);border-radius:4px;padding:7px;min-height:46px;font-family:var(--sans);font-size:9px;line-height:1.2}
-.tile b{font-weight:650;color:var(--ink);display:block}.tile span{font-family:var(--mono);font-size:8.5px;color:var(--ink2)}
-.tile.q1{background:#e2f0e8}.tile.q2{background:#eef4ef}.tile.q3{background:#f8f1e4}.tile.q4{background:#f8ddd8}.tile.q5{background:#efbdb6}
+.dmap{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:14px 0 4px}
+.tile{border:1px solid var(--hair);border-radius:6px;padding:9px 11px;min-height:50px;font-family:var(--sans)}
+.tile b{font-size:11px;font-weight:700;color:var(--ink);display:block;letter-spacing:.01em}
+.tile .tinfo{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;font-size:10px;color:var(--ink2)}
+.tile .tnet{font-family:var(--mono);font-size:10.5px;font-weight:700;font-style:normal}
+.tile.q1{background:#dcefe4}.tile.q2{background:#eef4ef}.tile.q3{background:#f7efdf}.tile.q4{background:#f6d7d1}.tile.q5{background:#eab3ab}
+.dnotes{display:grid;grid-template-columns:1fr 1fr;gap:12px 26px;margin-top:9px}
+.dnote{border-top:1px solid var(--hair2);padding-top:9px}
+.dnh{display:flex;align-items:baseline;gap:9px}
+.dnh .dnm{font-family:var(--serif);font-size:14px;font-weight:600;color:var(--ink)}
+.dnh .dni{font-family:var(--sans);font-size:10px;color:var(--muted)}
+.dnh .net{margin-left:auto;font-family:var(--serif);font-size:14px;font-weight:600}
+.dnq{font-family:var(--serif);font-size:12.5px;line-height:1.46;color:var(--ink2);margin-top:5px;padding-left:10px;border-left:2px solid var(--hair)}
+.dnq.crit{border-left-color:var(--anti)}.dnq.pos{border-left-color:var(--pro)}
 /* quote contrast */
 .qcols{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--hair);border-radius:10px;overflow:hidden;margin-top:14px}
 .qcol{padding:16px 18px}.qcol+.qcol{border-left:1px solid var(--hair)}
@@ -488,21 +498,42 @@ def render_html(r: dict[str, Any]) -> str:
     if dr:
         o.append("<section><div class='shead'><span class='num'>5</span><h2>Coverage by District</h2>"
                  f"<span class='cnt'>{len(dr)} active</span></div>"
-                 "<p class='sf'>Where coverage localised, and how it read. Darker red = more critical.</p><div class='dmap'>")
+                 "<p class='sf'>Where the day's coverage localised, and how it read &mdash; "
+                 "greener is more favourable, redder more critical.</p>")
+        # heatmap: one tile per district, coloured by net tone
+        o.append("<div class='dmap'>")
         for d in dr[:14]:
+            it = d["items"]
             o.append(f"<div class='tile {_dcls(d['net'])}'><b>{_e(d['district'])}</b>"
-                     f"<span>{d['items']} &middot; {d['net']:+d}</span></div>")
-        o.append("</div><table><thead><tr><th>District</th><th class='num'>Items</th><th>Tone</th><th class='num'>Net</th>"
-                 "<th>&#9650; Top critical</th><th>&#9660; Top positive</th></tr></thead><tbody>")
+                     f"<span class='tinfo'>{it} item{'' if it == 1 else 's'}"
+                     f"<em class='tnet'>{d['net']:+d}</em></span></div>")
+        o.append("</div>")
+        # notable coverage: one representative line per district (critical if the
+        # district read negative, else positive) — replaces the cramped 6-col table
+        notes = []
         for d in dr[:12]:
-            tc = d.get("top_critical"); tp = d.get("top_positive")
-            tc_c = f"<span class='dcrit'>{_tel((tc['text'] or '')[:60])}</span>" if tc else "<span class='src2'>—</span>"
-            tp_c = f"<span class='dpos'>{_tel((tp['text'] or '')[:60])}</span>" if tp else "<span class='src2'>—</span>"
-            o.append(f"<tr><td class='nm'>{_e(d['district'])}</td><td class='num'>{d['items']}</td>"
-                     f"<td>{_bar(d['favourable'], d['critical'])}</td>"
-                     f"<td class='num net {_net_cls(d['net'])}'>{d['net']:+d}</td>"
-                     f"<td>{tc_c}</td><td>{tp_c}</td></tr>")
-        o.append("</tbody></table></section>")
+            tc, tp = d.get("top_critical"), d.get("top_positive")
+            if d["net"] < 0 and tc:
+                pick, tone = tc, "crit"
+            elif tp:
+                pick, tone = tp, "pos"
+            elif tc:
+                pick, tone = tc, "crit"
+            else:
+                continue
+            if (pick.get("text") or "").strip():
+                notes.append((d, pick, tone))
+        if notes:
+            o.append("<div class='rlab' style='margin-top:20px'>Notable district coverage</div><div class='dnotes'>")
+            for d, pick, tone in notes[:8]:
+                src = (f"<span class='src2'> &mdash; {_e(pick['source'])}</span>"
+                       if pick.get("source") else "")
+                o.append(f"<div class='dnote'><div class='dnh'><span class='dnm'>{_e(d['district'])}</span>"
+                         f"<span class='dni'>{d['items']} items</span>"
+                         f"<span class='net {_net_cls(d['net'])}'>{d['net']:+d}</span></div>"
+                         f"<div class='dnq {tone}'>{_tel((pick['text'] or '')[:140])}{src}</div></div>")
+            o.append("</div>")
+        o.append("</section>")
 
     # §5 Media compared
     mp = {m["pillar"]: m for m in r.get("media_compare", [])}

@@ -33,11 +33,31 @@ async def report_json(user: dict[str, str] | None = Depends(get_optional_user)) 
 
 @router.get("/report.pdf")
 async def report_pdf(user: dict[str, str] | None = Depends(get_optional_user)) -> Response:
+    """The Dispatch PDF now serves the REBUILT Daily Media Briefing (briefing.*),
+    not the legacy report_builder brief. Renders the stored report to PDF via
+    WeasyPrint so the existing frontend PDF viewer shows the new report with no
+    frontend change."""
     if not user:
         raise HTTPException(status_code=401, detail="Not signed in")
-    r = await _build(user["id"])
-    pdf = report_render.render_pdf(r)
-    fname = f"RIG-OSINT-{r['state_code']}-brief.pdf"
+    from datetime import datetime, timedelta, timezone
+    from briefing.render import render_for
+    from briefing.nightly import TELANGANA_ORG
+    _IST = timezone(timedelta(hours=5, minutes=30))
+    cover = (datetime.now(timezone.utc).astimezone(_IST) - timedelta(days=1)).date()
+    # Served from cache (rendered once/day); Chromium then WeasyPrint fallback.
+    from briefing.cache import get_pdf
+    try:
+        pdf = await get_pdf(TELANGANA_ORG, cover)
+    except Exception as exc:  # noqa: BLE001
+        import logging
+        logging.getLogger("report_router").warning(
+            "chromium pdf failed (%s); falling back to weasyprint", str(exc)[:120])
+        html = await render_for(TELANGANA_ORG, cover)
+        from weasyprint import HTML as _HTML
+        pdf = _HTML(string=html).write_pdf()
+    if not pdf:
+        raise HTTPException(status_code=404, detail=f"No briefing for {cover}")
+    fname = f"Telangana-Media-Briefing-{cover}.pdf"
     return Response(content=pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'inline; filename="{fname}"'})
 

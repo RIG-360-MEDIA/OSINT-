@@ -66,7 +66,7 @@ function AppShell() {
   // Sidebar is collapsed by default (and remembers the user's choice). It stays
   // whatever it is across page switches since this state lives above the pages.
   const [railOpen, setRailOpen] = useState(() => { try { return localStorage.getItem('nd-rail') === 'open'; } catch { return false; } });
-  const [theme, setTheme] = useState(() => { try { return localStorage.getItem('nd-theme') || 'dark'; } catch { return 'dark'; } });
+  const [theme, setTheme] = useState(() => { try { return localStorage.getItem('nd-theme') || 'light'; } catch { return 'light'; } });
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [i]);
   useEffect(() => {
     const onPop = () => setIState(pathToIndex(window.location.pathname, SLUGS));

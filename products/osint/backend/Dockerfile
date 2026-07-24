@@ -12,6 +12,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Headless Chromium for the Daily Media Briefing PDF renderer (briefing/pdf.py).
+# Renders the exact report HTML so screen == download == print. --with-deps pulls
+# the required system libraries. ~300 MB; baked in so it survives rebuilds.
+RUN pip install --no-cache-dir playwright \
+    && python -m playwright install --with-deps chromium
+
 COPY . .
 
 ENV PYTHONUNBUFFERED=1 \

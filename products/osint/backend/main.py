@@ -24,7 +24,7 @@ from sqlalchemy import text
 
 from config import load_settings
 from db import dispose_engine, get_db, get_engine
-from routers import keywords, admin, analytics_router, chronicle_router, climbing, cm_perspective, dossier_router, entities, emerging, executive, export, home, horizon, intel, kpi, map_router, me, mood, onboarding, posture, report_router, sources_router, stories, textual, ticker_router, top_articles, voices, war_room_router
+from routers import keywords, admin, analytics_router, briefing_router, chronicle_router, climbing, cm_perspective, dossier_router, entities, emerging, executive, export, home, horizon, intel, kpi, map_router, me, mood, onboarding, posture, report_router, sources_router, stories, textual, ticker_router, top_articles, voices, war_room_router
 
 settings = load_settings()
 
@@ -41,7 +41,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     get_engine()  # eager init so a bad DB URL fails fast
     from home_cache import start_scheduler  # lazy import to avoid cycles
     refresher = start_scheduler()  # 30-min background Home precompute
+    from briefing.nightly import start_briefing_scheduler
+    briefing_sched = start_briefing_scheduler()  # ~05:00 IST daily media briefing
     yield
+    briefing_sched.cancel()
     refresher.cancel()
     await dispose_engine()
     logger.info("osint-backend stopped cleanly")
@@ -80,6 +83,7 @@ app.include_router(sources_router.router)
 app.include_router(chronicle_router.router)
 app.include_router(map_router.router)
 app.include_router(report_router.router)
+app.include_router(briefing_router.router)
 app.include_router(executive.router)
 app.include_router(cm_perspective.router)
 app.include_router(posture.router)

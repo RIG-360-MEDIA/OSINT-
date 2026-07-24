@@ -7,7 +7,7 @@ export default function Dispatch() {
       <Reveal>
         <div className="eyebrow">REPORTS &amp; DELIVERY</div>
         <h1 className="h-sec" style={{ marginTop: 6 }}>Dispatch</h1>
-        <div className="sub">Compose, verify, and ship the daily intelligence brief — PDF or Gmail.</div>
+        <div className="sub">Review, download, and send the Daily Media Briefing — PDF or email.</div>
       </Reveal>
 
       <Reveal><ReportDispatch /></Reveal>

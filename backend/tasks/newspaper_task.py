@@ -147,10 +147,14 @@ async def _collect_and_extract(
     paper_name: str,
     language: str,
     careerswave_url: str,
+    target_date=None,
 ) -> tuple[int, int]:
+    import datetime as _dt
+
     from backend.collectors.newspaper_collector import (
         get_pdf_url_from_careerswave,
         download_pdf_from_url,
+        fetch_careerswave_pdf,
         is_relevant_to_user,
     )
     from backend.collectors.newspaper_layout.hybrid_pipeline import extract_articles_hybrid
@@ -158,15 +162,28 @@ async def _collect_and_extract(
     from backend.tasks.clipping_enrich import enrich_clipping
     from sqlalchemy import text
 
-    pdf_url = await get_pdf_url_from_careerswave(careerswave_url)
-    if not pdf_url:
-        logger.warning("No PDF URL for %s (%s)", paper_name, careerswave_url)
-        return 0, 0
-
+    # careerswave catalog language slug (DB stores ISO codes like 'te'/'en')
+    _CW_LANG = {"te": "telugu", "en": "english", "hi": "hindi", "ta": "tamil",
+                "kn": "kannada", "ml": "malayalam", "mr": "marathi", "bn": "bengali",
+                "gu": "gujarati", "pa": "punjabi", "ur": "urdu"}
+    cw_lang = _CW_LANG.get((language or "").lower(), (language or "").lower())
+    target = target_date or _dt.date.today()
     pdf_path = _pdf_store_path(paper_name)
-    ok = await download_pdf_from_url(pdf_url, pdf_path)
-    if not ok:
-        logger.warning("PDF download failed: %s", paper_name)
+
+    # PRIMARY: careerswave AJAX widget (2026-07). Try the target date, then the
+    # day before (print lags / delayed upload). FALLBACK: legacy gdrive scrape.
+    got = None
+    for d in (target, target - _dt.timedelta(days=1)):
+        got = await fetch_careerswave_pdf(careerswave_url, paper_name, cw_lang, d, pdf_path)
+        if got:
+            logger.info("careerswave AJAX: %s -> %s (%s)", paper_name, got, d)
+            break
+    if not got:
+        pdf_url = await get_pdf_url_from_careerswave(careerswave_url)
+        if pdf_url and await download_pdf_from_url(pdf_url, pdf_path):
+            got = "legacy-gdrive"
+    if not got:
+        logger.warning("No PDF for %s (%s)", paper_name, careerswave_url)
         return 0, 0
 
     # Grounded hybrid extraction with per-article snapshots.

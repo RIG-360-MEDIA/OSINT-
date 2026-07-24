@@ -82,14 +82,12 @@ CSS = """
 --mono:ui-monospace,Consolas,"DejaVu Sans Mono",monospace;--tel:"Nirmala UI","Noto Sans Telugu",sans-serif;}
 *{box-sizing:border-box}body{margin:0;background:#e9edf1;color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
 .paper{max-width:1120px;margin:22px auto 60px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,32,.08),0 10px 34px rgba(16,24,32,.10);font-family:var(--serif)}
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:15px 46px;background:linear-gradient(103deg,#122c52 0%,#1d4675 58%,#173a63 100%);color:#fff;border-bottom:2px solid #c9a24b}
-.dept{font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.19em;text-transform:uppercase;color:#c4d2e8}
-.brand{display:flex;align-items:center;gap:13px}
-.brand .logo{flex-shrink:0;display:flex;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
-.brand .bwrap{display:flex;flex-direction:column;align-items:flex-end;line-height:1}
-.brand .bn{font-family:var(--sans);font-size:21px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#fff}
-.brand .bn .accent{color:#e0bd66;margin-left:.16em}
-.brand .bs{font-family:var(--mono);font-size:8.5px;letter-spacing:.36em;text-transform:uppercase;color:#a7bcda;margin-top:7px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:17px 46px;background:linear-gradient(180deg,#202127 0%,#141519 100%);color:#fff;border-bottom:3px solid #d5352b}
+.dept{font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#aeb4bd}
+.brand{display:flex;flex-direction:column;align-items:flex-end;line-height:.9}
+.brand .bn{font-family:var(--serif);font-size:34px;font-weight:700;letter-spacing:.015em;text-transform:uppercase;color:#fff}
+.brand .bn .accent{color:#e8443b;margin-left:.16em}
+.brand .bs{font-family:var(--sans);font-size:9px;font-weight:600;letter-spacing:.36em;text-transform:uppercase;color:#8d939c;margin-top:11px}
 .mast{padding:30px 46px 20px;border-bottom:3px solid var(--navy)}
 .mast h1{font-family:var(--serif);font-size:52px;line-height:.92;margin:0;font-weight:600;letter-spacing:-.028em}
 .mast .dek{font-family:var(--sans);font-size:12.5px;color:var(--muted);margin-top:13px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -288,16 +286,9 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 def render_html(r: dict[str, Any]) -> str:
     s = r["strip"]; sent = s["sentiment"]; bp = s["by_pillar"]
     o = [f"<!doctype html><html><head><meta charset='utf-8'><style>{CSS}</style></head><body><div class='paper'>"]
-    _logo = ("<svg viewBox='0 0 44 40' width='30' height='28' xmlns='http://www.w3.org/2000/svg'>"
-             "<circle cx='14' cy='30' r='3.1' fill='#e0bd66'/>"
-             "<path d='M14 22 A8 8 0 0 1 22 30' stroke='#e0bd66' stroke-width='2.4' fill='none' stroke-linecap='round'/>"
-             "<path d='M14 16 A14 14 0 0 1 28 30' stroke='#e0bd66' stroke-width='2.4' fill='none' stroke-linecap='round' opacity='.6'/>"
-             "<path d='M14 10 A20 20 0 0 1 34 30' stroke='#e0bd66' stroke-width='2.4' fill='none' stroke-linecap='round' opacity='.32'/>"
-             "</svg>")
     o.append("<div class='topbar'><div class='dept'>Telangana &middot; Information &amp; Public Relations</div>"
-             f"<div class='brand'><span class='logo'>{_logo}</span>"
-             "<span class='bwrap'><span class='bn'>Robin<span class='accent'>OSINT</span></span>"
-             "<span class='bs'>Daily Media Intelligence</span></span></div></div>")
+             "<div class='brand'><span class='bn'>Robin<span class='accent'>OSINT</span></span>"
+             "<span class='bs'>Daily Media Intelligence</span></div></div>")
     o.append(f"<div class='mast'><h1>Daily Media Briefing</h1><div class='dek'>"
              f"<b>Covering {_e(r['cover_date'])} &middot; 00:00&ndash;23:59 IST</b>"
              f"<span>Newspapers &middot; Television &middot; Online</span></div></div>")

@@ -137,17 +137,16 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 .cards{display:grid;grid-template-columns:repeat(3,1fr)}
 .card{padding:12px 14px;border-right:1px solid var(--hair2)}.card:last-child{border-right:0}
 .card .cm{font-family:var(--sans);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy2);margin-bottom:8px}
-.thumb{height:96px;border-radius:6px;margin-bottom:9px;overflow:hidden;border:1px solid var(--hair);background:#eef2f7;display:flex;align-items:center;justify-content:center}
-.thumb img{width:100%;height:100%;object-fit:cover}
-.thumb.tv{background:linear-gradient(135deg,#1c1f26,#2c3442);position:relative}
-.thumb.tv .play{position:absolute;color:#fff;font-size:24px;opacity:.92}
+.thumb{position:relative;height:118px;border-radius:6px;margin-bottom:10px;overflow:hidden;border:1px solid var(--hair);background:#eef2f7}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+.thumb .phlab{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);z-index:0}
 .thumb.web{background:linear-gradient(135deg,#e7edf4,#d3deeb)}
-.thumb.newspaper{background:#faf9f4;border-color:#e5e2d4}
-.thumb.ph{background-image:none}
-.thumb.ph.web{background:linear-gradient(135deg,#e7edf4,#d3deeb)}
-.thumb.ph.newspaper{background:repeating-linear-gradient(#faf9f4,#faf9f4 8px,#f0eee2 9px,#f0eee2 10px)}
-.card.empty{opacity:.7}.card .none{font-family:var(--sans);font-size:11px;color:var(--faint);margin-top:2px}
-.card h4{font-family:var(--serif);font-size:13px;font-weight:600;margin:0 0 5px;line-height:1.3}
+.thumb.tv{background:linear-gradient(135deg,#1c1f26,#2c3442)}
+.thumb.tv .phlab{color:#8b94a3}
+.thumb.tv .play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;opacity:.95;z-index:2;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+.thumb.newspaper{background:repeating-linear-gradient(#faf9f4,#faf9f4 7px,#f1efe4 8px,#f1efe4 9px);border-color:#e5e2d4}
+.card.empty{opacity:.75}.card .none{font-family:var(--sans);font-size:11px;color:var(--faint);margin-top:6px}
+.card h4{font-family:var(--serif);font-size:13.5px;font-weight:600;margin:0 0 6px;line-height:1.34}
 .card .meta{font-family:var(--sans);font-size:10px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .dot{width:7px;height:7px;border-radius:50%}.dot.n{background:var(--anti)}.dot.p{background:var(--pro)}.dot.z{background:var(--faint)}
 /* district map */
@@ -412,26 +411,31 @@ def render_html(r: dict[str, Any]) -> str:
         tr = tnet.get(tname, {})
         o.append(f"<div class='tblock'><div class='tbh'><h3>{_e(tname)}</h3>"
                  f"<span class='net {_net_cls(tr.get('net',0))}'>{tr.get('net',0):+d}</span></div><div class='cards'>")
-        for pillar, lab in [("web", "Top article"), ("tv", "Top TV clip"), ("newspaper", "Top cutting")]:
+        _plab = {"web": "Online", "tv": "Television", "newspaper": "Newspaper"}
+        for pillar, lab in [("web", "Top article"), ("tv", "Top TV clip"), ("newspaper", "Top newspaper")]:
             c = cards.get(pillar)
             if not c:
                 o.append(f"<div class='card empty'><div class='cm'>{lab}</div>"
-                         f"<div class='thumb {pillar} ph'></div><div class='none'>No {pillar} coverage on this topic</div></div>")
+                         f"<div class='thumb {pillar}'><span class='phlab'>No {pillar} item</span></div>"
+                         f"<div class='none'>Not covered in this medium.</div></div>")
                 continue
             dot = "n" if c["verdict"] == "critical" else "p" if c["verdict"] == "favourable" else "z"
+            # image: real scanned cutting (b64) > article/web thumbnail > TV frame.
+            # a broken/absent image reveals the labelled placeholder underneath.
+            _oerr = "onerror=\"this.remove()\""
             if pillar == "newspaper" and c.get("img"):
-                thumb = f"<div class='thumb'><img src='{_e(_datauri(c['img']))}' alt=''></div>"
-            elif pillar == "newspaper" and c.get("thumb"):
-                thumb = f"<div class='thumb newspaper'><img src='{_e(c['thumb'])}' alt='' onerror=\"this.parentNode.classList.add('ph')\"></div>"
+                img = f"<img src='{_e(_datauri(c['img']))}' alt=''>"
+            elif c.get("thumb"):
+                img = f"<img src='{_e(c['thumb'])}' alt='' {_oerr}>"
             elif pillar == "tv" and c.get("video_id"):
-                thumb = (f"<div class='thumb tv'><img src='https://img.youtube.com/vi/"
-                         f"{_e(c['video_id'])}/hqdefault.jpg' alt='' onerror=\"this.style.display='none'\"><span class='play'>&#9654;</span></div>")
-            elif pillar == "web" and c.get("thumb"):
-                thumb = f"<div class='thumb web'><img src='{_e(c['thumb'])}' alt='' onerror=\"this.parentNode.classList.add('ph')\"></div>"
+                img = (f"<img src='https://img.youtube.com/vi/{_e(c['video_id'])}/hqdefault.jpg' alt='' {_oerr}>"
+                       "<span class='play'>&#9654;</span>")
             else:
-                thumb = f"<div class='thumb {pillar} ph'></div>"
-            o.append(f"<div class='card'><div class='cm'>{lab}</div>{thumb}"
-                     f"<h4>{_tel((c.get('title') or '')[:80])}</h4>"
+                img = ""
+            play = "<span class='play'>&#9654;</span>" if (pillar == "tv" and img and "play" not in img) else ""
+            o.append(f"<div class='card'><div class='cm'>{lab}</div>"
+                     f"<div class='thumb {pillar}'><span class='phlab'>{_plab[pillar]}</span>{img}{play}</div>"
+                     f"<h4>{_tel((c.get('title') or '')[:90])}</h4>"
                      f"<div class='meta'><span class='dot {dot}'></span>{_e(c['source'])}</div></div>")
         o.append("</div></div>")
     o.append("</section>")

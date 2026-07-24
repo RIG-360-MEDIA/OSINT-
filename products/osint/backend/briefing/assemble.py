@@ -381,11 +381,18 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             pass
 
         # ══ §3 media cards: top item per pillar per topic, with images ══
+        # Pick the representative card per (topic, pillar). Prefer an item that
+        # actually carries an image (article thumbnail / scanned cutting) so the
+        # card isn't a blank placeholder, THEN by strength/confidence. TV always
+        # has a YouTube frame, so the image-preference is a no-op there.
         card_sel = (await db.execute(text("""
             SELECT DISTINCT ON (topic, pillar) topic, pillar, item_ref, source_ref, verdict
-              FROM briefing.items
+              FROM briefing.items i
+              LEFT JOIN articles a ON a.id::text = i.item_ref
              WHERE run_id=:r AND about_government AND NOT unclear AND topic IS NOT NULL
-             ORDER BY topic, pillar, (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST
+             ORDER BY topic, pillar,
+                      (a.thumbnail_url IS NOT NULL AND a.thumbnail_url <> '') DESC,
+                      (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST
         """), {"r": rid})).fetchall()
         web_ids = [c.item_ref for c in card_sel if c.pillar == "web"]
         np_ids = [c.item_ref for c in card_sel if c.pillar == "newspaper"]

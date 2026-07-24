@@ -43,7 +43,17 @@ async def report_pdf(user: dict[str, str] | None = Depends(get_optional_user)) -
     from briefing.render import render_for
     from briefing.nightly import TELANGANA_ORG
     _IST = timezone(timedelta(hours=5, minutes=30))
-    cover = (datetime.now(timezone.utc).astimezone(_IST) - timedelta(days=1)).date()
+    # newest briefing that actually exists, so the download never 404s on a
+    # not-yet-generated day; falls back to yesterday if none found.
+    from sqlalchemy import text
+    from db import get_db
+    async with get_db() as _db:
+        _row = (await _db.execute(text("""
+            SELECT ru.cover_date FROM briefing.report rp JOIN briefing.runs ru ON ru.id=rp.run_id
+             WHERE ru.org_id = CAST(:o AS uuid) ORDER BY ru.cover_date DESC LIMIT 1
+        """), {"o": TELANGANA_ORG})).fetchone()
+    cover = _row.cover_date if _row else (
+        datetime.now(timezone.utc).astimezone(_IST) - timedelta(days=1)).date()
     # Served from cache (rendered once/day); Chromium then WeasyPrint fallback.
     from briefing.cache import get_pdf
     try:

@@ -34,12 +34,24 @@ async def _load_json(org_id: str, cover: date):
         return row.json if row else None
 
 
+async def _latest_date(org_id: str) -> date | None:
+    """Most recent cover_date that actually has a rendered report — so the page
+    shows the newest available briefing instead of a not-yet-generated day."""
+    async with get_db() as db:
+        row = (await db.execute(text("""
+            SELECT ru.cover_date FROM briefing.report rp JOIN briefing.runs ru ON ru.id = rp.run_id
+             WHERE ru.org_id = CAST(:o AS uuid) ORDER BY ru.cover_date DESC LIMIT 1
+        """), {"o": org_id})).fetchone()
+        return row.cover_date if row else None
+
+
 @router.get("/media-briefing")
 async def media_briefing_html(
     date: str | None = Query(default=None, description="YYYY-MM-DD; defaults to yesterday IST"),
     org: str = Query(default=TELANGANA_ORG),
 ) -> Response:
-    cover = _default_date() if not date else datetime.strptime(date, "%Y-%m-%d").date()
+    cover = (await _latest_date(org) or _default_date()) if not date \
+        else datetime.strptime(date, "%Y-%m-%d").date()
     from briefing.cache import get_html
     html = await get_html(org, cover)
     if not html:
@@ -57,7 +69,8 @@ async def media_briefing_json(
     date: str | None = Query(default=None),
     org: str = Query(default=TELANGANA_ORG),
 ):
-    cover = _default_date() if not date else datetime.strptime(date, "%Y-%m-%d").date()
+    cover = (await _latest_date(org) or _default_date()) if not date \
+        else datetime.strptime(date, "%Y-%m-%d").date()
     rep = await _load_json(org, cover)
     if not rep:
         raise HTTPException(status_code=404, detail=f"No briefing for {cover}")

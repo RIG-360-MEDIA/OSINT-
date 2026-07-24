@@ -187,6 +187,140 @@ async def get_pdf_url_from_careerswave(careerswave_url: str) -> str | None:
     return None
 
 
+# ── CareersWave AJAX widget (2026-07 rewrite) ────────────────────────────────
+# careerswave migrated from static Google-Drive links (scraped above, now dead)
+# to a WordPress admin-ajax widget (`cwEpaper`). Still free, no login. Full
+# contract in 00-global/careerswave-ajax-contract.md. Three actions:
+#   cw_epaper_catalog  {date}                        -> languages+newspapers
+#   cw_epaper_editions {date, language, newspaper}   -> edition names
+#   cw_epaper_download {date, language, newspaper, edition} -> raw PDF bytes
+# NOTE: the POST field is `newspaper` (not `paper` — the JS var name misleads).
+_CW_AJAX = "https://www.careerswave.in/wp-admin/admin-ajax.php"
+_CW_NONCE_RE = re.compile(r'cwEpaper\s*=\s*\{.{0,300}?"nonce"\s*:\s*"([0-9a-fA-F]{6,})"', re.DOTALL)
+# preferred editions for Telangana relevance, highest priority first
+_CW_TG_EDITIONS = ("hyderabad main", "telangana main", "hyderabad", "telangana", "main")
+
+
+# The cwEpaper nonce is site-wide — a nonce scraped from ANY epaper page works
+# for every paper's AJAX calls. Some paper pages (e.g. Namaste Telangana) don't
+# embed the widget, so we fall back to these known-good pages.
+_CW_NONCE_PAGES = (
+    "https://www.careerswave.in/sakshi-epaper-pdf-free-download/",
+    "https://www.careerswave.in/times-of-india-epaper-pdf-free-download/",
+    "https://www.careerswave.in/andhra-jyothi-epaper-pdf-free-download/",
+)
+
+
+async def _cw_nonce(client: "httpx.AsyncClient", careerswave_url: str) -> str | None:
+    # try the paper's own page first, then canonical fallbacks; retry each
+    # (cheap Hostinger host occasionally serves an interstitial).
+    for url in (careerswave_url, *(_CW_NONCE_PAGES)):
+        for _ in range(2):
+            try:
+                r = await client.get(url)
+                if r.status_code == 200:
+                    m = _CW_NONCE_RE.search(r.text)
+                    if m:
+                        return m.group(1)
+            except Exception:  # noqa: BLE001
+                pass
+            await asyncio.sleep(1)
+    return None
+
+
+def _cw_pick_newspaper(catalog: dict, language: str, db_name: str) -> str | None:
+    langs = (catalog or {}).get("data", {}).get("languages", [])
+    lang = next((l for l in langs if l.get("name") == language), None)
+    if not lang:
+        return None
+    papers = [p.get("name") for p in lang.get("newspapers", []) if p.get("name")]
+    dbl = db_name.lower().strip()
+    for p in papers:                                  # exact
+        if p.lower() == dbl:
+            return p
+    for p in papers:                                  # substring either way
+        if dbl in p.lower() or p.lower() in dbl:
+            return p
+    dbtok = set(dbl.replace("-", " ").split())        # token overlap (Namaste~Namasthe)
+    best, best_n = None, 0
+    for p in papers:
+        n = len(dbtok & set(p.lower().split()))
+        if n > best_n:
+            best, best_n = p, n
+    return best
+
+
+def _cw_pick_edition(editions: list) -> str | None:
+    names = [e.get("name") if isinstance(e, dict) else e for e in (editions or [])]
+    names = [n for n in names if n]
+    for want in _CW_TG_EDITIONS:
+        for n in names:
+            if want in n.lower():
+                return n
+    return names[0] if names else None
+
+
+async def fetch_careerswave_pdf(
+    careerswave_url: str, db_name: str, language: str, target_date: date, dest_path: str
+) -> str | None:
+    """Download a paper's e-paper PDF for `target_date` via the careerswave AJAX
+    widget, writing bytes to `dest_path`. Returns "Paper · Edition" used, or None.
+
+    `language` is the catalog language slug (e.g. 'telugu', 'english'); `db_name`
+    is our newspaper_sources.name (fuzzy-matched to the catalog name).
+    """
+    ds = target_date.isoformat()
+    headers = {
+        "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"),
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": careerswave_url,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=45, follow_redirects=True, headers=headers) as client:
+            nonce = await _cw_nonce(client, careerswave_url)
+            if not nonce:
+                logger.warning("careerswave: no nonce on %s", careerswave_url)
+                return None
+
+            async def _ajax(action: str, **extra):
+                return await client.post(_CW_AJAX, data={"action": action, "nonce": nonce, "date": ds, **extra})
+
+            catalog = (await _ajax("cw_epaper_catalog")).json()
+            paper = _cw_pick_newspaper(catalog, language, db_name)
+            if not paper:
+                logger.warning("careerswave: %s absent from %s catalog on %s", db_name, language, ds)
+                return None
+            eds = (await _ajax("cw_epaper_editions", language=language, newspaper=paper)).json()
+            editions = eds.get("data", {}).get("editions", []) if isinstance(eds, dict) else []
+            edition = _cw_pick_edition(editions)
+            if not edition:
+                logger.warning("careerswave: no editions for %s/%s on %s", language, paper, ds)
+                return None
+            async with client.stream(
+                "POST", _CW_AJAX,
+                data={"action": "cw_epaper_download", "nonce": nonce, "date": ds,
+                      "language": language, "newspaper": paper, "edition": edition},
+            ) as resp:
+                if resp.status_code != 200:
+                    logger.warning("careerswave download HTTP %s (%s/%s)", resp.status_code, paper, edition)
+                    return None
+                first = True
+                with open(dest_path, "wb") as fh:
+                    async for chunk in resp.aiter_bytes():
+                        if first and chunk:
+                            if not chunk.startswith(b"%PDF"):
+                                logger.warning("careerswave: %s/%s returned non-PDF", paper, edition)
+                                return None
+                            first = False
+                        fh.write(chunk)
+            logger.info("careerswave AJAX: %s / %s / %s -> %s", paper, edition, ds, dest_path)
+            return f"{paper} · {edition}"
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("careerswave AJAX fetch failed for %s: %s", db_name, str(exc)[:160])
+        return None
+
+
 async def _careerswave_playwright_fetch(url: str) -> str | None:
     """Render a CareersWave page with Playwright and return the full HTML.
 
@@ -436,7 +570,7 @@ async def extract_articles_from_pdf(
 # ────────────────────────────────────────────────────────────────────────
 
 _GROQ_VISION_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
-_GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+_GROQ_VISION_MODEL = "qwen/qwen3.6-27b"  # 2026-07-22: Llama-4 vision retired on Groq
 
 _BBOX_PROMPT = (
     "Extract all news articles from this newspaper page.\n"
@@ -578,7 +712,7 @@ async def _call_groq_vision_page(b64_jpg: str, groq_manager) -> dict | None:
                 messages=messages,
                 max_tokens=4096,
                 temperature=0.1,
-                response_format={"type": "json_object"},
+                extra_body={"reasoning_effort": "none"},
             )
         except RateLimitError:  # type: ignore
             logger.info("Groq 429 — rotating key (attempt %d)", attempt + 1)

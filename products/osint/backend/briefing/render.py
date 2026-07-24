@@ -181,7 +181,7 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 .card .meta{font-family:var(--sans);font-size:10px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .dot{width:7px;height:7px;border-radius:50%}.dot.n{background:var(--anti)}.dot.p{background:var(--pro)}.dot.z{background:var(--faint)}
 /* district map */
-.dmap{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:14px 0 4px}
+.dmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;margin:14px 0 4px}
 .tile{border:1px solid var(--hair);border-radius:6px;padding:9px 11px;min-height:50px;font-family:var(--sans)}
 .tile b{font-size:11px;font-weight:700;color:var(--ink);display:block;letter-spacing:.01em}
 .tile .tinfo{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;font-size:10px;color:var(--ink2)}

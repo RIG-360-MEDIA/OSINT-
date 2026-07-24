@@ -50,7 +50,7 @@ def _dcls(net):
 
 
 CSS = """
-:root{--paper:#fff;--ink:#14181d;--ink2:#333d47;--muted:#4f5a64;--faint:#6b7480;
+:root{--paper:#fff;--ink:#14181d;--ink2:#333d47;--muted:#4f5a64;--faint:#5b6572;
 --hair:#e2e6ea;--hair2:#eef1f4;--navy:#183a63;--navy2:#2b5288;--navy-soft:#eef2f8;--navy-line:#cdd8e8;
 --pro:#1f7a46;--pro-soft:#e6f2ea;--anti:#b02a24;--anti-soft:#fbe9e7;--warn:#8a5a12;--warn-soft:#faf1de;
 --serif:"Charter","Sitka Text",Cambria,Georgia,serif;--sans:"Inter",ui-sans-serif,"Segoe UI",Arial,sans-serif;
@@ -216,7 +216,7 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 .diverge{margin-top:16px;background:var(--navy-soft);border:1px solid var(--navy-line);border-radius:8px;padding:14px 18px}
 .diverge .dl{font-family:var(--sans);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy2);margin-bottom:6px}
 .diverge p{margin:0;font-family:var(--serif);font-size:14px;line-height:1.5}
-.src2{font-family:var(--sans);font-size:10px;color:var(--faint)}
+.src2{font-family:var(--sans);font-size:10px;color:var(--muted)}
 .dcrit{font-family:var(--sans);font-size:11px;color:var(--anti);line-height:1.3}
 .dpos{font-family:var(--sans);font-size:11px;color:var(--pro);line-height:1.3}
 .qtag{font-family:var(--sans);font-size:8.5px;font-weight:700;text-transform:uppercase;padding:1px 5px;border-radius:3px;vertical-align:middle}

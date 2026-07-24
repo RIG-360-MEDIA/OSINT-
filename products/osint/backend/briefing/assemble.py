@@ -561,6 +561,13 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             if not q.get("en"):
                 q["en"] = _tr.get(q.get("text"))
 
+        # rewrite each figure's caption into one clear line: what the amount is
+        # and which scheme / project / case it belongs to (from context + title).
+        _figexp = await _prose.explain_figures(figure_rows)
+        for f, ex in zip(figure_rows, _figexp):
+            if ex:
+                f["context"] = ex
+
         if big:
             big.pop("_web_refs", None)
             big.pop("beats", None)  # internal raw material — keep it out of stored JSON

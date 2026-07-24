@@ -87,6 +87,41 @@ async def translate_te_en(texts: list[str]) -> dict:
     return out
 
 
+async def explain_figures(figs: list[dict]) -> list[str]:
+    """One concise English line per figure: WHAT the amount is and WHICH scheme /
+    project / case / body it belongs to. STRICTLY from the figure's own context +
+    article title — never invented. Returns a list aligned to `figs`; falls back
+    to the raw context on failure."""
+    if not figs:
+        return []
+    block = "\n".join(
+        f"{i + 1}. AMOUNT: {f.get('value')} {f.get('unit')} | CONTEXT: {f.get('context')} "
+        f"| ARTICLE: {(f.get('title') or '')[:90]}"
+        for i, f in enumerate(figs))[:3800]
+    sys = (
+        "For each numbered figure, write ONE short English sentence (max 16 words) "
+        "stating what the amount is and which specific scheme / project / case / "
+        "department / person it belongs to. Use ONLY the given CONTEXT and ARTICLE "
+        "title — never invent a subject. If the subject is unclear, describe what "
+        "the context states without guessing. Keep the SAME numbering; output only "
+        "the numbered lines, nothing else."
+    )
+    try:
+        raw = await call_groq(system=sys, user=block, task_type="brief_generation",
+                              model=PROSE_MODEL, json_response=False, max_tokens_override=900)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("figure explain failed: %s", str(exc)[:120])
+        return [f.get("context") for f in figs]
+    out: dict = {}
+    for line in (raw or "").splitlines():
+        m = re.match(r"\s*(\d+)[.)]\s*(.+)", line)
+        if m:
+            idx = int(m.group(1)) - 1
+            if 0 <= idx < len(figs) and m.group(2).strip():
+                out[idx] = m.group(2).strip().rstrip(".")
+    return [out.get(i, figs[i].get("context")) for i in range(len(figs))]
+
+
 async def write_event(ev: dict, evidence: list[str]) -> dict:
     """Return {headline, paragraph} for one event, from its evidence sentences."""
     ev_block = "\n".join(f"- {e}" for e in evidence[:8] if e)[:2600]

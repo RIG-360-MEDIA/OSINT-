@@ -270,12 +270,38 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             wids = [w.item_ref for w in web_ids]
             big_numbers = []
             if wids:
-                big_numbers = [{"value": str(n.value), "unit": n.unit, "context": n.context}
-                               for n in (await db.execute(text("""
+                rows = (await db.execute(text("""
                     SELECT value, unit, left(context,90) context FROM article_numbers
                      WHERE article_id = ANY(CAST(:ids AS uuid[])) AND unit IS NOT NULL
-                       AND length(context) BETWEEN 10 AND 100 LIMIT 4
-                """), {"ids": wids})).fetchall()]
+                       AND length(context) BETWEEN 10 AND 100 LIMIT 40
+                """), {"ids": wids})).fetchall()
+
+                def _rupees(v: str, u: str) -> float:
+                    try:
+                        n = float(str(v).replace(",", ""))
+                    except (TypeError, ValueError):
+                        return 0.0
+                    ul = (u or "").lower()
+                    return n * 1e7 if "crore" in ul else n * 1e5 if "lakh" in ul else n
+
+                _MONEY = ("crore", "lakh", "rupee", "₹", " rs")
+                seen, cand = set(), []
+                for n in rows:
+                    is_money = any(m in (n.unit or "").lower() for m in _MONEY)
+                    rup = _rupees(n.value, n.unit)
+                    # dedupe: crore-scale money figures collapse to the nearest
+                    # whole crore (so "28.14 crore" and "28 crore" count once);
+                    # sub-crore money and non-money keep exact value+unit.
+                    key = ("cr", round(rup / 1e7)) if is_money and rup >= 1e7 else (str(n.value), (n.unit or "").lower())
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    cand.append((is_money, rup,
+                                 {"value": str(n.value), "unit": n.unit, "context": n.context}))
+                # money figures first, ranked by real rupee magnitude (so ₹200cr
+                # leads ₹25,000); then any non-money figures.
+                cand.sort(key=lambda c: (not c[0], -c[1]))
+                big_numbers = [c[2] for c in cand[:4]]
             big["numbers"] = big_numbers
 
         # ══ EDITORIAL PROSE — clean headlines + detailed paragraphs (LLM) ══

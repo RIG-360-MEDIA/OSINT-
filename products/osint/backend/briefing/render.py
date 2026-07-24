@@ -364,8 +364,8 @@ def render_html(r: dict[str, Any]) -> str:
             if b.get("timeline"):
                 o.append("<div class='bhalf'><div class='rlab'>How the story developed</div><ul class='tline'>")
                 for t in b.get("timeline", [])[:5]:
-                    when = " &middot; ".join(x for x in [t.get('when', ''), t.get('medium', '')] if x)
-                    o.append(f"<li><div class='tw'>{_e(when)}</div><div class='tt'>{_tel(t.get('text', ''))}</div></li>")
+                    when = " &middot; ".join(_e(x) for x in [t.get('when', ''), t.get('medium', '')] if x)
+                    o.append(f"<li><div class='tw'>{when}</div><div class='tt'>{_tel(t.get('text', ''))}</div></li>")
                 o.append("</ul></div>")
             o.append("</div>")  # /btwo
         # what each side said — gov | opp

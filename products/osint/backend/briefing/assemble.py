@@ -186,18 +186,72 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
         if ev_rows:
             e0 = ev_rows[0]
             members = (await db.execute(text("""
-                SELECT pillar, source_ref, verdict, evidence, lands_on
-                  FROM briefing.items WHERE id = ANY(:ids)
+                SELECT DISTINCT ON (i.id) i.id, i.pillar, i.source_ref, i.verdict,
+                       i.evidence, i.lands_on, i.item_ref,
+                       COALESCE(a.url, CASE WHEN i.pillar='tv'
+                                            THEN 'https://youtu.be/'||i.item_ref END) url,
+                       COALESCE((a.published_at AT TIME ZONE 'Asia/Kolkata'),
+                                (v.video_published_at AT TIME ZONE 'Asia/Kolkata')) ts
+                  FROM briefing.items i
+                  LEFT JOIN articles a ON a.id::text=i.item_ref
+                  LEFT JOIN youtube_clips_v2 v ON v.video_id=i.item_ref
+                 WHERE i.id = ANY(:ids) ORDER BY i.id
             """), {"ids": list(e0.member_item_ids or [])})).fetchall()
             gov_q = [dict(m._mapping) for m in members if m.evidence]
+            dominant = max((("web", e0.spread_web), ("tv", e0.spread_tv),
+                            ("newspaper", e0.spread_np)), key=lambda x: x[1] or 0)[0]
             big = {
                 "label": e0.label,
                 "spread": {"web": e0.spread_web, "tv": e0.spread_tv, "newspaper": e0.spread_np},
                 "net": e0.net_tone, "size": len(e0.member_item_ids or []),
+                "dominant_pillar": {"web": "online", "tv": "television",
+                                    "newspaper": "newspapers"}[dominant],
                 "evidence": [{"source": q["source_ref"], "pillar": q["pillar"],
                               "verdict": q["verdict"], "text": q["evidence"],
                               "lands_on": q["lands_on"]} for q in gov_q[:6]],
+                # web member refs → resolved to gov/opp quotes once the roster loads (§7)
+                "_web_refs": [m.item_ref for m in members if m.pillar == "web"],
             }
+            # ── coverage through the day: members bucketed by hour × pillar ──
+            _HB = ["6a", "9a", "12p", "3p", "6p", "9p", "next"]
+            hourly = {k: {"web": 0, "tv": 0, "print": 0} for k in _HB}
+
+            def _hbucket(ts, pillar):
+                if pillar == "newspaper" or ts is None:
+                    return "next" if pillar == "newspaper" else "9p"
+                h = ts.hour
+                return ("6a" if h < 8 else "9a" if h < 11 else "12p" if h < 14
+                        else "3p" if h < 17 else "6p" if h < 20 else "9p")
+
+            def _tod(ts, pillar):
+                if pillar == "newspaper":
+                    return "Next morning"
+                if ts is None:
+                    return "Evening"
+                h = ts.hour
+                return ("Morning" if h < 11 else "Midday" if h < 15
+                        else "Evening" if h < 19 else "Late evening")
+
+            for m in members:
+                col = "print" if m.pillar == "newspaper" else m.pillar
+                hourly[_hbucket(m.ts, m.pillar)][col] += 1
+            big["hourly"] = [{"label": k, **hourly[k]} for k in _HB]
+            # ── beats: time-ordered evidence for the narrative + timeline (LLM) ──
+            _order = {"Morning": 0, "Midday": 1, "Evening": 2, "Late evening": 3, "Next morning": 4}
+            beats = sorted(
+                [{"when": _tod(m.ts, m.pillar), "pillar": m.pillar, "verdict": m.verdict,
+                  "text": m.evidence, "source": m.source_ref}
+                 for m in members if m.evidence],
+                key=lambda b: _order.get(b["when"], 5))
+            big["beats"] = beats
+            # citation line — every outlet that ran it, deduped, linked
+            _bsrc: dict = {}
+            for m in members:
+                if not m.source_ref:
+                    continue
+                if m.source_ref not in _bsrc or (m.url and not _bsrc[m.source_ref].get("url")):
+                    _bsrc[m.source_ref] = {"outlet": m.source_ref, "pillar": m.pillar, "url": m.url}
+            big["sources"] = sorted(_bsrc.values(), key=lambda s: (s.get("url") is None, s["outlet"]))
             # tone across the media that ran it
             tbp = {}
             for m in members:
@@ -288,13 +342,12 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
                 pr = {}
                 for _ in range(2):  # the lead deserves a retry
                     async with _psem:
-                        pr = await _prose.write_big_story(big, big.get("evidence", []))
+                        pr = await _prose.write_big_story(big, big.get("beats", []))
                     if pr.get("narrative"):
                         break
-                if pr.get("headline"):
-                    big["headline"] = pr["headline"]
-                if pr.get("narrative"):
-                    big["narrative"] = pr["narrative"]
+                for k in ("headline", "standfirst", "narrative", "timeline", "silence", "angle"):
+                    if pr.get(k):
+                        big[k] = pr[k]
             tasks.append(_enrich_big())
         try:
             await _aio.gather(*tasks)
@@ -408,6 +461,32 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             elif side == "opp" and len(opp_q) < 7:
                 opp_q.append({"speaker": q.sp, "text": q.qt, "source": q.src})
         quotes = {"government": gov_q, "opposition": opp_q}
+
+        # ── §2 "what each side said": real published quotes from the big story's
+        # own web members, split gov vs opposition by the same roster. ──
+        if big and big.get("_web_refs"):
+            brows = (await db.execute(text("""
+                SELECT q.speaker_name sp, q.quote_text qt, s.name src
+                  FROM article_quotes q
+                  JOIN articles a ON a.id = q.article_id
+                  JOIN sources s ON s.id = a.source_id
+                 WHERE q.article_id = ANY(CAST(:ids AS uuid[]))
+                   AND q.is_direct AND q.speaker_name IS NOT NULL
+                   AND length(q.quote_text) BETWEEN 30 AND 260
+            """), {"ids": big["_web_refs"]})).fetchall()
+            bg = bo = None
+            for q in brows:
+                sp = (q.sp or "").lower()
+                side = ("gov" if any(g in sp for g in gov_names)
+                        else "opp" if any(o in sp for o in opp_names) else None)
+                if side == "gov" and not bg:
+                    bg = {"speaker": q.sp, "text": q.qt, "source": q.src}
+                elif side == "opp" and not bo:
+                    bo = {"speaker": q.sp, "text": q.qt, "source": q.src}
+            big["gov_side"], big["opp_side"] = bg, bo
+        if big:
+            big.pop("_web_refs", None)
+            big.pop("beats", None)  # internal raw material — keep it out of stored JSON
 
         # ══ §10 annexure — all three media (web url, TV url, newspaper: no url) ══
         anx_web = (await db.execute(text("""

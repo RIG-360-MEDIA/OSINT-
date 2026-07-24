@@ -179,6 +179,38 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 .bn{border-top:2px solid var(--navy);padding-top:7px;min-width:130px}
 .bn b{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--navy);font-variant-numeric:tabular-nums;display:block}
 .bn span{font-family:var(--sans);font-size:10.5px;color:var(--ink2);line-height:1.35;display:block;margin-top:2px}
+.big .bb p.stand{font-family:var(--serif);font-size:16.5px;line-height:1.55;color:var(--ink);font-weight:600;margin:0 0 16px}
+.bcols{display:grid;grid-template-columns:1fr 288px;gap:26px;align-items:start}
+.bmain p.nar{font-family:var(--serif);font-size:14.5px;line-height:1.62;color:var(--ink);margin:0 0 12px}
+.brail{border-left:1px solid var(--hair2);padding-left:20px}
+.rlab{font-family:var(--sans);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:16px 0 9px}
+.brail .rlab:first-child{margin-top:0}
+.brail .spread{border-top:0;padding-top:0;margin:0 0 4px;gap:14px}
+.brail .bignums{flex-direction:column;gap:11px}
+.btwo{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:20px;padding-top:16px;border-top:1px solid var(--hair2)}
+.daybars{display:flex;align-items:flex-end;gap:8px;height:60px}
+.dbcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
+.dbstack{width:62%;display:flex;flex-direction:column-reverse;border-radius:2px 2px 0 0;overflow:hidden;min-height:2px}
+.dbstack i{display:block}
+.dw{background:var(--navy)}.dt{background:#6b8cae}.dp{background:#c3cfdd}
+.dbl{font-family:var(--sans);font-size:9px;color:var(--muted)}
+.dbleg{display:flex;gap:14px;margin-top:9px;font-family:var(--sans);font-size:10px;color:var(--ink2)}
+.dbleg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.tline{list-style:none;margin:0;padding:0;border-left:2px solid var(--hair2)}
+.tline li{position:relative;padding:0 0 12px 16px}
+.tline li:before{content:'';position:absolute;left:-5px;top:3px;width:8px;height:8px;border-radius:50%;background:var(--navy);border:2px solid #fff}
+.tline .tw{font-family:var(--sans);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy2)}
+.tline .tt{font-family:var(--serif);font-size:13px;line-height:1.45;color:var(--ink);margin-top:2px}
+.sides{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+.side{border:1px solid var(--hair);border-radius:8px;padding:14px 16px}
+.side .sh{font-family:var(--sans);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px}
+.side.gov .sh{color:#2f7d4f}.side.opp .sh{color:#b3402f}
+.side .sq{font-family:var(--serif);font-size:14px;line-height:1.5;color:var(--ink);margin:0}
+.side .sq.none{color:var(--muted);font-style:italic}
+.side .sa{font-family:var(--sans);font-size:11px;color:var(--ink2);margin-top:8px}
+.silence{background:#faf4e6;border:1px solid #ecdcb6;border-radius:8px;padding:13px 16px;margin-top:16px;font-family:var(--serif);font-size:13.5px;line-height:1.5;color:var(--ink)}
+.angle{margin-top:16px;border-left:3px solid var(--navy-line);padding-left:14px}
+.angle p{font-family:var(--serif);font-size:13.5px;line-height:1.5;color:var(--ink2);margin:0}
 .gl{font-family:var(--sans);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:14px 0 6px}
 .alleg{font-family:var(--sans);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:var(--warn-soft);color:var(--warn);margin-left:4px}
 .diverge{margin-top:16px;background:var(--navy-soft);border:1px solid var(--navy-line);border-radius:8px;padding:14px 18px}
@@ -277,24 +309,30 @@ def render_html(r: dict[str, Any]) -> str:
                  + cites + "</div></li>")
     o.append("</ol></section>")
 
-    # §2 Big Story
+    # §2 Big Story — full mockup depth
     b = r.get("big_story")
     if b:
         bhead = b.get("headline") or b["label"]
-        o.append("<section><div class='shead'><span class='num'>2</span><h2>The Big Story</h2></div><div class='big'>"
-                 f"<div class='bh'><div class='lead'>Most-covered story &middot; net tone {b['net']:+d}</div>"
-                 f"<h3>{_tel(bhead)}</h3></div><div class='bb'>")
-        for para in b.get("narrative", [])[:3]:
-            o.append(f"<p class='nar'>{_e(para)}</p>")
-        o.append("<div class='spread'>"
-                 f"<div class='sp'><b>{b['spread']['web']}</b><span>web outlets</span></div>"
-                 f"<div class='sp'><b>{b['spread']['tv']}</b><span>TV channels</span></div>"
-                 f"<div class='sp'><b>{b['spread']['newspaper']}</b><span>newspapers</span></div>"
-                 f"<div class='sp'><b>{b['size']}</b><span>total reports</span></div></div>")
+        sp = b.get("spread", {}) or {}
+        n_out = (sp.get("web") or 0) + (sp.get("tv") or 0) + (sp.get("newspaper") or 0)
+        o.append("<section><div class='shead'><span class='num'>2</span><h2>The Big Story</h2></div><div class='big'>")
+        o.append(f"<div class='bh'><div class='lead'>Most-covered story &middot; {n_out} outlets across all "
+                 f"three media &middot; net tone {b['net']:+d}</div><h3>{_tel(bhead)}</h3></div><div class='bb'>")
+        if b.get("standfirst"):
+            o.append(f"<p class='stand'>{_tel(b['standfirst'])}</p>")
+        # two columns: narrative | right rail
+        o.append("<div class='bcols'><div class='bmain'>")
+        for para in b.get("narrative", [])[:4]:
+            o.append(f"<p class='nar'>{_tel(para)}</p>")
+        o.append("</div><aside class='brail'>")
+        o.append("<div class='rlab'>How far it spread</div><div class='spread'>"
+                 f"<div class='sp'><b>{sp.get('web',0)}</b><span>web outlets</span></div>"
+                 f"<div class='sp'><b>{sp.get('tv',0)}</b><span>TV channels</span></div>"
+                 f"<div class='sp'><b>{sp.get('newspaper',0)}</b><span>newspapers</span></div></div>")
         tbp = {t['pillar']: t for t in b.get("tone_by_pillar", [])}
         if tbp:
-            o.append("<div class='lab2'>Tone across the media that ran it</div><div class='tbp'>")
-            for p, lab in [("newspaper", "Newspapers"), ("tv", "Television"), ("web", "Online")]:
+            o.append("<div class='rlab'>Tone across the outlets that ran it</div><div class='tbp'>")
+            for p, lab in [("tv", "Television"), ("web", "Online"), ("newspaper", "Newspapers")]:
                 t = tbp.get(p)
                 if not t:
                     continue
@@ -302,15 +340,62 @@ def render_html(r: dict[str, Any]) -> str:
                          f"<span class='tn net {_net_cls(t['net'])}'>{t['net']:+d}</span></div>")
             o.append("</div>")
         if b.get("numbers"):
-            o.append("<div class='lab2'>Numbers in the coverage</div><div class='bignums'>")
+            o.append("<div class='rlab'>Numbers in the coverage</div><div class='bignums'>")
             for n in b["numbers"][:4]:
                 o.append(f"<div class='bn'><b>{_e(n['value'])} {_e(n['unit'])}</b><span>{_e(n['context'])}</span></div>")
             o.append("</div>")
-        o.append("<div class='lab2'>What the coverage said</div>")
-        for q in b.get("evidence", [])[:6]:
-            qc = "n" if q["verdict"] == "critical" else "p" if q["verdict"] == "favourable" else ""
-            o.append(f"<div class='qp {qc}'>{_tel(q['text'])}<div class='src'>&mdash; {_e(q['source'])} &middot; {_e(q['pillar'])}"
-                     + (f" &middot; {_e(q['lands_on'])}" if q.get("lands_on") else "") + "</div></div>")
+        o.append("</aside></div>")  # /bcols
+        # coverage-through-the-day chart + timeline, side by side
+        hy = b.get("hourly", []) or []
+        tot_by_bar = [(h.get('web', 0) + h.get('tv', 0) + h.get('print', 0)) for h in hy]
+        if any(tot_by_bar):
+            mx = max(tot_by_bar) or 1
+            o.append("<div class='btwo'><div class='bhalf'><div class='rlab'>Coverage through the day</div><div class='daybars'>")
+            for h in hy:
+                tt = h.get('web', 0) + h.get('tv', 0) + h.get('print', 0)
+                ht = max(round(50 * tt / mx), 2 if tt else 0)
+                o.append(f"<div class='dbcol'><div class='dbstack' style='height:{ht}px'>"
+                         + (f"<i class='dw' style='flex:{h['web']}'></i>" if h.get('web') else "")
+                         + (f"<i class='dt' style='flex:{h['tv']}'></i>" if h.get('tv') else "")
+                         + (f"<i class='dp' style='flex:{h['print']}'></i>" if h.get('print') else "")
+                         + f"</div><span class='dbl'>{_e(h['label'])}</span></div>")
+            o.append("</div><div class='dbleg'><span><i class='dw'></i>Web</span>"
+                     "<span><i class='dt'></i>TV</span><span><i class='dp'></i>Print</span></div></div>")
+            if b.get("timeline"):
+                o.append("<div class='bhalf'><div class='rlab'>How the story developed</div><ul class='tline'>")
+                for t in b.get("timeline", [])[:5]:
+                    when = " &middot; ".join(x for x in [t.get('when', ''), t.get('medium', '')] if x)
+                    o.append(f"<li><div class='tw'>{_e(when)}</div><div class='tt'>{_tel(t.get('text', ''))}</div></li>")
+                o.append("</ul></div>")
+            o.append("</div>")  # /btwo
+        # what each side said — gov | opp
+        gs, op = b.get("gov_side"), b.get("opp_side")
+        if gs or op:
+            o.append("<div class='rlab'>What each side said &mdash; in the words that were published</div><div class='sides'>")
+            for lab, cls, q in [("Government", "gov", gs), ("Opposition", "opp", op)]:
+                if q:
+                    o.append(f"<div class='side {cls}'><div class='sh'>{lab}</div>"
+                             f"<p class='sq'>&ldquo;{_tel(q['text'])}&rdquo;</p>"
+                             f"<div class='sa'><b>{_e(q['speaker'])}</b> &middot; {_e(q['source'])}</div></div>")
+                else:
+                    o.append(f"<div class='side {cls} empty'><div class='sh'>{lab}</div>"
+                             f"<p class='sq none'>No direct {lab.lower()} quote appeared in the day's coverage.</p></div>")
+            o.append("</div>")
+        if b.get("silence"):
+            o.append(f"<div class='silence'><b>Where the government was not heard.</b> {_tel(b['silence'])}</div>")
+        if b.get("angle"):
+            o.append(f"<div class='angle'><div class='rlab'>The angle by medium</div><p>{_tel(b['angle'])}</p></div>")
+        # citation line
+        bsrcs = b.get("sources") or []
+        _bch = []
+        for s in bsrcs[:16]:
+            nm = _tel(s.get("outlet") or "")
+            _bch.append(f"<a href='{_e(s['url'])}' target='_blank' rel='noopener'>{nm}</a>"
+                        if s.get("url") else f"<span class='nolink'>{nm}</span>")
+        if len(bsrcs) > 16:
+            _bch.append(f"<span class='nolink'>+{len(bsrcs)-16} more</span>")
+        if _bch:
+            o.append(f"<div class='cites'><span class='cl'>Sources</span>{' &middot; '.join(_bch)}</div>")
         o.append("</div></div></section>")
 
     # §3 Coverage by Topic — media cards

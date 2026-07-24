@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 from groq_client import call_groq
 
@@ -25,13 +26,29 @@ def _parse(raw: str):
     t = raw.strip()
     if t.startswith("```"):
         t = t.split("\n", 1)[-1].rsplit("```", 1)[0]
-    i, j = t.find("{"), t.rfind("}")
-    if i < 0 or j <= i:
+    i = t.find("{")
+    if i < 0:
         return None
-    try:
-        return json.loads(t[i:j + 1])
-    except json.JSONDecodeError:
-        return None
+    j = t.rfind("}")
+    if j > i:
+        try:
+            return json.loads(t[i:j + 1])
+        except json.JSONDecodeError:
+            pass
+    # salvage a truncated object (model hit the token cap mid-JSON): keep only
+    # whole "key": "value" string pairs and whole string-array fields, then close.
+    body = t[i + 1:]
+    pairs = re.findall(r'"(\w+)"\s*:\s*"((?:[^"\\]|\\.)*)"', body)
+    arrays = re.findall(r'"(\w+)"\s*:\s*\[((?:\s*"(?:[^"\\]|\\.)*"\s*,?)+)\s*\]', body)
+    obj: dict = {}
+    for k, v in pairs:
+        obj.setdefault(k, v)
+    for k, inner in arrays:
+        try:
+            obj[k] = json.loads("[" + inner + "]")
+        except json.JSONDecodeError:
+            pass
+    return obj or None
 
 
 async def write_event(ev: dict, evidence: list[str]) -> dict:
@@ -64,23 +81,52 @@ async def write_event(ev: dict, evidence: list[str]) -> dict:
             "paragraph": (p.get("paragraph") or "").strip()}
 
 
-async def write_big_story(big: dict, quotes: list[dict]) -> dict:
-    """Return {headline, narrative[]} — a 2-3 paragraph deep narrative."""
-    qb = "\n".join(f'- "{q.get("text","")}" ({q.get("source","")})' for q in quotes[:8])[:2800]
+def _spread_words(sp: dict) -> str:
+    return (f"{sp.get('web',0)} online outlets, {sp.get('tv',0)} television channels "
+            f"and {sp.get('newspaper',0)} newspapers")
+
+
+async def write_big_story(big: dict, beats: list[dict]) -> dict:
+    """Return the full lead package for §2 — mockup-depth.
+
+    {headline, standfirst, narrative[], timeline[{when,medium,text}], silence, angle}
+
+    `beats` are the story's own evidence sentences, each tagged with a coarse
+    time-of-day bucket and pillar, sorted through the day — the raw material the
+    model condenses (STRICTLY, no invention) into the narrative + timeline.
+    """
+    bl = "\n".join(
+        f"- [{b.get('when','')}/{b.get('pillar','')}/{b.get('verdict','')}] "
+        f"\"{(b.get('text') or '')[:200]}\" ({b.get('source','')})"
+        for b in beats[:16])[:4200]
     sp = big.get("spread", {})
+    dom = big.get("dominant_pillar", "")  # pillar that carried the most reports
     sys = (
-        "You write THE lead deep-dive for a government Daily Media Briefing. From the "
-        "QUOTES/SENTENCES only, produce a clean English HEADLINE and a NARRATIVE of "
-        "2-3 short paragraphs: what the story is, what each side said, and where the "
-        "government was or was not heard. Neutral, factual, professional. NEVER invent "
-        "anything not in the sources. Return ONLY JSON: "
-        "{\"headline\":\"...\",\"narrative\":[\"para1\",\"para2\"]}"
+        "You are the senior editor writing THE lead deep-dive for a government Daily "
+        "Media Briefing (Telangana I&PR desk). You are given the day's SOURCE LINES for "
+        "the single most-covered story, each tagged [time-of-day / medium / tone] in "
+        "time order. Write STRICTLY from these lines — never invent a name, number, "
+        "quote, event or time. If something isn't in the lines, leave it out.\n"
+        "Produce JSON with these fields:\n"
+        "  headline  : clean English headline, specific, no jargon.\n"
+        "  standfirst: 2-3 sentences. Name the subject, state the spread in words, say "
+        "how it read overall, and which medium drove it. Like the bold lead of a wire.\n"
+        "  narrative : 2-4 short paragraphs — the government's position, the "
+        "opposition's line, and where the two arguments met or missed. Factual, neutral.\n"
+        "  timeline  : 3-5 beats of how coverage moved through the day, each "
+        "{when:'Morning'|'Midday'|'Evening'|'Late evening'|'Next morning', "
+        "medium:'Web'|'TV'|'Web + TV'|'Print', text:'one sentence, <=16 words'}.\n"
+        "  silence   : if a specific opposition claim went unanswered by any government "
+        "figure in the coverage, one sentence naming it; else ''.\n"
+        "  angle     : one sentence on how the framing differed by medium (TV vs online "
+        "vs print), only if the lines support it; else ''.\n"
+        "Return ONLY the JSON object."
     )
-    user = (f"SPREAD: {sp.get('web',0)} web / {sp.get('tv',0)} TV / {sp.get('newspaper',0)} "
-            f"newspapers, net tone {big.get('net',0)}.\nQUOTES:\n{qb}")
+    user = (f"SPREAD: {_spread_words(sp)}. NET TONE {big.get('net',0)}. "
+            f"MOST REPORTS CAME FROM: {dom or 'n/a'}.\nSOURCE LINES (time-ordered):\n{bl}")
     try:
         raw = await call_groq(system=sys, user=user, task_type="chronicle_generation",
-                              model=PROSE_MODEL, json_response=False, max_tokens_override=900)
+                              model=PROSE_MODEL, json_response=False, max_tokens_override=3200)
     except Exception as exc:  # noqa: BLE001
         logger.warning("prose big failed: %s", str(exc)[:120])
         return {}
@@ -88,5 +134,15 @@ async def write_big_story(big: dict, quotes: list[dict]) -> dict:
     nar = p.get("narrative")
     if isinstance(nar, str):
         nar = [nar]
+    tl = []
+    for t in (p.get("timeline") or []):
+        if isinstance(t, dict) and (t.get("text") or "").strip():
+            tl.append({"when": str(t.get("when", "")).strip(),
+                       "medium": str(t.get("medium", "")).strip(),
+                       "text": str(t.get("text", "")).strip()})
     return {"headline": (p.get("headline") or "").strip(),
-            "narrative": [str(x).strip() for x in (nar or []) if str(x).strip()]}
+            "standfirst": (p.get("standfirst") or "").strip(),
+            "narrative": [str(x).strip() for x in (nar or []) if str(x).strip()],
+            "timeline": tl[:5],
+            "silence": (p.get("silence") or "").strip(),
+            "angle": (p.get("angle") or "").strip()}

@@ -264,16 +264,21 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 .lean{font-family:var(--sans);font-size:8.5px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:3px;vertical-align:middle;margin-left:4px}
 .lean.n{background:var(--anti-soft);color:var(--anti)}.lean.p{background:var(--pro-soft);color:var(--pro)}
 .enddisc{padding:20px 46px 30px;font-family:var(--sans);font-size:10px;color:var(--muted);text-align:center;font-style:italic}
-.pagefoot{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 0;background:linear-gradient(180deg,#202127 0%,#141519 100%);border-top:2px solid #d5352b;font-family:var(--sans);font-size:9px;letter-spacing:.05em;color:#aab0b9}
+.pagefoot{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:7px;padding:5px 0;background:linear-gradient(180deg,#202127 0%,#141519 100%);border-top:2px solid #d5352b;font-family:var(--sans);font-size:9px;letter-spacing:.05em;color:#aab0b9;z-index:100}
+html.screenview .pagefoot{position:static}
 .pagefoot .fb{font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#fff;font-size:9.5px}
 .pagefoot .fb .accent{color:#e8443b;margin-left:.13em}
+/* on-screen paged view (paged.js) — the report as real A4 sheets */
+.pagedjs_pages{background:#dfe3e9;padding:20px 0}
+.pagedjs_page{background:#fff;box-shadow:0 2px 14px rgba(16,24,32,.18);margin:0 auto 20px !important}
+html.screenview.paged body{background:#dfe3e9}
+html.screenview.paged .paper{max-width:none;margin:0;border-radius:0;box-shadow:none}
 /* ── print / PDF (headless Chromium) — screen == download == print ── */
 @page{size:A4;margin:11mm 12mm 16mm}
 @media print{
  body{background:#fff}
  .paper{max-width:none;margin:0;border-radius:0;box-shadow:none}
  .topbar,.mast{padding-left:12mm;padding-right:12mm}
- .pagefoot{position:fixed;left:0;right:0;bottom:0;padding:5px 0}
  section{padding:16px 12mm;break-inside:auto}
  .kstrip{padding:0 12mm}
  .shead{break-after:avoid}
@@ -658,6 +663,16 @@ def render_html(r: dict[str, Any]) -> str:
     # fixed page-footer — repeats at the bottom of every PDF page
     o.append("<div class='pagefoot'><span class='fb'>Robin<span class='accent'>OSINT</span></span>"
              "<span class='ft'>&middot; A product of RIG 360 Media &amp; News Pvt. Ltd.</span></div>")
+    # On-screen only: paged.js reflows the report into real A4 sheets (like a print
+    # preview). Skipped during PDF generation (Chromium paginates natively) via the
+    # __ISPDF__ flag. If the polyfill can't load, the continuous card view remains.
+    o.append(
+        "<script>if(!window.__ISPDF__){"
+        "document.documentElement.classList.add('screenview');"
+        "window.PagedConfig={after:function(){document.documentElement.classList.add('paged');}};"
+        "var s=document.createElement('script');"
+        "s.src='https://unpkg.com/pagedjs/dist/paged.polyfill.js';"
+        "document.head.appendChild(s);}</script>")
     o.append("</body></html>")
     return "".join(o)
 

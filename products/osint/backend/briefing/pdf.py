@@ -17,7 +17,13 @@ logger = logging.getLogger("briefing.pdf")
 
 async def html_to_pdf(html: str) -> bytes:
     """Render an HTML string to a print-faithful A4 PDF via headless Chromium."""
+    import re
+
     from playwright.async_api import async_playwright
+
+    # Strip the on-screen paged.js loader — Chromium paginates natively here, and
+    # running paged.js would double-paginate and drop the running page-footer.
+    html = re.sub(r"<script>if\(!window\.__ISPDF__\).*?</script>", "", html, flags=re.S)
     async with async_playwright() as p:
         browser = await p.chromium.launch(
             args=["--no-sandbox", "--disable-dev-shm-usage"])

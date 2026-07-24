@@ -51,6 +51,42 @@ def _parse(raw: str):
     return obj or None
 
 
+def _is_telugu(s: str) -> bool:
+    return any("ఀ" <= c <= "౿" for c in (s or ""))
+
+
+async def translate_te_en(texts: list[str]) -> dict:
+    """Translate short Telugu strings to English in one batched call.
+    Returns {original_text: english}. Best-effort — {} on failure.
+
+    The corpus' article_quotes.quote_text_en is unpopulated, so the briefing
+    translates the handful of Telugu quotes it actually shows at assemble time.
+    """
+    items = [t for t in dict.fromkeys(texts) if t and _is_telugu(t)]
+    if not items:
+        return {}
+    numbered = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(items))[:3500]
+    sys = (
+        "Translate each numbered Telugu line into natural, faithful English. "
+        "Keep the SAME numbering, one translation per line. Output ONLY the "
+        "numbered English lines — no preamble, no commentary, no transliteration."
+    )
+    try:
+        raw = await call_groq(system=sys, user=numbered, task_type="translation",
+                              model=PROSE_MODEL, json_response=False, max_tokens_override=1400)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("quote translate failed: %s", str(exc)[:120])
+        return {}
+    out: dict = {}
+    for line in (raw or "").splitlines():
+        m = re.match(r"\s*(\d+)[.)]\s*(.+)", line)
+        if m:
+            idx = int(m.group(1)) - 1
+            if 0 <= idx < len(items) and m.group(2).strip():
+                out[items[idx]] = m.group(2).strip()
+    return out
+
+
 async def write_event(ev: dict, evidence: list[str]) -> dict:
     """Return {headline, paragraph} for one event, from its evidence sentences."""
     ev_block = "\n".join(f"- {e}" for e in evidence[:8] if e)[:2600]

@@ -550,6 +550,17 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
                 elif side == "opp" and not bo:
                     bo = {"speaker": q.sp, "text": q.qt, "en": q.en, "source": q.src, "url": q.url}
             big["gov_side"], big["opp_side"] = bg, bo
+
+        # translate the Telugu quotes we actually show to English (one batched
+        # call) — quote_text_en is unpopulated in the corpus.
+        _tq = list(gov_q) + list(opp_q)
+        if big:
+            _tq += [x for x in (big.get("gov_side"), big.get("opp_side")) if x]
+        _tr = await _prose.translate_te_en([q["text"] for q in _tq if q.get("text")])
+        for q in _tq:
+            if not q.get("en"):
+                q["en"] = _tr.get(q.get("text"))
+
         if big:
             big.pop("_web_refs", None)
             big.pop("beats", None)  # internal raw material — keep it out of stored JSON

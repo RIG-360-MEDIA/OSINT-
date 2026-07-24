@@ -173,9 +173,11 @@ async def _collect_and_extract(
     # PRIMARY: careerswave AJAX widget (2026-07). Try the target date, then the
     # day before (print lags / delayed upload). FALLBACK: legacy gdrive scrape.
     got = None
+    got_date = target
     for d in (target, target - _dt.timedelta(days=1)):
         got = await fetch_careerswave_pdf(careerswave_url, paper_name, cw_lang, d, pdf_path)
         if got:
+            got_date = d
             logger.info("careerswave AJAX: %s -> %s (%s)", paper_name, got, d)
             break
     if not got:
@@ -218,7 +220,8 @@ async def _collect_and_extract(
                 continue
 
             new_id = await _insert_clipping(
-                db, paper_id, language, pdf_path, art, headline, body, score
+                db, paper_id, language, pdf_path, art, headline, body, score,
+                edition_date=got_date,
             )
             if new_id:
                 inserted += 1
@@ -273,6 +276,7 @@ async def _load_relevance_scope(db) -> tuple[list[str], list[str]]:
 async def _insert_clipping(
     db, paper_id: str, language: str, pdf_path: str,
     art: dict, headline: str, body: str, score: float,
+    edition_date=None,
 ) -> str | None:
     """INSERT one clipping with extraction + provenance fields. Returns id or None."""
     from sqlalchemy import text
@@ -325,7 +329,9 @@ async def _insert_clipping(
             "is_duplicate": bool(art.get("is_duplicate", False)),
             "duplicate_of": art.get("duplicate_of"),
             "pdf_path": pdf_path,
-            "edition_date": date.today().isoformat(),
+            # a real date object (asyncpg rejects an isoformat string here), and
+            # the edition actually fetched — not today.
+            "edition_date": edition_date or date.today(),
         },
     )
     fetched = row.fetchone()

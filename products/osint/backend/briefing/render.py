@@ -133,6 +133,7 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 .tblock{border:1px solid var(--hair);border-radius:10px;overflow:hidden;margin-top:14px}
 .tbh{display:flex;align-items:center;gap:12px;padding:11px 16px;background:#f6f8fa;border-bottom:1px solid var(--hair)}
 .tbh h3{font-family:var(--serif);font-size:16px;font-weight:600;margin:0}
+.tbh .schm{font-family:var(--sans);font-size:11px;color:var(--muted);font-weight:500}
 .tbh .net{margin-left:auto;font-family:var(--serif);font-size:16px;font-weight:600}
 .cards{display:grid;grid-template-columns:repeat(3,1fr)}
 .card{padding:12px 14px;border-right:1px solid var(--hair2)}.card:last-child{border-right:0}
@@ -440,20 +441,47 @@ def render_html(r: dict[str, Any]) -> str:
         o.append("</div></div>")
     o.append("</section>")
 
-    # §4 Schemes
+    # §4 Schemes — per-scheme block with 3-media cards (7-day trend deferred)
     sr = r.get("schemes", [])
     if sr:
         o.append("<section><div class='shead'><span class='num'>4</span><h2>How Each Scheme Was Covered</h2>"
                  f"<span class='cnt'>{len(sr)} schemes</span></div>"
-                 "<p class='sf'>Flagship programmes and how the press treated them. The last column is the most repeated complaint.</p>"
-                 "<table><thead><tr><th>Scheme</th><th class='num'>Items</th><th>Tone</th><th class='num'>Net</th><th>Most repeated complaint</th></tr></thead><tbody>")
+                 "<p class='sf'>Each flagship programme &mdash; how much coverage it drew and the most "
+                 "representative item from each medium.</p>")
+        _splab = {"web": "Online", "tv": "Television", "newspaper": "Newspaper"}
         for s in sr:
-            o.append(f"<tr><td class='nm'>{_e(s['scheme'])}</td><td class='num'>{s['items']}</td>"
-                     f"<td>{_bar(s['favourable'], s['critical'])}</td>"
-                     f"<td class='num net {_net_cls(s['net'])}'>{s['net']:+d}</td>"
-                     f"<td>{_tel((s.get('note') or '—')[:90])}"
-                     + (f" <span class='src2'>{_e(s['source'])}</span>" if s.get('source') else "") + "</td></tr>")
-        o.append("</tbody></table></section>")
+            spread = ("web %d" % s.get("web", 0)
+                      + (" &middot; TV %d" % s["tv"] if s.get("tv") else "")
+                      + (" &middot; paper %d" % s["np"] if s.get("np") else ""))
+            o.append(f"<div class='tblock'><div class='tbh'><h3>{_e(s['scheme'])}</h3>"
+                     f"<span class='schm'>{s['items']} items &middot; {spread}</span>"
+                     f"<span class='net {_net_cls(s['net'])}'>{s['net']:+d}</span></div><div class='cards'>")
+            cards = s.get("cards", {})
+            for pillar, lab in [("web", "Top article"), ("tv", "Top TV clip"), ("newspaper", "Top newspaper")]:
+                c = cards.get(pillar)
+                if not c:
+                    o.append(f"<div class='card empty'><div class='cm'>{lab}</div>"
+                             f"<div class='thumb {pillar}'><span class='phlab'>No {pillar} item</span></div>"
+                             f"<div class='none'>Not covered in this medium.</div></div>")
+                    continue
+                dot = "n" if c["verdict"] == "critical" else "p" if c["verdict"] == "favourable" else "z"
+                _oerr = "onerror=\"this.remove()\""
+                if pillar == "newspaper" and c.get("img"):
+                    img = f"<img src='{_e(_datauri(c['img']))}' alt=''>"
+                elif c.get("thumb"):
+                    img = f"<img src='{_e(c['thumb'])}' alt='' {_oerr}>"
+                elif pillar == "tv" and c.get("video_id"):
+                    img = (f"<img src='https://img.youtube.com/vi/{_e(c['video_id'])}/hqdefault.jpg' alt='' {_oerr}>"
+                           "<span class='play'>&#9654;</span>")
+                else:
+                    img = ""
+                play = "<span class='play'>&#9654;</span>" if (pillar == "tv" and img and "play" not in img) else ""
+                o.append(f"<div class='card'><div class='cm'>{lab}</div>"
+                         f"<div class='thumb {pillar}'><span class='phlab'>{_splab[pillar]}</span>{img}{play}</div>"
+                         f"<h4>{_tel((c.get('title') or '')[:90])}</h4>"
+                         f"<div class='meta'><span class='dot {dot}'></span>{_e(c['source'])}</div></div>")
+            o.append("</div></div>")
+        o.append("</section>")
 
     # §5 Districts (map + table)
     dr = r.get("districts", [])

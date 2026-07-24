@@ -548,27 +548,66 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
         annexure = [{"pillar": a.pillar, "source": a.src, "lang": a.lang, "verdict": a.verdict,
                      "title": a.title, "url": a.url} for a in list(anx_web) + list(anx_tv) + list(anx_np)]
 
-        # ══ §4 scheme scorecard ══
+        # ══ §4 scheme scorecard — per-scheme block: 3-media split + net + a top
+        # article/TV/newspaper card (like §3). The spec's 7-day tone trend is
+        # deferred until dated verdict history accrues ("empty at launch"). ══
         sch = (await db.execute(text("""
             SELECT scheme, count(*) n,
+                   count(*) FILTER (WHERE pillar='web') web,
+                   count(*) FILTER (WHERE pillar='tv') tv,
+                   count(*) FILTER (WHERE pillar='newspaper') np,
                    count(*) FILTER (WHERE verdict='favourable') fav,
                    count(*) FILTER (WHERE verdict='critical') crit
               FROM briefing.items
              WHERE run_id=:r AND about_government AND NOT unclear AND scheme IS NOT NULL
              GROUP BY 1 ORDER BY 2 DESC
         """), {"r": rid})).fetchall()
-        scheme_rows = []
-        for sc in sch:
-            top = (await db.execute(text("""
-                SELECT evidence, source_ref FROM briefing.items
-                 WHERE run_id=:r AND scheme=:s AND about_government AND verdict='critical'
-                 ORDER BY (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST LIMIT 1
-            """), {"r": rid, "s": sc.scheme})).fetchone()
-            scheme_rows.append({"scheme": sc.scheme, "items": int(sc.n),
-                                "favourable": int(sc.fav), "critical": int(sc.crit),
-                                "net": _net(int(sc.fav), int(sc.crit)),
-                                "note": (top.evidence if top else None),
-                                "source": (top.source_ref if top else None)})
+        # representative card per (scheme, pillar), preferring items with an image
+        scard_sel = (await db.execute(text("""
+            SELECT DISTINCT ON (scheme, pillar) scheme, pillar, item_ref, source_ref, verdict
+              FROM briefing.items i
+              LEFT JOIN articles a ON a.id::text = i.item_ref
+             WHERE run_id=:r AND about_government AND NOT unclear AND scheme IS NOT NULL
+             ORDER BY scheme, pillar,
+                      (a.thumbnail_url IS NOT NULL AND a.thumbnail_url <> '') DESC,
+                      (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST
+        """), {"r": rid})).fetchall()
+        s_web = [c.item_ref for c in scard_sel if c.pillar == "web"]
+        s_np = [c.item_ref for c in scard_sel if c.pillar == "newspaper"]
+        s_tv = [c.item_ref for c in scard_sel if c.pillar == "tv"]
+        s_img: dict = {}
+        if s_web:
+            for a in (await db.execute(text(
+                "SELECT id::text ref, title, thumbnail_url thumb FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
+            ), {"i": s_web})).fetchall():
+                s_img[a.ref] = {"title": a.title, "thumb": a.thumb}
+        if s_np:
+            for c in (await db.execute(text(
+                "SELECT id::text ref, headline title, clipping_image_b64 img FROM clippings WHERE id=ANY(CAST(:i AS uuid[]))"
+            ), {"i": s_np})).fetchall():
+                s_img[c.ref] = {"title": c.title, "img": c.img}
+            miss = [x for x in s_np if x not in s_img]
+            if miss:
+                for a in (await db.execute(text(
+                    "SELECT id::text ref, title, thumbnail_url thumb FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
+                ), {"i": miss})).fetchall():
+                    s_img[a.ref] = {"title": a.title, "thumb": a.thumb}
+        if s_tv:
+            for v in (await db.execute(text(
+                "SELECT video_id ref, max(video_title) title FROM youtube_clips_v2 WHERE video_id=ANY(:i) GROUP BY video_id"
+            ), {"i": s_tv})).fetchall():
+                s_img[v.ref] = {"title": v.title, "video_id": v.ref}
+        scards: dict = {}
+        for c in scard_sel:
+            d = s_img.get(c.item_ref, {})
+            scards.setdefault(c.scheme, {})[c.pillar] = {
+                "source": c.source_ref, "verdict": c.verdict, "title": d.get("title", ""),
+                "thumb": d.get("thumb"), "img": d.get("img"), "video_id": d.get("video_id")}
+        scheme_rows = [{"scheme": sc.scheme, "items": int(sc.n),
+                        "web": int(sc.web), "tv": int(sc.tv), "np": int(sc.np),
+                        "favourable": int(sc.fav), "critical": int(sc.crit),
+                        "net": _net(int(sc.fav), int(sc.crit)),
+                        "cards": scards.get(sc.scheme, {})} for sc in sch]
 
         # ══ §6 divergence readout ══
         divergence = None

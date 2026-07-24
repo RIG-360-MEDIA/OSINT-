@@ -405,9 +405,9 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
         imgmap: dict[str, dict] = {}
         if web_ids:
             for a in (await db.execute(text(
-                "SELECT id::text ref, title, thumbnail_url thumb FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
+                "SELECT id::text ref, title, thumbnail_url thumb, url FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
             ), {"i": web_ids})).fetchall():
-                imgmap[a.ref] = {"title": a.title, "thumb": a.thumb, "kind": "web"}
+                imgmap[a.ref] = {"title": a.title, "thumb": a.thumb, "url": a.url, "kind": "web"}
         if np_ids:
             for c in (await db.execute(text(
                 "SELECT id::text ref, headline title, clipping_image_b64 img FROM clippings WHERE id=ANY(CAST(:i AS uuid[]))"
@@ -417,20 +417,21 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             np_miss = [x for x in np_ids if x not in imgmap]
             if np_miss:
                 for a in (await db.execute(text(
-                    "SELECT id::text ref, title, thumbnail_url thumb FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
+                    "SELECT id::text ref, title, thumbnail_url thumb, url FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
                 ), {"i": np_miss})).fetchall():
-                    imgmap[a.ref] = {"title": a.title, "thumb": a.thumb, "kind": "newspaper"}
+                    imgmap[a.ref] = {"title": a.title, "thumb": a.thumb, "url": a.url, "kind": "newspaper"}
         if tv_ids:
             for v in (await db.execute(text(
                 "SELECT video_id ref, max(video_title) title FROM youtube_clips_v2 WHERE video_id=ANY(:i) GROUP BY video_id"
             ), {"i": tv_ids})).fetchall():
-                imgmap[v.ref] = {"title": v.title, "video_id": v.ref, "kind": "tv"}
+                imgmap[v.ref] = {"title": v.title, "video_id": v.ref, "url": "https://youtu.be/" + v.ref, "kind": "tv"}
         topic_cards: dict[str, dict] = {}
         for c in card_sel:
             d = imgmap.get(c.item_ref, {})
             topic_cards.setdefault(c.topic, {})[c.pillar] = {
                 "source": c.source_ref, "verdict": c.verdict, "title": d.get("title", ""),
-                "thumb": d.get("thumb"), "img": d.get("img"), "video_id": d.get("video_id")}
+                "thumb": d.get("thumb"), "img": d.get("img"), "video_id": d.get("video_id"),
+                "url": d.get("url")}
 
         # ══ §5 districts ══
         dist = (await db.execute(text("""
@@ -612,9 +613,9 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
         s_img: dict = {}
         if s_web:
             for a in (await db.execute(text(
-                "SELECT id::text ref, title, thumbnail_url thumb FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
+                "SELECT id::text ref, title, thumbnail_url thumb, url FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
             ), {"i": s_web})).fetchall():
-                s_img[a.ref] = {"title": a.title, "thumb": a.thumb}
+                s_img[a.ref] = {"title": a.title, "thumb": a.thumb, "url": a.url}
         if s_np:
             for c in (await db.execute(text(
                 "SELECT id::text ref, headline title, clipping_image_b64 img FROM clippings WHERE id=ANY(CAST(:i AS uuid[]))"
@@ -623,20 +624,21 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             miss = [x for x in s_np if x not in s_img]
             if miss:
                 for a in (await db.execute(text(
-                    "SELECT id::text ref, title, thumbnail_url thumb FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
+                    "SELECT id::text ref, title, thumbnail_url thumb, url FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
                 ), {"i": miss})).fetchall():
-                    s_img[a.ref] = {"title": a.title, "thumb": a.thumb}
+                    s_img[a.ref] = {"title": a.title, "thumb": a.thumb, "url": a.url}
         if s_tv:
             for v in (await db.execute(text(
                 "SELECT video_id ref, max(video_title) title FROM youtube_clips_v2 WHERE video_id=ANY(:i) GROUP BY video_id"
             ), {"i": s_tv})).fetchall():
-                s_img[v.ref] = {"title": v.title, "video_id": v.ref}
+                s_img[v.ref] = {"title": v.title, "video_id": v.ref, "url": "https://youtu.be/" + v.ref}
         scards: dict = {}
         for c in scard_sel:
             d = s_img.get(c.item_ref, {})
             scards.setdefault(c.scheme, {})[c.pillar] = {
                 "source": c.source_ref, "verdict": c.verdict, "title": d.get("title", ""),
-                "thumb": d.get("thumb"), "img": d.get("img"), "video_id": d.get("video_id")}
+                "thumb": d.get("thumb"), "img": d.get("img"), "video_id": d.get("video_id"),
+                "url": d.get("url")}
         scheme_rows = [{"scheme": sc.scheme, "items": int(sc.n),
                         "web": int(sc.web), "tv": int(sc.tv), "np": int(sc.np),
                         "favourable": int(sc.fav), "critical": int(sc.crit),

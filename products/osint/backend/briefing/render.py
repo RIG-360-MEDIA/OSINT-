@@ -285,7 +285,7 @@ def render_html(r: dict[str, Any]) -> str:
     s = r["strip"]; sent = s["sentiment"]; bp = s["by_pillar"]
     o = [f"<!doctype html><html><head><meta charset='utf-8'><style>{CSS}</style></head><body><div class='paper'>"]
     o.append("<div class='topbar'><div class='dept'>Telangana &middot; Information &amp; Public Relations</div>"
-             "<div class='brand'><span class='bn'>Robin</span><span class='bs'>Media Watch</span></div></div>")
+             "<div class='brand'><span class='bn'>Robin OSINT</span><span class='bs'>Media Watch</span></div></div>")
     o.append(f"<div class='mast'><h1>Daily Media Briefing</h1><div class='dek'>"
              f"<b>Covering {_e(r['cover_date'])} &middot; 00:00&ndash;23:59 IST</b>"
              f"<span>Newspapers &middot; Television &middot; Online</span></div></div>")
@@ -517,7 +517,7 @@ def render_html(r: dict[str, Any]) -> str:
                 o.append(f"<div class='card'><div class='cm'>{lab}</div>"
                          f"<div class='thumb {pillar}'><span class='phlab'>{_splab[pillar]}</span>{img}{play}</div>"
                          f"<h4>{_tel((c.get('title') or '')[:90])}</h4>"
-                         f"<div class='meta'><span class='dot {dot}'></span>{_e(c['source'])}</div></div>")
+                         f"<div class='meta'><span class='dot {dot}'></span>{_cite(c['source'], c.get('url'))}</div></div>")
             o.append("</div></div>")
         o.append("</section>")
 
@@ -648,7 +648,7 @@ def render_html(r: dict[str, Any]) -> str:
 
     o.append("<div class='colo'><div><b>Telangana &mdash; Information &amp; Public Relations.</b> "
              "Prepared from published media only. Tone reflects how the government was portrayed, not the accuracy of reporting.</div>"
-             "<div style='text-align:right'><span class='rb'>Robin</span><br>A product of RIG 360 Media &amp; News Pvt. Ltd.</div></div>")
+             "<div style='text-align:right'><span class='rb'>Robin OSINT</span><br>A product of RIG 360 Media &amp; News Pvt. Ltd.</div></div>")
     o.append("</div></body></html>")
     return "".join(o)
 

@@ -30,13 +30,38 @@ def _net_cls(n):
 
 
 def _bar(fav, crit):
-    d = (fav + crit) or 1
-    return (f"<span class='rowbar'><i class='p' style='width:{round(100*fav/d)}%'></i>"
-            f"<i class='n' style='width:{round(100*crit/d)}%'></i></span>")
+    # green (favourable) + red (critical) FILL the whole bar, split by ratio —
+    # flex-grow guarantees 100% coverage with no neutral gap. All-neutral -> grey.
+    f, c = max(int(fav or 0), 0), max(int(crit or 0), 0)
+    if f == 0 and c == 0:
+        return "<span class='rowbar'><i class='z' style='flex:1'></i></span>"
+    return (f"<span class='rowbar'><i class='p' style='flex:{f}'></i>"
+            f"<i class='n' style='flex:{c}'></i></span>")
 
 
 def _tel(s):
     return f"<span class='tel'>{_e(s)}</span>" if any('ఀ' <= c <= '౿' for c in (s or "")) else _e(s)
+
+
+def _is_tel(s):
+    return any('ఀ' <= c <= '౿' for c in (s or ""))
+
+
+def _teln(text, en=None):
+    """Telugu text with an English translation line underneath — shown only when
+    the text is actually Telugu and a distinct translation exists."""
+    out = _tel(text)
+    en = (en or "").strip()
+    if en and _is_tel(text) and en != (text or "").strip():
+        out += f"<div class='en'>{_e(en)}</div>"
+    return out
+
+
+def _cite(source, url=None):
+    """Source name, linked to the article when a URL is available (a citation)."""
+    s = _e(source or "")
+    return (f"<a href='{_e(url)}' target='_blank' rel='noopener' class='cl2'>{s}</a>"
+            if url else s)
 
 
 def _datauri(b64):
@@ -98,6 +123,9 @@ ol.brief .ev{font-family:var(--serif);font-size:14px;color:var(--ink2);line-heig
 .cites a{color:var(--navy2);text-decoration:none;border-bottom:1px solid var(--hair)}
 .cites a:hover{border-bottom-color:var(--navy2)}
 .cites .nolink{color:var(--faint,#9a978a)}
+.en{font-family:var(--sans);font-size:11.5px;line-height:1.42;color:var(--muted);margin-top:4px}
+.cl2{color:var(--navy2);text-decoration:none;border-bottom:1px solid var(--hair)}
+.cl2:hover{border-bottom-color:var(--navy2)}
 .tag.p{background:var(--pro-soft);color:var(--pro)}.tag.n{background:var(--anti-soft);color:var(--anti)}.tag.g{background:var(--navy-soft);color:var(--navy2)}
 .big{margin-top:16px;border:1px solid var(--hair);border-radius:10px;overflow:hidden}
 .big .bh{background:var(--navy-soft);padding:18px 22px;border-bottom:1px solid var(--navy-line)}
@@ -118,7 +146,7 @@ td{padding:9px 10px 9px 0;border-bottom:1px solid var(--hair2);vertical-align:to
 td.nm{font-weight:600;font-family:var(--serif)}
 td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums;padding-right:0}
 .rowbar{width:58px;height:7px;border-radius:2px;overflow:hidden;display:inline-flex;background:#eef1f3;vertical-align:middle}
-.rowbar i.p{background:var(--pro)}.rowbar i.n{background:var(--anti)}
+.rowbar i.p{background:var(--pro)}.rowbar i.n{background:var(--anti)}.rowbar i.z,.tbar i.z{background:var(--faint)}
 .net{font-family:var(--mono);font-variant-numeric:tabular-nums}.net.neg{color:var(--anti)}.net.pos{color:var(--pro)}.net.z{color:var(--muted)}
 .panels{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
 .panel{border:1px solid var(--hair);border-radius:10px;padding:16px}
@@ -278,8 +306,8 @@ def render_html(r: dict[str, Any]) -> str:
         f"<div class='kt'><div class='kl'>Biggest Subject</div><div class='kv'>{_e(s['biggest_subject']['topic'] or '—')}</div>"
         f"<div class='ks'>{s['biggest_subject']['items']} of {s['total']} government stories</div></div>"
         f"<div class='kt'><div class='kl'>Sentiment</div><div class='kv {_net_cls(sent['net'])}'>{sent['net']:+d}</div>"
-        f"<div class='tbar'><i class='p' style='width:{round(100*sent['favourable']/fc)}%'></i>"
-        f"<i class='n' style='width:{round(100*sent['critical']/fc)}%'></i></div>"
+        f"<div class='tbar'><i class='p' style='flex:{sent['favourable']}'></i>"
+        f"<i class='n' style='flex:{sent['critical']}'></i></div>"
         f"<div class='ks'>{sent['favourable']} for &middot; {sent['critical']} against &middot; {sent['neutral']} no side</div></div>"
         f"<div class='kt'><div class='kl'>Top Outlet, each medium</div>{outrows}</div></div>")
 
@@ -385,8 +413,8 @@ def render_html(r: dict[str, Any]) -> str:
             for lab, cls, q in [("Government", "gov", gs), ("Opposition", "opp", op)]:
                 if q:
                     o.append(f"<div class='side {cls}'><div class='sh'>{lab}</div>"
-                             f"<p class='sq'>&ldquo;{_tel(q['text'])}&rdquo;</p>"
-                             f"<div class='sa'><b>{_e(q['speaker'])}</b> &middot; {_e(q['source'])}</div></div>")
+                             f"<p class='sq'>&ldquo;{_teln(q['text'], q.get('en'))}&rdquo;</p>"
+                             f"<div class='sa'><b>{_e(q['speaker'])}</b> &middot; {_cite(q['source'], q.get('url'))}</div></div>")
                 else:
                     o.append(f"<div class='side {cls} empty'><div class='sh'>{lab}</div>"
                              f"<p class='sq none'>No direct {lab.lower()} quote appeared in the day's coverage.</p></div>")
@@ -559,7 +587,8 @@ def render_html(r: dict[str, Any]) -> str:
         for side, cls, lab in [("government", "g", "Government"), ("opposition", "o", "Opposition")]:
             o.append(f"<div class='qcol {cls}'><div class='qs'>{lab}</div>")
             for qq in q.get(side, [])[:2]:
-                o.append(f"<blockquote>{_tel(qq['text'])}<div class='who'>&mdash; <b>{_e(qq['speaker'])}</b> &middot; {_e(qq['source'])}</div></blockquote>")
+                o.append(f"<blockquote>{_teln(qq['text'], qq.get('en'))}"
+                         f"<div class='who'>&mdash; <b>{_e(qq['speaker'])}</b> &middot; {_cite(qq['source'], qq.get('url'))}</div></blockquote>")
             if not q.get(side):
                 o.append("<div class='who'>No quotes on record.</div>")
             o.append("</div>")
@@ -571,7 +600,8 @@ def render_html(r: dict[str, Any]) -> str:
             for s, qq in also[:6]:
                 sidelab = "<span class='qtag g'>Govt</span>" if s == 'gov' else "<span class='qtag o'>Opp</span>"
                 o.append(f"<tr><td class='nm' style='width:160px'>{_e(qq['speaker'])} {sidelab}</td>"
-                         f"<td>{_tel(qq['text'])}</td><td class='num src2'>{_e(qq['source'])}</td></tr>")
+                         f"<td>{_teln(qq['text'], qq.get('en'))}</td>"
+                         f"<td class='num src2'>{_cite(qq['source'], qq.get('url'))}</td></tr>")
             o.append("</tbody></table>")
         o.append("</section>")
 
@@ -587,8 +617,10 @@ def render_html(r: dict[str, Any]) -> str:
             o.append(f"<div class='gl'>{grp}</div><div class='figs'>")
             for f in gf[:8]:
                 flag = " <span class='alleg'>&#9888; alleged</span>" if f.get("alleged") else ""
+                cite = (f" <a href='{_e(f['url'])}' target='_blank' rel='noopener' class='cl2'>source &#8599;</a>"
+                        if f.get("url") else "")
                 o.append(f"<div class='fig'><div class='v'>{_e(f['value'])} {_e(f['unit'])}</div>"
-                         f"<div class='c'>{_e(f['context'])}{flag}</div></div>")
+                         f"<div class='c'>{_e(f['context'])}{flag}{cite}</div></div>")
             o.append("</div>")
         o.append("</section>")
 

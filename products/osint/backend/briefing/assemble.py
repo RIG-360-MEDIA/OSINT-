@@ -133,8 +133,10 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
 
         # ── §8 figures from gov-relevant web+print items ──
         figures = (await db.execute(text("""
-            SELECT n.value, n.unit, left(n.context,90) context, 'web' pillar
-              FROM briefing.items i JOIN article_numbers n ON n.article_id::text=i.item_ref
+            SELECT n.value, n.unit, left(n.context,130) context, a.url url, a.title title
+              FROM briefing.items i
+              JOIN article_numbers n ON n.article_id::text=i.item_ref
+              JOIN articles a ON a.id::text=i.item_ref
              WHERE i.run_id=:r AND i.about_government AND i.pillar='web'
                AND n.unit IS NOT NULL AND length(n.context) BETWEEN 12 AND 100
                AND (n.context ILIKE '%crore%' OR n.context ILIKE '%lakh%' OR n.unit ILIKE '%crore%'
@@ -149,6 +151,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
                 return "People"
             return "Other"
         figure_rows = [{"value": str(f.value), "unit": f.unit, "context": f.context,
+                        "url": f.url, "title": f.title,
                         "group": _fig_group(f.unit, f.context),
                         "alleged": any(w in (f.context or "").lower() for w in ("alleg", "scam", "irregular"))}
                        for f in figures]
@@ -501,7 +504,8 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
 
         _HAY = "lower(COALESCE(a.title,'')||' '||COALESCE(a.url,''))"
         qrows = (await db.execute(text(f"""
-            SELECT q.speaker_name sp, q.quote_text qt, s.name src, {_HAY} hay
+            SELECT q.speaker_name sp, q.quote_text qt, q.quote_text_en en,
+                   s.name src, a.url url, {_HAY} hay
               FROM briefing.items i
               JOIN article_quotes q ON q.article_id = CAST(i.item_ref AS uuid)
               JOIN articles a ON a.id = CAST(i.item_ref AS uuid)
@@ -518,16 +522,18 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
                 continue
             seen_q.add(key)
             side = _verify_side(q.sp, q.hay or "")
+            rec = {"speaker": q.sp, "text": q.qt, "en": q.en, "source": q.src, "url": q.url}
             if side == "gov" and len(gov_q) < 7:
-                gov_q.append({"speaker": q.sp, "text": q.qt, "source": q.src})
+                gov_q.append(rec)
             elif side == "opp" and len(opp_q) < 7:
-                opp_q.append({"speaker": q.sp, "text": q.qt, "source": q.src})
+                opp_q.append(rec)
         quotes = {"government": gov_q, "opposition": opp_q}
 
         # ── §2 "what each side said": same source + same speaker verification. ──
         if big and big.get("_web_refs"):
             brows = (await db.execute(text(f"""
-                SELECT q.speaker_name sp, q.quote_text qt, s.name src, {_HAY} hay
+                SELECT q.speaker_name sp, q.quote_text qt, q.quote_text_en en,
+                       s.name src, a.url url, {_HAY} hay
                   FROM article_quotes q
                   JOIN articles a ON a.id = q.article_id
                   JOIN sources s ON s.id = a.source_id
@@ -539,9 +545,9 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             for q in brows:
                 side = _verify_side(q.sp, q.hay or "")
                 if side == "gov" and not bg:
-                    bg = {"speaker": q.sp, "text": q.qt, "source": q.src}
+                    bg = {"speaker": q.sp, "text": q.qt, "en": q.en, "source": q.src, "url": q.url}
                 elif side == "opp" and not bo:
-                    bo = {"speaker": q.sp, "text": q.qt, "source": q.src}
+                    bo = {"speaker": q.sp, "text": q.qt, "en": q.en, "source": q.src, "url": q.url}
             big["gov_side"], big["opp_side"] = bg, bo
         if big:
             big.pop("_web_refs", None)

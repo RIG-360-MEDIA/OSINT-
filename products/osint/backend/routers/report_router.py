@@ -69,7 +69,11 @@ async def report_pdf(user: dict[str, str] | None = Depends(get_optional_user)) -
         raise HTTPException(status_code=404, detail=f"No briefing for {cover}")
     fname = f"Telangana-Media-Briefing-{cover}.pdf"
     return Response(content=pdf, media_type="application/pdf",
-                    headers={"Content-Disposition": f'inline; filename="{fname}"'})
+                    headers={"Content-Disposition": f'inline; filename="{fname}"',
+                             # the served day rolls forward each morning — never
+                             # let a browser keep yesterday's cached PDF
+                             "Cache-Control": "no-store, must-revalidate",
+                             "Pragma": "no-cache", "Expires": "0"})
 
 
 @router.post("/report/send")

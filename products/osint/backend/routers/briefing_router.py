@@ -21,6 +21,9 @@ router = APIRouter(prefix="/api/brief", tags=["media-briefing"])
 IST = timezone(timedelta(hours=5, minutes=30))
 
 
+_NOCACHE = {"Cache-Control": "no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0"}
+
+
 def _default_date() -> date:
     return (datetime.now(timezone.utc).astimezone(IST) - timedelta(days=1)).date()
 
@@ -60,8 +63,10 @@ async def media_briefing_html(
                     f"<h2>No briefing yet for {cover}</h2>"
                     f"<p>It generates automatically each morning (~05:00 IST), "
                     f"or trigger it with POST /api/brief/media-briefing/run.</p></body></html>",
-            media_type="text/html")
-    return Response(content=html, media_type="text/html")
+            media_type="text/html", headers=_NOCACHE)
+    # never cache: the default date rolls forward each morning, so a cached copy
+    # would keep showing the previous day's briefing after the nightly run.
+    return Response(content=html, media_type="text/html", headers=_NOCACHE)
 
 
 @router.get("/media-briefing/json")

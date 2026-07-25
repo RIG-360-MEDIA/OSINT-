@@ -28,6 +28,12 @@ PROMPT_VERSION = "brief-judge-v1"
 # 97-100% of items across all three pillars (web median 1711, TV 1188,
 # newspaper 440). Long enough for Eenadu (avg 5530), cheap enough at volume.
 BODY_MAX = 6000
+# Indic scripts (Telugu/Devanagari) tokenize far worse than Latin — roughly one
+# token per character vs ~0.25 — so 6000 chars of Telugu became ~12k tokens and
+# the Cerebras failover models (8192-token context) rejected the call outright
+# ("Current length is 11964 while limit is 8192"), silently dropping those items
+# from the day's judgement. Cap non-Latin bodies so every provider accepts them.
+BODY_MAX_INDIC = 1600
 
 
 def build_system(refdata: dict[str, Any]) -> str:
@@ -144,11 +150,22 @@ Return ONE JSON object and NOTHING else — no preamble, no code fence:
 "<one verbatim sentence>", "lands_on": "<text or null>", "confidence": 0.0}}"""
 
 
+def _body_budget(body: str) -> int:
+    """Char cap for this body — tighter for Indic scripts, which cost ~4x the
+    tokens per character and otherwise overflow 8k-context failover models."""
+    if not body:
+        return BODY_MAX
+    sample = body[:600]
+    non_latin = sum(1 for c in sample if ord(c) > 0x0900)
+    return BODY_MAX_INDIC if non_latin > 0.25 * len(sample) else BODY_MAX
+
+
 def build_user(item: dict[str, Any]) -> str:
     """item: {source, medium, published_at, title, body, lang}"""
     body = (item.get("body") or "").strip()
-    if len(body) > BODY_MAX:
-        body = body[:BODY_MAX]
+    cap = _body_budget(body)
+    if len(body) > cap:
+        body = body[:cap]
     return (
         f"OUTLET: {item.get('source','?')}   MEDIUM: {item.get('medium','?')}   "
         f"LANGUAGE: {item.get('lang','?')}\n"

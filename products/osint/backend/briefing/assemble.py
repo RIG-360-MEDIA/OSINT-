@@ -489,24 +489,32 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             # collapse punctuation so "revanth-reddy" (URL slug) == "revanth reddy"
             return " " + _re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip() + " "
 
-        def _verify_side(speaker: str, hay: str):
-            """'gov'/'opp' if the speaker matches a roster person who is the
-            article's PRIMARY subject (name in headline/URL); None otherwise.
-            Verifying against title+URL — not the body — is deliberate: a body can
-            name several leaders in passing (that's how a Ramchander Rao quote got
-            tagged to Bandi Sanjay), but the headline/slug names who the piece is
-            actually about, i.e. who is speaking."""
+        def _verify_side(speaker: str, hay: str, near: str = ""):
+            """'gov'/'opp' if the attributed speaker matches a roster person AND
+            that person is corroborated by the article — either as its PRIMARY
+            subject (name in headline/URL) or named NEAR the quote itself.
+
+            Whole-body matching is deliberately NOT used: a body names several
+            leaders in passing, which is how a Ramchander Rao quote got tagged to
+            Bandi Sanjay. Headline/slug or local proximity are both strong; either
+            one is enough, which keeps legitimate secondary speakers (a minister
+            quoted in a story headlined about someone else) instead of dropping
+            them wholesale."""
             sp = _norm(speaker)
-            hayn = _norm(hay)
+            hayn = _norm(hay) + " " + _norm(near)
             for variants, side in people:
                 if any(_norm(v).strip() in sp for v in variants):
                     return side if any(_norm(v).strip() in hayn for v in variants) else None
             return None
 
         _HAY = "lower(COALESCE(a.title,'')||' '||COALESCE(a.url,''))"
+        # ~400 chars either side of the quote — "is the speaker named next to
+        # their own quote?" (article_quotes.context averages 9 chars, unusable)
+        _NEAR = ("lower(substr(COALESCE(a.full_text_translated, a.full_text_scraped, ''),"
+                 " GREATEST(COALESCE(q.char_offset_start,1) - 400, 1), 900))")
         qrows = (await db.execute(text(f"""
             SELECT q.speaker_name sp, q.quote_text qt, q.quote_text_en en,
-                   s.name src, a.url url, {_HAY} hay
+                   s.name src, a.url url, {_HAY} hay, {_NEAR} near
               FROM briefing.items i
               JOIN article_quotes q ON q.article_id = CAST(i.item_ref AS uuid)
               JOIN articles a ON a.id = CAST(i.item_ref AS uuid)
@@ -522,7 +530,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             if key in seen_q:
                 continue
             seen_q.add(key)
-            side = _verify_side(q.sp, q.hay or "")
+            side = _verify_side(q.sp, q.hay or "", q.near or "")
             rec = {"speaker": q.sp, "text": q.qt, "en": q.en, "source": q.src, "url": q.url}
             if side == "gov" and len(gov_q) < 7:
                 gov_q.append(rec)
@@ -534,7 +542,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
         if big and big.get("_web_refs"):
             brows = (await db.execute(text(f"""
                 SELECT q.speaker_name sp, q.quote_text qt, q.quote_text_en en,
-                       s.name src, a.url url, {_HAY} hay
+                       s.name src, a.url url, {_HAY} hay, {_NEAR} near
                   FROM article_quotes q
                   JOIN articles a ON a.id = q.article_id
                   JOIN sources s ON s.id = a.source_id
@@ -544,7 +552,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             """), {"ids": big["_web_refs"]})).fetchall()
             bg = bo = None
             for q in brows:
-                side = _verify_side(q.sp, q.hay or "")
+                side = _verify_side(q.sp, q.hay or "", q.near or "")
                 if side == "gov" and not bg:
                     bg = {"speaker": q.sp, "text": q.qt, "en": q.en, "source": q.src, "url": q.url}
                 elif side == "opp" and not bo:

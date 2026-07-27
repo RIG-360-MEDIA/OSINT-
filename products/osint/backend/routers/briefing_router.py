@@ -90,3 +90,62 @@ async def media_briefing_run(
 ):
     cover = _default_date() if not date else datetime.strptime(date, "%Y-%m-%d").date()
     return await run_full(org, cover, concurrency=concurrency)
+
+
+# ── Weekly (multi-day) rollup — same engine, aggregated across a date range.
+# Rendered on request (no cache table yet): each call re-aggregates + re-runs
+# the small LLM enrichment (big-story prose, quote translation, figure
+# captions), so it's for periodic/report-pull use, not high-frequency polling.
+
+def _week_range(start: str | None, end: str | None, days: int) -> tuple[date, date]:
+    if start and end:
+        return (datetime.strptime(start, "%Y-%m-%d").date(),
+                datetime.strptime(end, "%Y-%m-%d").date())
+    e = _default_date()  # yesterday IST — the newest fully-judged day
+    s = e - timedelta(days=max(days, 1) - 1)
+    return s, e
+
+
+@router.get("/weekly-briefing")
+async def weekly_briefing_html(
+    start: str | None = Query(default=None, description="YYYY-MM-DD"),
+    end: str | None = Query(default=None, description="YYYY-MM-DD"),
+    days: int = Query(default=7, ge=1, le=31),
+    org: str = Query(default=TELANGANA_ORG),
+) -> Response:
+    s, e = _week_range(start, end, days)
+    from briefing.weekly_render import render_weekly_for
+    html = await render_weekly_for(org, s, e)
+    return Response(content=html, media_type="text/html", headers=_NOCACHE)
+
+
+@router.get("/weekly-briefing/json")
+async def weekly_briefing_json(
+    start: str | None = Query(default=None),
+    end: str | None = Query(default=None),
+    days: int = Query(default=7, ge=1, le=31),
+    org: str = Query(default=TELANGANA_ORG),
+):
+    s, e = _week_range(start, end, days)
+    from briefing.weekly_assemble import assemble_weekly
+    rep = await assemble_weekly(org, s, e)
+    if rep.get("error"):
+        raise HTTPException(status_code=404, detail=rep["error"])
+    return rep
+
+
+@router.get("/weekly-briefing.pdf")
+async def weekly_briefing_pdf(
+    start: str | None = Query(default=None),
+    end: str | None = Query(default=None),
+    days: int = Query(default=7, ge=1, le=31),
+    org: str = Query(default=TELANGANA_ORG),
+) -> Response:
+    s, e = _week_range(start, end, days)
+    from briefing.weekly_render import render_weekly_for
+    from briefing.pdf import html_to_pdf
+    html = await render_weekly_for(org, s, e)
+    pdf = await html_to_pdf(html)
+    fname = f"Telangana-Weekly-Media-Briefing-{s}-to-{e}.pdf"
+    return Response(content=pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'inline; filename="{fname}"', **_NOCACHE})

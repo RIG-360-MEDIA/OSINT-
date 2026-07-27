@@ -269,18 +269,22 @@ html.screenview .pagefoot{position:static}
 .pagefoot .fb{font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#fff;font-size:9.5px}
 .pagefoot .fb .accent{color:#e8443b;margin-left:.13em}
 /* ── print / PDF (headless Chromium) — screen == download == print ── */
-@page{size:A4;margin:11mm 12mm 16mm}
+@page{size:A4;margin:11mm 12mm 20mm}
 @media print{
  body{background:#fff}
  .paper{max-width:none;margin:0;border-radius:0;box-shadow:none}
  .topbar,.mast{padding-left:12mm;padding-right:12mm}
- section{padding:16px 12mm;break-inside:auto}
+ section{padding:16px 12mm 22px;break-inside:auto}
  .kstrip{padding:0 12mm}
  .shead{break-after:avoid}
  .tblock,.card,.big,.qcols,.qcol,.panel,.fig,.ax,.qp,ol.brief li,.to,.tile{break-inside:avoid}
  tr{break-inside:avoid}
  h1,h2,h3,h4{break-after:avoid}
  .cards{break-inside:avoid}
+ /* weekly-report blocks — same avoid-split protection, so nothing bleeds into
+    the fixed per-page footer's reserved margin */
+ .wtrend,.dnote,.side,.spark,.tspark,.wtwo,.btwo{break-inside:avoid}
+ .daymark{break-after:avoid;break-inside:avoid}
  a{color:inherit;text-decoration:none}
 }
 """

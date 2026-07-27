@@ -21,6 +21,10 @@ def _net(fav: int, crit: int) -> int:
     return round(100 * (fav - crit) / d) if d else 0
 
 
+def _day_label_iso(d) -> str:
+    return d.strftime("%a %d %b")  # e.g. "Mon 20 Jul" — used as write_big_story's "when"
+
+
 async def _get_runs(db, org_id: str, start_date, end_date):
     rows = (await db.execute(text("""
         SELECT id, cover_date FROM briefing.runs
@@ -150,7 +154,8 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
         onames = [o["outlet"] for o in outlet_rows]
         if onames:
             outlet_daily = (await db.execute(text("""
-                SELECT run_id, source_ref, count(*) FILTER (WHERE verdict='favourable') fav,
+                SELECT run_id, source_ref, count(*) n,
+                       count(*) FILTER (WHERE verdict='favourable') fav,
                        count(*) FILTER (WHERE verdict='critical') crit
                   FROM briefing.items
                  WHERE run_id = ANY(:runs) AND about_government AND NOT unclear
@@ -159,9 +164,15 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
             """), {"runs": run_ids, "names": onames})).fetchall()
             od_map: dict[str, dict] = {}
             for r in outlet_daily:
-                od_map.setdefault(r.source_ref, {})[day_by_run[r.run_id]] = _net(int(r.fav), int(r.crit))
+                # BUG FIXED: "items" was never included here, so the trend
+                # sparkline's height calc (which scales bar height by volume)
+                # always fell back to a flat minimum bar — every outlet's 7-day
+                # graph looked identical regardless of real volume.
+                od_map.setdefault(r.source_ref, {})[day_by_run[r.run_id]] = {
+                    "items": int(r.n), "net": _net(int(r.fav), int(r.crit))}
             for o in outlet_rows:
-                o["daily"] = [{"date": d, "net": od_map.get(o["outlet"], {}).get(d)} for d in days]
+                o["daily"] = [{"date": d, **od_map.get(o["outlet"], {}).get(d, {"items": 0, "net": 0})}
+                              for d in days]
 
         top_by_medium = {}
         for p in ("web", "tv", "newspaper"):
@@ -199,25 +210,27 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
                                    "verdict": b.verdict, "topic": b.topic, "department": b.department,
                                    "title": b.title, "evidence": b.evidence, "url": b.url})
 
-        # ══ week's big story: highest-volume, most-critical topic; beats = one
-        # representative item per day, so the narrative traces how it moved
-        # through the week instead of through one day's clock. ══
+        # ══ week's big story: highest-volume, most-critical topic. Beats = the
+        # TOP 3 items per day (not 1), day-labeled, so the LLM narrative has
+        # real week-long material to work with — matching the depth of the
+        # daily report's §2, stretched across 7 days instead of 1. ══
         big = None
         if topic_rows:
             lead_topic = sorted(topic_rows, key=lambda t: (t["critical"], t["items"]), reverse=True)[0]["topic"]
             per_day = []
             for r in runs:
-                row = (await db.execute(text("""
+                rows = (await db.execute(text("""
                     SELECT i.pillar, i.source_ref, i.verdict, i.evidence, i.item_ref
                       FROM briefing.items i
                      WHERE i.run_id=:r AND i.about_government AND NOT i.unclear AND i.topic=:t
                      ORDER BY (i.strength='strong') DESC NULLS LAST, i.confidence DESC NULLS LAST
-                     LIMIT 1
-                """), {"r": r.id, "t": lead_topic})).fetchone()
-                if row:
-                    per_day.append({"date": str(r.cover_date), "pillar": row.pillar,
-                                    "source": row.source_ref, "verdict": row.verdict,
-                                    "text": row.evidence})
+                     LIMIT 3
+                """), {"r": r.id, "t": lead_topic})).fetchall()
+                for row in rows:
+                    if row.evidence:
+                        per_day.append({"date": str(r.cover_date), "when": _day_label_iso(r.cover_date),
+                                        "pillar": row.pillar, "source": row.source_ref,
+                                        "verdict": row.verdict, "text": row.evidence})
             tsum = next(t for t in topic_rows if t["topic"] == lead_topic)
             spread = (await db.execute(text("""
                 SELECT count(*) FILTER (WHERE pillar='web') web,
@@ -226,15 +239,83 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
                   FROM briefing.items
                  WHERE run_id = ANY(:runs) AND about_government AND NOT unclear AND topic=:t
             """), {"runs": run_ids, "t": lead_topic})).fetchone()
+            dominant = max((("web", spread.web), ("tv", spread.tv), ("newspaper", spread.np)),
+                          key=lambda x: x[1] or 0)[0]
+
+            # ── 3-media cards: the single best web/TV/newspaper item for this
+            # topic across the WHOLE week, with real images — "images from all
+            # three sources" for the lead story. ──
+            bcard_sel = (await db.execute(text("""
+                SELECT DISTINCT ON (pillar) pillar, item_ref, source_ref, verdict
+                  FROM briefing.items i
+                  LEFT JOIN articles a ON a.id::text = i.item_ref
+                  LEFT JOIN clippings cl ON cl.id::text = i.item_ref
+                 WHERE run_id = ANY(:runs) AND about_government AND NOT unclear AND topic=:t
+                 ORDER BY pillar, (cl.clipping_image_b64 IS NOT NULL) DESC,
+                          (a.thumbnail_url IS NOT NULL AND a.thumbnail_url <> '') DESC,
+                          (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST
+            """), {"runs": run_ids, "t": lead_topic})).fetchall()
+            bweb = [c.item_ref for c in bcard_sel if c.pillar == "web"]
+            bnp = [c.item_ref for c in bcard_sel if c.pillar == "newspaper"]
+            btv = [c.item_ref for c in bcard_sel if c.pillar == "tv"]
+            bimg: dict = {}
+            if bweb:
+                for a in (await db.execute(text(
+                    "SELECT id::text ref, title, thumbnail_url thumb, url FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
+                ), {"i": bweb})).fetchall():
+                    bimg[a.ref] = {"title": a.title, "thumb": a.thumb, "url": a.url}
+            if bnp:
+                for c in (await db.execute(text(
+                    "SELECT id::text ref, headline title, clipping_image_b64 img FROM clippings WHERE id=ANY(CAST(:i AS uuid[]))"
+                ), {"i": bnp})).fetchall():
+                    bimg[c.ref] = {"title": c.title, "img": c.img}
+                miss = [x for x in bnp if x not in bimg]
+                if miss:
+                    for a in (await db.execute(text(
+                        "SELECT id::text ref, title, thumbnail_url thumb, url FROM articles WHERE id=ANY(CAST(:i AS uuid[]))"
+                    ), {"i": miss})).fetchall():
+                        bimg[a.ref] = {"title": a.title, "thumb": a.thumb, "url": a.url}
+            if btv:
+                for v in (await db.execute(text(
+                    "SELECT video_id ref, max(video_title) title FROM youtube_clips_v2 WHERE video_id=ANY(:i) GROUP BY video_id"
+                ), {"i": btv})).fetchall():
+                    bimg[v.ref] = {"title": v.title, "video_id": v.ref, "url": "https://youtu.be/" + v.ref}
+            bcards: dict = {}
+            for c in bcard_sel:
+                d = bimg.get(c.item_ref, {})
+                bcards[c.pillar] = {"source": c.source_ref, "verdict": c.verdict,
+                                    "title": d.get("title", ""), "thumb": d.get("thumb"),
+                                    "img": d.get("img"), "video_id": d.get("video_id"), "url": d.get("url")}
+
+            # ── figures cited within the lead topic, across the week ──
+            bnum_rows = (await db.execute(text("""
+                SELECT n.value, n.unit, left(n.context,90) context FROM briefing.items i
+                  JOIN article_numbers n ON n.article_id::text=i.item_ref
+                 WHERE i.run_id = ANY(:runs) AND i.about_government AND i.pillar='web' AND i.topic=:t
+                   AND n.unit IS NOT NULL AND length(n.context) BETWEEN 10 AND 100 LIMIT 20
+            """), {"runs": run_ids, "t": lead_topic})).fetchall()
+            seen_bn, big_numbers = set(), []
+            for n in bnum_rows:
+                key = (str(n.value), (n.unit or "").lower())
+                if key in seen_bn:
+                    continue
+                seen_bn.add(key)
+                big_numbers.append({"value": str(n.value), "unit": n.unit, "context": n.context})
+            big_numbers = big_numbers[:4]
+
             big = {
                 "label": lead_topic, "topic": lead_topic,
                 "spread": {"web": int(spread.web), "tv": int(spread.tv), "newspaper": int(spread.np)},
+                "dominant_pillar": {"web": "online", "tv": "television", "newspaper": "newspapers"}[dominant],
                 "net": tsum["net"], "size": tsum["items"],
                 "daily": [{"date": d, **topic_daily_map.get(lead_topic, {}).get(d, {"items": 0, "net": 0})}
                           for d in days],
                 "beats": per_day,
+                "cards": bcards,
+                "numbers": big_numbers,
                 "evidence": [{"source": p["source"], "pillar": p["pillar"], "verdict": p["verdict"],
                               "text": p["text"]} for p in per_day if p.get("text")][:8],
+                "_topic_ref": lead_topic,
             }
 
         # ══ topic media cards (top item per topic per pillar, across the week,
@@ -445,11 +526,82 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
         quotes = {"government": gov_q, "opposition": opp_q}
 
         from briefing import prose as _prose
-        _tq = list(gov_q) + list(opp_q)
+        import asyncio as _aio
+
+        # ── gov/opp quotes for the WEEK'S BIG STORY specifically (same roster
+        # verification, scoped to the lead topic's own web items) ──
+        big_gov_side = big_opp_side = None
+        if big:
+            brows = (await db.execute(text(f"""
+                SELECT q.speaker_name sp, q.quote_text qt, q.quote_text_en en,
+                       s.name src, a.url url, {_HAY} hay, {_NEAR} near
+                  FROM briefing.items i
+                  JOIN article_quotes q ON q.article_id = CAST(i.item_ref AS uuid)
+                  JOIN articles a ON a.id = CAST(i.item_ref AS uuid)
+                  JOIN sources s ON s.id = a.source_id
+                 WHERE i.run_id = ANY(:runs) AND i.pillar='web' AND i.about_government
+                   AND i.topic=:t AND q.is_direct AND q.speaker_name IS NOT NULL
+                   AND length(q.quote_text) BETWEEN 30 AND 260
+            """), {"runs": run_ids, "t": big["_topic_ref"]})).fetchall()
+            for q in brows:
+                side = _verify_side(q.sp, q.hay or "", q.near or "")
+                rec = {"speaker": q.sp, "text": q.qt, "en": q.en, "source": q.src, "url": q.url}
+                if side == "gov" and not big_gov_side:
+                    big_gov_side = rec
+                elif side == "opp" and not big_opp_side:
+                    big_opp_side = rec
+            big["gov_side"], big["opp_side"] = big_gov_side, big_opp_side
+            big.pop("_topic_ref", None)
+
+        # ── translate every Telugu quote actually shown (week quotes + big story
+        # sides) in one batched call ──
+        _tq = list(gov_q) + list(opp_q) + ([big_gov_side, big_opp_side] if big else [])
+        _tq = [q for q in _tq if q]
         _tr = await _prose.translate_te_en([q["text"] for q in _tq if q.get("text")])
         for q in _tq:
             if not q.get("en"):
                 q["en"] = _tr.get(q.get("text"))
+
+        # ══ EDITORIAL PROSE (LLM) — the depth pass. The week's Big Story gets
+        # the full daily-report-style package (headline/standfirst/narrative/
+        # timeline/silence/angle) from its day-by-day beats; the top Week-in-
+        # Brief stories each get a clean headline + paragraph, same as the
+        # daily report's §1 — this was previously MISSING entirely from the
+        # weekly report (raw evidence sentences only), which is why it read
+        # as one-liners with no real detail. ══
+        _psem = _aio.Semaphore(2)
+
+        async def _enrich_big():
+            pr = {}
+            for _ in range(2):
+                async with _psem:
+                    pr = await _prose.write_big_story(big, big.get("beats", []))
+                if pr.get("narrative"):
+                    break
+            for k in ("headline", "standfirst", "narrative", "timeline", "silence", "angle"):
+                if pr.get(k):
+                    big[k] = pr[k]
+
+        async def _enrich_brief(item):
+            evs = [item["evidence"]] if item.get("evidence") else []
+            ev_dict = {"topic": item.get("topic"), "department": item.get("department"),
+                      "net": 20 if item["verdict"] == "favourable" else -20 if item["verdict"] == "critical" else 0}
+            async with _psem:
+                pr = await _prose.write_event(ev_dict, evs)
+            if pr.get("headline"):
+                item["headline"] = pr["headline"]
+            if pr.get("paragraph"):
+                item["paragraph"] = pr["paragraph"]
+
+        _tasks = []
+        if big:
+            _tasks.append(_enrich_big())
+        _tasks += [_enrich_brief(item) for item in week_brief[:10] if item.get("evidence")]
+        try:
+            await _aio.gather(*_tasks)
+        except Exception:  # noqa: BLE001
+            pass
+        big.pop("beats", None) if big else None
 
         # ══ figures (week, deduped) ══
         figures = (await db.execute(text("""

@@ -85,12 +85,15 @@ def render_weekly_html(r: dict[str, Any]) -> str:
                  + _spark(daily_totals, "big") +
                  "<div class='wtrend-note'>Bar height = stories that day &middot; colour = that day's net tone.</div></div>")
 
-    # §1 Week in Brief — grouped by day, most recent first
+    # §1 Week in Brief — grouped by day, most recent first. Each story leads
+    # with an LLM headline + 3-4 sentence paragraph (same depth as the daily
+    # report's §1) when available; falls back to the raw evidence sentence
+    # only if the enrichment call failed for that item.
     wb = r.get("week_brief", [])
     if wb:
         o.append("<section><div class='shead'><span class='num'>1</span><h2>The Week in Brief</h2>"
                  f"<span class='cnt'>{len(wb)} stories</span></div>"
-                 "<p class='sf'>The strongest government story from each day, most recent first.</p><ol class='brief'>")
+                 "<p class='sf'>The strongest government stories of the week, day by day, most recent first.</p><ol class='brief'>")
         last_date = None
         for b in wb:
             if b["date"] != last_date:
@@ -98,16 +101,21 @@ def render_weekly_html(r: dict[str, Any]) -> str:
                 last_date = b["date"]
             net_lab = "critical" if b["verdict"] == "critical" else "favourable" if b["verdict"] == "favourable" else "mixed"
             vcls = "n" if b["verdict"] == "critical" else "p" if b["verdict"] == "favourable" else "g"
+            head = b.get("headline") or b.get("title") or ""
+            body = b.get("paragraph") or b.get("evidence") or ""
             link = f"<div class='cites'><span class='cl'>Source</span>{_cite(b['source'], b.get('url'))}</div>" if b.get("source") else ""
-            o.append(f"<li><div><h3>{_tel((b.get('title') or '')[:100])}</h3>"
-                     + (f"<p class='ev'>{_tel((b.get('evidence') or '')[:220])}</p>" if b.get("evidence") else "")
+            o.append(f"<li><div><h3>{_tel(head[:110])}</h3>"
+                     + (f"<p class='ev'>{_tel(body)}</p>" if body else "")
                      + "<div class='tags'>"
                      + (f"<span class='tag g'>{_e(b['topic'])}</span>" if b.get("topic") else "")
                      + (f"<span class='tag g'>{_e(b['department'])}</span>" if b.get("department") else "")
                      + f"<span class='tag {vcls}'>{net_lab}</span></div>" + link + "</div></li>")
         o.append("</ol></section>")
 
-    # §2 The Week's Big Story
+    # §2 The Week's Big Story — the full daily-report-depth package (standfirst,
+    # multi-paragraph narrative, timeline, silence/angle, gov-vs-opp quotes)
+    # PLUS three media cards with real images so the week's lead story is
+    # illustrated from web, TV and newspaper all at once.
     b = r.get("big_story")
     if b:
         o.append("<section><div class='shead'><span class='num'>2</span><h2>The Week's Big Story</h2></div><div class='big'>")
@@ -119,18 +127,80 @@ def render_weekly_html(r: dict[str, Any]) -> str:
                  f"<h3>{_tel(bhead)}</h3></div><div class='bb'>")
         if b.get("standfirst"):
             o.append(f"<p class='stand'>{_tel(b['standfirst'])}</p>")
-        for para in (b.get("narrative") or [])[:4]:
+        for para in (b.get("narrative") or [])[:6]:
             o.append(f"<p class='nar'>{_tel(para)}</p>")
         if not b.get("narrative") and b.get("evidence"):
-            for ev in b["evidence"][:4]:
+            for ev in b["evidence"][:6]:
                 o.append(f"<p class='nar'>{_tel(ev.get('text', ''))}</p>")
+
+        # three media cards — the week's single best web/TV/newspaper item on
+        # this topic, with real images ("images from all three sources")
+        cards = b.get("cards") or {}
+        if cards:
+            o.append("<div class='rlab'>The story, in each medium</div><div class='cards big-cards'>")
+            _splab = {"web": "Online", "tv": "Television", "newspaper": "Newspaper"}
+            for pillar, lab in [("web", "Top article"), ("tv", "Top TV clip"), ("newspaper", "Top newspaper")]:
+                c = cards.get(pillar)
+                if not c:
+                    o.append(f"<div class='card empty'><div class='cm'>{lab}</div>"
+                             f"<div class='thumb {pillar}'><span class='phlab'>No {pillar} item</span></div>"
+                             f"<div class='none'>Not covered in this medium.</div></div>")
+                    continue
+                dot = "n" if c["verdict"] == "critical" else "p" if c["verdict"] == "favourable" else "z"
+                _oerr = "onerror=\"this.remove()\""
+                if pillar == "newspaper" and c.get("img"):
+                    img = f"<img src='{_e(_datauri(c['img']))}' alt=''>"
+                elif c.get("thumb"):
+                    img = f"<img src='{_e(c['thumb'])}' alt='' {_oerr}>"
+                elif pillar == "tv" and c.get("video_id"):
+                    img = (f"<img src='https://img.youtube.com/vi/{_e(c['video_id'])}/hqdefault.jpg' alt='' {_oerr}>"
+                           "<span class='play'>&#9654;</span>")
+                else:
+                    img = ""
+                play = "<span class='play'>&#9654;</span>" if (pillar == "tv" and img and "play" not in img) else ""
+                o.append(f"<div class='card'><div class='cm'>{lab}</div>"
+                         f"<div class='thumb {pillar}'><span class='phlab'>{_splab[pillar]}</span>{img}{play}</div>"
+                         f"<h4>{_tel((c.get('title') or '')[:90])}</h4>"
+                         f"<div class='meta'><span class='dot {dot}'></span>{_cite(c['source'], c.get('url'))}</div></div>")
+            o.append("</div>")
+
         o.append("<div class='spread'>"
                  f"<div class='sp'><b>{sp.get('web',0)}</b><span>web stories</span></div>"
                  f"<div class='sp'><b>{sp.get('tv',0)}</b><span>TV segments</span></div>"
                  f"<div class='sp'><b>{sp.get('newspaper',0)}</b><span>newspaper items</span></div>"
                  f"<div class='sp'><b>{b['size']}</b><span>total, this week</span></div></div>")
+
+        if b.get("numbers"):
+            o.append("<div class='rlab'>Numbers in the coverage</div><div class='bignums'>")
+            for n in b["numbers"][:4]:
+                o.append(f"<div class='bn'><b>{_e(n['value'])} {_e(n['unit'])}</b><span>{_e(n['context'])}</span></div>")
+            o.append("</div>")
+
         if b.get("daily"):
             o.append("<div class='rlab'>How it moved through the week</div>" + _spark(b["daily"], "big"))
+        if b.get("timeline"):
+            o.append("<div class='rlab'>How the story developed, day by day</div><ul class='tline'>")
+            for t in b.get("timeline", [])[:8]:
+                when = " &middot; ".join(_e(x) for x in [t.get('when', ''), t.get('medium', '')] if x)
+                o.append(f"<li><div class='tw'>{when}</div><div class='tt'>{_tel(t.get('text', ''))}</div></li>")
+            o.append("</ul>")
+
+        gs, op = b.get("gov_side"), b.get("opp_side")
+        if gs or op:
+            o.append("<div class='rlab'>What each side said &mdash; in the words that were published</div><div class='sides'>")
+            for lab, cls, q in [("Government", "gov", gs), ("Opposition", "opp", op)]:
+                if q:
+                    o.append(f"<div class='side {cls}'><div class='sh'>{lab}</div>"
+                             f"<p class='sq'>&ldquo;{_teln(q['text'], q.get('en'))}&rdquo;</p>"
+                             f"<div class='sa'><b>{_e(q['speaker'])}</b> &middot; {_cite(q['source'], q.get('url'))}</div></div>")
+                else:
+                    o.append(f"<div class='side {cls} empty'><div class='sh'>{lab}</div>"
+                             f"<p class='sq none'>No direct {lab.lower()} quote appeared in the week's coverage.</p></div>")
+            o.append("</div>")
+        if b.get("silence"):
+            o.append(f"<div class='silence'><b>Where the government was not heard.</b> {_tel(b['silence'])}</div>")
+        if b.get("angle"):
+            o.append(f"<div class='angle'><div class='rlab'>The angle by medium</div><p>{_tel(b['angle'])}</p></div>")
         o.append("</div></div></section>")
 
     # §3 Coverage by Topic (week) — each with a daily tone sparkline
@@ -230,7 +300,9 @@ def render_weekly_html(r: dict[str, Any]) -> str:
     if dr:
         o.append("<section><div class='shead'><span class='num'>5</span><h2>Coverage by District</h2>"
                  f"<span class='cnt'>{len(dr)} active</span></div>"
-                 "<p class='sf'>Where the week's coverage localised, and how it read.</p><div class='dmap'>")
+                 "<p class='sf'>Where the week's coverage localised, and how it read. <b>Web articles only</b> "
+                 "&mdash; TV and newspaper items are not geo-tagged to a district today, so this reads narrower and "
+                 "often more favourable than the week's overall sentiment, which blends all three media.</p><div class='dmap'>")
         for d in dr[:14]:
             it = d["items"]
             o.append(f"<div class='tile {_dcls(d['net'])}'><b>{_e(d['district'])}</b>"
@@ -320,22 +392,36 @@ def render_weekly_html(r: dict[str, Any]) -> str:
             o.append("</div>")
         o.append("</section>")
 
-    # §9 Which Outlet (week) — with daily lean trend
+    # §9 Which Outlet (week) — grouped by medium (was one mixed table with the
+    # medium buried in a column; grouping makes it scannable, and each group's
+    # own table gives the 7-day trend a real column instead of a squeezed one).
     ots = r.get("outlets", [])
-    o.append("<section><div class='shead'><span class='num'>9</span><h2>Which Outlet Said What</h2>"
-             "<span class='cnt'>this week</span></div>"
-             "<table><thead><tr><th>Outlet</th><th>Medium</th><th class='num'>On govt</th><th>Tone</th>"
-             "<th class='num'>Net</th><th>7-day lean</th></tr></thead><tbody>")
-    for ot in ots[:12]:
-        n = ot['net']
-        lean = ("<span class='lean n'>critical-leaning</span>" if n <= -30 else
-                "<span class='lean p'>govt-leaning</span>" if n >= 30 else "")
-        trend = _spark(ot["daily"]) if ot.get("daily") else ""
-        o.append(f"<tr><td class='nm'>{_e(ot['outlet'])} {lean}</td><td>{_e(ot['pillar'])}</td>"
-                 f"<td class='num'>{ot['on_govt']}</td><td>{_bar(ot['favourable'], ot['critical'])}</td>"
-                 f"<td class='num net {_net_cls(ot['net'])}'>{ot['net']:+d}</td><td>{trend}</td></tr>")
-    o.append("</tbody></table><p class='sf'>Outlets running consistently critical coverage across the week are the "
-             "ones worth engaging directly.</p></section>")
+    if ots:
+        o.append("<section><div class='shead'><span class='num'>9</span><h2>Which Outlet Said What</h2>"
+                 f"<span class='cnt'>{len(ots)} outlets, this week</span></div>"
+                 "<p class='sf'>Ranked by how much government coverage each outlet ran, grouped by medium.</p>")
+        _medlab = {"web": "Online", "tv": "Television", "newspaper": "Newspapers"}
+        by_medium: dict[str, list] = {}
+        for ot in ots:
+            by_medium.setdefault(ot["pillar"], []).append(ot)
+        for pillar in ("newspaper", "tv", "web"):
+            group = by_medium.get(pillar)
+            if not group:
+                continue
+            o.append(f"<div class='lab2' style='margin-top:18px'>{_medlab.get(pillar, pillar)}</div>"
+                     "<table><thead><tr><th>Outlet</th><th class='num'>On govt</th><th>Tone</th>"
+                     "<th class='num'>Net</th><th>7-day trend</th></tr></thead><tbody>")
+            for ot in group:
+                n = ot['net']
+                lean = ("<span class='lean n'>critical-leaning</span>" if n <= -30 else
+                        "<span class='lean p'>govt-leaning</span>" if n >= 30 else "")
+                trend = _spark(ot["daily"]) if ot.get("daily") else ""
+                o.append(f"<tr><td class='nm'>{_e(ot['outlet'])} {lean}</td>"
+                         f"<td class='num'>{ot['on_govt']}</td><td>{_bar(ot['favourable'], ot['critical'])}</td>"
+                         f"<td class='num net {_net_cls(ot['net'])}'>{ot['net']:+d}</td><td>{trend}</td></tr>")
+            o.append("</tbody></table>")
+        o.append("<p class='sf' style='margin-top:14px'>Outlets running consistently critical coverage across the "
+                 "week are the ones worth engaging directly.</p></section>")
 
     # §10 Annexure (grouped by day)
     anx = r.get("annexure", [])

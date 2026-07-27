@@ -285,6 +285,18 @@ html.screenview .pagefoot{position:static}
     the fixed per-page footer's reserved margin */
  .wtrend,.dnote,.side,.spark,.tspark,.wtwo,.btwo{break-inside:avoid}
  .daymark{break-after:avoid;break-inside:avoid}
+ /* Each numbered section starts on its own fresh page. Without this, a
+    section's heading + intro paragraph can fit at the bottom of the current
+    page while its first real content block (a topic/scheme tblock, a table)
+    does not — leaving the heading stranded above a large blank gap and the
+    content pushed alone onto the next page. Starting every section at a page
+    top gives it the full page height before any break decision is needed. */
+ section{break-before:page}
+ section:first-of-type{break-before:avoid}
+ /* sub-headers (e.g. "Newspapers"/"Television"/"Online" in Which Outlet)
+    must stay glued to the table/content that follows them, never stranded
+    alone just above a page break. */
+ .lab2,.gl,.rlab{break-after:avoid}
  a{color:inherit;text-decoration:none}
 }
 """

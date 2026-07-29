@@ -23,6 +23,7 @@ from backend.draftsmith.api.auth import require_bearer_token
 from backend.draftsmith.api.routes_draft import router as draft_router
 from backend.draftsmith.api.routes_flags import router as flags_router
 from backend.draftsmith.api.routes_images import router as images_router
+from backend.draftsmith.api.routes_bundle import router as bundle_router
 from backend.draftsmith.api.routes_jobs import router as jobs_router
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ app = FastAPI(
 )
 
 app.include_router(jobs_router)
+app.include_router(bundle_router)
 app.include_router(draft_router)
 app.include_router(flags_router)
 app.include_router(images_router)

@@ -264,12 +264,8 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 .lean{font-family:var(--sans);font-size:8.5px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:3px;vertical-align:middle;margin-left:4px}
 .lean.n{background:var(--anti-soft);color:var(--anti)}.lean.p{background:var(--pro-soft);color:var(--pro)}
 .enddisc{padding:20px 46px 30px;font-family:var(--sans);font-size:10px;color:var(--muted);text-align:center;font-style:italic}
-.pagefoot{position:fixed;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:7px;padding:5px 0;background:linear-gradient(180deg,#202127 0%,#141519 100%);border-top:2px solid #d5352b;font-family:var(--sans);font-size:9px;letter-spacing:.05em;color:#aab0b9;z-index:100}
-html.screenview .pagefoot{position:static}
-.pagefoot .fb{font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:#fff;font-size:9.5px}
-.pagefoot .fb .accent{color:#e8443b;margin-left:.13em}
 /* ── print / PDF (headless Chromium) — screen == download == print ── */
-@page{size:A4;margin:11mm 12mm 20mm}
+@page{size:A4;margin:11mm 12mm 14mm}
 @media print{
  body{background:#fff}
  .paper{max-width:none;margin:0;border-radius:0;box-shadow:none}
@@ -671,12 +667,6 @@ def render_html(r: dict[str, Any]) -> str:
     o.append("<div class='enddisc'>Prepared from published media only. Tone reflects how the "
              "government was portrayed, not the accuracy of reporting.</div>")
     o.append("</div>")  # /paper
-    # fixed page-footer — repeats at the bottom of every PDF page
-    o.append("<div class='pagefoot'><span class='fb'>Robin<span class='accent'>OSINT</span></span>"
-             "<span class='ft'>&middot; A product of RIG 360 Media &amp; News Pvt. Ltd.</span></div>")
-    # Screen-only marker (stripped for the PDF via pdf.py) so the footer sits once
-    # at the end on screen instead of floating; in the PDF it stays fixed per page.
-    o.append("<script>if(!window.__ISPDF__){document.documentElement.classList.add('screenview');}</script>")
     o.append("</body></html>")
     return "".join(o)
 

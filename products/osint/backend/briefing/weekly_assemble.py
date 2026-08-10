@@ -86,6 +86,39 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
             "net": _net(int(daily_map[rid].fav), int(daily_map[rid].crit)) if rid in daily_map else 0,
         } for rid in run_ids]
 
+        # ── NEW: previous-week comparison (same aggregates, prior 7 days) — the
+        # deltas the client actually reads first: is tone better or worse than
+        # last week, and which subjects swung. Skipped cleanly when the prior
+        # week has no judged runs. ──
+        import datetime as _dt
+        prev_start = start_date - _dt.timedelta(days=7)
+        prev_end = start_date - _dt.timedelta(days=1)
+        prev_runs = await _get_runs(db, org_id, prev_start, prev_end)
+        prev = None
+        prev_topic_map: dict[str, dict] = {}
+        if prev_runs:
+            prev_ids = [r.id for r in prev_runs]
+            ps = (await db.execute(text("""
+                SELECT count(*) FILTER (WHERE verdict='favourable') fav,
+                       count(*) FILTER (WHERE verdict='critical') crit,
+                       count(*) n
+                  FROM briefing.items
+                 WHERE run_id = ANY(:runs) AND about_government AND NOT unclear
+            """), {"runs": prev_ids})).fetchone()
+            prev_topics = (await db.execute(text("""
+                SELECT topic, count(*) n,
+                       count(*) FILTER (WHERE verdict='favourable') fav,
+                       count(*) FILTER (WHERE verdict='critical') crit
+                  FROM briefing.items
+                 WHERE run_id = ANY(:runs) AND about_government AND NOT unclear AND topic IS NOT NULL
+                 GROUP BY 1
+            """), {"runs": prev_ids})).fetchall()
+            prev_topic_map = {t.topic: {"items": int(t.n), "net": _net(int(t.fav), int(t.crit))}
+                              for t in prev_topics}
+            prev = {"start": str(prev_start), "end": str(prev_end), "days": len(prev_runs),
+                    "total": int(ps.n), "favourable": int(ps.fav), "critical": int(ps.crit),
+                    "net": _net(int(ps.fav), int(ps.crit))}
+
         # ── biggest subject of the week ──
         topics = (await db.execute(text("""
             SELECT topic, count(*) n,
@@ -117,6 +150,20 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
         for t in topic_rows:
             t["daily"] = [{"date": d, **topic_daily_map.get(t["topic"], {}).get(
                 d, {"items": 0, "net": 0})} for d in days]
+            pt = prev_topic_map.get(t["topic"])
+            t["prev_net"] = pt["net"] if pt else None
+            t["prev_items"] = pt["items"] if pt else None
+
+        # ── NEW: topic movers — biggest week-over-week tone swings among topics
+        # substantial in BOTH weeks (small samples make ±100 swings meaningless) ──
+        movers = sorted(
+            ({"topic": t["topic"], "items": t["items"], "net": t["net"],
+              "prev_net": t["prev_net"], "swing": t["net"] - t["prev_net"]}
+             for t in topic_rows
+             if t["prev_net"] is not None and t["items"] >= 8
+             and (prev_topic_map.get(t["topic"], {}).get("items") or 0) >= 8),
+            key=lambda m: abs(m["swing"]), reverse=True)
+        movers = [m for m in movers if abs(m["swing"]) >= 10][:6]
 
         # ── media compare (week total + day-by-day per pillar) ──
         media = (await db.execute(text("""
@@ -251,7 +298,7 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
                   LEFT JOIN articles a ON a.id::text = i.item_ref
                   LEFT JOIN clippings cl ON cl.id::text = i.item_ref
                  WHERE run_id = ANY(:runs) AND about_government AND NOT unclear AND topic=:t
-                 ORDER BY pillar, (cl.clipping_image_b64 IS NOT NULL) DESC,
+                 ORDER BY pillar, (COALESCE(length(cl.clipping_image_b64), 0) > 100) DESC, (COALESCE(cl.headline, a.title, '') !~ '[अ-ह]') DESC,
                           (a.thumbnail_url IS NOT NULL AND a.thumbnail_url <> '') DESC,
                           (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST
             """), {"runs": run_ids, "t": lead_topic})).fetchall()
@@ -327,7 +374,7 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
               LEFT JOIN clippings cl ON cl.id::text = i.item_ref
              WHERE run_id = ANY(:runs) AND about_government AND NOT unclear AND topic IS NOT NULL
              ORDER BY topic, pillar,
-                      (cl.clipping_image_b64 IS NOT NULL) DESC,
+                      (COALESCE(length(cl.clipping_image_b64), 0) > 100) DESC, (COALESCE(cl.headline, a.title, '') !~ '[अ-ह]') DESC,
                       (a.thumbnail_url IS NOT NULL AND a.thumbnail_url <> '') DESC,
                       (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST
         """), {"runs": run_ids})).fetchall()
@@ -396,7 +443,7 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
               LEFT JOIN clippings cl ON cl.id::text = i.item_ref
              WHERE run_id = ANY(:runs) AND about_government AND NOT unclear AND scheme IS NOT NULL
              ORDER BY scheme, pillar,
-                      (cl.clipping_image_b64 IS NOT NULL) DESC,
+                      (COALESCE(length(cl.clipping_image_b64), 0) > 100) DESC, (COALESCE(cl.headline, a.title, '') !~ '[अ-ह]') DESC,
                       (a.thumbnail_url IS NOT NULL AND a.thumbnail_url <> '') DESC,
                       (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST
         """), {"runs": run_ids})).fetchall()
@@ -490,9 +537,13 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
 
         def _verify_side(speaker: str, hay: str, near: str = ""):
             sp = _norm(speaker)
-            hayn = _norm(hay) + " " + _norm(near)
+            # single-word variants must match the WHOLE attributed name — a bare
+            # "Anand" variant substring-matched "Sumitra Anand" and put an
+            # opposition-toned quote under the government column
             for variants, side in people:
-                if any(_norm(v).strip() in sp for v in variants):
+                if any((_norm(v).strip() == sp.strip()) if " " not in v.strip()
+                       else (_norm(v).strip() in sp) for v in variants):
+                    hayn = _norm(hay) + " " + _norm(near)
                     return side if any(_norm(v).strip() in hayn for v in variants) else None
             return None
 
@@ -593,7 +644,18 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
             if pr.get("paragraph"):
                 item["paragraph"] = pr["paragraph"]
 
-        _tasks = []
+        _glance_box = {"text": ""}
+
+        async def _enrich_glance():
+            strip_for_glance = {
+                "about_government": gov_total, "by_pillar": by_pillar,
+                "sentiment": {"net": net, "favourable": fav, "critical": crit}}
+            async with _psem:
+                _glance_box["text"] = await _prose.write_week_glance(
+                    strip_for_glance, topic_rows, big["label"] if big else biggest,
+                    prev, movers)
+
+        _tasks = [_enrich_glance()]
         if big:
             _tasks.append(_enrich_big())
         _tasks += [_enrich_brief(item) for item in week_brief[:10] if item.get("evidence")]
@@ -695,6 +757,9 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
                 "sentiment": {"net": net, "favourable": fav, "critical": crit, "neutral": neu},
                 "top_outlet_by_medium": top_by_medium, "daily_totals": daily_totals,
             },
+            "previous": prev,
+            "movers": movers,
+            "glance": _glance_box["text"],
             "week_brief": week_brief,
             "big_story": big,
             "topics": topic_rows,

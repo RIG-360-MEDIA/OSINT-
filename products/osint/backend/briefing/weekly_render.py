@@ -20,6 +20,19 @@ def _day_label(iso: str) -> str:
     return d.strftime("%a %d").upper()
 
 
+def _valunit(value: str, unit: str) -> str:
+    """Join a figure's value and unit without doubling the unit — the extractor
+    sometimes stores value='56%' unit='percent', which rendered as '56% percent'."""
+    v, u = (value or "").strip(), (unit or "").strip()
+    if u.lower() in ("percent", "per cent", "%") and "%" in v:
+        return v
+    if u.lower() in ("count", "number", "numbers"):
+        return v
+    if u and v.lower().endswith(u.lower()):
+        return v
+    return f"{v} {u}".strip()
+
+
 def _spark(daily: list[dict], cls: str = "") -> str:
     """Compact day-by-day tone trend: one bar per day, height = volume,
     colour = that day's net tone. This is the feature the daily report defers
@@ -59,13 +72,26 @@ def render_weekly_html(r: dict[str, Any]) -> str:
              f"&middot; <b>{len(days)}</b> day{'s' if len(days) != 1 else ''} of judged coverage</span>"
              "<span>Web + Television + Newspapers</span></div></div>")
 
-    # KPI strip + day-by-day sentiment trend (the new, only-possible-weekly view)
+    # KPI strip + day-by-day sentiment trend (the new, only-possible-weekly view).
+    # When the prior week has judged runs, Total Stories and Sentiment carry a
+    # week-over-week delta chip.
+    prev = r.get("previous")
+
+    def _delta_chip(cur: int, prv: int, suffix: str = "") -> str:
+        d = cur - prv
+        if d == 0:
+            return "<span class='dchip z'>= last wk</span>"
+        cls = "u" if d > 0 else "d"
+        return f"<span class='dchip {cls}'>{d:+d}{suffix} vs last wk</span>"
+
     outrows = "".join(
         f"<div class='to'><b>{_e(v['outlet'])}</b><span>{p2.upper()}</span><i>{v['n']}</i></div>"
         for p2, v in s.get("top_outlet_by_medium", {}).items())
+    vol_chip = _delta_chip(s["total"], prev["total"]) if prev else ""
+    net_chip = _delta_chip(sent["net"], prev["net"], " pts") if prev else ""
     o.append(
         "<div class='kstrip'>"
-        f"<div class='kt'><div class='kl'>Total Stories</div><div class='kv'>{s['total']:,}</div>"
+        f"<div class='kt'><div class='kl'>Total Stories</div><div class='kv'>{s['total']:,}{vol_chip}</div>"
         f"<div class='mbar'><i class='a' style='width:{round(100*bp['web']/tot)}%'></i>"
         f"<i class='b' style='width:{round(100*bp['newspaper']/tot)}%'></i>"
         f"<i class='c' style='width:{round(100*bp['tv']/tot)}%'></i></div>"
@@ -73,17 +99,61 @@ def render_weekly_html(r: dict[str, Any]) -> str:
         f"TV <b>{bp['tv']}</b> &middot; from {s.get('scanned', s['total']):,} scanned</div></div>"
         f"<div class='kt'><div class='kl'>Biggest Subject</div><div class='kv'>{_e(s['biggest_subject']['topic'] or '—')}</div>"
         f"<div class='ks'>{s['biggest_subject']['items']} of {s['total']} government stories this week</div></div>"
-        f"<div class='kt'><div class='kl'>Sentiment (week)</div><div class='kv {_net_cls(sent['net'])}'>{sent['net']:+d}</div>"
+        f"<div class='kt'><div class='kl'>Sentiment (week)</div><div class='kv {_net_cls(sent['net'])}'>{sent['net']:+d}{net_chip}</div>"
         f"<div class='tbar'><i class='p' style='flex:{sent['favourable']}'></i>"
         f"<i class='n' style='flex:{sent['critical']}'></i></div>"
         f"<div class='ks'>{sent['favourable']} for &middot; {sent['critical']} against &middot; {sent['neutral']} no side</div></div>"
         f"<div class='kt'><div class='kl'>Top Outlet, each medium</div>{outrows}</div></div>")
 
-    daily_totals = s.get("daily_totals", [])
-    if daily_totals:
-        o.append("<div class='wtrend'><div class='rlab'>Sentiment through the week</div>"
-                 + _spark(daily_totals, "big") +
-                 "<div class='wtrend-note'>Bar height = stories that day &middot; colour = that day's net tone.</div></div>")
+    # The Week at a Glance — LLM executive paragraph + week-over-week movers
+    glance = (r.get("glance") or "").strip()
+    movers = r.get("movers") or []
+    if glance or movers:
+        o.append("<div class='glance'>")
+        if glance:
+            o.append("<div class='rlab'>The week at a glance</div>"
+                     f"<p>{_e(glance)}</p>")
+        if movers:
+            chips = "".join(
+                f"<span class='mchip {'u' if m['swing'] > 0 else 'd'}'>"
+                f"{_e(m['topic'])} <i>{m['prev_net']:+d} &rarr; {m['net']:+d}</i></span>"
+                for m in movers)
+            o.append(f"<div class='movers'><span class='ml'>Biggest tone swings vs last week</span>{chips}</div>")
+        if prev:
+            o.append(f"<div class='glance-note'>Compared against {_e(prev['start'])} &ndash; "
+                     f"{_e(prev['end'])} ({prev['days']} judged days, {prev['total']} stories, "
+                     f"net {prev['net']:+d}).</div>")
+        o.append("</div>")
+
+    # ═ Analytics dashboard — "The Week in Charts" (client request 2026-08-10).
+    # Server-side inline SVG (weekly_charts.py) so HTML and PDF render alike.
+    # Supersedes the old one-line sentiment sparkline that used to sit here.
+    from briefing.weekly_charts import build_week_charts
+    ch = build_week_charts(r)
+    if any(ch.values()):
+        o.append("<section class='chartsec'><div class='shead'><h2>The Week in Charts</h2>"
+                 "<span class='cnt'>analytics</span></div>"
+                 "<p class='sf'>The week's coverage as data: how sentiment flowed day by day, "
+                 "where the volume sat, and who drove the tone.</p>"
+                 "<div class='chleg'><span class='k'><i style='background:#1f7a46'></i>Favourable</span>"
+                 "<span class='k'><i style='background:#b02a24'></i>Critical</span>"
+                 "<span class='k'><i style='background:#2b5288'></i>Story volume</span></div>")
+        if ch["daily_flow"]:
+            o.append(f"<div class='chbox'><h3>Favourable vs critical, day by day</h3>{ch['daily_flow']}</div>")
+        if ch["sentiment_split"]:
+            o.append(f"<div class='chbox'><h3>The week's sentiment split</h3>{ch['sentiment_split']}</div>")
+        if ch["topics"]:
+            o.append(f"<div class='chbox'><h3>Each subject: how much coverage, and how it leaned</h3>{ch['topics']}</div>")
+        row = ""
+        if ch["media"]:
+            row += f"<div class='chbox half'><h3>How each medium leaned</h3>{ch['media']}</div>"
+        if ch["movers"]:
+            row += f"<div class='chbox half'><h3>Biggest swings vs last week</h3>{ch['movers']}</div>"
+        if row:
+            o.append(f"<div class='chrow'>{row}</div>")
+        if ch["outlets"]:
+            o.append(f"<div class='chbox'><h3>Which outlets drove the tone</h3>{ch['outlets']}</div>")
+        o.append("</section>")
 
     # §1 Week in Brief — grouped by day, most recent first. Each story leads
     # with an LLM headline + 3-4 sentence paragraph (same depth as the daily
@@ -108,7 +178,9 @@ def render_weekly_html(r: dict[str, Any]) -> str:
                      + (f"<p class='ev'>{_tel(body)}</p>" if body else "")
                      + "<div class='tags'>"
                      + (f"<span class='tag g'>{_e(b['topic'])}</span>" if b.get("topic") else "")
-                     + (f"<span class='tag g'>{_e(b['department'])}</span>" if b.get("department") else "")
+                     + (f"<span class='tag g'>{_e(b['department'])}</span>"
+                        if b.get("department")
+                        and (b.get("department") or "").lower() != (b.get("topic") or "").lower() else "")
                      + f"<span class='tag {vcls}'>{net_lab}</span></div>" + link + "</div></li>")
         o.append("</ol></section>")
 
@@ -173,7 +245,7 @@ def render_weekly_html(r: dict[str, Any]) -> str:
         if b.get("numbers"):
             o.append("<div class='rlab'>Numbers in the coverage</div><div class='bignums'>")
             for n in b["numbers"][:4]:
-                o.append(f"<div class='bn'><b>{_e(n['value'])} {_e(n['unit'])}</b><span>{_e(n['context'])}</span></div>")
+                o.append(f"<div class='bn'><b>{_e(_valunit(n['value'], n['unit']))}</b><span>{_e(n['context'])}</span></div>")
             o.append("</div>")
 
         if b.get("daily"):
@@ -300,9 +372,7 @@ def render_weekly_html(r: dict[str, Any]) -> str:
     if dr:
         o.append("<section><div class='shead'><span class='num'>5</span><h2>Coverage by District</h2>"
                  f"<span class='cnt'>{len(dr)} active</span></div>"
-                 "<p class='sf'>Where the week's coverage localised, and how it read. <b>Web articles only</b> "
-                 "&mdash; TV and newspaper items are not geo-tagged to a district today, so this reads narrower and "
-                 "often more favourable than the week's overall sentiment, which blends all three media.</p><div class='dmap'>")
+                 "<p class='sf'>Where the week's coverage localised, district by district, and how it read.</p><div class='dmap'>")
         for d in dr[:14]:
             it = d["items"]
             o.append(f"<div class='tile {_dcls(d['net'])}'><b>{_e(d['district'])}</b>"
@@ -387,7 +457,7 @@ def render_weekly_html(r: dict[str, Any]) -> str:
                 flag = " <span class='alleg'>&#9888; alleged</span>" if f.get("alleged") else ""
                 cite = (f" <a href='{_e(f['url'])}' target='_blank' rel='noopener' class='cl2'>source &#8599;</a>"
                         if f.get("url") else "")
-                o.append(f"<div class='fig'><div class='v'>{_e(f['value'])} {_e(f['unit'])}</div>"
+                o.append(f"<div class='fig'><div class='v'>{_e(_valunit(f['value'], f['unit']))}</div>"
                          f"<div class='c'>{_e(f['context'])}{flag}{cite}</div></div>")
             o.append("</div>")
         o.append("</section>")
@@ -420,8 +490,7 @@ def render_weekly_html(r: dict[str, Any]) -> str:
                          f"<td class='num'>{ot['on_govt']}</td><td>{_bar(ot['favourable'], ot['critical'])}</td>"
                          f"<td class='num net {_net_cls(ot['net'])}'>{ot['net']:+d}</td><td>{trend}</td></tr>")
             o.append("</tbody></table>")
-        o.append("<p class='sf' style='margin-top:14px'>Outlets running consistently critical coverage across the "
-                 "week are the ones worth engaging directly.</p></section>")
+        o.append("</section>")
 
     # §10 Annexure (grouped by day)
     anx = r.get("annexure", [])
@@ -443,8 +512,6 @@ def render_weekly_html(r: dict[str, Any]) -> str:
     o.append("<div class='enddisc'>Prepared from published media only, across the week shown above. Tone reflects "
              "how the government was portrayed, not the accuracy of reporting.</div>")
     o.append("</div>")  # /paper
-    o.append("<div class='pagefoot'><span class='fb'>Robin<span class='accent'>OSINT</span></span>"
-             "<span class='ft'>&middot; A product of RIG 360 Media &amp; News Pvt. Ltd.</span></div>")
     o.append("<script>if(!window.__ISPDF__){document.documentElement.classList.add('screenview');}</script>")
     o.append("</body></html>")
     return "".join(o)
@@ -464,6 +531,30 @@ WEEKLY_CSS = """
 .daymark{font-family:var(--sans);font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
   color:var(--navy2);margin:18px 0 4px;padding-bottom:4px;border-bottom:1px solid var(--navy-line)}
 ol.brief li:first-child, .daymark:first-child{margin-top:0}
+.dchip{display:inline-block;vertical-align:middle;margin-left:8px;padding:2px 7px;border-radius:9px;
+  font-family:var(--sans);font-size:9.5px;font-weight:700;letter-spacing:.03em}
+.dchip.u{background:#e8f4ec;color:#1e6b3a}.dchip.d{background:#fbebea;color:#a03530}
+.dchip.z{background:#eef1f4;color:#4f5a64}
+.glance{margin:14px 16px 4px;padding:14px 16px;border:1px solid var(--hair2);border-left:3px solid var(--navy2);
+  background:#fafbfc;break-inside:avoid}
+.glance p{margin:6px 0 0;font-size:12.5px;line-height:1.62;color:#2b333b}
+.glance-note{margin-top:8px;font-family:var(--sans);font-size:9.5px;color:#4f5a64}
+.movers{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.movers .ml{font-family:var(--sans);font-size:9.5px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--navy2);margin-right:4px}
+.mchip{display:inline-block;padding:3px 9px;border-radius:10px;font-family:var(--sans);
+  font-size:10px;font-weight:600}
+.mchip i{font-style:normal;font-weight:700;margin-left:4px}
+.mchip.u{background:#e8f4ec;color:#1e6b3a}.mchip.d{background:#fbebea;color:#a03530}
+.chartsec .chbox{border:1px solid var(--hair2);background:#fff;padding:12px 14px 8px;margin:10px 0;break-inside:avoid}
+.chbox h3{font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--navy2);margin:0 0 8px}
+.chbox svg{width:100%;height:auto;display:block}
+.chrow{display:flex;gap:10px;margin:10px 0}
+.chrow .chbox{flex:1;margin:0}
+.chleg{display:flex;gap:16px;margin:2px 2px 4px;font-family:var(--sans);font-size:9.5px;color:var(--muted)}
+.chleg .k{display:inline-flex;align-items:center;gap:5px}
+.chleg .k i{width:10px;height:10px;border-radius:2px;display:inline-block}
 """
 
 

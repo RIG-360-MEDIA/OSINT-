@@ -221,3 +221,48 @@ async def write_big_story(big: dict, beats: list[dict]) -> dict:
             "timeline": tl[:5],
             "silence": (p.get("silence") or "").strip(),
             "angle": (p.get("angle") or "").strip()}
+
+
+async def write_week_glance(strip: dict, topics: list[dict], big_label: str | None,
+                            prev: dict | None, movers: list[dict]) -> str:
+    """One executive paragraph (3-4 sentences) opening the weekly report: the
+    week's volume and tone, the dominant subject, and — when a previous week is
+    available — how tone moved and which subjects swung. STRICTLY from the
+    supplied aggregates; returns '' on failure so the render simply omits it."""
+    sent = strip.get("sentiment", {})
+    lines = [
+        f"THIS WEEK: {strip.get('about_government', 0)} government stories "
+        f"({strip.get('by_pillar', {}).get('web', 0)} web / "
+        f"{strip.get('by_pillar', {}).get('tv', 0)} TV / "
+        f"{strip.get('by_pillar', {}).get('newspaper', 0)} newspaper), net tone "
+        f"{sent.get('net', 0):+d} ({sent.get('favourable', 0)} favourable vs "
+        f"{sent.get('critical', 0)} critical).",
+        f"DOMINANT SUBJECT: {big_label or 'n/a'}.",
+    ]
+    for t in topics[:5]:
+        lines.append(f"TOPIC {t['topic']}: {t['items']} stories, net {t['net']:+d}.")
+    if prev:
+        lines.append(
+            f"PREVIOUS WEEK ({prev['start']} to {prev['end']}): "
+            f"{prev['total']} stories, net tone {prev['net']:+d}.")
+    for m in movers[:4]:
+        lines.append(
+            f"SWING {m['topic']}: net {m['prev_net']:+d} last week -> {m['net']:+d} this week.")
+    sys = (
+        "You open a WEEKLY government media briefing (Telangana I&PR desk) with one "
+        "executive paragraph of 3-4 plain-English sentences. State: how much coverage "
+        "the week drew and its overall tone; which subject dominated; and, if "
+        "previous-week figures are given, whether tone improved or worsened and which "
+        "subjects swung most. Use ONLY the supplied figures — never invent events, "
+        "names or numbers. Neutral wire-brief register; no advice, no opinions. "
+        "Return ONLY JSON: {\"glance\":\"...\"}"
+    )
+    try:
+        raw = await call_groq(system=sys, user="\n".join(lines)[:3200],
+                              task_type="brief_generation", model=PROSE_MODEL,
+                              json_response=False, max_tokens_override=420)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("prose glance failed: %s", str(exc)[:120])
+        return ""
+    p = _parse(raw) or {}
+    return (p.get("glance") or "").strip()

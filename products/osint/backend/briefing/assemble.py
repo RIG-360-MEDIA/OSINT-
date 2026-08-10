@@ -395,7 +395,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
               LEFT JOIN clippings cl ON cl.id::text = i.item_ref
              WHERE run_id=:r AND about_government AND NOT unclear AND topic IS NOT NULL
              ORDER BY topic, pillar,
-                      (cl.clipping_image_b64 IS NOT NULL) DESC,
+                      (COALESCE(length(cl.clipping_image_b64), 0) > 100) DESC, (COALESCE(cl.headline, a.title, '') !~ '[अ-ह]') DESC,
                       (a.thumbnail_url IS NOT NULL AND a.thumbnail_url <> '') DESC,
                       (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST
         """), {"r": rid})).fetchall()
@@ -501,9 +501,13 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             quoted in a story headlined about someone else) instead of dropping
             them wholesale."""
             sp = _norm(speaker)
-            hayn = _norm(hay) + " " + _norm(near)
+            # single-word variants must match the WHOLE attributed name — a bare
+            # "Anand" variant substring-matched "Sumitra Anand" and put an
+            # opposition-toned quote under the government column
             for variants, side in people:
-                if any(_norm(v).strip() in sp for v in variants):
+                if any((_norm(v).strip() == sp.strip()) if " " not in v.strip()
+                       else (_norm(v).strip() in sp) for v in variants):
+                    hayn = _norm(hay) + " " + _norm(near)
                     return side if any(_norm(v).strip() in hayn for v in variants) else None
             return None
 
@@ -629,7 +633,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
               LEFT JOIN clippings cl ON cl.id::text = i.item_ref
              WHERE run_id=:r AND about_government AND NOT unclear AND scheme IS NOT NULL
              ORDER BY scheme, pillar,
-                      (cl.clipping_image_b64 IS NOT NULL) DESC,
+                      (COALESCE(length(cl.clipping_image_b64), 0) > 100) DESC, (COALESCE(cl.headline, a.title, '') !~ '[अ-ह]') DESC,
                       (a.thumbnail_url IS NOT NULL AND a.thumbnail_url <> '') DESC,
                       (strength='strong') DESC NULLS LAST, confidence DESC NULLS LAST
         """), {"r": rid})).fetchall()

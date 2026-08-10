@@ -250,6 +250,51 @@ def _cw_pick_newspaper(catalog: dict, language: str, db_name: str) -> str | None
     return best
 
 
+_CW_NAME_ALIASES = {
+    # our newspaper_sources.name → careerswave catalog spellings to try, in order
+    "namaste telangana": ("Namasthe Telangana", "Namaste Telangana"),
+    "namasthe telangana": ("Namasthe Telangana", "Namaste Telangana"),
+    "andhra jyothi": ("Andhra Jyothi", "Andhra Jyothy"),
+    "andhra jyothy": ("Andhra Jyothi", "Andhra Jyothy"),
+}
+
+
+def _cw_name_candidates(db_name: str) -> list[str]:
+    cands = list(_CW_NAME_ALIASES.get(db_name.lower().strip(), ()))
+    if db_name not in cands:
+        cands.append(db_name)
+    return cands
+
+
+async def _cw_resolve_paper(_ajax, language: str, db_name: str):
+    """Resolve the careerswave newspaper name → (name, editions|None).
+
+    The catalog action is tried first, but since ~2026-07-28 careerswave's
+    `cw_epaper_catalog` returns HTTP 500 ("No own-source epaper catalog was
+    found for this date") for EVERY date, while cw_epaper_editions and
+    cw_epaper_download still work when given a paper name directly. So on
+    catalog failure we probe cw_epaper_editions with the DB name and known
+    aliases — a non-empty editions list proves the name is right.
+    """
+    try:
+        catalog = (await _ajax("cw_epaper_catalog")).json()
+    except Exception:  # noqa: BLE001
+        catalog = None
+    if isinstance(catalog, dict) and catalog.get("success"):
+        paper = _cw_pick_newspaper(catalog, language, db_name)
+        if paper:
+            return paper, None
+    for cand in _cw_name_candidates(db_name):
+        try:
+            eds = (await _ajax("cw_epaper_editions", language=language, newspaper=cand)).json()
+        except Exception:  # noqa: BLE001
+            continue
+        editions = eds.get("data", {}).get("editions", []) if isinstance(eds, dict) else []
+        if editions:
+            return cand, editions
+    return None, None
+
+
 def _cw_pick_edition(editions: list) -> str | None:
     names = [e.get("name") if isinstance(e, dict) else e for e in (editions or [])]
     names = [n for n in names if n]
@@ -286,13 +331,14 @@ async def fetch_careerswave_pdf(
             async def _ajax(action: str, **extra):
                 return await client.post(_CW_AJAX, data={"action": action, "nonce": nonce, "date": ds, **extra})
 
-            catalog = (await _ajax("cw_epaper_catalog")).json()
-            paper = _cw_pick_newspaper(catalog, language, db_name)
+            paper, editions = await _cw_resolve_paper(_ajax, language, db_name)
             if not paper:
-                logger.warning("careerswave: %s absent from %s catalog on %s", db_name, language, ds)
+                logger.warning("careerswave: %s not resolvable on %s (catalog dead and "
+                               "editions probe empty)", db_name, ds)
                 return None
-            eds = (await _ajax("cw_epaper_editions", language=language, newspaper=paper)).json()
-            editions = eds.get("data", {}).get("editions", []) if isinstance(eds, dict) else []
+            if editions is None:
+                eds = (await _ajax("cw_epaper_editions", language=language, newspaper=paper)).json()
+                editions = eds.get("data", {}).get("editions", []) if isinstance(eds, dict) else []
             edition = _cw_pick_edition(editions)
             if not edition:
                 logger.warning("careerswave: no editions for %s/%s on %s", language, paper, ds)

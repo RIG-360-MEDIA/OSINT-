@@ -223,6 +223,51 @@ async def write_big_story(big: dict, beats: list[dict]) -> dict:
             "angle": (p.get("angle") or "").strip()}
 
 
+async def write_tv_sov(sov: dict) -> str:
+    """One analysis paragraph (3-5 sentences) for the TV share-of-voice section.
+    STRICTLY from the supplied counts. Must keep the featuring-is-not-favourable
+    distinction: a channel can feature government figures heavily BECAUSE it is
+    attacking them (gov_crit_share carries that signal). Returns '' on failure."""
+    lines = [
+        f"WEEK TOTAL: {sov.get('total', 0)} TV stories about the government. "
+        f"{sov.get('gov', 0)} featured government-side figures, {sov.get('opp', 0)} featured "
+        f"opposition figures, {sov.get('both', 0)} featured both, "
+        f"{sov.get('unattributed', 0)} named no political actor.",
+        f"SHARE OF VOICE RATIO government:opposition = {sov.get('ratio', 0)}:1.",
+    ]
+    for c in sov.get("channels", [])[:10]:
+        lines.append(
+            f"CHANNEL {c['channel']}: {c['items']} stories, {c['gov']} featuring government, "
+            f"{c['opp']} featuring opposition"
+            + (f", {round(100 * c['gov_crit'] / c['gov'])}% of its government-featuring "
+               f"stories were CRITICAL of the government" if c.get("gov_crit") and c.get("gov") else "")
+            + ".")
+    po = sov.get("party_owned") or {}
+    if po.get("items"):
+        lines.append(f"EXCLUDED from the channel table: {po['items']} stories on "
+                     f"{po.get('n_channels', 0)} party/politician-owned channels.")
+    sys = (
+        "You write ONE analysis paragraph (3-5 sentences) for a WEEKLY government "
+        "media briefing (Telangana I&PR desk), on television share of voice. State: "
+        "the government:opposition ratio and what it means for visibility; which "
+        "channels tilt which way; and — critically — distinguish FEATURING from "
+        "FAVOURABLE: where a channel's government-featuring stories are mostly "
+        "critical, its high government share reflects attack coverage, not friendly "
+        "airtime (name the channel only if the figures show it). Use ONLY the "
+        "supplied figures. Neutral wire-brief register; no advice. "
+        "Return ONLY JSON: {\"analysis\":\"...\"}"
+    )
+    try:
+        raw = await call_groq(system=sys, user="\n".join(lines)[:3400],
+                              task_type="brief_generation", model=PROSE_MODEL,
+                              json_response=False, max_tokens_override=450)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("prose tv_sov failed: %s", str(exc)[:120])
+        return ""
+    p = _parse(raw) or {}
+    return (p.get("analysis") or "").strip()
+
+
 async def write_week_glance(strip: dict, topics: list[dict], big_label: str | None,
                             prev: dict | None, movers: list[dict]) -> str:
     """One executive paragraph (3-4 sentences) opening the weekly report: the

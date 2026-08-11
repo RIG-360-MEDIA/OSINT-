@@ -417,10 +417,46 @@ def render_weekly_html(r: dict[str, Any]) -> str:
         o.append("</div>")
     o.append("</div></section>")
 
-    # §7 What Each Side Said (week)
+    # §7 TV share of voice — government vs opposition figures on television
+    # (client request 2026-08-10): butterfly chart + LLM analysis + stat strip.
+    sov = r.get("tv_sov") or {}
+    if sov.get("total"):
+        attributed = (sov["total"] - sov.get("unattributed", 0)) or 1
+        o.append("<section><div class='shead'><span class='num'>7</span>"
+                 "<h2>Government vs Opposition on Television</h2>"
+                 "<span class='cnt'>share of voice</span></div>"
+                 f"<p class='sf'>Of the week's <b>{sov['total']}</b> television stories on the government, "
+                 f"<b>{sov['gov']}</b> featured government-side figures and <b>{sov['opp']}</b> featured "
+                 f"opposition figures ({sov.get('both', 0)} featured both; "
+                 f"{sov.get('unattributed', 0)} named no political actor)"
+                 + (f" &mdash; a <b>{sov['ratio']}&thinsp;:&thinsp;1</b> government-to-opposition "
+                    f"share of voice." if sov.get("ratio") else ".") + "</p>")
+        o.append("<div class='sovstrip'>"
+                 f"<div class='kt'><div class='kl'>Featuring government</div>"
+                 f"<div class='kv'>{sov['gov']}</div>"
+                 f"<div class='ks'>{round(100 * sov['gov'] / attributed)}% of actor-attributed stories</div></div>"
+                 f"<div class='kt'><div class='kl'>Featuring opposition</div>"
+                 f"<div class='kv'>{sov['opp']}</div>"
+                 f"<div class='ks'>{round(100 * sov['opp'] / attributed)}% of actor-attributed stories</div></div>"
+                 f"<div class='kt'><div class='kl'>Head-to-head</div><div class='kv'>{sov.get('both', 0)}</div>"
+                 f"<div class='ks'>stories featuring both sides</div></div></div>")
+        if sov.get("analysis"):
+            o.append(f"<div class='glance'><div class='rlab'>What the split says</div>"
+                     f"<p>{_e(sov['analysis'])}</p></div>")
+        if ch.get("tv_sov"):
+            o.append(f"<div class='chbox'><h3>Stories featuring each side, by channel</h3>{ch['tv_sov']}</div>")
+        po = sov.get("party_owned") or {}
+        if po.get("items"):
+            o.append(f"<p class='sf' style='margin-top:8px'>Excluded from the channel chart: "
+                     f"{po['items']} stories on {po.get('n_channels', 0)} party- or "
+                     f"politician-owned channels &mdash; counted in the week totals above, but not "
+                     f"news coverage.</p>")
+        o.append("</section>")
+
+    # §8 What Each Side Said (week)
     q = r.get("quotes", {})
     if q.get("government") or q.get("opposition"):
-        o.append("<section><div class='shead'><span class='num'>7</span><h2>What Each Side Said</h2>"
+        o.append("<section><div class='shead'><span class='num'>8</span><h2>What Each Side Said</h2>"
                  f"<span class='cnt'>this week</span></div><div class='qcols'>")
         for side, cls, lab in [("government", "g", "Government"), ("opposition", "o", "Opposition")]:
             o.append(f"<div class='qcol {cls}'><div class='qs'>{lab}</div>")
@@ -445,7 +481,7 @@ def render_weekly_html(r: dict[str, Any]) -> str:
 
     # §8 Figures Quoted (week)
     if r.get("figures"):
-        o.append("<section><div class='shead'><span class='num'>8</span><h2>Figures Quoted in the Press</h2></div>"
+        o.append("<section><div class='shead'><span class='num'>9</span><h2>Figures Quoted in the Press</h2></div>"
                  "<p class='sf'>Numbers attached to a government scheme or commitment, this week.</p>")
         figs = r["figures"]
         for grp in ("Money", "People", "Other"):
@@ -467,7 +503,7 @@ def render_weekly_html(r: dict[str, Any]) -> str:
     # own table gives the 7-day trend a real column instead of a squeezed one).
     ots = r.get("outlets", [])
     if ots:
-        o.append("<section><div class='shead'><span class='num'>9</span><h2>Which Outlet Said What</h2>"
+        o.append("<section><div class='shead'><span class='num'>10</span><h2>Which Outlet Said What</h2>"
                  f"<span class='cnt'>{len(ots)} outlets, this week</span></div>"
                  "<p class='sf'>Ranked by how much government coverage each outlet ran, grouped by medium.</p>")
         _medlab = {"web": "Online", "tv": "Television", "newspaper": "Newspapers"}
@@ -495,7 +531,7 @@ def render_weekly_html(r: dict[str, Any]) -> str:
     # §10 Annexure (grouped by day)
     anx = r.get("annexure", [])
     if anx:
-        o.append("<section><div class='shead'><span class='num'>10</span><h2>All Stories, with Links</h2>"
+        o.append("<section><div class='shead'><span class='num'>11</span><h2>All Stories, with Links</h2>"
                  f"<span class='cnt'>{len(anx)} cited</span></div><div class='anx'>")
         last_date = None
         i = 0
@@ -555,6 +591,8 @@ ol.brief li:first-child, .daymark:first-child{margin-top:0}
 .chleg{display:flex;gap:16px;margin:2px 2px 4px;font-family:var(--sans);font-size:9.5px;color:var(--muted)}
 .chleg .k{display:inline-flex;align-items:center;gap:5px}
 .chleg .k i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.sovstrip{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--hair2);margin:10px 0;break-inside:avoid}
+.sovstrip .kt:last-child{border-right:none}
 """
 
 

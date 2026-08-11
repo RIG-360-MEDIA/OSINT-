@@ -35,6 +35,106 @@ async def _get_runs(db, org_id: str, start_date, end_date):
     return rows
 
 
+_SOV_PARTY_ENTS = {"congress": "gov", "telanganacongress": "gov", "inc": "gov",
+                   "indiannationalcongress": "gov",
+                   "brs": "opp", "trs": "opp", "bjp": "opp", "aimim": "opp",
+                   "telanganabjp": "opp"}
+_SOV_PARTY_CHANNEL_MARKERS = ("party", "congress", "brs", "aimim", "bjp", "police")
+
+
+async def tv_share_of_voice(db, org_id: str, run_ids: list) -> dict[str, Any]:
+    """TV share of voice: government-side vs opposition figures, per channel.
+
+    A video counts toward a side if ANY of its extracted entities resolves to a
+    roster person/institution of that side (normalised-name match) or a party
+    (_SOV_PARTY_ENTS). Party/politician-owned channels are split out of the news
+    table. NOTE: featuring != favourable — per-channel gov_crit carries how much
+    of the government-featuring coverage was critical (attack coverage).
+    """
+    import json as _json
+    rows = (await db.execute(text("""
+        WITH wk AS (
+          SELECT DISTINCT i.item_ref vid, i.verdict FROM briefing.items i
+           WHERE i.run_id = ANY(:runs) AND i.pillar='tv'
+             AND i.about_government AND NOT i.unclear
+        ),
+        roster AS (
+          SELECT regexp_replace(lower(n), '[^a-z0-9]', '', 'g') norm,
+                 CASE WHEN side='opposition' THEN 'opp' ELSE 'gov' END side
+            FROM briefing.roster, LATERAL unnest(name_variants || ARRAY[canonical_name]) n
+           WHERE org_id=CAST(:o AS uuid) AND active AND length(n) >= 4
+        )
+        SELECT t.vid, t.verdict, t.channel_name,
+               COALESCE(bool_or(t.side='gov'), false) has_gov,
+               COALESCE(bool_or(t.side='opp'), false) has_opp
+          FROM (
+            SELECT wk.vid, wk.verdict, v.channel_name,
+                   COALESCE(r.side, CAST(:party_map AS jsonb) ->> e.ent) side
+              FROM wk
+              JOIN youtube_clips_v2 v ON v.video_id = wk.vid
+              CROSS JOIN LATERAL (SELECT regexp_replace(lower(v.matched_entity),
+                                         '[^a-z0-9]', '', 'g') ent) e
+              LEFT JOIN roster r ON r.norm = e.ent
+             WHERE v.matched_entity IS NOT NULL
+          ) t
+         GROUP BY t.vid, t.verdict, t.channel_name
+    """), {"runs": run_ids, "o": org_id,
+           "party_map": _json.dumps(_SOV_PARTY_ENTS)})).fetchall()
+
+    roster_norms = {r.norm for r in (await db.execute(text("""
+        SELECT regexp_replace(lower(canonical_name), '[^a-z0-9]', '', 'g') norm
+          FROM briefing.roster WHERE org_id=CAST(:o AS uuid) AND active
+    """), {"o": org_id})).fetchall()}
+
+    def _party_owned(channel: str) -> bool:
+        cn = _re.sub(r"[^a-z0-9]", "", (channel or "").lower())
+        cl = (channel or "").lower()
+        return (any(m in cl for m in _SOV_PARTY_CHANNEL_MARKERS)
+                or any(n and n in cn for n in roster_norms))
+
+    per: dict[str, dict] = {}
+    tot = {"total": 0, "gov": 0, "opp": 0, "both": 0, "unattributed": 0}
+    for r in rows:
+        tot["total"] += 1
+        if r.has_gov:
+            tot["gov"] += 1
+        if r.has_opp:
+            tot["opp"] += 1
+        if r.has_gov and r.has_opp:
+            tot["both"] += 1
+        if not r.has_gov and not r.has_opp:
+            tot["unattributed"] += 1
+        c = per.setdefault(r.channel_name or "?", {
+            "channel": r.channel_name or "?", "items": 0, "gov": 0, "opp": 0,
+            "both": 0, "gov_crit": 0})
+        c["items"] += 1
+        if r.has_gov:
+            c["gov"] += 1
+            if r.verdict == "critical":
+                c["gov_crit"] += 1
+        if r.has_opp:
+            c["opp"] += 1
+        if r.has_gov and r.has_opp:
+            c["both"] += 1
+
+    news = sorted((c for c in per.values()
+                   if c["items"] >= 5 and not _party_owned(c["channel"])),
+                  key=lambda c: c["items"], reverse=True)
+    tail = [c for c in per.values()
+            if c["items"] < 5 and not _party_owned(c["channel"])]
+    party = [c for c in per.values() if _party_owned(c["channel"])]
+    other = {"items": sum(c["items"] for c in tail),
+             "gov": sum(c["gov"] for c in tail),
+             "opp": sum(c["opp"] for c in tail)}
+    party_owned = {"items": sum(c["items"] for c in party),
+                   "gov": sum(c["gov"] for c in party),
+                   "opp": sum(c["opp"] for c in party),
+                   "n_channels": len(party)}
+    ratio = round(tot["gov"] / tot["opp"], 1) if tot["opp"] else None
+    return {**tot, "ratio": ratio, "channels": news, "other": other,
+            "party_owned": party_owned}
+
+
 async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
     async with get_db() as db:
         runs = await _get_runs(db, org_id, start_date, end_date)
@@ -644,7 +744,14 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
             if pr.get("paragraph"):
                 item["paragraph"] = pr["paragraph"]
 
+        # ── TV share of voice (gov vs opposition figures on television) ──
+        sov = await tv_share_of_voice(db, org_id, run_ids)
+
         _glance_box = {"text": ""}
+
+        async def _enrich_sov():
+            async with _psem:
+                sov["analysis"] = await _prose.write_tv_sov(sov)
 
         async def _enrich_glance():
             strip_for_glance = {
@@ -655,7 +762,7 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
                     strip_for_glance, topic_rows, big["label"] if big else biggest,
                     prev, movers)
 
-        _tasks = [_enrich_glance()]
+        _tasks = [_enrich_glance(), _enrich_sov()]
         if big:
             _tasks.append(_enrich_big())
         _tasks += [_enrich_brief(item) for item in week_brief[:10] if item.get("evidence")]
@@ -760,6 +867,7 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
             "previous": prev,
             "movers": movers,
             "glance": _glance_box["text"],
+            "tv_sov": sov,
             "week_brief": week_brief,
             "big_story": big,
             "topics": topic_rows,

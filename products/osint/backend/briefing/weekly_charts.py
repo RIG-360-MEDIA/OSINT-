@@ -262,6 +262,46 @@ def chart_outlets(outlets: list[dict]) -> str:
     return "".join(o)
 
 
+# ── G. TV share of voice: butterfly — opposition left (amber), government
+# right (navy). Side is position-encoded (validated pair dE 18.9 CVD). ───────
+OPP_AMBER = "#8a5a12"
+
+
+def chart_tv_sov(sov: dict) -> str:
+    rows = list(sov.get("channels", []))
+    other = sov.get("other")
+    if other and other.get("items"):
+        rows.append({"channel": "Other news channels", "gov": other["gov"], "opp": other["opp"],
+                     "items": other["items"]})
+    if not rows:
+        return ""
+    rh, W = 24, 700
+    H = 30 + rh * len(rows)
+    lab_w = 170
+    half = (W - lab_w - 20) / 2.0
+    cx = lab_w + half
+    vmax = max(max(r2["gov"] for r2 in rows), max(r2["opp"] for r2 in rows)) or 1
+    o = [f"<svg viewBox='0 0 {W} {H}' xmlns='http://www.w3.org/2000/svg' role='img' "
+         f"aria-label='Stories featuring opposition vs government figures, per channel'>"]
+    o.append(_txt(cx - half / 2, 12, "Featuring OPPOSITION figures", 9, MUTED, "middle", 600))
+    o.append(_txt(cx + half / 2, 12, "Featuring GOVERNMENT figures", 9, MUTED, "middle", 600))
+    o.append(f"<line x1='{cx:.1f}' y1='18' x2='{cx:.1f}' y2='{H - 6}' stroke='{FAINT}' stroke-width='1'/>")
+    for i, r2 in enumerate(rows):
+        y = 24 + rh * i
+        name = r2["channel"] if len(r2["channel"]) <= 22 else r2["channel"][:21] + "…"
+        o.append(_txt(lab_w - 8, y + 11, name, 9.5, INK, "end", 600))
+        gw = (half - 34) * r2["gov"] / vmax
+        ow = (half - 34) * r2["opp"] / vmax
+        if r2["opp"] > 0:
+            o.append(_hbar(cx - 1, y + 2, 10, ow, OPP_AMBER, right=False))
+            o.append(_txt(cx - 1 - ow - 5, y + 11, r2["opp"], 9, MUTED, "end", 600))
+        if r2["gov"] > 0:
+            o.append(_hbar(cx + 1, y + 2, 10, gw, NAVY, right=True))
+            o.append(_txt(cx + 1 + gw + 5, y + 11, r2["gov"], 9, MUTED, "start", 600))
+    o.append("</svg>")
+    return "".join(o)
+
+
 def build_week_charts(r: dict[str, Any]) -> dict[str, str]:
     """All analytics SVGs for the weekly report, keyed by chart id."""
     s = r["strip"]
@@ -272,4 +312,5 @@ def build_week_charts(r: dict[str, Any]) -> dict[str, str]:
         "media": chart_media(r.get("media_compare", [])),
         "movers": chart_movers(r.get("movers", [])),
         "outlets": chart_outlets(r.get("outlets", [])),
+        "tv_sov": chart_tv_sov(r.get("tv_sov") or {}),
     }

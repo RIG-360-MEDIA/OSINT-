@@ -23,34 +23,21 @@ from db import get_db
 from briefing.refdata import load_refdata
 from briefing.judge import judge_item
 from briefing import prompt as P
+from briefing.org_config import for_org, BASE_MUTE
 
 logger = logging.getLogger("briefing.pipeline")
-
-# Entertainment literals safe to exclude by word match (from org mute_terms;
-# the judgement-style mute rules live in the prompt). NOT "review/serial/song"
-# (they kill real government coverage).
-MUTE_LITERALS = ["telangana film", "trailer", "box office", " ott ",
-                 "cinema", " ipl ", "fantasy league"]
 
 IST = timezone(timedelta(hours=5, minutes=30))
 CONCURRENCY = 8
 
-# Print newspapers whose scanned e-paper editions are paywalled/IP-blocked
-# (careerswave went premium ~2026-05; epaper.eenadu.net 403; Sakshi/AJ/NT login).
-# We collect their journalism via their WEB editions instead, and classify those
-# items as the NEWSPAPER pillar — they ARE newspapers; only the scanned image is
-# missing. Matched case-insensitively as a substring of the source name.
-PRINT_PAPER_MARKERS = (
-    "eenadu", "sakshi", "namaste telangana", "namasthe telangana", "mana telangana",
-    "andhra jyothi", "andhra jyothy", "andhrajyothy", "deccan chronicle", "the hindu",
-    "times of india", "indian express", "telangana today", "manam", "siasat",
-    "deccan herald", "hans india",
-)
 
-
-def _pillar_for(source: str) -> str:
+# Print newspapers whose scanned e-paper editions are paywalled/IP-blocked are
+# collected via their WEB editions and classified as the NEWSPAPER pillar (they
+# ARE newspapers; only the scanned image is missing). The per-org marker list
+# lives in org_config; matched case-insensitively as a substring of the source.
+def _pillar_for(source: str, print_markers) -> str:
     s = (source or "").lower()
-    return "newspaper" if any(m in s for m in PRINT_PAPER_MARKERS) else "web"
+    return "newspaper" if any(m in s for m in print_markers) else "web"
 
 
 def ist_window(cover: date) -> tuple[datetime, datetime]:
@@ -58,12 +45,14 @@ def ist_window(cover: date) -> tuple[datetime, datetime]:
     return start.astimezone(timezone.utc), (start + timedelta(days=1)).astimezone(timezone.utc)
 
 
-async def _news_candidates(db, org_id, w0, w1, limit):
+async def _news_candidates(db, w0, w1, limit, cfg):
     # Print lags a day: a report for day D needs papers of D AND D+1 (the
     # morning-after editions that report D's events). Window extended +1 day.
-    # Geo filter: Telangana-datelined OR untagged (null) — national/other-state
-    # clippings (Delhi, Maharashtra, ~60% of the feed) are dropped here so the
-    # judge is not paid to reject them. Prefer newspaper_sources.name over the id.
+    # SOURCE-based geo filter (per-org config): the state's vernacular papers
+    # (np_language) + named English papers (np_sources) + geo-datelined clippings.
+    # Allowing geo_primary IS NULL would let national Hindi papers through (no
+    # state government coverage), so a paper counts only if it's the state's
+    # vernacular/named paper OR explicitly datelined to the state.
     w1b = w1 + timedelta(days=1)
     return (await db.execute(text("""
         SELECT c.id::text item_ref,
@@ -74,19 +63,15 @@ async def _news_candidates(db, org_id, w0, w1, limit):
           LEFT JOIN newspaper_sources ns ON ns.id = c.newspaper_source_id
          WHERE c.collected_at >= :w0 AND c.collected_at < :w1b
            AND length(COALESCE(c.body_text_translated,c.body_text,'')) > 80
-           -- SOURCE-based Telangana filter. Allowing geo_primary IS NULL let
-           -- national Hindi papers (Hindustan, Amar Ujala) through — they carry
-           -- no Telangana government coverage. A Telangana newspaper is a Telugu
-           -- paper OR a Hyderabad English paper; national papers count ONLY when
-           -- the clipping is explicitly Telangana-datelined.
-           AND (ns.language = 'te'
-                OR ns.name IN ('Telangana Today','Deccan Chronicle','Sakshi','Eenadu',
-                               'Namaste Telangana','Mana Telangana','Andhra Jyothi','Manam')
-                OR lower(COALESCE(c.geo_primary,'')) LIKE ANY(ARRAY['%telangana%','%hyderabad%'])
-                OR lower(COALESCE(c.geo_district,'')) LIKE ANY(ARRAY['%telangana%','%hyderabad%','%warangal%','%khammam%','%karimnagar%','%nizamabad%','%medak%','%nalgonda%']))
+           AND (ns.language = :nplang
+                OR ns.name = ANY(:npsources)
+                OR lower(COALESCE(c.geo_primary,'')) LIKE ANY(:geolike)
+                OR lower(COALESCE(c.geo_district,'')) LIKE ANY(:districtlike))
          ORDER BY c.collected_at DESC
          LIMIT :lim
-    """), {"w0": w0, "w1b": w1b, "lim": limit})).fetchall()
+    """), {"w0": w0, "w1b": w1b, "lim": limit,
+           "nplang": cfg["np_language"], "npsources": cfg["np_sources"],
+           "geolike": cfg["geo_like"], "districtlike": cfg["district_like"]})).fetchall()
 
 
 async def _tv_candidates(db, org_id, w0, w1, limit):
@@ -104,9 +89,9 @@ async def _tv_candidates(db, org_id, w0, w1, limit):
     """), {"w0": w0, "w1": w1, "lim": limit})).fetchall()
 
 
-def _muted(title: str, body: str) -> bool:
+def _muted(title: str, body: str, mutes) -> bool:
     t = (" " + (title or "").lower() + " " + (body or "")[:200].lower() + " ")
-    return any(m in t for m in MUTE_LITERALS)
+    return any(m in t for m in mutes)
 
 
 def _mnames_sql(refdata: dict[str, Any]) -> tuple[str, dict]:
@@ -132,6 +117,8 @@ def _mnames_sql(refdata: dict[str, Any]) -> tuple[str, dict]:
 async def run_day(org_id: str, cover: date, limit_per_pillar: int = 5000,
                   concurrency: int = CONCURRENCY) -> dict[str, Any]:
     w0, w1 = ist_window(cover)
+    cfg = for_org(org_id)
+    mutes = BASE_MUTE + cfg.get("mute_extra", [])
     async with get_db() as db:
         refdata = await load_refdata(db, org_id)
         system = P.build_system(refdata)
@@ -154,18 +141,19 @@ async def run_day(org_id: str, cover: date, limit_per_pillar: int = 5000,
                 SELECT a.id::text item_ref, s.name source, a.language_iso lang, a.collected_at published_at, a.title,
                        COALESCE(a.full_text_translated, a.full_text_scraped, a.lead_text_original,'') body
                   FROM articles a JOIN sources s ON s.id=a.source_id
-                 WHERE s.geo_states @> ARRAY['Telangana']::text[]
+                 WHERE s.geo_states && CAST(:geostates AS text[])
                    AND a.collected_at >= :w0 AND a.collected_at < :w1
                    AND length(COALESCE(a.full_text_translated,a.full_text_scraped,a.lead_text_original,'')) > 120
-                   AND (a.geo_primary IS NULL OR lower(a.geo_primary) LIKE ANY(ARRAY['%telangana%','%hyderabad%']) OR {mnames_sql})
+                   AND (a.geo_primary IS NULL OR lower(a.geo_primary) LIKE ANY(:geolike) OR {mnames_sql})
                  ORDER BY a.collected_at DESC LIMIT :lim
-              """), {"w0": w0, "w1": w1, "lim": limit_per_pillar, **mparams})).fetchall()
-        news = await _news_candidates(db, org_id, w0, w1, limit_per_pillar)
+              """), {"w0": w0, "w1": w1, "lim": limit_per_pillar,
+                     "geostates": cfg["geo_states"], "geolike": cfg["geo_like"], **mparams})).fetchall()
+        news = await _news_candidates(db, w0, w1, limit_per_pillar, cfg)
         tv = await _tv_candidates(db, org_id, w0, w1, limit_per_pillar)
 
-        candidates = ([(_pillar_for(r.source), r) for r in web] + [("newspaper", r) for r in news] +
-                      [("tv", r) for r in tv])
-        candidates = [(p, r) for p, r in candidates if not _muted(r.title, r.body)]
+        candidates = ([(_pillar_for(r.source, cfg["print_markers"]), r) for r in web] +
+                      [("newspaper", r) for r in news] + [("tv", r) for r in tv])
+        candidates = [(p, r) for p, r in candidates if not _muted(r.title, r.body, mutes)]
         # resume: skip candidates already judged for this run
         done = {(row.pillar, row.item_ref) for row in (await db.execute(text(
             "SELECT pillar, item_ref FROM briefing.items WHERE run_id=:r"), {"r": run_id})).fetchall()}

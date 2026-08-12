@@ -35,11 +35,40 @@ async def _get_runs(db, org_id: str, start_date, end_date):
     return rows
 
 
-_SOV_PARTY_ENTS = {"congress": "gov", "telanganacongress": "gov", "inc": "gov",
-                   "indiannationalcongress": "gov",
-                   "brs": "opp", "trs": "opp", "bjp": "opp", "aimim": "opp",
-                   "telanganabjp": "opp"}
-_SOV_PARTY_CHANNEL_MARKERS = ("party", "congress", "brs", "aimim", "bjp", "police")
+# party code (briefing.roster.party) -> the normalised entity surface forms the
+# NER emits for that party. The SIDE is taken from the org's roster (ruling vs
+# opposition differs by state), so this stays org-agnostic — a BJP-ruled state
+# flips automatically. Only alias spelling lives here.
+_PARTY_ALIASES = {
+    "inc":   ["congress", "inc", "indiannationalcongress", "telanganacongress", "karnatakacongress"],
+    "bjp":   ["bjp", "bharatiyajanataparty", "karnatakabjp", "telanganabjp"],
+    "jd(s)": ["jds", "janatadalsecular", "janatadal"],
+    "brs":   ["brs", "trs", "bharatrashtrasamithi"],
+    "aimim": ["aimim", "allindiamajliseittehadulmuslimeen"],
+}
+_SOV_PARTY_CHANNEL_MARKERS = ("party", "congress", "inc", "brs", "trs", "aimim",
+                              "bjp", "jds", "janatadal", "police")
+
+
+async def _sov_party_map(db, org_id: str) -> dict:
+    """{normalised party alias -> 'gov'|'opp'} built from the org's OWN roster,
+    so the ruling/opposition split is correct per state (derived, not hardcoded —
+    Congress=gov in KA & TG, but a BJP-ruled state would flip automatically)."""
+    rows = (await db.execute(text("""
+        SELECT lower(party) party, side, count(*) n FROM briefing.roster
+         WHERE org_id=CAST(:o AS uuid) AND active AND COALESCE(party,'') <> ''
+         GROUP BY lower(party), side
+    """), {"o": org_id})).fetchall()
+    best: dict = {}
+    for r in rows:
+        side = "gov" if r.side in ("government", "institution") else "opp"
+        if r.party not in best or r.n > best[r.party][1]:
+            best[r.party] = (side, r.n)
+    pmap: dict = {}
+    for party, (side, _n) in best.items():
+        for alias in _PARTY_ALIASES.get(party, [_re.sub(r"[^a-z0-9]", "", party)]):
+            pmap[alias] = side
+    return pmap
 
 
 async def tv_share_of_voice(db, org_id: str, run_ids: list) -> dict[str, Any]:
@@ -52,6 +81,7 @@ async def tv_share_of_voice(db, org_id: str, run_ids: list) -> dict[str, Any]:
     of the government-featuring coverage was critical (attack coverage).
     """
     import json as _json
+    party_map = await _sov_party_map(db, org_id)
     rows = (await db.execute(text("""
         WITH wk AS (
           SELECT DISTINCT i.item_ref vid, i.verdict FROM briefing.items i
@@ -79,7 +109,7 @@ async def tv_share_of_voice(db, org_id: str, run_ids: list) -> dict[str, Any]:
           ) t
          GROUP BY t.vid, t.verdict, t.channel_name
     """), {"runs": run_ids, "o": org_id,
-           "party_map": _json.dumps(_SOV_PARTY_ENTS)})).fetchall()
+           "party_map": _json.dumps(party_map)})).fetchall()
 
     roster_norms = {r.norm for r in (await db.execute(text("""
         SELECT regexp_replace(lower(canonical_name), '[^a-z0-9]', '', 'g') norm

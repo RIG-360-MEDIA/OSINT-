@@ -16,6 +16,7 @@ import os
 
 import argparse
 import asyncio
+import html as html_lib
 import json
 import logging
 import re
@@ -858,6 +859,73 @@ def _fetch_html_browser(url: str, timeout: float = 15.0) -> str | None:
 
 
 # ─────────────────────────────────────────────────────────────────────
+# JSON-LD BODY FALLBACK (for JS-rendered SPAs)
+# ─────────────────────────────────────────────────────────────────────
+
+# Matches a real HTML start/end tag so we only invoke the (heavier) tag
+# stripper when the decoded articleBody actually carries markup — plain-text
+# bodies (and prose like "x < y > z") are left untouched.
+_HTML_TAG_RE = re.compile(r"<[a-zA-Z/][^>]*>")
+
+
+def _body_from_jsonld(html: str) -> str | None:
+    """Recover the article body from schema.org JSON-LD ``articleBody``.
+
+    Fallback for JS-rendered SPAs (e.g. prajavani.net) whose server HTML
+    carries the story ONLY inside a ``<script type="application/ld+json">``
+    NewsArticle block — the visible DOM trafilatura reads holds just the
+    headline, so the naive extract returns ~40-70 chars and the row is
+    stamped ``junk``. The ``articleBody`` value IS present in that static
+    HTML; it is commonly HTML-entity-encoded markup ("&lt;p&gt;…"), so we
+    decode entities and strip tags down to clean plain text.
+
+    Returns the LONGEST ``articleBody`` found (a page can embed several
+    JSON-LD blocks), or ``None``. Never raises — on any failure the caller
+    keeps whatever thin body trafilatura produced.
+    """
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+    except Exception:  # noqa: BLE001 — parsing must never crash the pass
+        return None
+    best = ""
+    for script in soup.find_all("script", type="application/ld+json")[:10]:
+        raw = script.string or script.get_text() or ""
+        if "articleBody" not in raw:
+            continue
+        try:
+            data = json.loads(raw.strip())
+        except (json.JSONDecodeError, ValueError, TypeError):
+            continue
+        # A JSON-LD document may be a bare object, a list, or wrap its nodes
+        # in an "@graph". Walk the whole tree; keep the longest articleBody.
+        stack: list[Any] = data if isinstance(data, list) else [data]
+        while stack:
+            node = stack.pop()
+            if isinstance(node, list):
+                stack.extend(node)
+                continue
+            if not isinstance(node, dict):
+                continue
+            graph = node.get("@graph")
+            if isinstance(graph, list):
+                stack.extend(graph)
+            ab = node.get("articleBody")
+            if isinstance(ab, str) and len(ab) > len(best):
+                best = ab
+    body = best.strip()
+    if not body:
+        return None
+    # articleBody is frequently entity-encoded HTML — decode, then de-tag.
+    body = html_lib.unescape(body)
+    if _HTML_TAG_RE.search(body):
+        try:
+            body = BeautifulSoup(body, "html.parser").get_text(" ", strip=True)
+        except Exception:  # noqa: BLE001
+            pass
+    return body.strip() or None
+
+
+# ─────────────────────────────────────────────────────────────────────
 # PER-ARTICLE PIPELINE
 # ─────────────────────────────────────────────────────────────────────
 
@@ -909,6 +977,17 @@ async def process_one(db, article: dict[str, Any]) -> dict[str, Any]:
         deduplicate=True,
         favor_precision=True,
     ) or ""
+
+    # 2b. JS-rendered SPA fallback: when trafilatura comes back thin (the
+    # visible DOM had only the headline), recover the body from the
+    # schema.org JSON-LD articleBody embedded in the static HTML. Fires ONLY
+    # on a thin result and only replaces it when the recovered body is
+    # longer, so sources that already extract cleanly are never touched.
+    # (prajavani.net — Kannada — was ~80% stamped 'junk' for exactly this.)
+    if len(body) < MIN_BODY_CHARS:
+        jsonld_body = _body_from_jsonld(html)
+        if jsonld_body and len(jsonld_body) > len(body):
+            body = jsonld_body
 
     # 3. Structural parse
     structural = parse_html(html, url)

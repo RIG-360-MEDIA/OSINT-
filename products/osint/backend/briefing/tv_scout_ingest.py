@@ -107,7 +107,7 @@ async def ingest(days_back: int = 7, per_kw: int = 10, pace: float = 1.2) -> dic
                 VALUES (:vid, :title, '', :chan,
                         'https://www.youtube.com/watch?v='||:vid,
                         'https://www.youtube.com/embed/'||:vid,
-                        0, 0, :ent, '', :seg, :lang, 'ka_scout', 0.8,
+                        0, 1, :ent, '', :seg, :lang, 'ka_scout', 0.8,
                         'medium', false, 'ok', :created, :created, true, 0)
             """), {"vid": v["vid"], "title": v["title"], "chan": v["chan"],
                    "ent": v["kw"], "seg": txt[:60000], "lang": _lang_of(txt),

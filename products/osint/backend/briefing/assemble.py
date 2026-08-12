@@ -479,7 +479,11 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
         people = []  # (variants:set[str], side:'gov'|'opp') — per-person, for verification
         for rr in roster:
             variants = {rr.nm} | {str(x).lower() for x in (rr.name_variants or [])}
-            variants = {v for v in variants if len(v) >= 3}
+            # require a non-empty NORMALISED form: a variant that _norm()s to ''
+            # (pure vernacular script — the matcher strips non-Latin) makes
+            # `'' in speaker` true for EVERY speaker, misclassifying the whole
+            # report. Vernacular names live in telugu_names, not here.
+            variants = {v for v in variants if len(v) >= 3 and _re.sub(r"[^a-z0-9]+", "", v)}
             if variants:
                 people.append((variants, "gov" if rr.side in ("government", "institution") else "opp"))
 

@@ -663,7 +663,7 @@ async def assemble_weekly(org_id: str, start_date, end_date) -> dict[str, Any]:
             # would make `'' in speaker` true for EVERY speaker, so one vernacular
             # variant in name_variants silently misclassifies the whole report.
             # Vernacular names live in telugu_names for text matching, not here.
-            variants = {v for v in variants if len(v) >= 3 and _re.sub(r"[^a-z0-9]+", "", v)}
+            variants = {v for v in variants if len(v) >= 3 and any(c.isascii() and c.isalnum() for c in v)}
             if variants:
                 people.append((variants, "gov" if rr.side in ("government", "institution") else "opp"))
 

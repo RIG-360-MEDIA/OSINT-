@@ -64,7 +64,9 @@ def render_weekly_html(r: dict[str, Any]) -> str:
     o = ["<!doctype html><html><head><meta charset='utf-8'><style>", CSS, WEEKLY_CSS,
          "</style></head><body><div class='paper'>"]
 
-    o.append("<div class='topbar'><div class='dept'>Telangana &middot; Information &amp; Public Relations</div>"
+    from briefing.org_config import for_org as _for_org
+    _dept = _for_org(r.get("org_id") or "").get("dept_label", "Information &amp; Public Relations")
+    o.append("<div class='topbar'><div class='dept'>" + _dept + "</div>"
              "<div class='brand'><span class='bn'>Robin<span class='accent'>OSINT</span></span>"
              "<span class='bs'>Weekly Media Watch</span></div></div>")
     o.append("<div class='mast'><h1>Weekly Media Briefing</h1>"

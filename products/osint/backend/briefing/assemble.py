@@ -137,7 +137,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
               FROM briefing.items i
               JOIN article_numbers n ON n.article_id::text=i.item_ref
               JOIN articles a ON a.id::text=i.item_ref
-             WHERE i.run_id=:r AND i.about_government AND i.pillar='web'
+             WHERE i.run_id=:r AND i.about_government AND i.pillar IN ('web','newspaper')
                AND n.unit IS NOT NULL AND length(n.context) BETWEEN 12 AND 100
                AND (n.context ILIKE '%crore%' OR n.context ILIKE '%lakh%' OR n.unit ILIKE '%crore%'
                     OR n.context ILIKE '%scheme%' OR n.context ILIKE '%farmer%' OR n.context ILIKE '%beneficiar%')
@@ -268,7 +268,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             # numbers cited in the big story (from its member web items)
             web_ids = [m.item_ref for m in members if m.pillar == "web"] if False else []
             web_ids = (await db.execute(text("""
-                SELECT item_ref FROM briefing.items WHERE id = ANY(:ids) AND pillar='web'
+                SELECT item_ref FROM briefing.items WHERE id = ANY(:ids) AND pillar IN ('web','newspaper')
             """), {"ids": list(e0.member_item_ids or [])})).fetchall()
             wids = [w.item_ref for w in web_ids]
             big_numbers = []
@@ -441,7 +441,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
               FROM briefing.items i
               JOIN article_districts ad ON ad.article_id = CAST(i.item_ref AS uuid)
               JOIN districts d ON d.id = ad.district_id AND d.state_code='TG'
-             WHERE i.run_id=:r AND i.pillar='web' AND i.about_government AND NOT i.unclear
+             WHERE i.run_id=:r AND i.pillar IN ('web','newspaper') AND i.about_government AND NOT i.unclear
              GROUP BY d.name ORDER BY n DESC LIMIT 14
         """), {"r": rid})).fetchall()
         district_rows = [{"district": d.name, "items": int(d.n), "favourable": int(d.fav),
@@ -454,7 +454,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
                   FROM briefing.items i
                   JOIN article_districts ad ON ad.article_id = CAST(i.item_ref AS uuid)
                   JOIN districts d ON d.id = ad.district_id AND d.state_code='TG'
-                 WHERE i.run_id=:r AND i.pillar='web' AND i.about_government AND NOT i.unclear
+                 WHERE i.run_id=:r AND i.pillar IN ('web','newspaper') AND i.about_government AND NOT i.unclear
                    AND d.name = ANY(:names) AND i.verdict IN ('critical','favourable')
                  ORDER BY d.name, i.verdict, (i.strength='strong') DESC NULLS LAST, i.confidence DESC NULLS LAST
             """), {"r": rid, "names": dnames})).fetchall()
@@ -483,7 +483,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
             # (pure vernacular script — the matcher strips non-Latin) makes
             # `'' in speaker` true for EVERY speaker, misclassifying the whole
             # report. Vernacular names live in telugu_names, not here.
-            variants = {v for v in variants if len(v) >= 3 and _re.sub(r"[^a-z0-9]+", "", v)}
+            variants = {v for v in variants if len(v) >= 3 and any(c.isascii() and c.isalnum() for c in v)}
             if variants:
                 people.append((variants, "gov" if rr.side in ("government", "institution") else "opp"))
 
@@ -527,7 +527,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
               JOIN article_quotes q ON q.article_id = CAST(i.item_ref AS uuid)
               JOIN articles a ON a.id = CAST(i.item_ref AS uuid)
               JOIN sources s ON s.id = a.source_id
-             WHERE i.run_id=:r AND i.pillar='web' AND i.about_government
+             WHERE i.run_id=:r AND i.pillar IN ('web','newspaper') AND i.about_government
                AND q.is_direct AND q.speaker_name IS NOT NULL
                AND q.quote_text NOT LIKE '%@%' AND length(q.quote_text) BETWEEN 40 AND 240
              LIMIT 300
@@ -592,7 +592,7 @@ async def assemble(org_id: str, cover_date) -> dict[str, Any]:
         anx_web = (await db.execute(text("""
             SELECT i.pillar, i.source_ref src, i.lang, i.verdict, a.title, a.url
               FROM briefing.items i JOIN articles a ON a.id = CAST(i.item_ref AS uuid)
-             WHERE i.run_id=:r AND i.pillar='web' AND i.about_government AND NOT i.unclear
+             WHERE i.run_id=:r AND i.pillar IN ('web','newspaper') AND i.about_government AND NOT i.unclear
              ORDER BY (i.strength='strong') DESC NULLS LAST, i.confidence DESC NULLS LAST LIMIT 18
         """), {"r": rid})).fetchall()
         anx_tv = (await db.execute(text("""

@@ -31,6 +31,7 @@ ORG_CONFIG: dict[str, dict[str, Any]] = {
                           "deccan chronicle", "the hindu", "times of india", "indian express",
                           "telangana today", "manam", "siasat", "deccan herald", "hans india"),
         "mute_extra": ["telangana film"],
+        "dept_label": "Telangana &middot; Information &amp; Public Relations",
     },
     KARNATAKA: {
         "geo_states": ["Karnataka"],
@@ -49,6 +50,7 @@ ORG_CONFIG: dict[str, dict[str, Any]] = {
         # KA TV is ingested via Scout keyword-search + free_transcript and marked
         # transcript_source='ka_scout' (separate from Telangana's relay pipeline).
         "tv_source_tag": "ka_scout",
+        "dept_label": "Karnataka &middot; Department of Information &amp; Public Relations",
     },
 }
 

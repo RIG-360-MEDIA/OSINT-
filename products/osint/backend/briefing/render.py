@@ -301,7 +301,9 @@ td.num,th.num{text-align:right;font-family:var(--mono);font-size:11.5px;font-var
 def render_html(r: dict[str, Any]) -> str:
     s = r["strip"]; sent = s["sentiment"]; bp = s["by_pillar"]
     o = [f"<!doctype html><html><head><meta charset='utf-8'><style>{CSS}</style></head><body><div class='paper'>"]
-    o.append("<div class='topbar'><div class='dept'>Telangana &middot; Information &amp; Public Relations</div>"
+    from briefing.org_config import for_org as _for_org
+    _dept = _for_org(r.get("org_id") or "").get("dept_label", "Information &amp; Public Relations")
+    o.append("<div class='topbar'><div class='dept'>" + _dept + "</div>"
              "<div class='brand'><span class='bn'>Robin<span class='accent'>OSINT</span></span>"
              "<span class='bs'>Daily Media Watch</span></div></div>")
     o.append(f"<div class='mast'><h1>Daily Media Briefing</h1><div class='dek'>"

@@ -46,8 +46,15 @@ ORG_CONFIG: dict[str, dict[str, Any]] = {
                           "kannada prabha", "deccan herald", "the hindu", "times of india",
                           "indian express"),
         "mute_extra": ["kannada film", "sandalwood"],
+        # KA TV is ingested via Scout keyword-search + free_transcript and marked
+        # transcript_source='ka_scout' (separate from Telangana's relay pipeline).
+        "tv_source_tag": "ka_scout",
     },
 }
+
+# transcript_source markers that belong to a specific tenant's TV ingestion; a
+# default org must EXCLUDE these so another tenant's clips never leak in.
+TENANT_TV_TAGS = ("ka_scout",)
 
 
 def for_org(org_id: str) -> dict[str, Any]:

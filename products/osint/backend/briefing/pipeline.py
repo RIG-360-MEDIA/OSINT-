@@ -74,19 +74,30 @@ async def _news_candidates(db, w0, w1, limit, cfg):
            "geolike": cfg["geo_like"], "districtlike": cfg["district_like"]})).fetchall()
 
 
-async def _tv_candidates(db, org_id, w0, w1, limit):
-    return (await db.execute(text("""
+async def _tv_candidates(db, w0, w1, limit, cfg):
+    # Org separation: an org with a tv_source_tag pulls ONLY its own Scout-ingested
+    # clips; a default org (Telangana) pulls everything EXCEPT any tenant tag, so
+    # the two tenants' TV never cross. created_at carries the video's publish date
+    # (backfilled clips are dated to the video, so daily runs pick up their day).
+    from briefing.org_config import TENANT_TV_TAGS
+    tv_src = cfg.get("tv_source_tag")
+    if tv_src:
+        src_clause = "AND v.transcript_source = :tvsrc"
+    else:
+        src_clause = "AND COALESCE(v.transcript_source,'') <> ALL(:tvtags)"
+    return (await db.execute(text(f"""
         SELECT v.video_id item_ref, max(v.channel_name) source, max(v.transcript_language) lang,
                min(v.created_at) published_at, max(v.video_title) title,
                max(v.video_title)||'. '||COALESCE(max(v.summary),'')||' '||
                  string_agg(COALESCE(v.transcript_segment,''), ' ') body
           FROM youtube_clips_v2 v
-         WHERE v.created_at >= :w0 AND v.created_at < :w1
+         WHERE v.created_at >= :w0 AND v.created_at < :w1 {src_clause}
          GROUP BY v.video_id
         HAVING length(max(v.video_title)||' '||COALESCE(max(v.summary),'')) > 40
          ORDER BY min(v.created_at) DESC
          LIMIT :lim
-    """), {"w0": w0, "w1": w1, "lim": limit})).fetchall()
+    """), {"w0": w0, "w1": w1, "lim": limit, "tvsrc": tv_src,
+           "tvtags": list(TENANT_TV_TAGS)})).fetchall()
 
 
 def _muted(title: str, body: str, mutes) -> bool:
@@ -149,7 +160,7 @@ async def run_day(org_id: str, cover: date, limit_per_pillar: int = 5000,
               """), {"w0": w0, "w1": w1, "lim": limit_per_pillar,
                      "geostates": cfg["geo_states"], "geolike": cfg["geo_like"], **mparams})).fetchall()
         news = await _news_candidates(db, w0, w1, limit_per_pillar, cfg)
-        tv = await _tv_candidates(db, org_id, w0, w1, limit_per_pillar)
+        tv = await _tv_candidates(db, w0, w1, limit_per_pillar, cfg)
 
         candidates = ([(_pillar_for(r.source, cfg["print_markers"]), r) for r in web] +
                       [("newspaper", r) for r in news] + [("tv", r) for r in tv])
